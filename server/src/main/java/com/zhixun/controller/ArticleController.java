@@ -1,0 +1,129 @@
+package com.zhixun.controller;
+
+import com.zhixun.common.result.PageResult;
+import com.zhixun.common.result.R;
+import com.zhixun.common.util.SecurityUtil;
+import com.zhixun.dto.article.ArticleCreateRequest;
+import com.zhixun.dto.article.ArticleQueryRequest;
+import com.zhixun.dto.article.ArticleStatusRequest;
+import com.zhixun.dto.article.ArticleUpdateRequest;
+import com.zhixun.service.ArticleService;
+import com.zhixun.service.RankService;
+import com.zhixun.vo.ArticleDetailVO;
+import com.zhixun.vo.ArticleVO;
+import com.zhixun.vo.HotArticleVO;
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * 文章控制器
+ */
+@RestController
+@RequestMapping("/v1/articles")
+@RequiredArgsConstructor
+public class ArticleController {
+
+    private final ArticleService articleService;
+    private final RankService rankService;
+    private final SecurityUtil securityUtil;
+
+    /**
+     * 发布文章（需认证）
+     */
+    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    @SentinelResource(value = "article-create", blockHandler = "createBlockHandler", blockHandlerClass = ArticleController.BlockHandlers.class)
+    public R<Long> create(@Valid @RequestBody ArticleCreateRequest request) {
+        Long userId = securityUtil.getCurrentUserId();
+        return R.ok(articleService.createArticle(userId, request));
+    }
+
+    /**
+     * 编辑文章（需认证）
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> update(@PathVariable Long id, @Valid @RequestBody ArticleUpdateRequest request) {
+        Long userId = securityUtil.getCurrentUserId();
+        articleService.updateArticle(userId, id, request);
+        return R.ok();
+    }
+
+    /**
+     * 文章列表（公开）
+     */
+    @GetMapping
+    public R<PageResult<ArticleVO>> list(ArticleQueryRequest request) {
+        return R.ok(articleService.getArticleList(request));
+    }
+
+    /**
+     * 文章详情（公开）
+     */
+    @GetMapping("/{id}")
+    public R<ArticleDetailVO> detail(@PathVariable Long id) {
+        // 尝试获取当前登录用户ID（未登录为 null）
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception e) {
+            // 未登录用户，currentUserId 保持为 null
+        }
+        return R.ok(articleService.getArticleDetail(id, currentUserId));
+    }
+
+    /**
+     * 删除文章（需认证）
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> delete(@PathVariable Long id) {
+        Long userId = securityUtil.getCurrentUserId();
+        articleService.deleteArticle(userId, id);
+        return R.ok();
+    }
+
+    /**
+     * 状态变更（需管理员）
+     */
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public R<Void> updateStatus(@PathVariable Long id, @Valid @RequestBody ArticleStatusRequest request) {
+        Long userId = securityUtil.getCurrentUserId();
+        articleService.updateArticleStatus(userId, id, request);
+        return R.ok();
+    }
+
+    /**
+     * 相关推荐
+     */
+    @GetMapping("/{id}/related")
+    public R<List<HotArticleVO>> related(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "6") Integer limit) {
+        return R.ok(rankService.getRelatedArticles(id, limit));
+    }
+
+    /**
+     * Sentinel 限流降级处理
+     */
+    public static class BlockHandlers {
+        public static R<Long> createBlockHandler(ArticleCreateRequest request, BlockException e) {
+            return R.fail(429, "发布请求过于频繁，请稍后重试");
+        }
+    }
+}

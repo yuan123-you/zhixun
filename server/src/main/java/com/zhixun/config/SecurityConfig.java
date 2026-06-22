@@ -1,0 +1,113 @@
+package com.zhixun.config;
+
+import com.zhixun.security.JwtAccessDeniedHandler;
+import com.zhixun.security.JwtAuthenticationFilter;
+import com.zhixun.security.JwtUnauthorizedHandler;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+/**
+ * Spring Security 配置
+ */
+@Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtUnauthorizedHandler jwtUnauthorizedHandler;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+
+    /**
+     * 放行的公开接口
+     */
+    private static final String[] PUBLIC_URLS = {
+            // 认证相关
+            "/v1/auth/login",
+            "/v1/auth/register",
+            "/v1/auth/refresh",
+            // Swagger / Knife4j
+            "/doc.html",
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/v3/api-docs/**",
+            "/webjars/**",
+            // WebSocket
+            "/ws/**",
+            // 静态资源
+            "/static/**",
+            "/favicon.ico",
+            // 健康检查
+            "/actuator/**"
+    };
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // 关闭 CSRF（前后端分离不需要）
+                .csrf(AbstractHttpConfigurer::disable)
+                // 关闭表单登录
+                .formLogin(AbstractHttpConfigurer::disable)
+                // 关闭 HTTP Basic 认证
+                .httpBasic(AbstractHttpConfigurer::disable)
+                // 无状态会话
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 异常处理
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtUnauthorizedHandler)
+                        .accessDeniedHandler(jwtAccessDeniedHandler))
+                // 授权配置
+                .authorizeHttpRequests(auth -> auth
+                        // 预检请求放行
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // 公开接口放行
+                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        // 文章列表和详情（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/articles", "/v1/articles/**").permitAll()
+                        // 分类列表和分类树（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/categories", "/v1/categories/tree").permitAll()
+                        // 标签列表和热门标签（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/tags", "/v1/tags/hot").permitAll()
+                        // 信息流（推荐、最新公开，关注需认证）
+                        .requestMatchers(HttpMethod.GET, "/v1/feed/recommend", "/v1/feed/latest").permitAll()
+                        // 排行榜（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/rank/**").permitAll()
+                        // 搜索（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/search", "/v1/search/suggest", "/v1/search/hot").permitAll()
+                        // 其他接口需要认证
+                        .anyRequest().authenticated());
+
+        // 添加 JWT 过滤器
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    /**
+     * 密码编码器 - BCrypt
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * 认证管理器
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+}

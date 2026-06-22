@@ -1,0 +1,192 @@
+package com.zhixun.common.exception;
+
+import com.zhixun.common.result.ErrorCode;
+import com.zhixun.common.result.R;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
+import com.alibaba.csp.sentinel.slots.block.degrade.DegradeException;
+import com.alibaba.csp.sentinel.slots.block.flow.FlowException;
+import com.alibaba.csp.sentinel.slots.system.SystemBlockException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+
+import java.util.stream.Collectors;
+
+/**
+ * 全局异常处理器
+ */
+@Slf4j
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    /**
+     * 处理业务异常
+     */
+    @ExceptionHandler(BusinessException.class)
+    public R<Void> handleBusinessException(BusinessException e) {
+        log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage());
+        return R.fail(e.getCode(), e.getMessage());
+    }
+
+    /**
+     * 处理参数校验异常 - @Valid/@Validated
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining("; "));
+        log.warn("参数校验失败: {}", message);
+        return R.fail(ErrorCode.UNPROCESSABLE_ENTITY, message);
+    }
+
+    /**
+     * 处理参数绑定异常
+     */
+    @ExceptionHandler(BindException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleBindException(BindException e) {
+        String message = e.getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining("; "));
+        log.warn("参数绑定失败: {}", message);
+        return R.fail(ErrorCode.UNPROCESSABLE_ENTITY, message);
+    }
+
+    /**
+     * 处理约束违反异常 - @Validated 在路径变量/请求参数上
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleConstraintViolationException(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining("; "));
+        log.warn("约束违反: {}", message);
+        return R.fail(ErrorCode.UNPROCESSABLE_ENTITY, message);
+    }
+
+    /**
+     * 处理缺少请求参数异常
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        log.warn("缺少请求参数: {}", e.getParameterName());
+        return R.fail(ErrorCode.BAD_REQUEST, "缺少请求参数: " + e.getParameterName());
+    }
+
+    /**
+     * 处理请求方法不支持异常
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public R<Void> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+        log.warn("请求方法不支持: {}", e.getMethod());
+        return R.fail(ErrorCode.METHOD_NOT_ALLOWED);
+    }
+
+    /**
+     * 处理404异常
+     */
+    @ExceptionHandler(NoHandlerFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public R<Void> handleNoHandlerFoundException(NoHandlerFoundException e) {
+        log.warn("接口不存在: {}", e.getRequestURL());
+        return R.fail(ErrorCode.NOT_FOUND);
+    }
+
+    /**
+     * 处理认证异常 - 密码错误
+     */
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public R<Void> handleBadCredentialsException(BadCredentialsException e) {
+        log.warn("认证失败: {}", e.getMessage());
+        return R.fail(ErrorCode.AUTH_LOGIN_FAILED);
+    }
+
+    /**
+     * 处理授权异常
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public R<Void> handleAccessDeniedException(AccessDeniedException e) {
+        log.warn("访问被拒绝: {}", e.getMessage());
+        return R.fail(ErrorCode.FORBIDDEN);
+    }
+
+    /**
+     * 处理文件上传大小超限异常
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        log.warn("文件大小超限: {}", e.getMessage());
+        return R.fail(ErrorCode.FILE_SIZE_EXCEEDED);
+    }
+
+    /**
+     * 处理 Sentinel 限流异常
+     */
+    @ExceptionHandler(FlowException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public R<Void> handleFlowException(FlowException e) {
+        log.warn("接口限流: resource={}", e.getRule().getResource());
+        return R.fail(ErrorCode.TOO_MANY_REQUESTS);
+    }
+
+    /**
+     * 处理 Sentinel 熔断降级异常
+     */
+    @ExceptionHandler(DegradeException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public R<Void> handleDegradeException(DegradeException e) {
+        log.warn("服务熔断降级: resource={}", e.getRule().getResource());
+        return R.fail(503, "服务暂时不可用，请稍后重试");
+    }
+
+    /**
+     * 处理 Sentinel 系统保护异常
+     */
+    @ExceptionHandler(SystemBlockException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public R<Void> handleSystemBlockException(SystemBlockException e) {
+        log.warn("系统保护触发: rule={}", e.getRule());
+        return R.fail(503, "系统负载过高，请稍后重试");
+    }
+
+    /**
+     * 处理 Sentinel 其他阻塞异常
+     */
+    @ExceptionHandler(BlockException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public R<Void> handleBlockException(BlockException e) {
+        log.warn("请求被阻塞: {}", e.getMessage());
+        return R.fail(ErrorCode.TOO_MANY_REQUESTS);
+    }
+
+    /**
+     * 处理其他未知异常
+     */
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public R<Void> handleException(Exception e) {
+        log.error("系统异常: ", e);
+        return R.fail(500, "服务器内部错误");
+    }
+}

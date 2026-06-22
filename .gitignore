@@ -1,0 +1,53 @@
+# ==================== 通用 ====================
+# 系统文件
+.DS_Store
+Thumbs.db
+*.log
+debug.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 环境变量（含敏感信息）
+.env
+!.env.example
+
+# ==================== Node.js ====================
+node_modules/
+*.tsbuildinfo
+.cache
+.temp
+
+# ==================== Java / Maven ====================
+*.class
+*.jar
+*.war
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot
+spring-shell.log
+application-local.yml
+application-prod.yml
+application-secret.yml
+
+# ==================== 前端构建输出 ====================
+admin/dist/
+client/.nuxt/
+client/.output/
+client/dist/
+
+# 自动生成的类型声明
+admin/src/auto-imports.d.ts
+admin/src/components.d.ts

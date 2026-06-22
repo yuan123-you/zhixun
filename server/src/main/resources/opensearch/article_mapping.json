@@ -1,0 +1,98 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {
+        "ik_smart_pinyin": {
+          "type": "custom",
+          "tokenizer": "ik_max_word",
+          "filter": ["pinyin_filter"]
+        }
+      },
+      "filter": {
+        "pinyin_filter": {
+          "type": "pinyin",
+          "keep_full_pinyin": true,
+          "keep_first_letter": true,
+          "keep_original": true,
+          "limit_first_letter_length": 16,
+          "remove_duplicated_term": true
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "long" },
+      "authorId": { "type": "long" },
+      "categoryId": { "type": "long" },
+      "title": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "keyword": { "type": "keyword" },
+          "pinyin": {
+            "type": "text",
+            "analyzer": "ik_smart_pinyin",
+            "search_analyzer": "ik_smart_pinyin"
+          }
+        }
+      },
+      "summary": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart"
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart"
+      },
+      "coverImage": { "type": "keyword" },
+      "status": { "type": "integer" },
+      "isTop": { "type": "integer" },
+      "isRecommend": { "type": "integer" },
+      "viewCount": { "type": "long" },
+      "likeCount": { "type": "long" },
+      "commentCount": { "type": "long" },
+      "collectCount": { "type": "long" },
+      "hotScore": { "type": "double" },
+      "authorName": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "keyword": { "type": "keyword" }
+        }
+      },
+      "authorAvatar": { "type": "keyword" },
+      "categoryName": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "keyword": { "type": "keyword" }
+        }
+      },
+      "tags": {
+        "type": "nested",
+        "properties": {
+          "id": { "type": "long" },
+          "name": {
+            "type": "text",
+            "analyzer": "ik_max_word",
+            "search_analyzer": "ik_smart",
+            "fields": {
+              "keyword": { "type": "keyword" }
+            }
+          }
+        }
+      },
+      "publishAt": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss||epoch_millis" },
+      "createdAt": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss||epoch_millis" },
+      "updatedAt": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss||epoch_millis" }
+    }
+  }
+}

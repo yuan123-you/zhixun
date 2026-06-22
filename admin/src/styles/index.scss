@@ -1,0 +1,128 @@
+/* 全局样式 */
+
+/* Tailwind CSS 基础层 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Element Plus 主题覆盖 */
+:root {
+  --el-color-primary: #409eff;
+  --el-color-success: #67c23a;
+  --el-color-warning: #e6a23c;
+  --el-color-danger: #f56c6c;
+  --el-color-info: #909399;
+}
+
+/* 全局重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  font-size: 14px;
+  color: #303133;
+  background-color: #f5f5f5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dcdfe6;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c0c4cc;
+}
+
+/* 管理后台布局样式 */
+.admin-layout {
+  .el-aside {
+    transition: width 0.3s;
+  }
+}
+
+/* 卡片通用样式 */
+.el-card {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+
+  .el-card__header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .el-card__body {
+    padding: 20px;
+  }
+}
+
+/* 表格通用样式 */
+.el-table {
+  .el-table__header th {
+    background-color: #fafafa;
+    color: #303133;
+    font-weight: 600;
+  }
+}
+
+/* 分页通用样式 */
+.el-pagination {
+  margin-top: 16px;
+}
+
+/* 工具类 */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}

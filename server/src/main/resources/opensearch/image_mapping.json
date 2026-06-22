@@ -1,0 +1,48 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {
+        "ik_smart_pinyin": {
+          "type": "custom",
+          "tokenizer": "ik_max_word",
+          "filter": ["pinyin_filter"]
+        }
+      },
+      "filter": {
+        "pinyin_filter": {
+          "type": "pinyin",
+          "keep_full_pinyin": true,
+          "keep_first_letter": true,
+          "keep_original": true,
+          "limit_first_letter_length": 16,
+          "remove_duplicated_term": true
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "long" },
+      "articleId": { "type": "long" },
+      "url": { "type": "keyword" },
+      "articleTitle": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "keyword": { "type": "keyword" },
+          "pinyin": {
+            "type": "text",
+            "analyzer": "ik_smart_pinyin",
+            "search_analyzer": "ik_smart_pinyin"
+          }
+        }
+      },
+      "articleCoverImage": { "type": "keyword" },
+      "articleCreatedAt": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss||epoch_millis" },
+      "createdAt": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss||epoch_millis" }
+    }
+  }
+}

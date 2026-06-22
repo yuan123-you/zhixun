@@ -1,0 +1,55 @@
+package com.zhixun.service;
+
+import com.zhixun.common.result.PageResult;
+import com.zhixun.vo.NotificationVO;
+
+/**
+ * 通知服务接口
+ */
+public interface NotificationService {
+
+    /**
+     * 创建通知
+     *
+     * @param userId    接收用户ID
+     * @param type      通知类型
+     * @param title     通知标题
+     * @param content   通知内容
+     * @param relatedId 关联业务ID
+     */
+    void createNotification(Long userId, Integer type, String title, String content, Long relatedId);
+
+    /**
+     * 获取通知列表
+     *
+     * @param userId   用户ID
+     * @param type     通知类型（可选）
+     * @param page     页码
+     * @param pageSize 每页大小
+     * @return 通知分页列表
+     */
+    PageResult<NotificationVO> getNotifications(Long userId, Integer type, Integer page, Integer pageSize);
+
+    /**
+     * 标记已读
+     *
+     * @param userId         用户ID
+     * @param notificationId 通知ID
+     */
+    void markAsRead(Long userId, Long notificationId);
+
+    /**
+     * 全部标记已读
+     *
+     * @param userId 用户ID
+     */
+    void markAllAsRead(Long userId);
+
+    /**
+     * 获取未读通知数
+     *
+     * @param userId 用户ID
+     * @return 未读数
+     */
+    Integer getUnreadCount(Long userId);
+}
