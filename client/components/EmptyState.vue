@@ -22,11 +22,6 @@
 <script setup lang="ts">
 /** 空状态组件 */
 
-defineProps<{
-  title?: string
-  description?: string
-}>()
-
 withDefaults(defineProps<{
   title?: string
   description?: string
