@@ -1,5 +1,6 @@
 package com.zhixun.controller;
 
+import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.dto.auth.ChangePasswordRequest;
@@ -66,6 +67,9 @@ public class AuthController {
     @PostMapping("/refresh")
     public R<TokenResponse> refresh(@RequestBody Map<String, String> body) {
         String refreshToken = body.get("refreshToken");
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return R.fail(ErrorCode.BAD_REQUEST.getCode(), "刷新令牌不能为空");
+        }
         return R.ok(authService.refreshToken(refreshToken));
     }
 

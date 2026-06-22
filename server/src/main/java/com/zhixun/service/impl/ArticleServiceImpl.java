@@ -40,6 +40,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -81,9 +82,9 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = new Article();
         article.setAuthorId(userId);
         article.setCategoryId(request.getCategoryId());
-        article.setTitle(request.getTitle());
+        article.setTitle(sanitize(request.getTitle()));
         article.setContent(request.getContent());
-        article.setSummary(request.getSummary());
+        article.setSummary(sanitize(request.getSummary()));
         article.setCoverImage(request.getCoverImage());
         article.setViewCount(0L);
         article.setLikeCount(0L);
@@ -145,9 +146,9 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         // 更新文章内容
-        article.setTitle(request.getTitle());
+        article.setTitle(sanitize(request.getTitle()));
         article.setContent(request.getContent());
-        article.setSummary(request.getSummary());
+        article.setSummary(sanitize(request.getSummary()));
         article.setCategoryId(request.getCategoryId());
         article.setCoverImage(request.getCoverImage());
 
@@ -434,6 +435,14 @@ public class ArticleServiceImpl implements ArticleService {
     private boolean checkSensitiveWord(String title, String content) {
         return sensitiveWordUtil.containsSensitiveWord(title)
                 || sensitiveWordUtil.containsSensitiveWord(content);
+    }
+
+    /**
+     * HTML 转义，防止 XSS 攻击
+     */
+    private String sanitize(String input) {
+        if (input == null) return null;
+        return HtmlUtils.htmlEscape(input, "UTF-8");
     }
 
     /**

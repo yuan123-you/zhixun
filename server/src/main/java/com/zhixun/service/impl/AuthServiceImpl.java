@@ -249,9 +249,17 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.AUTH_TOKEN_INVALID, "刷新令牌已失效");
         }
 
-        // 从 JWT 中获取用户ID（Redis 不可用时直接从 Token 解析）
+        // 从 JWT 中获取用户ID
         Claims claims = jwtUtil.parseRefreshToken(refreshToken);
-        Long userId = claims != null ? Long.parseLong(claims.getSubject()) : null;
+        Long userId = null;
+        if (claims != null) {
+            Object userIdObj = claims.get(JwtUtil.CLAIM_USER_ID);
+            if (userIdObj instanceof Number) {
+                userId = ((Number) userIdObj).longValue();
+            } else if (userIdObj != null) {
+                userId = Long.parseLong(userIdObj.toString());
+            }
+        }
         if (userId == null) {
             throw new BusinessException(ErrorCode.AUTH_TOKEN_INVALID, "刷新令牌已失效");
         }
@@ -305,8 +313,15 @@ public class AuthServiceImpl implements AuthService {
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
-        // TODO: Verify code against stored verification code
-        // For now, simplified implementation - in production, verify code via Redis/email
+
+        // 验证验证码 - 从 Redis 中读取
+        String codeKey = "auth:verify:code:" + request.getUsername();
+        String storedCode = stringRedisTemplate.opsForValue().get(codeKey);
+        if (storedCode == null || !storedCode.equals(request.getCode())) {
+            throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期");
+        }
+        // 验证通过后删除验证码
+        stringRedisTemplate.delete(codeKey);
 
         String newPassword = request.getNewPassword();
         if (!newPassword.matches(".*[A-Z].*") || !newPassword.matches(".*[a-z].*") || !newPassword.matches(".*\\d.*")) {
