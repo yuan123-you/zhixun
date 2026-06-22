@@ -127,7 +127,7 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: ["CMD-SHELL", "curl -ksfo /dev/null https://localhost:9200 || exit 1"]
+      test: ["CMD-SHELL", "curl -ksfo /dev/null -u admin:Zhixun2024! https://localhost:9200 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
