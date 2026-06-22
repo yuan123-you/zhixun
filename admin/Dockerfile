@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # 构建管理后台项目
-RUN npm run build
+RUN npx vite build
 
 # ==================== 阶段2：Nginx 运行环境 ====================
 FROM nginx:alpine
