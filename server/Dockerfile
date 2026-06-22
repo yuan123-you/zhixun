@@ -17,16 +17,16 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # ==================== 阶段2：运行环境 ====================
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
-# 安装 curl 用于健康检查
-RUN apk add --no-cache curl tzdata \
-    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+# 安装 curl 用于健康检查，设置时区
+RUN apt-get update && apt-get install -y --no-install-recommends curl tzdata \
+    && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone \
-    && apk del tzdata
+    && rm -rf /var/lib/apt/lists/*
 
 # 创建非 root 用户运行应用
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 # 设置工作目录
 WORKDIR /app
