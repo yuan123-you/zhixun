@@ -32,13 +32,13 @@ spring:
       driver-class-name: com.mysql.cj.jdbc.Driver
       jdbc-url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:zhixun}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       username: ${MYSQL_USER:root}
-      password: ${MYSQL_PASSWORD:zhixun321}
+      password: ${MYSQL_PASSWORD:123456}
     # 从库 - 读操作
     slave:
       driver-class-name: com.mysql.cj.jdbc.Driver
       jdbc-url: jdbc:mysql://${MYSQL_SLAVE_HOST:localhost}:${MYSQL_SLAVE_PORT:3306}/${MYSQL_SLAVE_DB:zhixun}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       username: ${MYSQL_SLAVE_USER:root}
-      password: ${MYSQL_SLAVE_PASSWORD:zhixun321}
+      password: ${MYSQL_SLAVE_PASSWORD:123456}
 
   # Redis 配置
   data:
@@ -173,7 +173,7 @@ minio:
 opensearch:
   hosts: ${OPENSEARCH_HOSTS:http://localhost:9200}
   username: ${OPENSEARCH_USERNAME:admin}
-  password: ${OPENSEARCH_PASSWORD:zhixun321}
+  password: ${OPENSEARCH_PASSWORD:zhixun321!}
   connect-timeout: 5000
   socket-timeout: 60000
   index-prefix: zhixun_
