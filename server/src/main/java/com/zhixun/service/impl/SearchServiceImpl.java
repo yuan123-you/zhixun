@@ -22,7 +22,6 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreMode;
-import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreQuery;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.HighlightField;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -300,16 +299,13 @@ public class SearchServiceImpl implements SearchService {
                                 return b;
                             }));
 
-                            // hot_score_boost: log(1 + hot_score / 100) 加权
+                            // hot_score_boost: 使用 fieldValueFactor 对 hotScore 进行 log1p 加权
                             fs.functions(f -> f
-                                    .log(l -> l
-                                            .logarithmic(ln -> ln
-                                                    .field("hotScore")
-                                                    .offset(1.0)
-                                                    .scale(100.0)
-                                            )
+                                    .fieldValueFactor(fvf -> fvf
+                                            .field("hotScore")
+                                            .factor(0.01)
+                                            .modifier(org.opensearch.client.opensearch._types.query_dsl.FieldValueFactorModifier.Log1p)
                                     )
-                                    .weight(1.0)
                             );
 
                             // time_decay: 1 / (1 + hours_since_publish / 168) 时间衰减
@@ -334,7 +330,7 @@ public class SearchServiceImpl implements SearchService {
                             }
 
                             fs.scoreMode(FunctionScoreMode.Sum);
-                            fs.boostMode(FunctionScoreQuery.BoostMode.Replace);
+                            fs.boostMode(org.opensearch.client.opensearch._types.query_dsl.BoostMode.Replace);
 
                             return fs;
                         })
@@ -427,16 +423,13 @@ public class SearchServiceImpl implements SearchService {
                                 return b;
                             }));
 
-                            // follower_boost: log(1 + follower_count / 100) 加权
+                            // follower_boost: 使用 fieldValueFactor 对 followerCount 进行 log1p 加权
                             fs.functions(f -> f
-                                    .log(l -> l
-                                            .logarithmic(ln -> ln
-                                                    .field("followerCount")
-                                                    .offset(1.0)
-                                                    .scale(100.0)
-                                            )
+                                    .fieldValueFactor(fvf -> fvf
+                                            .field("followerCount")
+                                            .factor(0.01)
+                                            .modifier(org.opensearch.client.opensearch._types.query_dsl.FieldValueFactorModifier.Log1p)
                                     )
-                                    .weight(1.0)
                             );
 
                             // follow_priority: 已关注用户2倍加权
@@ -450,7 +443,7 @@ public class SearchServiceImpl implements SearchService {
                             }
 
                             fs.scoreMode(FunctionScoreMode.Sum);
-                            fs.boostMode(FunctionScoreQuery.BoostMode.Replace);
+                            fs.boostMode(org.opensearch.client.opensearch._types.query_dsl.BoostMode.Replace);
 
                             return fs;
                         })
