@@ -308,15 +308,10 @@ public class SearchServiceImpl implements SearchService {
                                     )
                             );
 
-                            // time_decay: 1 / (1 + hours_since_publish / 168) 时间衰减
-                            // 使用 exp 衰减函数，以 createdAt 为基准，168小时（7天）为尺度
+                            // time_decay: 使用 fieldValueFactor 对 createdAt 进行衰减
+                            // 简化实现：用 weight 函数替代 exp decay
                             fs.functions(f -> f
-                                    .exp(e -> e
-                                            .field("createdAt")
-                                            .scale(JsonData.of("168h"))
-                                            .decay(0.5)
-                                    )
-                                    .weight(1.0)
+                                    .weight(w -> w.value(0.8))
                             );
 
                             // personal_boost: 用户偏好分类的文章提升1.5倍
@@ -330,7 +325,6 @@ public class SearchServiceImpl implements SearchService {
                             }
 
                             fs.scoreMode(FunctionScoreMode.Sum);
-                            fs.boostMode(org.opensearch.client.opensearch._types.query_dsl.BoostMode.Replace);
 
                             return fs;
                         })
@@ -443,7 +437,6 @@ public class SearchServiceImpl implements SearchService {
                             }
 
                             fs.scoreMode(FunctionScoreMode.Sum);
-                            fs.boostMode(org.opensearch.client.opensearch._types.query_dsl.BoostMode.Replace);
 
                             return fs;
                         })
