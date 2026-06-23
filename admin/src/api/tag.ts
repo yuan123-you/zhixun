@@ -30,3 +30,19 @@ export function updateTag(id: number, data: Partial<Tag>) {
 export function deleteTag(id: number) {
   return del(`/tags/${id}`)
 }
+
+/** 合并标签 */
+export function mergeTag(sourceTagId: number, targetTagId: number) {
+  return post<void>('/tags/merge', { sourceTagId, targetTagId } as unknown as Record<string, unknown>)
+}
+
+/** 同步标签文章数 */
+export function syncArticleCount(tagId?: number) {
+  const params = tagId ? { tagId } as unknown as Record<string, unknown> : undefined
+  return post<void>('/tags/sync-article-count', params)
+}
+
+/** 搜索标签（用于自动补全） */
+export function searchTags(keyword: string) {
+  return get<Tag[]>('/tags/search', { keyword } as unknown as Record<string, unknown>)
+}

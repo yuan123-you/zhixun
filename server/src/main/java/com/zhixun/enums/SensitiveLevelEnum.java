@@ -11,11 +11,14 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum SensitiveLevelEnum {
 
-    /** 警告级别 */
-    WARN(1, "警告"),
+    /** 低级：替换为*** */
+    LOW(1, "低级"),
 
-    /** 禁用级别 */
-    BANNED(2, "禁用");
+    /** 中级：替换为***，并记录日志 */
+    MEDIUM(2, "中级"),
+
+    /** 高级：直接拦截内容 */
+    HIGH(3, "高级");
 
     /** 级别值（存入数据库的值） */
     @EnumValue

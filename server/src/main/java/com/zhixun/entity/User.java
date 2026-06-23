@@ -73,6 +73,14 @@ public class User implements Serializable {
     /** 文章数，对应 article_count */
     private Integer articleCount;
 
+    /** 微信OpenID，对应 wechat_openid */
+    @TableField("wechat_openid")
+    private String wechatOpenid;
+
+    /** QQ OpenID，对应 qq_openid */
+    @TableField("qq_openid")
+    private String qqOpenid;
+
     /** 最后登录时间，对应 last_login_at */
     private LocalDateTime lastLoginAt;
 

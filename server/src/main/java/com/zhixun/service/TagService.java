@@ -55,4 +55,67 @@ public interface TagService {
      * @return 热门标签列表
      */
     List<TagVO> hot(int limit);
+
+    /**
+     * 合并标签
+     *
+     * @param sourceTagId 源标签ID（合并后删除）
+     * @param targetTagId 目标标签ID（合并到的目标）
+     */
+    void mergeTag(Long sourceTagId, Long targetTagId);
+
+    /**
+     * 获取标签云（所有标签及其文章数）
+     *
+     * @return 标签列表
+     */
+    List<TagVO> getTagCloud();
+
+    /**
+     * 关注标签
+     *
+     * @param userId 用户ID
+     * @param tagId  标签ID
+     */
+    void followTag(Long userId, Long tagId);
+
+    /**
+     * 取消关注标签
+     *
+     * @param userId 用户ID
+     * @param tagId  标签ID
+     */
+    void unfollowTag(Long userId, Long tagId);
+
+    /**
+     * 获取用户关注的标签列表
+     *
+     * @param userId 用户ID
+     * @return 标签列表
+     */
+    List<TagVO> getFollowedTags(Long userId);
+
+    /**
+     * 判断用户是否关注了某标签
+     *
+     * @param userId 用户ID
+     * @param tagId  标签ID
+     * @return true-已关注
+     */
+    boolean isTagFollowed(Long userId, Long tagId);
+
+    /**
+     * 搜索标签（模糊匹配名称，用于自动补全）
+     *
+     * @param keyword 关键词
+     * @return 标签列表
+     */
+    List<TagVO> searchTags(String keyword);
+
+    /**
+     * 同步标签文章数（从 cms_article_tag 重新计算 article_count）
+     *
+     * @param tagId 标签ID，为null时同步所有标签
+     */
+    void syncTagArticleCount(Long tagId);
 }

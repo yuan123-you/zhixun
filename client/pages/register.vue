@@ -48,6 +48,26 @@
           />
         </div>
 
+        <!-- 图形验证码 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">图形验证码</label>
+          <div class="flex gap-2 items-center">
+            <input
+              v-model="form.captchaAnswer"
+              type="text"
+              class="input flex-1"
+              placeholder="请计算结果"
+              required
+            />
+            <div class="cursor-pointer flex-shrink-0 h-[40px] rounded-md overflow-hidden border border-gray-200 dark:border-gray-700" @click="refreshGraphCaptcha" title="点击刷新">
+              <img v-if="graphCaptchaImage" :src="graphCaptchaImage" alt="图形验证码" class="h-full w-[120px] object-cover" />
+              <div v-else class="h-full w-[120px] flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs text-gray-400">
+                点击获取
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 邮箱验证码 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">邮箱验证码</label>
@@ -63,7 +83,7 @@
             <button
               type="button"
               class="btn-outline whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="codeCooldown > 0 || !form.email"
+              :disabled="codeCooldown > 0 || !form.email || !form.captchaAnswer"
               @click="handleSendCode"
             >
               {{ codeCooldown > 0 ? `${codeCooldown}s` : '获取验证码' }}
@@ -127,12 +147,13 @@ definePageMeta({
   middleware: 'guest',
 })
 
-const { register, sendCode } = useAuth()
+const { register, sendCode, getGraphCaptcha } = useAuth()
 
 const form = reactive({
   username: '',
   nickname: '',
   email: '',
+  captchaAnswer: '',
   code: '',
   password: '',
   confirmPassword: '',
@@ -141,7 +162,25 @@ const form = reactive({
 const loading = ref(false)
 const error = ref('')
 const codeCooldown = ref(0)
+const graphCaptchaKey = ref('')
+const graphCaptchaImage = ref('')
 let cooldownTimer: ReturnType<typeof setInterval> | null = null
+
+// 获取图形验证码
+const refreshGraphCaptcha = async () => {
+  try {
+    const data = await getGraphCaptcha()
+    graphCaptchaKey.value = data.captchaKey
+    graphCaptchaImage.value = data.image
+  } catch (err: any) {
+    error.value = err.message || '获取图形验证码失败'
+  }
+}
+
+// 页面加载时获取图形验证码
+onMounted(() => {
+  refreshGraphCaptcha()
+})
 
 // 发送邮箱验证码
 const handleSendCode = async () => {
@@ -149,14 +188,22 @@ const handleSendCode = async () => {
     error.value = '请先输入邮箱'
     return
   }
-  // 简单邮箱格式校验
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
     error.value = '邮箱格式不正确'
     return
   }
+  if (!form.captchaAnswer) {
+    error.value = '请先完成图形验证码'
+    return
+  }
   error.value = ''
   try {
-    await sendCode({ email: form.email, purpose: 'register' })
+    await sendCode({
+      email: form.email,
+      purpose: 'register',
+      captchaKey: graphCaptchaKey.value,
+      captchaAnswer: form.captchaAnswer,
+    })
     // 开始倒计时
     codeCooldown.value = 60
     cooldownTimer = setInterval(() => {
@@ -166,8 +213,14 @@ const handleSendCode = async () => {
         cooldownTimer = null
       }
     }, 1000)
+    // 发送成功后刷新图形验证码
+    refreshGraphCaptcha()
+    form.captchaAnswer = ''
   } catch (err: any) {
     error.value = err.message || '验证码发送失败'
+    // 失败后也刷新图形验证码
+    refreshGraphCaptcha()
+    form.captchaAnswer = ''
   }
 }
 
@@ -175,31 +228,22 @@ const handleSendCode = async () => {
 const handleRegister = async () => {
   error.value = ''
 
-  // 验证邮箱
   if (!form.email) {
     error.value = '请输入邮箱'
     return
   }
-
-  // 验证验证码
   if (!form.code || form.code.length !== 6) {
     error.value = '请输入6位验证码'
     return
   }
-
-  // 验证密码一致
   if (form.password !== form.confirmPassword) {
     error.value = '两次输入的密码不一致'
     return
   }
-
-  // 验证密码长度
   if (form.password.length < 6) {
     error.value = '密码长度至少6位'
     return
   }
-
-  // 验证密码复杂度
   if (!/[a-z]/.test(form.password) || !/[A-Z]/.test(form.password) || !/\d/.test(form.password)) {
     error.value = '密码需包含大写字母、小写字母和数字'
     return
@@ -217,12 +261,10 @@ const handleRegister = async () => {
   }
 }
 
-// 页面元信息
 useHead({
   title: '注册 - 知讯',
 })
 
-// 清理定时器
 onUnmounted(() => {
   if (cooldownTimer) {
     clearInterval(cooldownTimer)

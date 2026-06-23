@@ -1,11 +1,11 @@
 <template>
-  <!-- 文章卡片组件 -->
-  <article class="card p-4 hover:shadow-md transition-shadow cursor-pointer" @click="navigateToDetail">
+  <!-- 文章卡片组件 - 支持平板双列网格布局 -->
+  <article class="card p-4 md:p-5 hover:shadow-md transition-shadow cursor-pointer no-tap-highlight touch-feedback" @click="navigateToDetail">
     <div class="flex gap-4">
       <!-- 文章内容区 -->
       <div class="flex-1 min-w-0">
         <!-- 标题 -->
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
+        <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
           {{ article.title }}
         </h3>
 
@@ -50,8 +50,8 @@
         </div>
       </div>
 
-      <!-- 封面图（右侧，桌面端显示） -->
-      <div v-if="article.coverImage" class="hidden sm:block w-32 h-24 shrink-0">
+      <!-- 封面图（右侧，sm以上显示） -->
+      <div v-if="article.coverImage" class="hidden sm:block w-28 md:w-32 h-24 shrink-0">
         <img :src="article.coverImage" :alt="article.title" class="w-full h-full object-cover rounded-lg" />
       </div>
     </div>
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-/** 文章卡片组件 */
+/** 文章卡片组件 - 支持平板双列网格布局 */
 import type { Article } from '~/types'
 
 const props = defineProps<{

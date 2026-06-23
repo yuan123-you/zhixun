@@ -2,6 +2,7 @@ server:
   port: 8080
   servlet:
     context-path: /api
+  shutdown: graceful
 
 # Actuator 健康检查配置
 management:
@@ -18,13 +19,23 @@ spring:
     name: zhixun-server
   profiles:
     active: dev
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
-  # MySQL 数据源配置
+  # MySQL 数据源配置（主从读写分离）
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:zhixun}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:123456}
+    # 主库 - 写操作
+    master:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      jdbc-url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:zhixun}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      username: ${MYSQL_USER:root}
+      password: ${MYSQL_PASSWORD:123456}
+    # 从库 - 读操作
+    slave:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      jdbc-url: jdbc:mysql://${MYSQL_SLAVE_HOST:localhost}:${MYSQL_SLAVE_PORT:3306}/${MYSQL_SLAVE_DB:zhixun}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      username: ${MYSQL_SLAVE_USER:root}
+      password: ${MYSQL_SLAVE_PASSWORD:123456}
 
   # Redis 配置
   data:
@@ -120,6 +131,33 @@ jwt:
   token-prefix: Bearer
   # 令牌请求头
   header-string: Authorization
+
+# AES 加密配置
+aes:
+  secret-key: ${AES_SECRET_KEY:zhixun-aes-secret-key-2024-must-be-32b}
+
+# SSR 服务端通信配置
+ssr:
+  # SSR 服务端通信密钥：用于 Nuxt SSR 发起 POST 等状态变更请求时替代 CSRF Token
+  # 仅在服务端环境变量中配置，不暴露给浏览器端，防止 CSRF 攻击
+  # Nuxt SSR 请求时通过 X-SSR-Secret 请求头携带此密钥
+  secret: ${SSR_SECRET:}
+
+# OAuth 第三方登录配置
+oauth:
+  wechat:
+    app-id: ${WECHAT_APP_ID:}
+    app-secret: ${WECHAT_APP_SECRET:}
+    authorize-url: https://open.weixin.qq.com/connect/qrconnect
+    access-token-url: https://api.weixin.qq.com/sns/oauth2/access_token
+    user-info-url: https://api.weixin.qq.com/sns/userinfo
+  qq:
+    app-id: ${QQ_APP_ID:}
+    app-key: ${QQ_APP_KEY:}
+    authorize-url: https://graph.qq.com/oauth2.0/authorize
+    access-token-url: https://graph.qq.com/oauth2.0/token
+    open-id-url: https://graph.qq.com/oauth2.0/me
+    user-info-url: https://graph.qq.com/user/get_user_info
 
 # MinIO 配置
 minio:

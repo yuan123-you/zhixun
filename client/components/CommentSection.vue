@@ -26,15 +26,37 @@
       <NuxtLink to="/login" class="btn-primary text-sm">去登录</NuxtLink>
     </div>
 
+    <!-- 评论列表头部：总数 + 排序 -->
+    <div class="flex items-center justify-between">
+      <span class="text-sm text-gray-500 dark:text-gray-400">共 {{ total }} 条评论</span>
+      <div class="flex items-center space-x-1 text-sm">
+        <button
+          class="px-2 py-1 rounded transition-colors"
+          :class="sortBy === 'latest' ? 'text-primary font-medium' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
+          @click="changeSort('latest')"
+        >
+          最新
+        </button>
+        <span class="text-gray-300 dark:text-gray-600">|</span>
+        <button
+          class="px-2 py-1 rounded transition-colors"
+          :class="sortBy === 'hot' ? 'text-primary font-medium' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
+          @click="changeSort('hot')"
+        >
+          最热
+        </button>
+      </div>
+    </div>
+
     <!-- 评论列表 -->
     <div class="space-y-6">
       <div v-for="comment in comments" :key="comment.id" class="space-y-4">
         <!-- 一级评论 -->
-        <CommentItem :comment="comment" @reply="handleReply" @like="handleLike" />
+        <CommentItem :comment="comment" @reply="handleReply" @like="handleLike" @delete="handleDelete" @report="handleReport" />
 
         <!-- 二级回复 -->
         <div v-if="comment.replies?.length" class="ml-12 space-y-4">
-          <CommentItem v-for="reply in comment.replies" :key="reply.id" :comment="reply" @reply="handleReply" @like="handleLike" />
+          <CommentItem v-for="reply in comment.replies" :key="reply.id" :comment="reply" @reply="handleReply" @like="handleLike" @delete="handleDelete" @report="handleReport" />
         </div>
       </div>
     </div>
@@ -54,17 +76,29 @@ const props = defineProps<{
   articleId: number
   comments: Comment[]
   hasMore: boolean
+  total: number
 }>()
 
 const emit = defineEmits<{
   submit: [data: { content: string; parentId?: number }]
   loadMore: []
   like: [commentId: number]
+  delete: [commentId: number]
+  report: [data: { commentId: number; reason?: string }]
+  sortChange: [sort: string]
 }>()
 
 const userStore = useUserStore()
 const commentContent = ref('')
 const replyTo = ref<Comment | null>(null)
+const sortBy = ref('latest')
+
+// 切换排序
+const changeSort = (sort: string) => {
+  if (sortBy.value === sort) return
+  sortBy.value = sort
+  emit('sortChange', sort)
+}
 
 // 回复评论
 const handleReply = (comment: Comment) => {
@@ -92,6 +126,16 @@ const submitComment = () => {
 // 点赞评论
 const handleLike = (commentId: number) => {
   emit('like', commentId)
+}
+
+// 删除评论
+const handleDelete = (commentId: number) => {
+  emit('delete', commentId)
+}
+
+// 举报评论
+const handleReport = (data: { commentId: number; reason?: string }) => {
+  emit('report', data)
 }
 
 // 加载更多

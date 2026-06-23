@@ -1,4 +1,4 @@
-import type { Comment, PaginationParams, SearchResult } from '~/types'
+import type { Comment, PaginationParams, PageResult } from '~/types'
 
 /** 互动API */
 export const interactionApi = {
@@ -15,9 +15,9 @@ export const interactionApi = {
   },
 
   /** 获取评论列表 */
-  getComments: (articleId: number, params?: PaginationParams) => {
+  getComments: (articleId: number, params?: PaginationParams & { sort?: string }) => {
     const { get } = useApi()
-    return get<SearchResult<Comment>>(`/articles/${articleId}/comments`, params)
+    return get<PageResult<Comment>>(`/articles/${articleId}/comments`, params)
   },
 
   /** 发表评论 */
@@ -27,8 +27,20 @@ export const interactionApi = {
   },
 
   /** 删除评论 */
-  deleteComment: (articleId: number, commentId: number) => {
+  deleteComment: (commentId: number) => {
     const { delete: del } = useApi()
-    return del(`/articles/${articleId}/comments/${commentId}`)
+    return del(`/comments/${commentId}`)
+  },
+
+  /** 举报评论 */
+  reportComment: (commentId: number, data: { reason?: string }) => {
+    const { post } = useApi()
+    return post(`/comments/${commentId}/report`, data)
+  },
+
+  /** 点赞评论 */
+  likeComment: (commentId: number) => {
+    const { post } = useApi()
+    return post<{ isLiked: boolean; likeCount: number }>(`/comments/${commentId}/like`)
   },
 }

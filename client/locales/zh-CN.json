@@ -1,0 +1,76 @@
+{
+  "common": {
+    "search": "搜索",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "delete": "删除",
+    "edit": "编辑",
+    "publish": "发布",
+    "back": "返回",
+    "loadMore": "加载更多",
+    "noMore": "没有更多了"
+  },
+  "nav": {
+    "home": "首页",
+    "hot": "热门",
+    "recommend": "推荐",
+    "latest": "最新",
+    "follow": "关注",
+    "messages": "消息",
+    "profile": "我的",
+    "settings": "设置"
+  },
+  "article": {
+    "title": "标题",
+    "content": "内容",
+    "category": "分类",
+    "tags": "标签",
+    "author": "作者",
+    "views": "浏览量",
+    "likes": "点赞",
+    "favorites": "收藏",
+    "comments": "评论",
+    "share": "分享",
+    "publishTime": "发布时间"
+  },
+  "user": {
+    "username": "用户名",
+    "password": "密码",
+    "email": "邮箱",
+    "phone": "手机号",
+    "nickname": "昵称",
+    "avatar": "头像",
+    "bio": "简介",
+    "following": "关注",
+    "followers": "粉丝"
+  },
+  "search": {
+    "keyword": "搜索关键词",
+    "suggestions": "搜索建议",
+    "history": "搜索历史",
+    "hotSearch": "热门搜索",
+    "all": "综合",
+    "users": "用户",
+    "articles": "文章",
+    "images": "图片"
+  },
+  "settings": {
+    "recommendPrefs": "推荐偏好",
+    "notification": "通知设置",
+    "privacy": "隐私设置",
+    "display": "显示设置",
+    "theme": "主题",
+    "fontSize": "字体大小",
+    "language": "语言"
+  },
+  "error": {
+    "network": "网络错误",
+    "tokenExpired": "登录过期",
+    "forbidden": "权限不足",
+    "notFound": "内容不存在"
+  }
+}

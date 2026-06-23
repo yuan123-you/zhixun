@@ -9,9 +9,11 @@
     >
       <img :src="image.url" :alt="image.title" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
       <!-- 遮罩层 -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-        <div class="absolute bottom-0 left-0 right-0 p-2">
-          <p class="text-white text-xs line-clamp-1">{{ image.title }}</p>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="absolute bottom-0 left-0 right-0 p-2.5">
+          <p v-if="image.articleTitle" class="text-white text-xs font-medium line-clamp-1 mb-0.5">{{ image.articleTitle }}</p>
+          <p v-if="image.author" class="text-white/70 text-xs line-clamp-1">{{ image.author }}</p>
+          <p v-else class="text-white/70 text-xs line-clamp-1">{{ image.title }}</p>
         </div>
       </div>
     </div>
@@ -24,6 +26,8 @@
 interface ImageItem {
   url: string
   title: string
+  articleTitle?: string
+  author?: string
   [key: string]: any
 }
 

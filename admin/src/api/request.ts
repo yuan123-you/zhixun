@@ -16,6 +16,7 @@ const service = axios.create({
 /**
  * 请求拦截器
  * - 自动携带 Token
+ * - CSRF 防护：状态变更请求自动携带 X-XSRF-TOKEN 请求头
  */
 service.interceptors.request.use(
   (config) => {
@@ -23,6 +24,16 @@ service.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // CSRF 防护：对 POST/PUT/DELETE/PATCH 请求添加 X-XSRF-TOKEN 请求头
+    const method = config.method?.toUpperCase()
+    if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      const xsrfToken = getXsrfTokenFromCookie()
+      if (xsrfToken) {
+        config.headers['X-XSRF-TOKEN'] = xsrfToken
+      }
+    }
+
     return config
   },
   (error) => {
@@ -100,6 +111,20 @@ export function put<T = unknown>(url: string, data?: Record<string, unknown>): P
 /** DELETE 请求 */
 export function del<T = unknown>(url: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> {
   return request<T>({ method: 'DELETE', url, params })
+}
+
+/**
+ * 从浏览器 Cookie 中读取 XSRF-TOKEN
+ */
+function getXsrfTokenFromCookie(): string | null {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'XSRF-TOKEN') {
+      return decodeURIComponent(value)
+    }
+  }
+  return null
 }
 
 export default service

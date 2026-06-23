@@ -69,6 +69,7 @@
 <script setup lang="ts">
 /** 个人中心页 */
 import type { Article, Comment } from '~/types'
+import { userApi } from '~/api'
 
 definePageMeta({
   middleware: 'auth',
@@ -87,6 +88,9 @@ const tabs = [
 const activeTab = ref('published')
 const loading = ref(false)
 const hasMore = ref(true)
+const currentPage = ref(1)
+const pageSize = 10
+
 const publishedArticles = ref<Article[]>([])
 const collectedArticles = ref<Article[]>([])
 const likedArticles = ref<Article[]>([])
@@ -97,15 +101,60 @@ const historyArticles = ref<Article[]>([])
 const switchTab = (key: string) => {
   if (activeTab.value === key) return
   activeTab.value = key
-  // 加载对应Tab数据
+  hasMore.value = true
+  currentPage.value = 1
   loadTabData()
+}
+
+// 获取当前Tab对应的数据引用
+const getCurrentData = (): { articles?: Ref<Article[]>; comments?: Ref<Comment[]> } => {
+  switch (activeTab.value) {
+    case 'published': return { articles: publishedArticles }
+    case 'collected': return { articles: collectedArticles }
+    case 'liked': return { articles: likedArticles }
+    case 'comments': return { comments: myComments }
+    case 'history': return { articles: historyArticles }
+    default: return {}
+  }
 }
 
 // 加载Tab数据
 const loadTabData = async () => {
   loading.value = true
   try {
-    // TODO: 根据activeTab加载不同数据
+    const params = { page: currentPage.value, pageSize }
+    switch (activeTab.value) {
+      case 'published': {
+        const { data } = await userApi.getMyArticles(params)
+        publishedArticles.value = data.data.list || []
+        hasMore.value = publishedArticles.value.length < data.data.total
+        break
+      }
+      case 'collected': {
+        const { data } = await userApi.getMyCollections(params)
+        collectedArticles.value = data.data.list || []
+        hasMore.value = collectedArticles.value.length < data.data.total
+        break
+      }
+      case 'liked': {
+        const { data } = await userApi.getMyLikes(params)
+        likedArticles.value = data.data.list || []
+        hasMore.value = likedArticles.value.length < data.data.total
+        break
+      }
+      case 'comments': {
+        const { data } = await userApi.getMyComments(params)
+        myComments.value = data.data.list || []
+        hasMore.value = myComments.value.length < data.data.total
+        break
+      }
+      case 'history': {
+        const { data } = await userApi.getViewHistory(params)
+        historyArticles.value = data.data.list || []
+        hasMore.value = historyArticles.value.length < data.data.total
+        break
+      }
+    }
   } catch {
     // 加载失败处理
   } finally {
@@ -114,14 +163,60 @@ const loadTabData = async () => {
 }
 
 // 加载更多
-const loadMore = () => {
-  // 加载更多数据
+const loadMore = async () => {
+  if (loading.value || !hasMore.value) return
+  currentPage.value++
+  loading.value = true
+  try {
+    const params = { page: currentPage.value, pageSize }
+    switch (activeTab.value) {
+      case 'published': {
+        const { data } = await userApi.getMyArticles(params)
+        publishedArticles.value.push(...(data.data.list || []))
+        hasMore.value = publishedArticles.value.length < data.data.total
+        break
+      }
+      case 'collected': {
+        const { data } = await userApi.getMyCollections(params)
+        collectedArticles.value.push(...(data.data.list || []))
+        hasMore.value = collectedArticles.value.length < data.data.total
+        break
+      }
+      case 'liked': {
+        const { data } = await userApi.getMyLikes(params)
+        likedArticles.value.push(...(data.data.list || []))
+        hasMore.value = likedArticles.value.length < data.data.total
+        break
+      }
+      case 'comments': {
+        const { data } = await userApi.getMyComments(params)
+        myComments.value.push(...(data.data.list || []))
+        hasMore.value = myComments.value.length < data.data.total
+        break
+      }
+      case 'history': {
+        const { data } = await userApi.getViewHistory(params)
+        historyArticles.value.push(...(data.data.list || []))
+        hasMore.value = historyArticles.value.length < data.data.total
+        break
+      }
+    }
+  } catch {
+    currentPage.value--
+  } finally {
+    loading.value = false
+  }
 }
 
 // 格式化日期
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('zh-CN')
 }
+
+// 页面加载时获取默认Tab数据
+onMounted(() => {
+  loadTabData()
+})
 
 // 页面元信息
 useHead({

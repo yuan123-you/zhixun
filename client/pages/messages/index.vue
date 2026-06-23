@@ -65,6 +65,7 @@
 <script setup lang="ts">
 /** 私信页面：左侧会话列表 + 右侧聊天窗口 */
 import type { Conversation, Message } from '~/types'
+import { socialApi } from '~/api'
 
 definePageMeta({
   middleware: 'auth',
@@ -73,17 +74,51 @@ definePageMeta({
 const conversations = ref<Conversation[]>([])
 const activeConversation = ref<Conversation | null>(null)
 const messages = ref<Message[]>([])
+const loading = ref(false)
+const unreadTotal = ref(0)
+
+// 加载会话列表
+const loadConversations = async () => {
+  loading.value = true
+  try {
+    const { data } = await socialApi.getConversations()
+    conversations.value = data.data.list || []
+  } catch {
+    conversations.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载未读消息总数
+const loadUnreadCount = async () => {
+  try {
+    const { data } = await socialApi.getUnreadCount()
+    unreadTotal.value = data.data.count || 0
+  } catch {
+    unreadTotal.value = 0
+  }
+}
 
 // 选择会话
 const selectConversation = async (conv: Conversation) => {
   activeConversation.value = conv
   // 加载会话消息
   try {
-    const { socialApi } = await import('~/api')
-    const response = await socialApi.getMessages(conv.id)
-    messages.value = response.data.data.list || response.data.data.items || []
+    const { data } = await socialApi.getMessages(conv.id)
+    messages.value = data.data.list || data.data.items || []
   } catch {
     messages.value = []
+  }
+  // 标记该会话已读
+  if (conv.unreadCount > 0) {
+    try {
+      await socialApi.markConversationRead(conv.id)
+      conv.unreadCount = 0
+      loadUnreadCount()
+    } catch {
+      // 标记已读失败
+    }
   }
 }
 
@@ -91,13 +126,38 @@ const selectConversation = async (conv: Conversation) => {
 const sendMessage = async (content: string) => {
   if (!activeConversation.value) return
   try {
-    const { socialApi } = await import('~/api')
-    const response = await socialApi.sendMessage(activeConversation.value.id, { content })
-    messages.value.push(response.data.data)
+    const { data } = await socialApi.sendMessage(activeConversation.value.id, { content })
+    messages.value.push(data.data)
+    // 更新会话列表中最后一条消息
+    const conv = conversations.value.find((c) => c.id === activeConversation.value!.id)
+    if (conv) {
+      conv.lastMessage = data.data
+      conv.updatedAt = data.data.createdAt
+    }
   } catch {
     // 发送失败处理
   }
 }
+
+// WebSocket集成：监听新消息，更新会话列表
+if (import.meta.client) {
+  const { $ws } = useNuxtApp()
+  watch(
+    () => conversations.value,
+    () => {
+      // 会话列表变化时更新未读总数
+      const total = conversations.value.reduce((sum, c) => sum + c.unreadCount, 0)
+      unreadTotal.value = total
+    },
+    { deep: true }
+  )
+}
+
+// 页面加载时获取数据
+onMounted(async () => {
+  await loadConversations()
+  await loadUnreadCount()
+})
 
 // 格式化时间
 const formatTime = (time: string) => {

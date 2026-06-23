@@ -21,4 +21,7 @@ public class TagVO {
 
     /** 创建时间 */
     private LocalDateTime createdAt;
+
+    /** 当前用户是否已关注 */
+    private Boolean isFollowed;
 }

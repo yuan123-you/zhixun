@@ -9,6 +9,7 @@ import com.zhixun.common.result.PageResult;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.config.RabbitMQConfig;
+import com.zhixun.config.Slave;
 import com.zhixun.dto.article.ArticleCreateRequest;
 import com.zhixun.dto.article.ArticleQueryRequest;
 import com.zhixun.dto.article.ArticleStatusRequest;
@@ -28,7 +29,9 @@ import com.zhixun.mapper.ArticleViewHistoryMapper;
 import com.zhixun.mapper.CategoryMapper;
 import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
+import com.zhixun.security.HtmlWhitelistFilter;
 import com.zhixun.service.ArticleService;
+import com.zhixun.service.FeedService;
 import com.zhixun.service.OpenSearchSyncService;
 import com.zhixun.vo.ArticleDetailVO;
 import com.zhixun.vo.ArticleVO;
@@ -40,14 +43,17 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.HtmlUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -70,11 +76,18 @@ public class ArticleServiceImpl implements ArticleService {
     private final SensitiveWordUtil sensitiveWordUtil;
     private final SecurityUtil securityUtil;
     private final OpenSearchSyncService openSearchSyncService;
+    private final FeedService feedService;
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
 
     /** 浏览量 Redis Key 前缀 */
     private static final String VIEW_COUNT_PREFIX = "article:view:";
+
+    /** 相关推荐 Redis Key 前缀 */
+    private static final String RELATED_ARTICLES_PREFIX = "article:related:";
+
+    /** 相关推荐缓存时间（30分钟） */
+    private static final long RELATED_CACHE_MINUTES = 30;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -83,7 +96,9 @@ public class ArticleServiceImpl implements ArticleService {
         article.setAuthorId(userId);
         article.setCategoryId(request.getCategoryId());
         article.setTitle(sanitize(request.getTitle()));
-        article.setContent(request.getContent());
+        // 先过滤敏感词，再做HTML白名单过滤
+        String filteredContent = sensitiveWordUtil.filter(request.getContent());
+        article.setContent(HtmlWhitelistFilter.filterRichText(filteredContent));
         article.setSummary(sanitize(request.getSummary()));
         article.setCoverImage(request.getCoverImage());
         article.setViewCount(0L);
@@ -130,6 +145,8 @@ public class ArticleServiceImpl implements ArticleService {
         // 同步到 OpenSearch（仅已发布状态才同步）
         if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
             openSearchSyncService.syncArticle(article.getId());
+            // Fan-out on write：推送到粉丝时间线
+            feedService.fanoutOnPublish(userId, article.getId(), article.getPublishAt());
         }
 
         return article.getId();
@@ -147,7 +164,9 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 更新文章内容
         article.setTitle(sanitize(request.getTitle()));
-        article.setContent(request.getContent());
+        // 先过滤敏感词，再做HTML白名单过滤
+        String filteredContent = sensitiveWordUtil.filter(request.getContent());
+        article.setContent(HtmlWhitelistFilter.filterRichText(filteredContent));
         article.setSummary(sanitize(request.getSummary()));
         article.setCategoryId(request.getCategoryId());
         article.setCoverImage(request.getCoverImage());
@@ -173,6 +192,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    @Slave
     public ArticleDetailVO getArticleDetail(Long articleId, Long currentUserId) {
         Article article = getArticleOrThrow(articleId);
 
@@ -201,6 +221,7 @@ public class ArticleServiceImpl implements ArticleService {
         vo.setLikeCount(article.getLikeCount());
         vo.setCommentCount(article.getCommentCount());
         vo.setCollectCount(article.getCollectCount());
+        vo.setShareCount(article.getShareCount());
         vo.setRejectReason(article.getRejectReason());
         vo.setCategoryId(article.getCategoryId());
         vo.setCreatedAt(article.getCreatedAt());
@@ -240,6 +261,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getArticleList(ArticleQueryRequest request) {
         // 构建查询条件
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
@@ -406,6 +428,8 @@ public class ArticleServiceImpl implements ArticleService {
         if (targetStatus == ArticleStatusEnum.PUBLISHED) {
             openSearchSyncService.syncArticle(articleId);
             openSearchSyncService.syncImagesByArticle(articleId);
+            // Fan-out on write：推送到粉丝时间线
+            feedService.fanoutOnPublish(article.getAuthorId(), articleId, article.getPublishAt());
         } else {
             // 非发布状态从索引中删除
             openSearchSyncService.deleteArticle(articleId);
@@ -413,7 +437,168 @@ public class ArticleServiceImpl implements ArticleService {
         }
     }
 
+    @Override
+    public List<ArticleVO> getRelatedArticles(Long articleId, Integer limit) {
+        if (limit == null || limit <= 0) {
+            limit = 6;
+        }
+
+        // 尝试从缓存获取
+        String cacheKey = RELATED_ARTICLES_PREFIX + articleId;
+        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cachedIds != null && !cachedIds.isEmpty()) {
+            List<Long> articleIds = parseRelatedIds(cachedIds);
+            if (!articleIds.isEmpty()) {
+                List<Article> articles = articleMapper.selectBatchIds(articleIds);
+                // 保持缓存中的顺序
+                Map<Long, Article> articleMap = articles.stream()
+                        .collect(Collectors.toMap(Article::getId, a -> a));
+                List<Article> ordered = articleIds.stream()
+                        .map(articleMap::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+                return convertToVOList(ordered);
+            }
+        }
+
+        // 缓存未命中，查询数据库
+        Article currentArticle = articleMapper.selectById(articleId);
+        if (currentArticle == null || currentArticle.getDeletedAt() != null) {
+            return Collections.emptyList();
+        }
+
+        // 获取当前文章的标签
+        List<ArticleTag> articleTags = articleTagMapper.selectList(
+                new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleId));
+        Set<Long> currentTagIds = articleTags.stream()
+                .map(ArticleTag::getTagId)
+                .collect(Collectors.toSet());
+
+        // 查询同标签的文章，统计每个文章匹配的标签数
+        Map<Long, Long> tagMatchCount = new HashMap<>();
+        if (!currentTagIds.isEmpty()) {
+            List<ArticleTag> relatedTags = articleTagMapper.selectList(
+                    new LambdaQueryWrapper<ArticleTag>()
+                            .in(ArticleTag::getTagId, currentTagIds)
+                            .ne(ArticleTag::getArticleId, articleId));
+            tagMatchCount = relatedTags.stream()
+                    .collect(Collectors.groupingBy(ArticleTag::getArticleId, Collectors.counting()));
+        }
+
+        // 构建查询：同标签或同分类的已发布文章
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .ne(Article::getId, articleId);
+
+        Set<Long> tagMatchedIds = tagMatchCount.keySet();
+        boolean hasTagMatches = !tagMatchedIds.isEmpty();
+        boolean hasCategory = currentArticle.getCategoryId() != null;
+
+        if (hasTagMatches && hasCategory) {
+            wrapper.and(w -> w.in(Article::getId, tagMatchedIds)
+                    .or().eq(Article::getCategoryId, currentArticle.getCategoryId()));
+        } else if (hasTagMatches) {
+            wrapper.in(Article::getId, tagMatchedIds);
+        } else if (hasCategory) {
+            wrapper.eq(Article::getCategoryId, currentArticle.getCategoryId());
+        } else {
+            // 无标签无分类，无法推荐
+            return Collections.emptyList();
+        }
+
+        wrapper.orderByDesc(Article::getViewCount)
+                .last("LIMIT " + limit * 3);
+
+        List<Article> candidates = articleMapper.selectList(wrapper);
+
+        // 按匹配标签数降序、浏览量降序排序
+        final Map<Long, Long> finalTagMatchCount = tagMatchCount;
+        candidates.sort(Comparator
+                .comparing((Article a) -> finalTagMatchCount.getOrDefault(a.getId(), 0L), Comparator.reverseOrder())
+                .thenComparing(Article::getViewCount, Comparator.nullsLast(Comparator.reverseOrder())));
+
+        List<Article> result = candidates.stream()
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        // 缓存结果（文章ID列表）
+        List<Long> resultIds = result.stream()
+                .map(Article::getId)
+                .collect(Collectors.toList());
+        if (!resultIds.isEmpty()) {
+            String idsStr = resultIds.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, RELATED_CACHE_MINUTES, TimeUnit.MINUTES);
+        }
+
+        return convertToVOList(result);
+    }
+
+    @Override
+    public void incrementShareCount(Long articleId) {
+        // 校验文章是否存在
+        getArticleOrThrow(articleId);
+        // 使用 SQL 增量更新分享次数
+        articleMapper.update(null, new LambdaUpdateWrapper<Article>()
+                .eq(Article::getId, articleId)
+                .setSql("share_count = share_count + 1"));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void publishScheduledArticles() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 查询所有 status=PENDING 且 publishAt <= now() 且 publishAt IS NOT NULL 的文章
+        List<Article> articles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>()
+                        .eq(Article::getStatus, ArticleStatusEnum.PENDING)
+                        .isNotNull(Article::getPublishAt)
+                        .le(Article::getPublishAt, now)
+        );
+
+        if (articles.isEmpty()) {
+            return;
+        }
+
+        log.info("定时发布：找到 {} 篇到期文章", articles.size());
+
+        for (Article article : articles) {
+            try {
+                // 更新状态为已发布
+                article.setStatus(ArticleStatusEnum.PUBLISHED);
+                articleMapper.updateById(article);
+
+                // 同步到 OpenSearch
+                openSearchSyncService.syncArticle(article.getId());
+
+                // 推送到粉丝时间线
+                feedService.fanoutOnPublish(article.getAuthorId(), article.getId(), article.getPublishAt());
+
+                // 清除相关 Redis 缓存
+                clearArticleCache(article.getId());
+
+                log.info("定时发布：文章 {} 已发布", article.getId());
+            } catch (Exception e) {
+                log.error("定时发布：文章 {} 发布失败: {}", article.getId(), e.getMessage());
+            }
+        }
+    }
+
     // ========== 内部方法 ==========
+
+    /**
+     * 清除文章相关 Redis 缓存
+     */
+    private void clearArticleCache(Long articleId) {
+        try {
+            stringRedisTemplate.delete(VIEW_COUNT_PREFIX + articleId);
+            stringRedisTemplate.delete(RELATED_ARTICLES_PREFIX + articleId);
+        } catch (Exception e) {
+            log.warn("清除文章 {} 缓存失败: {}", articleId, e.getMessage());
+        }
+    }
 
     /**
      * 获取文章或抛出异常
@@ -430,6 +615,21 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
+     * 解析缓存的相关推荐文章ID字符串
+     */
+    private List<Long> parseRelatedIds(String idsStr) {
+        List<Long> ids = new ArrayList<>();
+        for (String id : idsStr.split(",")) {
+            try {
+                ids.add(Long.parseLong(id.trim()));
+            } catch (NumberFormatException e) {
+                log.warn("解析相关推荐文章ID失败: {}", id);
+            }
+        }
+        return ids;
+    }
+
+    /**
      * 敏感词检测
      */
     private boolean checkSensitiveWord(String title, String content) {
@@ -438,11 +638,13 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * HTML 转义，防止 XSS 攻击
+     * XSS 防护过滤
+     * - 标题/摘要等纯文本字段：HTML 转义
+     * - 富文本内容字段：由调用处单独使用 HtmlWhitelistFilter.filterRichText() 白名单过滤
      */
     private String sanitize(String input) {
         if (input == null) return null;
-        return HtmlUtils.htmlEscape(input, "UTF-8");
+        return HtmlWhitelistFilter.escapePlainText(input);
     }
 
     /**

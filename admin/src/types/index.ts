@@ -253,10 +253,16 @@ export interface SystemSettings {
 /** 轮播图 */
 export interface Banner {
   id: number
-  imageUrl: string
-  link: string
   title: string
-  sort: number
+  imageUrl: string
+  linkUrl: string
+  linkType: number
+  sortOrder: number
+  startTime: string
+  endTime: string
+  status: number
+  createdAt: string
+  updatedAt: string
 }
 
 /** 公告 */
@@ -264,10 +270,13 @@ export interface Announcement {
   id: number
   title: string
   content: string
-  type: 'info' | 'warning' | 'success'
+  type: number
+  isTop: number
   startTime: string
   endTime: string
-  enabled: boolean
+  status: number
+  createdAt: string
+  updatedAt: string
 }
 
 /** 文件上传响应 */

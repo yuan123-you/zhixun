@@ -157,3 +157,352 @@
     padding-top: env(safe-area-inset-top);
   }
 }
+
+/* ==================== 平板端适配 ==================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* 两栏布局优化 */
+  .tablet-two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  /* 侧边栏可折叠 */
+  .tablet-sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-height);
+    bottom: 0;
+    width: 260px;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    background: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border);
+    overflow-y: auto;
+  }
+
+  .tablet-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .tablet-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    top: var(--header-height);
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 39;
+  }
+
+  .tablet-sidebar.is-open + .tablet-sidebar-overlay {
+    display: block;
+  }
+
+  /* 内容区域宽度自适应 */
+  .tablet-content {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* 卡片在平板上的间距调整 */
+  .card {
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* ==================== 触摸优化 ==================== */
+
+/* 触摸友好工具类 */
+@layer utilities {
+  /* 最小触摸目标 44px（Apple HIG 推荐） */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 禁用移动端点击高亮 */
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+  }
+
+  /* 触摸反馈 - 按下态 */
+  .touch-feedback {
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+
+  .touch-feedback:active {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+
+  /* 触摸设备上禁用 hover 效果 */
+  .touch-hover-none {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* 触摸设备（粗指针）全局优化 */
+@media (pointer: coarse) {
+  /* 增大可点击区域 */
+  .btn,
+  button,
+  a,
+  [role="button"],
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 按钮间距增大 */
+  .btn-group,
+  .flex > .btn,
+  .flex > button {
+    gap: 12px;
+  }
+
+  /* 禁止交互元素文字选中 */
+  .btn,
+  button,
+  a,
+  nav,
+  [role="button"],
+  .touch-target {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* 触摸反馈 - 按下态背景色变化 */
+  .btn:active,
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+
+  .btn-primary:active {
+    background-color: var(--color-primary-dark);
+  }
+
+  .btn-secondary:active {
+    background-color: #d1d5db;
+  }
+
+  .btn-ghost:active {
+    background-color: #f3f4f6;
+  }
+
+  /* 暗色模式触摸反馈 */
+  .dark .btn-secondary:active {
+    background-color: #4b5563;
+  }
+
+  .dark .btn-ghost:active {
+    background-color: #374151;
+  }
+
+  /* 列表项触摸反馈 */
+  .card:active,
+  .hover\:bg-gray-50:active {
+    background-color: #f9fafb;
+  }
+
+  .dark .card:active,
+  .dark .hover\:bg-gray-700\/50:active {
+    background-color: #374151;
+  }
+
+  /* 禁用触摸设备上的 hover 效果 */
+  .hover\:shadow-md:hover,
+  .hover\:bg-gray-50:hover,
+  .hover\:bg-gray-100:hover,
+  .hover\:bg-gray-700:hover,
+  .hover\:text-primary:hover,
+  .hover\:text-gray-700:hover,
+  .hover\:text-gray-300:hover {
+    /* 触摸设备上 hover 效果不生效，避免"粘滞" */
+  }
+}
+
+/* 触摸设备上禁用 hover（使用 @media (hover: none) 更精确） */
+@media (hover: none) {
+  .card:hover {
+    box-shadow: none;
+  }
+
+  .btn:hover,
+  button:hover,
+  a:hover,
+  [role="button"]:hover {
+    /* 重置 hover 样式，避免触摸后粘滞 */
+    transform: none;
+    opacity: 1;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary);
+  }
+
+  .btn-secondary:hover {
+    background-color: #f3f4f6;
+  }
+
+  .dark .btn-secondary:hover {
+    background-color: #374151;
+  }
+
+  .btn-ghost:hover {
+    background-color: transparent;
+  }
+
+  .dark .btn-ghost:hover {
+    background-color: transparent;
+  }
+
+  /* 导航链接 hover 重置 */
+  .hover\:bg-gray-100:hover,
+  .hover\:bg-gray-50:hover {
+    background-color: transparent;
+  }
+
+  .dark .hover\:bg-gray-700:hover {
+    background-color: transparent;
+  }
+}
+
+/* ==================== 横竖屏切换 ==================== */
+
+/* 竖屏样式 */
+@media (orientation: portrait) {
+  .orientation-sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-height);
+    bottom: 0;
+    width: 260px;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .orientation-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .orientation-content {
+    max-width: 100%;
+    margin-left: 0;
+  }
+
+  /* 竖屏时内容区域变窄 */
+  .orientation-main {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* 横屏样式 */
+@media (orientation: landscape) {
+  /* 横屏时侧边栏自动展开 */
+  .orientation-sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-height);
+    bottom: 0;
+    width: 240px;
+    z-index: 40;
+    transform: translateX(0);
+    background: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border);
+    overflow-y: auto;
+  }
+
+  /* 横屏时内容区域变宽，留出侧边栏空间 */
+  .orientation-content {
+    margin-left: 240px;
+    max-width: calc(100% - 240px);
+  }
+
+  /* 横屏时主内容区更宽 */
+  .orientation-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  /* 横屏时两栏布局 */
+  .orientation-two-column {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* 横屏 + 平板组合优化 */
+@media (orientation: landscape) and (min-width: 768px) and (max-width: 1024px) {
+  .orientation-sidebar {
+    width: 200px;
+  }
+
+  .orientation-content {
+    margin-left: 200px;
+    max-width: calc(100% - 200px);
+  }
+}
+
+/* ==================== 方向锁定提示 ==================== */
+.orientation-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+.orientation-prompt-card {
+  background: var(--color-bg-secondary);
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+.orientation-prompt-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+}
+
+.orientation-prompt-icon svg {
+  animation: rotatePhone 2s ease-in-out infinite;
+}
+
+@keyframes rotatePhone {
+  0%, 20% { transform: rotate(0deg); }
+  50%, 70% { transform: rotate(90deg); }
+  100% { transform: rotate(0deg); }
+}

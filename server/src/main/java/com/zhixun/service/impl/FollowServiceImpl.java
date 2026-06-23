@@ -1,22 +1,27 @@
 package com.zhixun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
+import com.zhixun.config.Slave;
 import com.zhixun.entity.User;
 import com.zhixun.entity.UserFollow;
+import com.zhixun.enums.NotificationTypeEnum;
 import com.zhixun.mapper.UserFollowMapper;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.service.FollowService;
+import com.zhixun.service.NotificationService;
+import com.zhixun.service.OnlineStatusService;
 import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +37,8 @@ public class FollowServiceImpl implements FollowService {
 
     private final UserFollowMapper userFollowMapper;
     private final UserMapper userMapper;
+    private final OnlineStatusService onlineStatusService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -65,6 +72,9 @@ public class FollowServiceImpl implements FollowService {
             follow.setFollowingId(targetUserId);
             userFollowMapper.insert(follow);
             followed = true;
+
+            // 发送关注通知
+            sendFollowNotification(userId, targetUser);
         }
 
         // 获取关注数和粉丝数
@@ -81,7 +91,8 @@ public class FollowServiceImpl implements FollowService {
     }
 
     @Override
-    public PageResult<UserVO> getFollowing(Long userId, Integer page, Integer pageSize) {
+    @Slave
+    public PageResult<UserVO> getFollowing(Long userId, Integer page, Integer pageSize, String keyword) {
         // 查询关注列表
         LambdaQueryWrapper<UserFollow> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserFollow::getFollowerId, userId)
@@ -95,20 +106,29 @@ public class FollowServiceImpl implements FollowService {
                 .collect(Collectors.toList());
 
         if (followUserIds.isEmpty()) {
-            return new PageResult<>(java.util.Collections.emptyList(), 0L, page, pageSize);
+            return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
         }
 
-        // 批量查询用户信息
-        List<User> users = userMapper.selectBatchIds(followUserIds);
-        List<UserVO> voList = users.stream()
-                .map(this::buildUserVO)
-                .collect(Collectors.toList());
+        // 批量查询用户信息（支持关键词搜索）
+        LambdaQueryWrapper<User> userWrapper = new LambdaQueryWrapper<>();
+        userWrapper.in(User::getId, followUserIds);
+        if (StringUtils.hasText(keyword)) {
+            userWrapper.and(w -> w.like(User::getUsername, keyword)
+                    .or().like(User::getNickname, keyword));
+        }
+        List<User> users = userMapper.selectList(userWrapper);
 
-        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+        // 构建带互关和在线状态的 VO 列表
+        List<UserVO> voList = buildUserVOListWithStatus(users, userId);
+
+        // 关键词搜索时总数取过滤后的数量
+        long total = StringUtils.hasText(keyword) ? users.size() : result.getTotal();
+        return new PageResult<>(voList, total, page, pageSize);
     }
 
     @Override
-    public PageResult<UserVO> getFollowers(Long userId, Integer page, Integer pageSize) {
+    @Slave
+    public PageResult<UserVO> getFollowers(Long userId, Integer page, Integer pageSize, String keyword) {
         // 查询粉丝列表
         LambdaQueryWrapper<UserFollow> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserFollow::getFollowingId, userId)
@@ -122,19 +142,28 @@ public class FollowServiceImpl implements FollowService {
                 .collect(Collectors.toList());
 
         if (followerUserIds.isEmpty()) {
-            return new PageResult<>(java.util.Collections.emptyList(), 0L, page, pageSize);
+            return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
         }
 
-        // 批量查询用户信息
-        List<User> users = userMapper.selectBatchIds(followerUserIds);
-        List<UserVO> voList = users.stream()
-                .map(this::buildUserVO)
-                .collect(Collectors.toList());
+        // 批量查询用户信息（支持关键词搜索）
+        LambdaQueryWrapper<User> userWrapper = new LambdaQueryWrapper<>();
+        userWrapper.in(User::getId, followerUserIds);
+        if (StringUtils.hasText(keyword)) {
+            userWrapper.and(w -> w.like(User::getUsername, keyword)
+                    .or().like(User::getNickname, keyword));
+        }
+        List<User> users = userMapper.selectList(userWrapper);
 
-        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+        // 构建带互关和在线状态的 VO 列表
+        List<UserVO> voList = buildUserVOListWithStatus(users, userId);
+
+        // 关键词搜索时总数取过滤后的数量
+        long total = StringUtils.hasText(keyword) ? users.size() : result.getTotal();
+        return new PageResult<>(voList, total, page, pageSize);
     }
 
     @Override
+    @Slave
     public boolean isFollowed(Long userId, Long targetUserId) {
         LambdaQueryWrapper<UserFollow> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserFollow::getFollowerId, userId)
@@ -143,6 +172,50 @@ public class FollowServiceImpl implements FollowService {
     }
 
     // ========== 内部方法 ==========
+
+    /**
+     * 构建用户 VO 列表（含互关状态和在线状态）
+     */
+    private List<UserVO> buildUserVOListWithStatus(List<User> users, Long currentUserId) {
+        if (users.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> userIds = users.stream().map(User::getId).collect(Collectors.toList());
+
+        // 批量查询当前用户是否关注了这些用户（用于判断互关）
+        LambdaQueryWrapper<UserFollow> followingWrapper = new LambdaQueryWrapper<>();
+        followingWrapper.eq(UserFollow::getFollowerId, currentUserId)
+                .in(UserFollow::getFollowingId, userIds);
+        List<UserFollow> followingList = userFollowMapper.selectList(followingWrapper);
+        // 当前用户关注的用户ID集合
+        Map<Long, Boolean> currentFollowingMap = followingList.stream()
+                .collect(Collectors.toMap(UserFollow::getFollowingId, f -> true, (a, b) -> a));
+
+        // 批量查询这些用户是否关注了当前用户（用于判断互关）
+        LambdaQueryWrapper<UserFollow> followerWrapper = new LambdaQueryWrapper<>();
+        followerWrapper.eq(UserFollow::getFollowingId, currentUserId)
+                .in(UserFollow::getFollowerId, userIds);
+        List<UserFollow> followerList = userFollowMapper.selectList(followerWrapper);
+        // 关注了当前用户的用户ID集合
+        Map<Long, Boolean> followedByMap = followerList.stream()
+                .collect(Collectors.toMap(UserFollow::getFollowerId, f -> true, (a, b) -> a));
+
+        return users.stream().map(user -> {
+            UserVO vo = buildUserVO(user);
+
+            // 判断互关：当前用户关注了对方，且对方也关注了当前用户
+            boolean currentFollowsTarget = currentFollowingMap.getOrDefault(user.getId(), false);
+            boolean targetFollowsCurrent = followedByMap.getOrDefault(user.getId(), false);
+            vo.setIsMutualFollow(currentFollowsTarget && targetFollowsCurrent);
+
+            // 获取在线状态（currentUserId 查看自己不受隐私限制）
+            Boolean online = onlineStatusService.getOnlineStatus(user.getId(), currentUserId);
+            vo.setIsOnline(online);
+
+            return vo;
+        }).collect(Collectors.toList());
+    }
 
     /**
      * 构建用户 VO（脱敏）
@@ -157,5 +230,27 @@ public class FollowServiceImpl implements FollowService {
         vo.setStatus(user.getStatus());
         vo.setCreatedAt(user.getCreatedAt());
         return vo;
+    }
+
+    /**
+     * 发送关注通知
+     */
+    private void sendFollowNotification(Long followerId, User targetUser) {
+        try {
+            User follower = userMapper.selectById(followerId);
+            String followerName = follower != null ? follower.getNickname() : "用户";
+            String title = "新粉丝";
+            String content = followerName + " 关注了你";
+            notificationService.createNotification(
+                    targetUser.getId(),
+                    NotificationTypeEnum.FOLLOW.getValue(),
+                    title,
+                    content,
+                    followerId,
+                    "follow:" + followerId
+            );
+        } catch (Exception e) {
+            log.warn("发送关注通知失败: followerId={}, targetUserId={}, error={}", followerId, targetUser.getId(), e.getMessage());
+        }
     }
 }

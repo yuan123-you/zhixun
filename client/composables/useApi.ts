@@ -1,6 +1,14 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiResponse } from '~/types'
 
+/** Token即将过期的提前量（5分钟，单位毫秒） */
+const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000
+
+/** 全局刷新锁：防止多个 useApi() 实例并发刷新 */
+let globalIsRefreshing = false
+let globalRefreshPromise: Promise<string> | null = null
+const globalPendingRequests: Array<(token: string) => void> = []
+
 /** API请求封装组合式函数 */
 export const useApi = () => {
   const config = useRuntimeConfig()
@@ -20,13 +28,94 @@ export const useApi = () => {
     },
   })
 
-  // 请求拦截器：自动携带Token
+  // 判断Token是否即将过期
+  const isTokenExpiringSoon = (): boolean => {
+    const expiresAt = userStore.tokenExpiresAt
+    if (!expiresAt) return false
+    return Date.now() >= expiresAt - TOKEN_REFRESH_THRESHOLD
+  }
+
+  // 判断Token是否已过期
+  const isTokenExpired = (): boolean => {
+    const expiresAt = userStore.tokenExpiresAt
+    if (!expiresAt) return false
+    return Date.now() >= expiresAt
+  }
+
+  // 全局Token刷新：使用Promise防止并发刷新
+  const refreshAccessToken = async (): Promise<string> => {
+    const currentRefreshToken = userStore.refreshToken
+    if (!currentRefreshToken) {
+      userStore.logout()
+      navigateTo('/login')
+      throw new Error('登录已过期，请重新登录')
+    }
+
+    // 如果已经在刷新中，复用同一个Promise
+    if (globalIsRefreshing && globalRefreshPromise) {
+      return globalRefreshPromise
+    }
+
+    globalIsRefreshing = true
+    globalRefreshPromise = (async () => {
+      try {
+        const response = await axios.post(`${baseURL}/auth/refresh`, {
+          refreshToken: currentRefreshToken,
+        })
+        const { accessToken, refreshToken: newRefreshToken, expiresIn } = response.data.data
+        userStore.setToken(accessToken, newRefreshToken, expiresIn)
+
+        // 重试所有挂起的请求
+        globalPendingRequests.forEach((callback) => callback(accessToken))
+        globalPendingRequests.length = 0
+
+        return accessToken
+      } catch {
+        userStore.logout()
+        navigateTo('/login')
+        throw new Error('登录已过期，请重新登录')
+      } finally {
+        globalIsRefreshing = false
+        globalRefreshPromise = null
+      }
+    })()
+
+    return globalRefreshPromise
+  }
+
+  // 请求拦截器：自动携带Token和CSRF Token，Token即将过期时主动刷新
   instance.interceptors.request.use(
-    (requestConfig) => {
+    async (requestConfig) => {
       const token = userStore.token
-      if (token) {
+
+      // 如果有Token且即将过期（但未完全过期），先刷新Token再发送请求
+      if (token && isTokenExpiringSoon() && !isTokenExpired()) {
+        try {
+          const newToken = await refreshAccessToken()
+          requestConfig.headers.Authorization = `Bearer ${newToken}`
+        } catch {
+          // 刷新失败，仍然使用旧Token发送请求，由响应拦截器处理401
+          requestConfig.headers.Authorization = `Bearer ${token}`
+        }
+      } else if (token) {
         requestConfig.headers.Authorization = `Bearer ${token}`
       }
+
+      // SSR 请求标识：服务端渲染时无法携带浏览器 Cookie，需要告知后端跳过 CSRF 校验
+      if (import.meta.server) {
+        requestConfig.headers['X-SSR-Request'] = 'true'
+      }
+
+      // CSRF 防护：从 Cookie 中读取 XSRF-TOKEN 并添加到请求头
+      // 仅对状态变更请求（POST/PUT/DELETE/PATCH）添加 CSRF Token
+      const method = requestConfig.method?.toUpperCase()
+      if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+        const xsrfToken = getXsrfTokenFromCookie()
+        if (xsrfToken) {
+          requestConfig.headers['X-XSRF-TOKEN'] = xsrfToken
+        }
+      }
+
       return requestConfig
     },
     (error) => {
@@ -34,7 +123,7 @@ export const useApi = () => {
     }
   )
 
-  // 响应拦截器：统一错误处理
+  // 响应拦截器：统一错误处理，401时自动刷新Token并重试
   instance.interceptors.response.use(
     (response: AxiosResponse<ApiResponse>) => {
       const { data } = response
@@ -83,54 +172,40 @@ export const useApi = () => {
     }
   )
 
-  // Token过期自动刷新
-  let isRefreshing = false
-  let pendingRequests: Array<(token: string) => void> = []
-
+  // 401响应时Token刷新：使用全局刷新锁防止并发
   const handleTokenRefresh = async (requestConfig: AxiosRequestConfig) => {
-    const refreshToken = userStore.refreshToken
-    if (!refreshToken) {
+    const currentRefreshToken = userStore.refreshToken
+    if (!currentRefreshToken) {
       userStore.logout()
       navigateTo('/login')
       return Promise.reject(new Error('登录已过期，请重新登录'))
     }
 
-    if (!isRefreshing) {
-      isRefreshing = true
-      try {
-        const response = await axios.post(`${baseURL}/auth/refresh`, {
-          refreshToken,
+    // 如果已经在刷新中，将请求加入等待队列
+    if (globalIsRefreshing && globalRefreshPromise) {
+      return new Promise((resolve, reject) => {
+        globalPendingRequests.push((newToken: string) => {
+          if (requestConfig.headers) {
+            requestConfig.headers.Authorization = `Bearer ${newToken}`
+          }
+          resolve(instance(requestConfig))
         })
-        const { token: newToken, refreshToken: newRefreshToken } = response.data.data
-        userStore.setToken(newToken, newRefreshToken)
-
-        // 重试所有挂起的请求
-        pendingRequests.forEach((callback) => callback(newToken))
-        pendingRequests = []
-
-        // 重试当前请求
-        if (requestConfig.headers) {
-          requestConfig.headers.Authorization = `Bearer ${newToken}`
-        }
-        return instance(requestConfig)
-      } catch {
-        userStore.logout()
-        navigateTo('/login')
-        return Promise.reject(new Error('登录已过期，请重新登录'))
-      } finally {
-        isRefreshing = false
-      }
+        globalRefreshPromise!.catch(() => {
+          reject(new Error('登录已过期，请重新登录'))
+        })
+      })
     }
 
-    // 正在刷新Token，将请求加入队列
-    return new Promise((resolve) => {
-      pendingRequests.push((token: string) => {
-        if (requestConfig.headers) {
-          requestConfig.headers.Authorization = `Bearer ${token}`
-        }
-        resolve(instance(requestConfig))
-      })
-    })
+    // 发起刷新
+    try {
+      const newToken = await refreshAccessToken()
+      if (requestConfig.headers) {
+        requestConfig.headers.Authorization = `Bearer ${newToken}`
+      }
+      return instance(requestConfig)
+    } catch {
+      return Promise.reject(new Error('登录已过期，请重新登录'))
+    }
   }
 
   // 封装请求方法
@@ -157,4 +232,19 @@ export const useApi = () => {
     put,
     delete: del,
   }
+}
+
+/**
+ * 从浏览器 Cookie 中读取 XSRF-TOKEN
+ */
+function getXsrfTokenFromCookie(): string | null {
+  if (!import.meta.client) return null
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'XSRF-TOKEN') {
+      return decodeURIComponent(value)
+    }
+  }
+  return null
 }

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
+import com.zhixun.config.Slave;
 import com.zhixun.entity.Article;
 import com.zhixun.entity.Collect;
 import com.zhixun.mapper.ArticleMapper;
@@ -112,6 +113,7 @@ public class CollectServiceImpl implements CollectService {
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getUserCollects(Long userId, String groupName, Integer page, Integer pageSize) {
         // 查询用户收藏记录
         LambdaQueryWrapper<Collect> collectWrapper = new LambdaQueryWrapper<>();
@@ -137,6 +139,7 @@ public class CollectServiceImpl implements CollectService {
     }
 
     @Override
+    @Slave
     public List<String> getCollectGroups(Long userId) {
         // 查询用户所有收藏记录的分组（当前 Collect 实体没有 groupName 字段，返回空列表）
         // 如果需要分组功能，需在 Collect 实体中添加 groupName 字段

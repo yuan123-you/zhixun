@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS sys_user (
   follow_count INT DEFAULT 0,
   follower_count INT DEFAULT 0,
   article_count INT DEFAULT 0,
+  wechat_openid VARCHAR(100),
+  qq_openid VARCHAR(100),
   last_login_at DATETIME,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -215,11 +217,13 @@ CREATE TABLE IF NOT EXISTS sys_notification (
   content VARCHAR(1000),
   is_read TINYINT DEFAULT 0,
   related_id BIGINT,
+  group_key VARCHAR(100),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE INDEX idx_sys_notification_user ON sys_notification(user_id);
 CREATE INDEX idx_sys_notification_read ON sys_notification(is_read);
+CREATE INDEX idx_sys_notification_group_key ON sys_notification(user_id, group_key);
 
 -- 15. user_follow 关注表
 CREATE TABLE IF NOT EXISTS user_follow (
@@ -288,3 +292,90 @@ CREATE TABLE IF NOT EXISTS user_preferred_tag (
   FOREIGN KEY (tag_id) REFERENCES cms_tag(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE INDEX idx_user_preferred_tag_user ON user_preferred_tag(user_id);
+
+-- 20. sys_sensitive_whitelist 敏感词白名单表
+CREATE TABLE IF NOT EXISTS sys_sensitive_whitelist (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  word VARCHAR(100) NOT NULL UNIQUE,
+  created_by BIGINT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES sys_user(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 20. user_tag_follow 用户关注标签表
+CREATE TABLE IF NOT EXISTS user_tag_follow (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  tag_id BIGINT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_user_tag_follow (user_id, tag_id),
+  FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES cms_tag(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_user_tag_follow_user ON user_tag_follow(user_id);
+CREATE INDEX idx_user_tag_follow_tag ON user_tag_follow(tag_id);
+
+-- 20. cms_comment_report 评论举报表
+CREATE TABLE IF NOT EXISTS cms_comment_report (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  comment_id BIGINT NOT NULL,
+  reporter_id BIGINT NOT NULL,
+  reason VARCHAR(500),
+  status TINYINT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (comment_id) REFERENCES cms_comment(id) ON DELETE CASCADE,
+  FOREIGN KEY (reporter_id) REFERENCES sys_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_cms_comment_report_comment ON cms_comment_report(comment_id);
+CREATE INDEX idx_cms_comment_report_reporter ON cms_comment_report(reporter_id);
+CREATE INDEX idx_cms_comment_report_status ON cms_comment_report(status);
+
+-- 21. sys_security_audit_log 安全审计日志表
+CREATE TABLE IF NOT EXISTS sys_security_audit_log (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  event_type VARCHAR(50) NOT NULL,
+  user_id BIGINT,
+  ip VARCHAR(50),
+  method VARCHAR(10),
+  path VARCHAR(500),
+  detail TEXT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_sys_security_audit_log_event_type ON sys_security_audit_log(event_type);
+CREATE INDEX idx_sys_security_audit_log_user_id ON sys_security_audit_log(user_id);
+CREATE INDEX idx_sys_security_audit_log_ip ON sys_security_audit_log(ip);
+CREATE INDEX idx_sys_security_audit_log_created ON sys_security_audit_log(created_at);
+
+-- 22. cms_banner 轮播图表
+CREATE TABLE IF NOT EXISTS cms_banner (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  title VARCHAR(100) NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  link_url VARCHAR(500),
+  link_type TINYINT DEFAULT 1,
+  sort_order INT DEFAULT 0,
+  start_time DATETIME,
+  end_time DATETIME,
+  status TINYINT DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_cms_banner_status ON cms_banner(status);
+CREATE INDEX idx_cms_banner_time ON cms_banner(start_time, end_time);
+
+-- 23. sys_announcement 公告表
+CREATE TABLE IF NOT EXISTS sys_announcement (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  title VARCHAR(200) NOT NULL,
+  content VARCHAR(2000) NOT NULL,
+  type TINYINT DEFAULT 1,
+  is_top TINYINT DEFAULT 0,
+  start_time DATETIME,
+  end_time DATETIME,
+  status TINYINT DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_sys_announcement_status ON sys_announcement(status);
+CREATE INDEX idx_sys_announcement_time ON sys_announcement(start_time, end_time);

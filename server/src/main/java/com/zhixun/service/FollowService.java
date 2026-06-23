@@ -25,9 +25,10 @@ public interface FollowService {
      * @param userId   用户ID
      * @param page     页码
      * @param pageSize 每页大小
+     * @param keyword  搜索关键词（按用户名/昵称过滤，可为null）
      * @return 用户分页列表
      */
-    PageResult<UserVO> getFollowing(Long userId, Integer page, Integer pageSize);
+    PageResult<UserVO> getFollowing(Long userId, Integer page, Integer pageSize, String keyword);
 
     /**
      * 获取粉丝列表
@@ -35,9 +36,10 @@ public interface FollowService {
      * @param userId   用户ID
      * @param page     页码
      * @param pageSize 每页大小
+     * @param keyword  搜索关键词（按用户名/昵称过滤，可为null）
      * @return 用户分页列表
      */
-    PageResult<UserVO> getFollowers(Long userId, Integer page, Integer pageSize);
+    PageResult<UserVO> getFollowers(Long userId, Integer page, Integer pageSize, String keyword);
 
     /**
      * 检查关注关系

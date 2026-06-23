@@ -39,6 +39,9 @@ public class Notification {
     /** 关联业务ID，对应 related_id */
     private Long relatedId;
 
+    /** 分组键，用于合并同类通知，对应 group_key */
+    private String groupKey;
+
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

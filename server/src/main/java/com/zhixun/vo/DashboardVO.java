@@ -3,6 +3,7 @@ package com.zhixun.vo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -39,6 +40,30 @@ public class DashboardVO {
     @JsonProperty("trend")
     private TrendData trend;
 
+    /** 用户留存率数据（第1-7天） */
+    @JsonProperty("retention_rates")
+    private List<RetentionRate> retentionRates;
+
+    /** 用户活跃度分布 */
+    @JsonProperty("activity_distributions")
+    private List<ActivityDistribution> activityDistributions;
+
+    /** 增长趋势数据（支持日/周/月维度） */
+    @JsonProperty("growth_trends")
+    private List<GrowthTrend> growthTrends;
+
+    /** 分类文章分布 */
+    @JsonProperty("category_distributions")
+    private List<CategoryDistribution> categoryDistributions;
+
+    /** 热门文章排行 */
+    @JsonProperty("hot_article_ranks")
+    private List<HotArticleRank> hotArticleRanks;
+
+    /** 创作者排行 */
+    @JsonProperty("creator_ranks")
+    private List<CreatorRank> creatorRanks;
+
     /**
      * 趋势数据（按日期分列的数组格式）
      */
@@ -53,5 +78,134 @@ public class DashboardVO {
 
         /** 用户数列表 */
         private List<Long> users;
+    }
+
+    /**
+     * 留存率
+     */
+    @Data
+    public static class RetentionRate {
+
+        /** 留存天数（1-7） */
+        private Integer day;
+
+        /** 留存率（0-100） */
+        private BigDecimal rate;
+    }
+
+    /**
+     * 活跃度分布
+     */
+    @Data
+    public static class ActivityDistribution {
+
+        /** 活跃度等级：high/medium/low */
+        private String level;
+
+        /** 用户数 */
+        private Long count;
+
+        /** 占比百分比 */
+        private BigDecimal percentage;
+    }
+
+    /**
+     * 增长趋势（支持日/周/月时间维度）
+     */
+    @Data
+    public static class GrowthTrend {
+
+        /** 时间标签（日期/周/月） */
+        private String periodLabel;
+
+        /** 时间维度：daily/weekly/monthly */
+        private String dimension;
+
+        /** 新增用户数 */
+        private Long newUserCount;
+
+        /** 新增文章数 */
+        private Long newArticleCount;
+
+        /** 浏览量 */
+        private Long viewCount;
+    }
+
+    /**
+     * 分类分布
+     */
+    @Data
+    public static class CategoryDistribution {
+
+        /** 分类ID */
+        private Long categoryId;
+
+        /** 分类名称 */
+        private String categoryName;
+
+        /** 文章数量 */
+        private Long articleCount;
+
+        /** 占比百分比 */
+        private BigDecimal percentage;
+    }
+
+    /**
+     * 热门文章排行
+     */
+    @Data
+    public static class HotArticleRank {
+
+        /** 文章ID */
+        private Long articleId;
+
+        /** 文章标题 */
+        private String title;
+
+        /** 作者昵称 */
+        private String authorName;
+
+        /** 浏览量 */
+        private Long viewCount;
+
+        /** 点赞数 */
+        private Long likeCount;
+
+        /** 评论数 */
+        private Long commentCount;
+
+        /** 排名 */
+        private Integer rank;
+    }
+
+    /**
+     * 创作者排行
+     */
+    @Data
+    public static class CreatorRank {
+
+        /** 用户ID */
+        private Long userId;
+
+        /** 昵称 */
+        private String nickname;
+
+        /** 头像 */
+        private String avatar;
+
+        /** 文章总数 */
+        private Long articleCount;
+
+        /** 总浏览量 */
+        private Long totalViews;
+
+        /** 总点赞数 */
+        private Long totalLikes;
+
+        /** 粉丝数 */
+        private Integer followerCount;
+
+        /** 排名 */
+        private Integer rank;
     }
 }

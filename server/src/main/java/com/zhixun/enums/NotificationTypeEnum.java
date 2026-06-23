@@ -24,7 +24,13 @@ public enum NotificationTypeEnum {
     FOLLOW(4, "关注通知"),
 
     /** 私信通知 */
-    MESSAGE(5, "私信通知");
+    MESSAGE(5, "私信通知"),
+
+    /** 评论回复通知 */
+    COMMENT_REPLY(6, "评论回复通知"),
+
+    /** @提及通知 */
+    MENTION(7, "@提及通知");
 
     /** 类型值（存入数据库的值） */
     @EnumValue

@@ -8,6 +8,11 @@
           "type": "custom",
           "tokenizer": "ik_max_word",
           "filter": ["pinyin_filter"]
+        },
+        "ik_smart_synonym": {
+          "type": "custom",
+          "tokenizer": "ik_max_word",
+          "filter": ["synonym_filter"]
         }
       },
       "filter": {
@@ -18,6 +23,10 @@
           "keep_original": true,
           "limit_first_letter_length": 16,
           "remove_duplicated_term": true
+        },
+        "synonym_filter": {
+          "type": "synonym",
+          "synonyms_path": "opensearch/synonyms.txt"
         }
       }
     }
@@ -37,6 +46,11 @@
             "type": "text",
             "analyzer": "ik_smart_pinyin",
             "search_analyzer": "ik_smart_pinyin"
+          },
+          "synonym": {
+            "type": "text",
+            "analyzer": "ik_smart_synonym",
+            "search_analyzer": "ik_smart_synonym"
           }
         }
       },
@@ -48,7 +62,14 @@
       "content": {
         "type": "text",
         "analyzer": "ik_max_word",
-        "search_analyzer": "ik_smart"
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "synonym": {
+            "type": "text",
+            "analyzer": "ik_smart_synonym",
+            "search_analyzer": "ik_smart_synonym"
+          }
+        }
       },
       "coverImage": { "type": "keyword" },
       "status": { "type": "integer" },

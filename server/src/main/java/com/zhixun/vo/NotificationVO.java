@@ -28,6 +28,12 @@ public class NotificationVO {
     /** 关联业务ID */
     private Long relatedId;
 
+    /** 分组键 */
+    private String groupKey;
+
+    /** 分组内通知数量 */
+    private Integer groupedCount;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 }

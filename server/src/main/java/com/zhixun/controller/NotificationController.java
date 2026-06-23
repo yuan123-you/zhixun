@@ -7,13 +7,16 @@ import com.zhixun.service.NotificationService;
 import com.zhixun.vo.NotificationVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -59,6 +62,39 @@ public class NotificationController {
     public R<Void> markAllAsRead() {
         Long userId = securityUtil.getCurrentUserId();
         notificationService.markAllAsRead(userId);
+        return R.ok();
+    }
+
+    /**
+     * 删除通知
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> deleteNotification(@PathVariable Long id) {
+        Long userId = securityUtil.getCurrentUserId();
+        notificationService.deleteNotification(userId, id);
+        return R.ok();
+    }
+
+    /**
+     * 批量标记已读
+     */
+    @PutMapping("/batch-read")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> batchMarkAsRead(@RequestBody List<Long> ids) {
+        Long userId = securityUtil.getCurrentUserId();
+        notificationService.batchMarkAsRead(userId, ids);
+        return R.ok();
+    }
+
+    /**
+     * 批量删除通知
+     */
+    @DeleteMapping("/batch")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> batchDeleteNotifications(@RequestBody List<Long> ids) {
+        Long userId = securityUtil.getCurrentUserId();
+        notificationService.batchDeleteNotifications(userId, ids);
         return R.ok();
     }
 

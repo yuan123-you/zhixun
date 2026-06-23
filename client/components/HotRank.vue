@@ -14,7 +14,9 @@
         <div class="ml-3 flex-1 min-w-0">
           <p class="text-sm text-gray-900 dark:text-white line-clamp-2">{{ item.title }}</p>
           <div class="flex items-center space-x-2 mt-1 text-xs text-gray-400">
-            <span>{{ formatCount(item.score) }} 热度</span>
+            <span v-if="item.authorNickname">{{ item.authorNickname }}</span>
+            <span v-if="item.authorNickname && item.score != null">·</span>
+            <span v-if="item.score != null">{{ formatCount(item.score) }} 热度</span>
           </div>
         </div>
       </NuxtLink>

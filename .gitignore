@@ -52,3 +52,12 @@ client/dist/
 # 自动生成的类型声明
 admin/src/auto-imports.d.ts
 admin/src/components.d.ts
+
+# ==================== 敏感文件 ====================
+.ssh_key
+dump.rdb
+temp-images/
+test-api.json
+.trae/
+index.html
+advanced.config

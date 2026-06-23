@@ -2,8 +2,10 @@ package com.zhixun.service;
 
 import com.zhixun.common.result.PageResult;
 import com.zhixun.dto.admin.AuditRequest;
+import com.zhixun.dto.admin.SensitiveWhitelistRequest;
 import com.zhixun.dto.admin.SensitiveWordRequest;
 import com.zhixun.dto.admin.UserStatusRequest;
+import com.zhixun.entity.SecurityAuditLog;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.CommentVO;
 import com.zhixun.vo.DashboardVO;
@@ -38,6 +40,14 @@ public interface AdminService {
      * @return 概览数据
      */
     DashboardVO getDashboardOverview();
+
+    /**
+     * 数据概览（支持时间维度）
+     *
+     * @param period 时间周期：daily/weekly/monthly
+     * @return 概览数据
+     */
+    DashboardVO getDashboardOverview(String period);
 
     /**
      * 用户列表
@@ -103,4 +113,54 @@ public interface AdminService {
      * @param commentId 评论ID
      */
     void deleteCommentAsAdmin(Long adminId, Long commentId);
+
+    /**
+     * 敏感词白名单列表
+     *
+     * @param page     页码
+     * @param pageSize 每页大小
+     * @return 白名单分页结果
+     */
+    PageResult<com.zhixun.entity.SensitiveWhitelist> getSensitiveWhitelist(Integer page, Integer pageSize);
+
+    /**
+     * 添加敏感词白名单
+     *
+     * @param adminId 管理员ID
+     * @param request 白名单请求
+     */
+    void addSensitiveWhitelist(Long adminId, SensitiveWhitelistRequest request);
+
+    /**
+     * 删除敏感词白名单
+     *
+     * @param adminId 管理员ID
+     * @param id     白名单ID
+     */
+    void deleteSensitiveWhitelist(Long adminId, Long id);
+
+    /**
+     * 查询安全审计日志
+     *
+     * @param eventType 事件类型（可选）
+     * @param userId    用户ID（可选）
+     * @param ip        请求IP（可选）
+     * @param startDate 开始日期（可选）
+     * @param endDate   结束日期（可选）
+     * @param page      页码
+     * @param pageSize  每页大小
+     * @return 审计日志分页结果
+     */
+    PageResult<SecurityAuditLog> getSecurityAuditLogs(String eventType, Long userId, String ip,
+                                                        String startDate, String endDate,
+                                                        Integer page, Integer pageSize);
+
+    /**
+     * 获取安全审计日志统计
+     *
+     * @param startDate 开始日期（可选）
+     * @param endDate   结束日期（可选）
+     * @return 统计数据
+     */
+    java.util.Map<String, Object> getSecurityAuditStats(String startDate, String endDate);
 }

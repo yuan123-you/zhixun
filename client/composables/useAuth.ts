@@ -1,16 +1,16 @@
-import type { LoginRequest, RegisterRequest, SendCodeRequest, ForgotPasswordRequest, AuthResponse } from '~/types'
+import type { LoginRequest, RegisterRequest, SendCodeRequest, ForgotPasswordRequest, AuthResponse, GraphCaptchaResponse } from '~/types'
 
 /** 认证组合式函数 */
 export const useAuth = () => {
   const userStore = useUserStore()
-  const { post, put } = useApi()
+  const { post, put, get } = useApi()
 
   // 登录
   const login = async (data: LoginRequest) => {
     try {
       const response = await post<AuthResponse>('/auth/login', data)
       const authData = response.data.data
-      userStore.setToken(authData.accessToken, authData.refreshToken)
+      userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
       userStore.setUser(authData.userInfo)
       return authData
     } catch (error: any) {
@@ -29,11 +29,21 @@ export const useAuth = () => {
         nickname: data.nickname || undefined,
       })
       const authData = response.data.data
-      userStore.setToken(authData.accessToken, authData.refreshToken)
+      userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
       userStore.setUser(authData.userInfo)
       return authData
     } catch (error: any) {
       throw new Error(error.message || '注册失败')
+    }
+  }
+
+  // 获取图形验证码
+  const getGraphCaptcha = async () => {
+    try {
+      const response = await get<GraphCaptchaResponse>('/auth/graph-captcha')
+      return response.data.data
+    } catch (error: any) {
+      throw new Error(error.message || '获取图形验证码失败')
     }
   }
 
@@ -74,7 +84,7 @@ export const useAuth = () => {
         refreshToken: userStore.refreshToken,
       })
       const authData = response.data.data
-      userStore.setToken(authData.accessToken, authData.refreshToken)
+      userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
       return authData.accessToken
     } catch {
       userStore.logout()
@@ -92,6 +102,7 @@ export const useAuth = () => {
   return {
     login,
     register,
+    getGraphCaptcha,
     sendCode,
     forgotPassword,
     logout,

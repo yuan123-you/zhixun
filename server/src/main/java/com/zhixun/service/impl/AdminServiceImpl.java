@@ -6,31 +6,43 @@ import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.dto.admin.AuditRequest;
+import com.zhixun.dto.admin.SensitiveWhitelistRequest;
 import com.zhixun.dto.admin.SensitiveWordRequest;
 import com.zhixun.dto.admin.UserStatusRequest;
 import com.zhixun.entity.Article;
+import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.ArticleTag;
+import com.zhixun.entity.ArticleViewHistory;
 import com.zhixun.entity.Category;
 import com.zhixun.entity.Comment;
 import com.zhixun.entity.Notification;
 import com.zhixun.entity.OperationLog;
+import com.zhixun.entity.SecurityAuditLog;
+import com.zhixun.entity.SensitiveWhitelist;
 import com.zhixun.entity.SensitiveWord;
 import com.zhixun.entity.Tag;
 import com.zhixun.entity.User;
 import com.zhixun.enums.ArticleStatusEnum;
 import com.zhixun.enums.CommentStatusEnum;
+import com.zhixun.enums.LikeTargetTypeEnum;
 import com.zhixun.enums.NotificationTypeEnum;
 import com.zhixun.enums.RoleEnum;
 import com.zhixun.enums.SensitiveLevelEnum;
+import com.zhixun.mapper.ArticleLikeMapper;
 import com.zhixun.mapper.ArticleMapper;
 import com.zhixun.mapper.ArticleTagMapper;
+import com.zhixun.mapper.ArticleViewHistoryMapper;
 import com.zhixun.mapper.CategoryMapper;
 import com.zhixun.mapper.CommentMapper;
+import com.zhixun.mapper.LoginLogMapper;
 import com.zhixun.mapper.NotificationMapper;
 import com.zhixun.mapper.OperationLogMapper;
+import com.zhixun.mapper.SecurityAuditLogMapper;
+import com.zhixun.mapper.SensitiveWhitelistMapper;
 import com.zhixun.mapper.SensitiveWordMapper;
 import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
+import com.zhixun.mapper.ViewHistoryMapper;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.service.AdminService;
 import com.zhixun.service.OperationLogService;
@@ -49,10 +61,14 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,14 +83,20 @@ import java.util.stream.Collectors;
 public class AdminServiceImpl implements AdminService {
 
     private final ArticleMapper articleMapper;
+    private final ArticleLikeMapper articleLikeMapper;
     private final ArticleTagMapper articleTagMapper;
+    private final ArticleViewHistoryMapper articleViewHistoryMapper;
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
     private final CommentMapper commentMapper;
     private final SensitiveWordMapper sensitiveWordMapper;
+    private final SensitiveWhitelistMapper sensitiveWhitelistMapper;
     private final OperationLogMapper operationLogMapper;
+    private final SecurityAuditLogMapper securityAuditLogMapper;
     private final NotificationMapper notificationMapper;
+    private final LoginLogMapper loginLogMapper;
+    private final ViewHistoryMapper viewHistoryMapper;
     private final OperationLogService operationLogService;
     private final SensitiveWordUtil sensitiveWordUtil;
 
@@ -136,13 +158,23 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public DashboardVO getDashboardOverview() {
+        return getDashboardOverview("daily");
+    }
+
+    /**
+     * 获取数据概览（支持时间维度）
+     *
+     * @param period 时间周期：daily/weekly/monthly
+     * @return 概览数据
+     */
+    public DashboardVO getDashboardOverview(String period) {
         DashboardVO vo = new DashboardVO();
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
         // 用户总量
         vo.setUserTotal(userMapper.selectCount(
-                new LambdaQueryWrapper<User>()));
+                new LambdaQueryWrapper<>()));
 
         // 文章总量
         vo.setArticleTotal(articleMapper.selectCount(
@@ -154,10 +186,15 @@ public class AdminServiceImpl implements AdminService {
                         .ge(User::getLastLoginAt, todayStart)));
 
         // 今日浏览量
-        vo.setTodayView(0L); // 需要从 ViewHistory 表统计
+        vo.setTodayView(articleViewHistoryMapper.selectCount(
+                new LambdaQueryWrapper<ArticleViewHistory>()
+                        .ge(ArticleViewHistory::getCreateTime, todayStart)));
 
         // 今日点赞数
-        vo.setTodayLike(0L); // 需要从 ArticleLike 表统计
+        vo.setTodayLike(articleLikeMapper.selectCount(
+                new LambdaQueryWrapper<ArticleLike>()
+                        .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
+                        .ge(ArticleLike::getCreatedAt, todayStart)));
 
         // 今日评论数
         vo.setTodayComment(commentMapper.selectCount(
@@ -175,8 +212,11 @@ public class AdminServiceImpl implements AdminService {
             LocalDateTime dayStart = date.atStartOfDay();
             LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
 
-            dates.add(date.format(java.time.format.DateTimeFormatter.ofPattern("MM-dd")));
-            views.add(0L); // 需要从 ViewHistory 表统计
+            dates.add(date.format(DateTimeFormatter.ofPattern("MM-dd")));
+            views.add(articleViewHistoryMapper.selectCount(
+                    new LambdaQueryWrapper<ArticleViewHistory>()
+                            .ge(ArticleViewHistory::getCreateTime, dayStart)
+                            .lt(ArticleViewHistory::getCreateTime, dayEnd)));
             users.add(userMapper.selectCount(
                     new LambdaQueryWrapper<User>()
                             .ge(User::getCreatedAt, dayStart)
@@ -187,6 +227,24 @@ public class AdminServiceImpl implements AdminService {
         trendData.setViews(views);
         trendData.setUsers(users);
         vo.setTrend(trendData);
+
+        // 用户留存率（查询注册用户在后续7天内的登录留存率）
+        vo.setRetentionRates(getRetentionRates());
+
+        // 用户活跃度分布
+        vo.setActivityDistributions(getActivityDistributions());
+
+        // 增长趋势数据（按时间维度）
+        vo.setGrowthTrends(getGrowthTrends(period));
+
+        // 分类文章分布
+        vo.setCategoryDistributions(getCategoryDistributions());
+
+        // 热门文章排行
+        vo.setHotArticleRanks(getHotArticleRanks());
+
+        // 创作者排行
+        vo.setCreatorRanks(getCreatorRanks());
 
         return vo;
     }
@@ -280,8 +338,9 @@ public class AdminServiceImpl implements AdminService {
         word.setLevel(SensitiveLevelEnum.values()[request.getLevel() - 1]);
         sensitiveWordMapper.insert(word);
 
-        // 清除敏感词本地缓存
+        // 清除敏感词本地缓存并重建 DFA
         sensitiveWordUtil.evictCache();
+        sensitiveWordUtil.buildDFA();
 
         // 记录操作日志
         String ip = getClientIp();
@@ -299,8 +358,9 @@ public class AdminServiceImpl implements AdminService {
 
         sensitiveWordMapper.deleteById(wordId);
 
-        // 清除敏感词本地缓存
+        // 清除敏感词本地缓存并重建 DFA
         sensitiveWordUtil.evictCache();
+        sensitiveWordUtil.buildDFA();
 
         // 记录操作日志
         String ip = getClientIp();
@@ -397,6 +457,179 @@ public class AdminServiceImpl implements AdminService {
         String ip = getClientIp();
         operationLogService.log(adminId, "评论管理", "delete", "comment", commentId,
                 "删除评论：" + comment.getContent(), ip);
+    }
+
+    @Override
+    public PageResult<SensitiveWhitelist> getSensitiveWhitelist(Integer page, Integer pageSize) {
+        LambdaQueryWrapper<SensitiveWhitelist> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(SensitiveWhitelist::getCreatedAt);
+
+        Page<SensitiveWhitelist> whitelistPage = new Page<>(page, pageSize);
+        Page<SensitiveWhitelist> result = sensitiveWhitelistMapper.selectPage(whitelistPage, wrapper);
+
+        return new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addSensitiveWhitelist(Long adminId, SensitiveWhitelistRequest request) {
+        // 检查是否已存在
+        Long count = sensitiveWhitelistMapper.selectCount(
+                new LambdaQueryWrapper<SensitiveWhitelist>().eq(SensitiveWhitelist::getWord, request.getWord()));
+        if (count > 0) {
+            throw new BusinessException(ErrorCode.CONFLICT, "白名单词汇已存在");
+        }
+
+        SensitiveWhitelist whitelist = new SensitiveWhitelist();
+        whitelist.setWord(request.getWord());
+        whitelist.setCreatedBy(adminId);
+        sensitiveWhitelistMapper.insert(whitelist);
+
+        // 清除白名单缓存
+        sensitiveWordUtil.evictWhitelistCache();
+
+        // 记录操作日志
+        String ip = getClientIp();
+        operationLogService.log(adminId, "敏感词白名单", "add", "sensitive_whitelist", whitelist.getId(),
+                "添加白名单词汇：" + request.getWord(), ip);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteSensitiveWhitelist(Long adminId, Long id) {
+        SensitiveWhitelist whitelist = sensitiveWhitelistMapper.selectById(id);
+        if (whitelist == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "白名单词汇不存在");
+        }
+
+        sensitiveWhitelistMapper.deleteById(id);
+
+        // 清除白名单缓存
+        sensitiveWordUtil.evictWhitelistCache();
+
+        // 记录操作日志
+        String ip = getClientIp();
+        operationLogService.log(adminId, "敏感词白名单", "delete", "sensitive_whitelist", id,
+                "删除白名单词汇：" + whitelist.getWord(), ip);
+    }
+
+    @Override
+    public PageResult<SecurityAuditLog> getSecurityAuditLogs(String eventType, Long userId, String ip,
+                                                              String startDate, String endDate,
+                                                              Integer page, Integer pageSize) {
+        LambdaQueryWrapper<SecurityAuditLog> wrapper = new LambdaQueryWrapper<>();
+
+        // 事件类型筛选
+        if (StringUtils.hasText(eventType)) {
+            wrapper.eq(SecurityAuditLog::getEventType, eventType);
+        }
+
+        // 用户ID筛选
+        if (userId != null) {
+            wrapper.eq(SecurityAuditLog::getUserId, userId);
+        }
+
+        // IP筛选
+        if (StringUtils.hasText(ip)) {
+            wrapper.like(SecurityAuditLog::getIp, ip);
+        }
+
+        // 日期范围筛选
+        if (StringUtils.hasText(startDate)) {
+            LocalDateTime start = LocalDate.parse(startDate).atStartOfDay();
+            wrapper.ge(SecurityAuditLog::getCreatedAt, start);
+        }
+        if (StringUtils.hasText(endDate)) {
+            LocalDateTime end = LocalDate.parse(endDate).plusDays(1).atStartOfDay();
+            wrapper.lt(SecurityAuditLog::getCreatedAt, end);
+        }
+
+        wrapper.orderByDesc(SecurityAuditLog::getCreatedAt);
+
+        Page<SecurityAuditLog> auditPage = new Page<>(page, pageSize);
+        Page<SecurityAuditLog> result = securityAuditLogMapper.selectPage(auditPage, wrapper);
+
+        return new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    public Map<String, Object> getSecurityAuditStats(String startDate, String endDate) {
+        Map<String, Object> stats = new java.util.HashMap<>();
+
+        LambdaQueryWrapper<SecurityAuditLog> wrapper = new LambdaQueryWrapper<>();
+
+        // 日期范围筛选
+        if (StringUtils.hasText(startDate)) {
+            LocalDateTime start = LocalDate.parse(startDate).atStartOfDay();
+            wrapper.ge(SecurityAuditLog::getCreatedAt, start);
+        }
+        if (StringUtils.hasText(endDate)) {
+            LocalDateTime end = LocalDate.parse(endDate).plusDays(1).atStartOfDay();
+            wrapper.lt(SecurityAuditLog::getCreatedAt, end);
+        }
+
+        // 总事件数
+        long total = securityAuditLogMapper.selectCount(wrapper);
+        stats.put("total", total);
+
+        // 按事件类型统计
+        List<Map<String, Object>> eventTypeStats = new ArrayList<>();
+        List<SecurityAuditLog> allLogs = securityAuditLogMapper.selectList(wrapper);
+        Map<String, Long> eventTypeCount = allLogs.stream()
+                .collect(Collectors.groupingBy(SecurityAuditLog::getEventType, Collectors.counting()));
+        eventTypeCount.forEach((type, count) -> {
+            Map<String, Object> item = new java.util.HashMap<>();
+            item.put("eventType", type);
+            item.put("count", count);
+            eventTypeStats.add(item);
+        });
+        stats.put("eventTypeStats", eventTypeStats);
+
+        // 按日期统计（近7天或指定范围内）
+        List<Map<String, Object>> dailyStats = new ArrayList<>();
+        LocalDate statsStart;
+        LocalDate statsEnd;
+        if (StringUtils.hasText(startDate) && StringUtils.hasText(endDate)) {
+            statsStart = LocalDate.parse(startDate);
+            statsEnd = LocalDate.parse(endDate);
+        } else {
+            statsEnd = LocalDate.now();
+            statsStart = statsEnd.minusDays(6);
+        }
+
+        for (LocalDate date = statsStart; !date.isAfter(statsEnd); date = date.plusDays(1)) {
+            LocalDateTime dayStart = date.atStartOfDay();
+            LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+
+            LambdaQueryWrapper<SecurityAuditLog> dayWrapper = new LambdaQueryWrapper<>();
+            dayWrapper.ge(SecurityAuditLog::getCreatedAt, dayStart);
+            dayWrapper.lt(SecurityAuditLog::getCreatedAt, dayEnd);
+            long dayCount = securityAuditLogMapper.selectCount(dayWrapper);
+
+            Map<String, Object> dayItem = new java.util.HashMap<>();
+            dayItem.put("date", date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            dayItem.put("count", dayCount);
+            dailyStats.add(dayItem);
+        }
+        stats.put("dailyStats", dailyStats);
+
+        // 失败次数最多的IP（Top 10）
+        List<Map<String, Object>> topIps = new ArrayList<>();
+        Map<String, Long> ipCount = allLogs.stream()
+                .filter(log -> log.getIp() != null)
+                .collect(Collectors.groupingBy(SecurityAuditLog::getIp, Collectors.counting()));
+        ipCount.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(10)
+                .forEach(entry -> {
+                    Map<String, Object> item = new java.util.HashMap<>();
+                    item.put("ip", entry.getKey());
+                    item.put("count", entry.getValue());
+                    topIps.add(item);
+                });
+        stats.put("topIps", topIps);
+
+        return stats;
     }
 
     // ========== 内部方法 ==========
@@ -531,5 +764,318 @@ public class AdminServiceImpl implements AdminService {
 
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    // ========== 数据报表查询方法 ==========
+
+    /**
+     * 查询注册用户在后续7天内的登录留存率
+     * 取近7天内每天注册的用户，统计其在注册后第N天是否登录
+     */
+    private List<DashboardVO.RetentionRate> getRetentionRates() {
+        List<DashboardVO.RetentionRate> rates = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        // 取7天前注册的用户作为基准
+        LocalDate cohortStart = today.minusDays(7);
+        LocalDate cohortEnd = today.minusDays(6);
+        LocalDateTime cohortStartDt = cohortStart.atStartOfDay();
+        LocalDateTime cohortEndDt = cohortEnd.atStartOfDay();
+
+        // 查询该批注册用户
+        List<User> cohortUsers = userMapper.selectList(
+                new LambdaQueryWrapper<User>()
+                        .ge(User::getCreatedAt, cohortStartDt)
+                        .lt(User::getCreatedAt, cohortEndDt));
+
+        long cohortSize = cohortUsers.size();
+        if (cohortSize == 0) {
+            for (int day = 1; day <= 7; day++) {
+                DashboardVO.RetentionRate rate = new DashboardVO.RetentionRate();
+                rate.setDay(day);
+                rate.setRate(BigDecimal.ZERO);
+                rates.add(rate);
+            }
+            return rates;
+        }
+
+        for (int day = 1; day <= 7; day++) {
+            LocalDateTime targetDayStart = cohortStart.plusDays(day).atStartOfDay();
+            LocalDateTime targetDayEnd = cohortStart.plusDays(day + 1).atStartOfDay();
+
+            // 统计该批用户在第N天有登录记录的人数
+            long retained = 0;
+            if (!cohortUsers.isEmpty()) {
+                List<Long> cohortUserIds = cohortUsers.stream().map(User::getId).collect(Collectors.toList());
+                retained = loginLogMapper.selectCount(
+                        new LambdaQueryWrapper<LoginLog>()
+                                .in(LoginLog::getUserId, cohortUserIds)
+                                .ge(LoginLog::getCreatedAt, targetDayStart)
+                                .lt(LoginLog::getCreatedAt, targetDayEnd));
+            }
+
+            DashboardVO.RetentionRate rate = new DashboardVO.RetentionRate();
+            rate.setDay(day);
+            rate.setRate(BigDecimal.valueOf(retained * 100.0 / cohortSize)
+                    .setScale(2, RoundingMode.HALF_UP));
+            rates.add(rate);
+        }
+
+        return rates;
+    }
+
+    /**
+     * 按用户活跃度（高/中/低）分组统计
+     * 高活跃：近7天登录>=5次；中活跃：1-4次；低活跃：0次
+     */
+    private List<DashboardVO.ActivityDistribution> getActivityDistributions() {
+        List<DashboardVO.ActivityDistribution> distributions = new ArrayList<>();
+        LocalDateTime weekAgo = LocalDateTime.now().minusWeeks(1);
+
+        long totalUsers = userMapper.selectCount(new LambdaQueryWrapper<>());
+
+        // 查询近7天有登录记录的用户及其登录次数
+        List<LoginLog> recentLogs = loginLogMapper.selectList(
+                new LambdaQueryWrapper<LoginLog>()
+                        .ge(LoginLog::getCreatedAt, weekAgo)
+                        .eq(LoginLog::getStatus, 1));
+
+        // 按用户分组统计登录次数
+        Map<Long, Long> userLoginCount = recentLogs.stream()
+                .collect(Collectors.groupingBy(LoginLog::getUserId, Collectors.counting()));
+
+        long highCount = userLoginCount.values().stream().filter(c -> c >= 5).count();
+        long mediumCount = userLoginCount.values().stream().filter(c -> c >= 1 && c < 5).count();
+        long lowCount = totalUsers - highCount - mediumCount;
+
+        // 高活跃
+        DashboardVO.ActivityDistribution high = new DashboardVO.ActivityDistribution();
+        high.setLevel("high");
+        high.setCount(highCount);
+        high.setPercentage(totalUsers > 0
+                ? BigDecimal.valueOf(highCount * 100.0 / totalUsers).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO);
+        distributions.add(high);
+
+        // 中活跃
+        DashboardVO.ActivityDistribution medium = new DashboardVO.ActivityDistribution();
+        medium.setLevel("medium");
+        medium.setCount(mediumCount);
+        medium.setPercentage(totalUsers > 0
+                ? BigDecimal.valueOf(mediumCount * 100.0 / totalUsers).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO);
+        distributions.add(medium);
+
+        // 低活跃
+        DashboardVO.ActivityDistribution low = new DashboardVO.ActivityDistribution();
+        low.setLevel("low");
+        low.setCount(lowCount);
+        low.setPercentage(totalUsers > 0
+                ? BigDecimal.valueOf(lowCount * 100.0 / totalUsers).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO);
+        distributions.add(low);
+
+        return distributions;
+    }
+
+    /**
+     * 按日/周/月统计用户、文章、浏览量增长
+     */
+    private List<DashboardVO.GrowthTrend> getGrowthTrends(String period) {
+        List<DashboardVO.GrowthTrend> trends = new ArrayList<>();
+        String dimension = (period != null) ? period : "daily";
+
+        int periods;
+        switch (dimension) {
+            case "weekly" -> periods = 8;
+            case "monthly" -> periods = 6;
+            default -> periods = 7;
+        }
+
+        for (int i = periods - 1; i >= 0; i--) {
+            LocalDateTime periodStart;
+            LocalDateTime periodEnd;
+            String label;
+
+            switch (dimension) {
+                case "weekly" -> {
+                    periodStart = LocalDate.now().minusWeeks(i).atStartOfDay();
+                    periodEnd = LocalDate.now().minusWeeks(i - 1).atStartOfDay();
+                    label = periodStart.format(DateTimeFormatter.ofPattern("MM-dd")) + "~"
+                            + periodEnd.minusDays(1).format(DateTimeFormatter.ofPattern("MM-dd"));
+                }
+                case "monthly" -> {
+                    periodStart = LocalDate.now().minusMonths(i).atStartOfDay();
+                    periodEnd = LocalDate.now().minusMonths(i - 1).atStartOfDay();
+                    label = periodStart.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+                }
+                default -> {
+                    periodStart = LocalDate.now().minusDays(i).atStartOfDay();
+                    periodEnd = LocalDate.now().minusDays(i - 1).atStartOfDay();
+                    label = periodStart.format(DateTimeFormatter.ofPattern("MM-dd"));
+                }
+            }
+
+            // 新增用户数
+            long newUserCount = userMapper.selectCount(
+                    new LambdaQueryWrapper<User>()
+                            .ge(User::getCreatedAt, periodStart)
+                            .lt(User::getCreatedAt, periodEnd));
+
+            // 新增文章数
+            long newArticleCount = articleMapper.selectCount(
+                    new LambdaQueryWrapper<Article>()
+                            .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                            .ge(Article::getCreatedAt, periodStart)
+                            .lt(Article::getCreatedAt, periodEnd));
+
+            // 浏览量
+            long viewCount = articleViewHistoryMapper.selectCount(
+                    new LambdaQueryWrapper<ArticleViewHistory>()
+                            .ge(ArticleViewHistory::getCreateTime, periodStart)
+                            .lt(ArticleViewHistory::getCreateTime, periodEnd));
+
+            DashboardVO.GrowthTrend trend = new DashboardVO.GrowthTrend();
+            trend.setPeriodLabel(label);
+            trend.setDimension(dimension);
+            trend.setNewUserCount(newUserCount);
+            trend.setNewArticleCount(newArticleCount);
+            trend.setViewCount(viewCount);
+            trends.add(trend);
+        }
+
+        return trends;
+    }
+
+    /**
+     * 按分类统计文章数量
+     */
+    private List<DashboardVO.CategoryDistribution> getCategoryDistributions() {
+        List<DashboardVO.CategoryDistribution> distributions = new ArrayList<>();
+
+        // 查询所有分类
+        List<Category> categories = categoryMapper.selectList(
+                new LambdaQueryWrapper<Category>().eq(Category::getStatus, 1));
+
+        // 查询已发布文章按分类统计
+        List<Article> publishedArticles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED));
+
+        Map<Long, Long> categoryArticleCount = publishedArticles.stream()
+                .filter(a -> a.getCategoryId() != null)
+                .collect(Collectors.groupingBy(Article::getCategoryId, Collectors.counting()));
+
+        long totalArticles = publishedArticles.size();
+
+        for (Category category : categories) {
+            long count = categoryArticleCount.getOrDefault(category.getId(), 0L);
+            if (count == 0) continue;
+
+            DashboardVO.CategoryDistribution dist = new DashboardVO.CategoryDistribution();
+            dist.setCategoryId(category.getId());
+            dist.setCategoryName(category.getName());
+            dist.setArticleCount(count);
+            dist.setPercentage(totalArticles > 0
+                    ? BigDecimal.valueOf(count * 100.0 / totalArticles).setScale(2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO);
+            distributions.add(dist);
+        }
+
+        // 按文章数降序排列
+        distributions.sort(Comparator.comparingLong(DashboardVO.CategoryDistribution::getArticleCount).reversed());
+
+        return distributions;
+    }
+
+    /**
+     * 按浏览量排序的热门文章（Top 10）
+     */
+    private List<DashboardVO.HotArticleRank> getHotArticleRanks() {
+        List<Article> hotArticles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>()
+                        .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                        .orderByDesc(Article::getViewCount)
+                        .last("LIMIT 10"));
+
+        // 批量查询作者信息
+        Set<Long> authorIds = hotArticles.stream()
+                .map(Article::getAuthorId)
+                .collect(Collectors.toSet());
+        Map<Long, User> authorMap = authorIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<DashboardVO.HotArticleRank> ranks = new ArrayList<>();
+        int rank = 1;
+        for (Article article : hotArticles) {
+            DashboardVO.HotArticleRank hotRank = new DashboardVO.HotArticleRank();
+            hotRank.setArticleId(article.getId());
+            hotRank.setTitle(article.getTitle());
+            hotRank.setViewCount(article.getViewCount());
+            hotRank.setLikeCount(article.getLikeCount());
+            hotRank.setCommentCount(article.getCommentCount());
+            hotRank.setRank(rank++);
+
+            User author = authorMap.get(article.getAuthorId());
+            hotRank.setAuthorName(author != null ? author.getNickname() : null);
+
+            ranks.add(hotRank);
+        }
+
+        return ranks;
+    }
+
+    /**
+     * 按文章数排序的创作者（Top 10）
+     */
+    private List<DashboardVO.CreatorRank> getCreatorRanks() {
+        // 查询已发布文章按作者统计
+        List<Article> publishedArticles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED));
+
+        // 按作者分组统计文章数、总浏览量、总点赞数
+        Map<Long, Long> authorArticleCount = publishedArticles.stream()
+                .collect(Collectors.groupingBy(Article::getAuthorId, Collectors.counting()));
+        Map<Long, Long> authorTotalViews = publishedArticles.stream()
+                .collect(Collectors.groupingBy(Article::getAuthorId,
+                        Collectors.summingLong(a -> a.getViewCount() != null ? a.getViewCount() : 0L)));
+        Map<Long, Long> authorTotalLikes = publishedArticles.stream()
+                .collect(Collectors.groupingBy(Article::getAuthorId,
+                        Collectors.summingLong(a -> a.getLikeCount() != null ? a.getLikeCount() : 0L)));
+
+        // 按文章数排序取前10
+        List<Long> topAuthorIds = authorArticleCount.entrySet().stream()
+                .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
+                .limit(10)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        if (topAuthorIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 批量查询用户信息
+        Map<Long, User> userMap = userMapper.selectBatchIds(topAuthorIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<DashboardVO.CreatorRank> ranks = new ArrayList<>();
+        int rank = 1;
+        for (Long authorId : topAuthorIds) {
+            User user = userMap.get(authorId);
+            if (user == null) continue;
+
+            DashboardVO.CreatorRank creatorRank = new DashboardVO.CreatorRank();
+            creatorRank.setUserId(user.getId());
+            creatorRank.setNickname(user.getNickname());
+            creatorRank.setAvatar(user.getAvatar());
+            creatorRank.setArticleCount(authorArticleCount.getOrDefault(authorId, 0L));
+            creatorRank.setTotalViews(authorTotalViews.getOrDefault(authorId, 0L));
+            creatorRank.setTotalLikes(authorTotalLikes.getOrDefault(authorId, 0L));
+            creatorRank.setFollowerCount(user.getFollowerCount());
+            creatorRank.setRank(rank++);
+            ranks.add(creatorRank);
+        }
+
+        return ranks;
     }
 }

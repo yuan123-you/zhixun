@@ -2,6 +2,10 @@ package com.zhixun.websocket;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zhixun.common.util.SensitiveWordUtil;
+import com.zhixun.dto.social.MessageSendRequest;
+import com.zhixun.security.HtmlWhitelistFilter;
+import com.zhixun.service.MessageService;
 import com.zhixun.common.util.JwtUtil;
 import com.zhixun.service.OnlineStatusService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final JwtUtil jwtUtil;
     private final OnlineStatusService onlineStatusService;
     private final ObjectMapper objectMapper;
+    private final MessageService messageService;
+    private final SensitiveWordUtil sensitiveWordUtil;
 
     /** 在线用户连接映射：userId -> WebSocketSession */
     private static final Map<Long, WebSocketSession> ONLINE_USERS = new ConcurrentHashMap<>();
@@ -154,6 +160,21 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private void handleChatMessage(Long senderId, JsonNode data) {
         Long receiverId = data.path("receiverId").asLong();
         String content = data.path("content").asText();
+
+        // XSS 过滤
+        content = HtmlWhitelistFilter.escapePlainText(content);
+
+        // 敏感词检查
+        if (sensitiveWordUtil.containsSensitiveWord(content)) {
+            log.warn("消息包含敏感词，拒绝发送: senderId={}, receiverId={}", senderId, receiverId);
+            return;
+        }
+
+        // 持久化消息
+        MessageSendRequest request = new MessageSendRequest();
+        request.setReceiverId(receiverId);
+        request.setContent(content);
+        messageService.sendMessage(senderId, request);
 
         // 转发消息给目标用户
         WebSocketSession receiverSession = ONLINE_USERS.get(receiverId);

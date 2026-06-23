@@ -41,6 +41,9 @@ public class ArticleDetailVO {
     /** 收藏数 */
     private Long collectCount;
 
+    /** 分享数 */
+    private Long shareCount;
+
     /** 拒绝原因 */
     private String rejectReason;
 

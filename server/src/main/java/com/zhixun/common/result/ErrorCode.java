@@ -16,6 +16,7 @@ public enum ErrorCode {
 
     // ========== 客户端错误码 4xx ==========
     BAD_REQUEST(400, "请求参数错误"),
+    PARAMS_ERROR(4001, "参数错误"),
     UNAUTHORIZED(401, "未登录或登录已过期"),
     FORBIDDEN(403, "没有访问权限"),
     NOT_FOUND(404, "请求资源不存在"),

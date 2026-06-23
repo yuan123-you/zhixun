@@ -1,0 +1,20 @@
+# 编程同义词
+编程,程序设计,写代码,开发
+# 前端同义词
+前端,frontend,web前端,前端开发
+# 后端同义词
+后端,backend,服务端,后端开发
+# 数据库同义词
+数据库,database,db
+# 人工智能同义词
+人工智能,ai,artificial intelligence,机器智能
+# 深度学习同义词
+深度学习,deep learning,神经网络
+# 运维同义词
+运维,devops,运维开发,site reliability
+# 测试同义词
+测试,testing,qa,质量保证
+# 架构同义词
+架构,architecture,系统设计,架构设计
+# 算法同义词
+算法,algorithm,数据结构与算法

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
+import com.zhixun.config.Slave;
 import com.zhixun.entity.Article;
 import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.Comment;
@@ -111,6 +112,7 @@ public class LikeServiceImpl implements LikeService {
     }
 
     @Override
+    @Slave
     public boolean isLiked(Long userId, Long targetId, Integer targetType) {
         // 先查 Redis 缓存
         String statusKey = LIKE_STATUS_PREFIX + userId + ":" + targetId + ":" + targetType;
@@ -134,6 +136,7 @@ public class LikeServiceImpl implements LikeService {
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getUserLikes(Long userId, Integer page, Integer pageSize) {
         // 查询用户点赞的文章类型记录
         LambdaQueryWrapper<ArticleLike> likeWrapper = new LambdaQueryWrapper<>();

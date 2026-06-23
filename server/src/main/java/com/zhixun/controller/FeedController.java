@@ -6,10 +6,13 @@ import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.service.FeedService;
 import com.zhixun.vo.ArticleVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
 
 /**
  * 信息流控制器
@@ -51,7 +54,7 @@ public class FeedController {
     }
 
     /**
-     * 关注动态
+     * 关注动态（页码分页）
      */
     @GetMapping("/following")
     public R<PageResult<ArticleVO>> following(
@@ -59,5 +62,26 @@ public class FeedController {
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = securityUtil.getCurrentUserId();
         return R.ok(feedService.getFollowingFeed(userId, page, pageSize));
+    }
+
+    /**
+     * 关注动态（游标分页，支持无限滚动）
+     */
+    @GetMapping("/following/cursor")
+    public R<PageResult<ArticleVO>> followingByCursor(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime cursor,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        Long userId = securityUtil.getCurrentUserId();
+        return R.ok(feedService.getFollowingFeedByCursor(userId, cursor, pageSize));
+    }
+
+    /**
+     * 热门推荐
+     */
+    @GetMapping("/hot")
+    public R<PageResult<ArticleVO>> hot(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(feedService.getHotFeed(page, pageSize));
     }
 }

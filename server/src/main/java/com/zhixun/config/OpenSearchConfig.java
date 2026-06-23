@@ -46,6 +46,9 @@ public class OpenSearchConfig {
     /** 索引名前缀 */
     private String indexPrefix = "zhixun_";
 
+    /** 同义词文件路径（classpath 路径） */
+    private String synonymFilePath = "opensearch/synonyms.txt";
+
     /**
      * 文章索引名
      */

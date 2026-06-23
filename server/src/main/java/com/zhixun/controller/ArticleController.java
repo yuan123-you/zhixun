@@ -1,5 +1,6 @@
 package com.zhixun.controller;
 
+import com.zhixun.common.annotation.OperationLog;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
@@ -8,10 +9,8 @@ import com.zhixun.dto.article.ArticleQueryRequest;
 import com.zhixun.dto.article.ArticleStatusRequest;
 import com.zhixun.dto.article.ArticleUpdateRequest;
 import com.zhixun.service.ArticleService;
-import com.zhixun.service.RankService;
 import com.zhixun.vo.ArticleDetailVO;
 import com.zhixun.vo.ArticleVO;
-import com.zhixun.vo.HotArticleVO;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 import jakarta.validation.Valid;
@@ -38,7 +37,6 @@ import java.util.List;
 public class ArticleController {
 
     private final ArticleService articleService;
-    private final RankService rankService;
     private final SecurityUtil securityUtil;
 
     /**
@@ -46,6 +44,7 @@ public class ArticleController {
      */
     @PostMapping
     @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "文章", action = "发布")
     @SentinelResource(value = "article-create", blockHandler = "createBlockHandler", blockHandlerClass = ArticleController.BlockHandlers.class)
     public R<Long> create(@Valid @RequestBody ArticleCreateRequest request) {
         Long userId = securityUtil.getCurrentUserId();
@@ -57,6 +56,7 @@ public class ArticleController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "文章", action = "编辑")
     public R<Void> update(@PathVariable Long id, @Valid @RequestBody ArticleUpdateRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         articleService.updateArticle(userId, id, request);
@@ -91,6 +91,7 @@ public class ArticleController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "文章", action = "删除")
     public R<Void> delete(@PathVariable Long id) {
         Long userId = securityUtil.getCurrentUserId();
         articleService.deleteArticle(userId, id);
@@ -112,10 +113,19 @@ public class ArticleController {
      * 相关推荐
      */
     @GetMapping("/{id}/related")
-    public R<List<HotArticleVO>> related(
+    public R<List<ArticleVO>> related(
             @PathVariable Long id,
             @RequestParam(defaultValue = "6") Integer limit) {
-        return R.ok(rankService.getRelatedArticles(id, limit));
+        return R.ok(articleService.getRelatedArticles(id, limit));
+    }
+
+    /**
+     * 记录分享（公开，未登录也可分享）
+     */
+    @PostMapping("/{id}/share")
+    public R<Void> share(@PathVariable Long id) {
+        articleService.incrementShareCount(id);
+        return R.ok();
     }
 
     /**

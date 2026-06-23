@@ -7,6 +7,7 @@ import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.util.AesUtil;
+import com.zhixun.config.Slave;
 import com.zhixun.dto.user.ProfileUpdateRequest;
 import com.zhixun.dto.user.SettingsUpdateRequest;
 import com.zhixun.entity.Article;
@@ -27,6 +28,7 @@ import com.zhixun.mapper.UserPreferredTagMapper;
 import com.zhixun.mapper.UserSettingsMapper;
 import com.zhixun.mapper.ViewHistoryMapper;
 import com.zhixun.service.UserService;
+import com.zhixun.service.OnlineStatusService;
 import com.zhixun.service.OpenSearchSyncService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.TagVO;
@@ -74,8 +76,10 @@ public class UserServiceImpl implements UserService {
     private final CategoryMapper categoryMapper;
     private final AesUtil aesUtil;
     private final OpenSearchSyncService openSearchSyncService;
+    private final OnlineStatusService onlineStatusService;
 
     @Override
+    @Slave
     public UserVO getProfile(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null) {
@@ -124,6 +128,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getUserArticles(Long userId, Integer status, Integer page, Integer pageSize) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getAuthorId, userId);
@@ -143,6 +148,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getUserLikes(Long userId, Integer page, Integer pageSize) {
         // 查询用户点赞的文章类型记录
         LambdaQueryWrapper<ArticleLike> likeWrapper = new LambdaQueryWrapper<>();
@@ -167,6 +173,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getViewHistory(Long userId, String startDate, String endDate, Integer page, Integer pageSize) {
         LambdaQueryWrapper<ViewHistory> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ViewHistory::getUserId, userId);
@@ -202,6 +209,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Slave
     public UserSettingsVO getSettings(Long userId) {
         UserSettingsVO vo = new UserSettingsVO();
 
@@ -341,6 +349,8 @@ public class UserServiceImpl implements UserService {
             SettingsUpdateRequest.Privacy privacy = request.getPrivacy();
             if (privacy.getShowOnlineStatus() != null) {
                 settings.setShowOnlineStatus(privacy.getShowOnlineStatus());
+                // 清除在线状态可见性缓存
+                onlineStatusService.invalidateShowOnlineStatusCache(userId);
             }
             if (privacy.getMessagePermission() != null) {
                 settings.setMessagePermission(privacy.getMessagePermission());

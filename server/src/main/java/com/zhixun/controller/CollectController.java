@@ -1,5 +1,6 @@
 package com.zhixun.controller;
 
+import com.zhixun.common.annotation.OperationLog;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
@@ -33,6 +34,7 @@ public class CollectController {
      */
     @PostMapping("/articles/{id}/collect")
     @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "收藏", action = "收藏/取消收藏")
     public R<Map<String, Object>> toggleCollect(@PathVariable Long id,
                                                  @RequestParam(required = false) String groupName) {
         Long userId = securityUtil.getCurrentUserId();

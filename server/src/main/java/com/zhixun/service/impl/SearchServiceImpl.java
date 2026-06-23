@@ -1,6 +1,13 @@
 package com.zhixun.service.impl;
 
+import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.config.OpenSearchConfig;
+import com.zhixun.config.Slave;
+import com.zhixun.entity.UserFollow;
+import com.zhixun.entity.UserPreferredCategory;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zhixun.mapper.UserFollowMapper;
+import com.zhixun.mapper.UserPreferredCategoryMapper;
 import com.zhixun.service.SearchHistoryService;
 import com.zhixun.service.SearchService;
 import com.zhixun.vo.ArticleVO;
@@ -14,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreMode;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreQuery;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.HighlightField;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -27,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 搜索服务实现（OpenSearch版）
@@ -40,10 +50,14 @@ public class SearchServiceImpl implements SearchService {
     private final OpenSearchClient openSearchClient;
     private final OpenSearchConfig openSearchConfig;
     private final SearchHistoryService searchHistoryService;
+    private final SecurityUtil securityUtil;
+    private final UserPreferredCategoryMapper userPreferredCategoryMapper;
+    private final UserFollowMapper userFollowMapper;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
+    @Slave
     public SearchResultVO search(String keyword, String type, Long categoryId, Long tagId,
                                  String timeRange, String startDate, String endDate,
                                  String sort, Integer page, Integer pageSize) {
@@ -99,6 +113,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
+    @Slave
     public SearchSuggestResultVO getSuggestions(String keyword) {
         SearchSuggestResultVO result = new SearchSuggestResultVO();
         List<SuggestionVO> completions = new ArrayList<>();
@@ -116,7 +131,7 @@ public class SearchServiceImpl implements SearchService {
                             .size(2)
                             .query(q -> q
                                     .multiMatch(mm -> mm
-                                            .fields("username", "nickname", "username.pinyin", "nickname.pinyin")
+                                            .fields("username", "nickname", "username.pinyin", "nickname.pinyin", "username.synonym", "nickname.synonym")
                                             .query(keyword)
                                     )
                             ),
@@ -142,7 +157,7 @@ public class SearchServiceImpl implements SearchService {
                             .size(4)
                             .query(q -> q
                                     .multiMatch(mm -> mm
-                                            .fields("title", "title.pinyin")
+                                            .fields("title", "title.pinyin", "title.synonym")
                                             .query(keyword)
                                     )
                             )
@@ -211,6 +226,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
+    @Slave
     public List<String> getHotSearches() {
         return searchHistoryService.getHotSearchKeywords(10);
     }
@@ -223,7 +239,12 @@ public class SearchServiceImpl implements SearchService {
     // ========== 内部方法 ==========
 
     /**
-     * 使用 OpenSearch 搜索文章
+     * 使用 OpenSearch 搜索文章（带相关性评分公式）
+     * 评分公式：
+     * - field_weight: 标题匹配×3, 摘要×2, 正文×1
+     * - hot_score_boost: log(1 + hot_score / 100) 加权
+     * - time_decay: 1 / (1 + hours_since_publish / 168) 时间衰减
+     * - personal_boost: 用户偏好分类的文章提升1.5倍
      */
     private long searchArticles(String keyword, Long categoryId, Long tagId,
                                 String timeRange, String startDate, String endDate,
@@ -232,47 +253,92 @@ public class SearchServiceImpl implements SearchService {
         try {
             int from = (page - 1) * pageSize;
 
+            // 获取当前用户偏好分类（用于个性化加权）
+            List<Long> preferredCategoryIds = getPreferredCategoryIds();
+
             SearchResponse<Map> response = openSearchClient.search(s -> {
                 s.index(openSearchConfig.getArticleIndex())
                         .from(from)
-                        .size(pageSize)
-                        .query(q -> q
-                                .bool(b -> {
-                                    // 关键词搜索（标题/内容/摘要 + 拼音）
-                                    b.must(m -> m
-                                            .multiMatch(mm -> mm
-                                                    .fields("title^3", "summary^2", "content", "title.pinyin^2", "authorName", "categoryName")
-                                                    .query(keyword)
+                        .size(pageSize);
+
+                // 使用 function_score 查询实现相关性评分公式
+                s.query(q -> q
+                        .functionScore(fs -> {
+                            // 基础查询：关键词搜索（标题×3, 摘要×2, 正文×1）+ 拼音 + 同义词
+                            fs.query(bq -> bq.bool(b -> {
+                                b.must(m -> m
+                                        .multiMatch(mm -> mm
+                                                .fields("title^3", "summary^2", "content", "title.pinyin^2", "title.synonym^2", "content.synonym", "authorName", "categoryName")
+                                                .query(keyword)
+                                        )
+                                );
+                                // 分类筛选
+                                if (categoryId != null) {
+                                    b.filter(f -> f.term(t -> t.field("categoryId").value(FieldValue.of(categoryId))));
+                                }
+                                // 标签筛选
+                                if (tagId != null) {
+                                    b.filter(f -> f.nested(n -> n
+                                            .path("tags")
+                                            .query(nq -> nq.term(t -> t.field("tags.id").value(FieldValue.of(tagId))))
+                                    ));
+                                }
+                                // 时间范围筛选
+                                String sinceDate = getSinceDate(timeRange, startDate);
+                                if (sinceDate != null) {
+                                    b.filter(f -> f.range(r -> r
+                                            .field("createdAt")
+                                            .gte(JsonData.of(sinceDate))
+                                    ));
+                                }
+                                if (StringUtils.hasText(endDate)) {
+                                    b.filter(f -> f.range(r -> r
+                                            .field("createdAt")
+                                            .lte(JsonData.of(endDate + " 23:59:59"))
+                                    ));
+                                }
+                                return b;
+                            }));
+
+                            // hot_score_boost: log(1 + hot_score / 100) 加权
+                            fs.functions(f -> f
+                                    .log(l -> l
+                                            .logarithmic(ln -> ln
+                                                    .field("hotScore")
+                                                    .offset(1.0)
+                                                    .scale(100.0)
                                             )
+                                    )
+                                    .weight(1.0)
+                            );
+
+                            // time_decay: 1 / (1 + hours_since_publish / 168) 时间衰减
+                            // 使用 exp 衰减函数，以 createdAt 为基准，168小时（7天）为尺度
+                            fs.functions(f -> f
+                                    .exp(e -> e
+                                            .field("createdAt")
+                                            .scale(JsonData.of("168h"))
+                                            .decay(0.5)
+                                    )
+                                    .weight(1.0)
+                            );
+
+                            // personal_boost: 用户偏好分类的文章提升1.5倍
+                            if (!preferredCategoryIds.isEmpty()) {
+                                for (Long prefCategoryId : preferredCategoryIds) {
+                                    fs.functions(f -> f
+                                            .filter(pq -> pq.term(t -> t.field("categoryId").value(FieldValue.of(prefCategoryId))))
+                                            .weight(1.5)
                                     );
-                                    // 分类筛选
-                                    if (categoryId != null) {
-                                        b.filter(f -> f.term(t -> t.field("categoryId").value(FieldValue.of(categoryId))));
-                                    }
-                                    // 标签筛选
-                                    if (tagId != null) {
-                                        b.filter(f -> f.nested(n -> n
-                                                .path("tags")
-                                                .query(nq -> nq.term(t -> t.field("tags.id").value(FieldValue.of(tagId))))
-                                        ));
-                                    }
-                                    // 时间范围筛选
-                                    String sinceDate = getSinceDate(timeRange, startDate);
-                                    if (sinceDate != null) {
-                                        b.filter(f -> f.range(r -> r
-                                                .field("createdAt")
-                                                .gte(JsonData.of(sinceDate))
-                                        ));
-                                    }
-                                    if (StringUtils.hasText(endDate)) {
-                                        b.filter(f -> f.range(r -> r
-                                                .field("createdAt")
-                                                .lte(JsonData.of(endDate + " 23:59:59"))
-                                        ));
-                                    }
-                                    return b;
-                                })
-                        );
+                                }
+                            }
+
+                            fs.scoreMode(FunctionScoreMode.Sum);
+                            fs.boostMode(FunctionScoreQuery.BoostMode.Replace);
+
+                            return fs;
+                        })
+                );
 
                 // 排序
                 applyArticleSort(s, sort);
@@ -315,27 +381,87 @@ public class SearchServiceImpl implements SearchService {
     }
 
     /**
-     * 使用 OpenSearch 搜索用户
+     * 使用 OpenSearch 搜索用户（带相关性评分公式）
+     * 评分公式：
+     * - name_match_score: 精确匹配>前缀匹配>模糊匹配（通过 multiMatch 的 field boost 实现）
+     * - follower_boost: log(1 + follower_count / 100) 加权
+     * - follow_priority: 已关注用户2倍加权
      */
     private long searchUsers(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
         try {
             int from = (page - 1) * pageSize;
 
-            SearchResponse<Map> response = openSearchClient.search(s -> s
-                            .index(openSearchConfig.getUserIndex())
-                            .from(from)
-                            .size(pageSize)
-                            .query(q -> q
-                                    .multiMatch(mm -> mm
-                                            .fields("username^2", "nickname^3", "bio", "username.pinyin^2", "nickname.pinyin^2")
-                                            .query(keyword)
+            // 获取当前用户已关注的用户ID列表（用于 follow_priority 加权）
+            List<Long> followedUserIds = getFollowedUserIds();
+
+            SearchResponse<Map> response = openSearchClient.search(s -> {
+                s.index(openSearchConfig.getUserIndex())
+                        .from(from)
+                        .size(pageSize);
+
+                // 使用 function_score 查询实现用户搜索评分公式
+                s.query(q -> q
+                        .functionScore(fs -> {
+                            // 基础查询：name_match_score（精确匹配>前缀匹配>模糊匹配）
+                            // nickname^3 提升精确匹配权重，username^2 前缀匹配
+                            fs.query(bq -> bq.bool(b -> {
+                                b.should(sh -> sh
+                                        .term(t -> t.field("nickname.keyword").value(FieldValue.of(keyword)).boost(10.0f))
+                                );
+                                b.should(sh -> sh
+                                        .term(t -> t.field("username.keyword").value(FieldValue.of(keyword)).boost(8.0f))
+                                );
+                                b.should(sh -> sh
+                                        .prefix(p -> p.field("nickname").value(keyword).boost(5.0f))
+                                );
+                                b.should(sh -> sh
+                                        .prefix(p -> p.field("username").value(keyword).boost(4.0f))
+                                );
+                                b.should(sh -> sh
+                                        .multiMatch(mm -> mm
+                                                .fields("username^2", "nickname^3", "bio", "username.pinyin^2", "nickname.pinyin^2", "username.synonym^2", "nickname.synonym^2", "bio.synonym")
+                                                .query(keyword)
+                                        )
+                                );
+                                b.minimumShouldMatch("1");
+                                return b;
+                            }));
+
+                            // follower_boost: log(1 + follower_count / 100) 加权
+                            fs.functions(f -> f
+                                    .log(l -> l
+                                            .logarithmic(ln -> ln
+                                                    .field("followerCount")
+                                                    .offset(1.0)
+                                                    .scale(100.0)
+                                            )
                                     )
-                            )
-                            .highlight(h -> h
-                                    .fields("nickname", HighlightField.of(hf -> hf.preTags("<em>").postTags("</em>")))
-                            ),
-                    Map.class
-            );
+                                    .weight(1.0)
+                            );
+
+                            // follow_priority: 已关注用户2倍加权
+                            if (!followedUserIds.isEmpty()) {
+                                for (Long followedId : followedUserIds) {
+                                    fs.functions(f -> f
+                                            .filter(pq -> pq.term(t -> t.field("id").value(FieldValue.of(followedId))))
+                                            .weight(2.0)
+                                    );
+                                }
+                            }
+
+                            fs.scoreMode(FunctionScoreMode.Sum);
+                            fs.boostMode(FunctionScoreQuery.BoostMode.Replace);
+
+                            return fs;
+                        })
+                );
+
+                s.highlight(h -> h
+                        .fields("nickname", HighlightField.of(hf -> hf.preTags("<em>").postTags("</em>")))
+                );
+
+                return s;
+            }, Map.class);
 
             List<UserVO> voList = new ArrayList<>();
             for (Hit<Map> hit : response.hits().hits()) {
@@ -530,20 +656,53 @@ public class SearchServiceImpl implements SearchService {
      */
     private Long getCurrentUserIdSafe() {
         try {
-            org.springframework.security.core.Authentication authentication =
-                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated()) {
-                Object details = authentication.getDetails();
-                if (details instanceof Long) {
-                    return (Long) details;
-                }
-                if (details instanceof Integer) {
-                    return ((Integer) details).longValue();
-                }
-            }
+            return securityUtil.getCurrentUserId();
         } catch (Exception e) {
-            // 未登录
+            return null;
         }
-        return null;
+    }
+
+    /**
+     * 获取当前用户偏好分类ID列表（用于个性化加权）
+     */
+    private List<Long> getPreferredCategoryIds() {
+        try {
+            Long userId = getCurrentUserIdSafe();
+            if (userId == null) {
+                return Collections.emptyList();
+            }
+            List<UserPreferredCategory> preferences = userPreferredCategoryMapper.selectList(
+                    new LambdaQueryWrapper<UserPreferredCategory>()
+                            .eq(UserPreferredCategory::getUserId, userId));
+            return preferences.stream()
+                    .map(UserPreferredCategory::getCategoryId)
+                    .filter(id -> id != null)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("获取用户偏好分类失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 获取当前用户已关注的用户ID列表（用于 follow_priority 加权）
+     */
+    private List<Long> getFollowedUserIds() {
+        try {
+            Long userId = getCurrentUserIdSafe();
+            if (userId == null) {
+                return Collections.emptyList();
+            }
+            List<UserFollow> follows = userFollowMapper.selectList(
+                    new LambdaQueryWrapper<UserFollow>()
+                            .eq(UserFollow::getFollowerId, userId));
+            return follows.stream()
+                    .map(UserFollow::getFollowingId)
+                    .filter(id -> id != null)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("获取用户关注列表失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 }

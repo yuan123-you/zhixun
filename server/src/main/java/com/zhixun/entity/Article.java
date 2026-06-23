@@ -64,6 +64,9 @@ public class Article implements Serializable {
     /** 收藏数，对应 collect_count */
     private Long collectCount;
 
+    /** 分享数，对应 share_count */
+    private Long shareCount;
+
     /** 热度分，对应 hot_score */
     private BigDecimal hotScore;
 

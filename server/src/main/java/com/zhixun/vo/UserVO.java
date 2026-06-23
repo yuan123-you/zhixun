@@ -36,4 +36,10 @@ public class UserVO {
 
     /** 创建时间 */
     private LocalDateTime createdAt;
+
+    /** 是否互相关注 */
+    private Boolean isMutualFollow;
+
+    /** 是否在线 */
+    private Boolean isOnline;
 }

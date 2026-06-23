@@ -3,6 +3,8 @@ package com.zhixun.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.result.PageResult;
+import com.zhixun.config.RedisConfig;
+import com.zhixun.config.Slave;
 import com.zhixun.entity.Article;
 import com.zhixun.entity.ArticleTag;
 import com.zhixun.entity.Category;
@@ -26,11 +28,17 @@ import com.zhixun.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +48,11 @@ import java.util.stream.Collectors;
 
 /**
  * 信息流服务实现
+ * <p>
+ * 增强功能：
+ * - 冷启动处理：新用户使用偏好分类热门文章 + 全局热门 + 随机探索
+ * - 多样性重排：MMR 启发的重排，避免推荐结果同质化
+ * - 时效性提升：近期发布文章获得额外加分
  */
 @Slf4j
 @Service
@@ -55,13 +68,36 @@ public class FeedServiceImpl implements FeedService {
     private final UserPreferredTagMapper userPreferredTagMapper;
     private final UserFollowMapper userFollowMapper;
     private final StringRedisTemplate stringRedisTemplate;
+    private final CollaborativeFilterService collaborativeFilterService;
+    private final ColdStartBanditService coldStartBanditService;
+    private final ContentBasedRecommendService contentBasedRecommendService;
 
     /** 推荐缓存 Key 前缀 */
     private static final String RECOMMEND_KEY_PREFIX = "feed:recommend:";
     /** 推荐缓存 TTL（10分钟） */
     private static final long RECOMMEND_TTL_MINUTES = 10;
 
+    /** 关注动态缓存 Key 前缀 */
+    private static final String FOLLOWING_FEED_KEY_PREFIX = "feed:following:";
+    /** 关注动态缓存 TTL（5分钟） */
+    private static final long FOLLOWING_FEED_TTL_MINUTES = 5;
+
+    /** 关注动态时间线 Key 前缀（Redis Sorted Set，score = 发布时间戳） */
+    private static final String TIMELINE_KEY_PREFIX = "timeline:user:";
+
+    /** 时效性加分：7天内发布的文章获得加分 */
+    private static final long RECENCY_BOOST_DAYS = 7;
+    /** 时效性加分值 */
+    private static final double RECENCY_BOOST_SCORE = 0.15;
+    /** 多样性惩罚系数：同一分类占比超过阈值时降低分数 */
+    private static final double DIVERSITY_PENALTY = 0.3;
+    /** 多样性目标：同一分类最多占比 */
+    private static final double MAX_CATEGORY_RATIO = 0.3;
+    /** 冷启动随机探索比例 */
+    private static final double COLD_START_EXPLORATION_RATIO = 0.2;
+
     @Override
+    @Slave
     public PageResult<ArticleVO> getRecommendFeed(Long userId, Integer refresh, Integer page, Integer pageSize) {
         // 未登录用户返回热门文章
         if (userId == null) {
@@ -97,19 +133,21 @@ public class FeedServiceImpl implements FeedService {
         // 缓存未命中，生成推荐列表
         List<Long> recommendedArticleIds = generateRecommendedIds(userId);
 
-        // 缓存推荐结果
+        // 缓存推荐结果（带 TTL 抖动防雪崩）
         if (!recommendedArticleIds.isEmpty()) {
             // 将文章ID列表以逗号分隔存入 Redis
             String idsStr = recommendedArticleIds.stream()
                     .map(String::valueOf)
                     .collect(Collectors.joining(","));
-            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, RECOMMEND_TTL_MINUTES, TimeUnit.MINUTES);
+            long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(RECOMMEND_TTL_MINUTES);
+            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
         }
 
         return getPagedFromCache(cacheKey, page, pageSize);
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getLatestFeed(Integer page, Integer pageSize) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
@@ -124,7 +162,132 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
+    @Slave
     public PageResult<ArticleVO> getFollowingFeed(Long userId, Integer page, Integer pageSize) {
+        // 尝试从 Redis 缓存获取
+        String cacheKey = FOLLOWING_FEED_KEY_PREFIX + userId;
+        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cachedIds != null) {
+            return getPagedFromCache(cacheKey, page, pageSize);
+        }
+
+        // 缓存未命中，优先从 Redis Sorted Set 时间线获取
+        String timelineKey = TIMELINE_KEY_PREFIX + userId;
+        Long timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
+        if (timelineSize != null && timelineSize > 0) {
+            return getFollowingFeedFromTimeline(userId, timelineKey, page, pageSize);
+        }
+
+        // 时间线也不存在，从数据库查询并构建缓存
+        PageResult<ArticleVO> result = getFollowingFeedFromDB(userId, page, pageSize);
+
+        // 异步缓存结果
+        if (!CollectionUtils.isEmpty(result.getList())) {
+            cacheFollowingFeedAsync(userId, result.getList());
+        }
+
+        return result;
+    }
+
+    @Override
+    public PageResult<ArticleVO> getFollowingFeedByCursor(Long userId, LocalDateTime cursor, Integer pageSize) {
+        // 优先从 Redis Sorted Set 时间线获取
+        String timelineKey = TIMELINE_KEY_PREFIX + userId;
+        Long timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
+
+        if (timelineSize != null && timelineSize > 0) {
+            return getFollowingFeedByCursorFromTimeline(userId, timelineKey, cursor, pageSize);
+        }
+
+        // 时间线不存在，从数据库查询
+        // 查询关注的用户列表
+        List<UserFollow> follows = userFollowMapper.selectList(
+                new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowerId, userId));
+
+        if (CollectionUtils.isEmpty(follows)) {
+            return new PageResult<>(Collections.emptyList(), 0L, 1, pageSize);
+        }
+
+        List<Long> followUserIds = follows.stream()
+                .map(UserFollow::getFollowingId)
+                .collect(Collectors.toList());
+
+        // 查询关注用户的已发布文章（游标分页）
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .in(Article::getAuthorId, followUserIds);
+        if (cursor != null) {
+            wrapper.lt(Article::getCreatedAt, cursor);
+        }
+        wrapper.orderByDesc(Article::getCreatedAt)
+                .last("LIMIT " + pageSize);
+
+        List<Article> articles = articleMapper.selectList(wrapper);
+        List<ArticleVO> voList = convertToVOList(articles);
+
+        // 异步构建时间线
+        rebuildTimelineAsync(userId);
+
+        return new PageResult<>(voList, null, 1, pageSize);
+    }
+
+    @Override
+    @Slave
+    public PageResult<ArticleVO> getHotFeed(Integer page, Integer pageSize) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .orderByDesc(Article::getViewCount)
+                .orderByDesc(Article::getLikeCount)
+                .orderByDesc(Article::getCreatedAt);
+
+        Page<Article> articlePage = new Page<>(page, pageSize);
+        Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
+
+        List<ArticleVO> voList = convertToVOList(result.getRecords());
+        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Async
+    public void fanoutOnPublish(Long authorId, Long articleId, LocalDateTime publishedAt) {
+        try {
+            // 查询作者的所有粉丝
+            List<UserFollow> followers = userFollowMapper.selectList(
+                    new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowingId, authorId));
+
+            if (CollectionUtils.isEmpty(followers)) {
+                return;
+            }
+
+            double score = publishedAt.toEpochSecond(ZoneOffset.of("+8"));
+            String articleValue = String.valueOf(articleId);
+
+            // 推送到每个粉丝的时间线
+            for (UserFollow follow : followers) {
+                String timelineKey = TIMELINE_KEY_PREFIX + follow.getFollowerId();
+                stringRedisTemplate.opsForZSet().add(timelineKey, articleValue, score);
+                // 设置时间线过期时间（7天）
+                stringRedisTemplate.expire(timelineKey, 7, TimeUnit.DAYS);
+            }
+
+            // 清除关注动态缓存，使下次请求重新加载
+            for (UserFollow follow : followers) {
+                String cacheKey = FOLLOWING_FEED_KEY_PREFIX + follow.getFollowerId();
+                stringRedisTemplate.delete(cacheKey);
+            }
+
+            log.info("Fan-out 完成: authorId={}, articleId={}, 粉丝数={}", authorId, articleId, followers.size());
+        } catch (Exception e) {
+            log.error("Fan-out 失败: authorId={}, articleId={}, error={}", authorId, articleId, e.getMessage());
+        }
+    }
+
+    // ========== 内部方法 ==========
+
+    /**
+     * 从数据库查询关注动态
+     */
+    private PageResult<ArticleVO> getFollowingFeedFromDB(Long userId, Integer page, Integer pageSize) {
         // 查询关注的用户列表
         List<UserFollow> follows = userFollowMapper.selectList(
                 new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowerId, userId));
@@ -150,29 +313,429 @@ public class FeedServiceImpl implements FeedService {
         return new PageResult<>(voList, result.getTotal(), page, pageSize);
     }
 
-    // ========== 内部方法 ==========
-
     /**
-     * 未登录用户返回热门文章
+     * 从 Redis Sorted Set 时间线获取关注动态（页码分页）
      */
-    private PageResult<ArticleVO> getHotFeed(Integer page, Integer pageSize) {
-        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
-                .orderByDesc(Article::getViewCount)
-                .orderByDesc(Article::getLikeCount)
-                .orderByDesc(Article::getCreatedAt);
+    private PageResult<ArticleVO> getFollowingFeedFromTimeline(Long userId, String timelineKey, Integer page, Integer pageSize) {
+        Long total = stringRedisTemplate.opsForZSet().size(timelineKey);
+        if (total == null || total == 0) {
+            return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
+        }
 
-        Page<Article> articlePage = new Page<>(page, pageSize);
-        Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
+        // Sorted Set 按分数降序（最新在前）
+        long start = (long) (page - 1) * pageSize;
+        long end = start + pageSize - 1;
+        Set<String> articleIdStrs = stringRedisTemplate.opsForZSet().reverseRange(timelineKey, start, end);
 
-        List<ArticleVO> voList = convertToVOList(result.getRecords());
-        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+        if (CollectionUtils.isEmpty(articleIdStrs)) {
+            return new PageResult<>(Collections.emptyList(), total, page, pageSize);
+        }
+
+        List<Long> articleIds = articleIdStrs.stream()
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+
+        // 批量查询文章
+        List<Article> articles = articleMapper.selectBatchIds(articleIds);
+        // 过滤已发布状态的文章
+        articles = articles.stream()
+                .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED && a.getDeletedAt() == null)
+                .collect(Collectors.toList());
+
+        // 保持时间线中的顺序
+        Map<Long, Article> articleMap = articles.stream()
+                .collect(Collectors.toMap(Article::getId, a -> a));
+        List<Article> orderedArticles = articleIds.stream()
+                .map(articleMap::get)
+                .filter(a -> a != null)
+                .collect(Collectors.toList());
+
+        List<ArticleVO> voList = convertToVOList(orderedArticles);
+        return new PageResult<>(voList, total, page, pageSize);
     }
 
     /**
-     * 基于用户偏好生成推荐文章ID列表
+     * 从 Redis Sorted Set 时间线获取关注动态（游标分页）
+     */
+    private PageResult<ArticleVO> getFollowingFeedByCursorFromTimeline(Long userId, String timelineKey, LocalDateTime cursor, Integer pageSize) {
+        Set<String> articleIdStrs;
+        if (cursor == null) {
+            // 首次加载，获取最新的 pageSize 条
+            articleIdStrs = stringRedisTemplate.opsForZSet().reverseRange(timelineKey, 0, pageSize - 1);
+        } else {
+            // 游标分页：获取分数小于 cursor 的 pageSize 条
+            double maxScore = cursor.toEpochSecond(ZoneOffset.of("+8"));
+            // 使用 reverseRangeByScore 获取分数小于 maxScore 的元素
+            articleIdStrs = stringRedisTemplate.opsForZSet().reverseRangeByScore(timelineKey, 0, maxScore - 1, 0, pageSize);
+        }
+
+        if (CollectionUtils.isEmpty(articleIdStrs)) {
+            return new PageResult<>(Collections.emptyList(), null, 1, pageSize);
+        }
+
+        List<Long> articleIds = articleIdStrs.stream()
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+
+        // 批量查询文章
+        List<Article> articles = articleMapper.selectBatchIds(articleIds);
+        articles = articles.stream()
+                .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED && a.getDeletedAt() == null)
+                .collect(Collectors.toList());
+
+        // 保持时间线中的顺序
+        Map<Long, Article> articleMap = articles.stream()
+                .collect(Collectors.toMap(Article::getId, a -> a));
+        List<Article> orderedArticles = articleIds.stream()
+                .map(articleMap::get)
+                .filter(a -> a != null)
+                .collect(Collectors.toList());
+
+        List<ArticleVO> voList = convertToVOList(orderedArticles);
+        return new PageResult<>(voList, null, 1, pageSize);
+    }
+
+    /**
+     * 异步缓存关注动态结果
+     */
+    @Async
+    public void cacheFollowingFeedAsync(Long userId, List<ArticleVO> articles) {
+        try {
+            String cacheKey = FOLLOWING_FEED_KEY_PREFIX + userId;
+            String idsStr = articles.stream()
+                    .map(vo -> String.valueOf(vo.getId()))
+                    .collect(Collectors.joining(","));
+            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, FOLLOWING_FEED_TTL_MINUTES, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("缓存关注动态失败: userId={}, error={}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * 异步重建用户时间线
+     */
+    @Async
+    public void rebuildTimelineAsync(Long userId) {
+        try {
+            // 查询关注的用户列表
+            List<UserFollow> follows = userFollowMapper.selectList(
+                    new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowerId, userId));
+
+            if (CollectionUtils.isEmpty(follows)) {
+                return;
+            }
+
+            List<Long> followUserIds = follows.stream()
+                    .map(UserFollow::getFollowingId)
+                    .collect(Collectors.toList());
+
+            // 查询关注用户的已发布文章（最近500条）
+            LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                    .in(Article::getAuthorId, followUserIds)
+                    .orderByDesc(Article::getCreatedAt)
+                    .last("LIMIT 500");
+            List<Article> articles = articleMapper.selectList(wrapper);
+
+            if (CollectionUtils.isEmpty(articles)) {
+                return;
+            }
+
+            // 构建 Redis Sorted Set
+            String timelineKey = TIMELINE_KEY_PREFIX + userId;
+            for (Article article : articles) {
+                if (article.getCreatedAt() != null) {
+                    double score = article.getCreatedAt().toEpochSecond(ZoneOffset.of("+8"));
+                    stringRedisTemplate.opsForZSet().add(timelineKey, String.valueOf(article.getId()), score);
+                }
+            }
+            // 设置过期时间（7天）
+            stringRedisTemplate.expire(timelineKey, 7, TimeUnit.DAYS);
+
+            log.info("重建时间线完成: userId={}, 文章数={}", userId, articles.size());
+        } catch (Exception e) {
+            log.error("重建时间线失败: userId={}, error={}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * 基于协同过滤 + Bandit冷启动 + 内容相似度 + 偏好推荐生成推荐文章ID列表
+     * <p>
+     * 增强功能：
+     * - 冷启动处理：新用户使用偏好分类热门文章 + 全局热门 + 随机探索
+     * - 多样性重排：MMR 启发的重排，避免推荐结果同质化
+     * - 时效性提升：近期发布文章获得额外加分
      */
     private List<Long> generateRecommendedIds(Long userId) {
+        List<Long> articleIds = new ArrayList<>();
+        boolean isColdStart = coldStartBanditService.shouldUseBandit(userId);
+
+        // ========== 第一阶段：协同过滤推荐 ==========
+        try {
+            List<Long> cfArticleIds = collaborativeFilterService.recommendArticles(userId, 80);
+            if (!CollectionUtils.isEmpty(cfArticleIds)) {
+                articleIds.addAll(cfArticleIds);
+                log.debug("协同过滤推荐文章数: {}", cfArticleIds.size());
+            }
+        } catch (Exception e) {
+            log.warn("协同过滤推荐异常，降级到偏好推荐: {}", e.getMessage());
+        }
+
+        // ========== 第二阶段：冷启动处理 ==========
+        if (isColdStart) {
+            // 冷启动用户：使用偏好分类热门文章 + 全局热门 + 随机探索
+            List<Long> coldStartIds = getColdStartArticleIds(userId, articleIds);
+            articleIds.addAll(coldStartIds);
+            log.debug("冷启动推荐文章数: {}", coldStartIds.size());
+        } else if (articleIds.size() < 20) {
+            // Bandit冷启动推荐
+            try {
+                List<Long> banditCategoryIds = coldStartBanditService.recommendCategories(userId, 5);
+                if (!CollectionUtils.isEmpty(banditCategoryIds)) {
+                    Set<Long> excludeIds = new HashSet<>(articleIds);
+                    LambdaQueryWrapper<Article> banditWrapper = new LambdaQueryWrapper<>();
+                    banditWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                            .in(Article::getCategoryId, banditCategoryIds)
+                            .notIn(!excludeIds.isEmpty(), Article::getId, excludeIds)
+                            .orderByDesc(Article::getCreatedAt)
+                            .last("LIMIT 30");
+                    List<Article> banditArticles = articleMapper.selectList(banditWrapper);
+                    List<Long> banditArticleIds = banditArticles.stream()
+                            .map(Article::getId).collect(Collectors.toList());
+                    articleIds.addAll(banditArticleIds);
+                    log.debug("Bandit冷启动推荐文章数: {}", banditArticleIds.size());
+                }
+            } catch (Exception e) {
+                log.warn("Bandit冷启动推荐异常: {}", e.getMessage());
+            }
+        }
+
+        // ========== 第三阶段：内容相似度推荐 ==========
+        if (articleIds.size() < 20) {
+            try {
+                Set<Long> excludeIds = new HashSet<>(articleIds);
+                List<Long> cbArticleIds = contentBasedRecommendService.recommendByContent(userId, 30);
+                cbArticleIds = cbArticleIds.stream()
+                        .filter(id -> !excludeIds.contains(id))
+                        .collect(Collectors.toList());
+                articleIds.addAll(cbArticleIds);
+                log.debug("内容相似度推荐文章数: {}", cbArticleIds.size());
+            } catch (Exception e) {
+                log.warn("内容相似度推荐异常: {}", e.getMessage());
+            }
+        }
+
+        // ========== 第四阶段：偏好推荐兜底 ==========
+        if (articleIds.size() < 20) {
+            List<Long> preferenceIds = getPreferenceBasedArticleIds(userId, articleIds);
+            articleIds.addAll(preferenceIds);
+        }
+
+        // ========== 第五阶段：热门文章补充 ==========
+        if (articleIds.size() < 20) {
+            LambdaQueryWrapper<Article> hotWrapper = new LambdaQueryWrapper<>();
+            hotWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                    .notIn(!articleIds.isEmpty(), Article::getId, articleIds)
+                    .orderByDesc(Article::getViewCount)
+                    .last("LIMIT " + (50 - articleIds.size()));
+            List<Article> hotArticles = articleMapper.selectList(hotWrapper);
+            articleIds.addAll(hotArticles.stream().map(Article::getId).collect(Collectors.toList()));
+        }
+
+        // ========== 第六阶段：多样性重排 + 时效性提升 ==========
+        articleIds = applyDiversityAndRecency(articleIds);
+
+        return articleIds;
+    }
+
+    /**
+     * 冷启动用户的推荐逻辑
+     * <p>
+     * 策略：
+     * 1. 用户注册时选择的偏好分类下的热门文章（50%）
+     * 2. 全局热门文章（30%）
+     * 3. 随机探索文章，来自不同分类（20%）
+     */
+    private List<Long> getColdStartArticleIds(Long userId, List<Long> excludeIds) {
+        List<Long> result = new ArrayList<>();
+        Set<Long> allExcludeIds = new HashSet<>(excludeIds);
+
+        // 1. 偏好分类下的热门文章
+        List<UserPreferredCategory> preferredCategories = userPreferredCategoryMapper.selectList(
+                new LambdaQueryWrapper<UserPreferredCategory>().eq(UserPreferredCategory::getUserId, userId));
+        List<Long> categoryIds = preferredCategories.stream()
+                .map(UserPreferredCategory::getCategoryId)
+                .collect(Collectors.toList());
+
+        if (!CollectionUtils.isEmpty(categoryIds)) {
+            LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                    .in(Article::getCategoryId, categoryIds)
+                    .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
+                    .orderByDesc(Article::getViewCount)
+                    .orderByDesc(Article::getCreatedAt)
+                    .last("LIMIT 25");
+            List<Article> categoryArticles = articleMapper.selectList(wrapper);
+            List<Long> categoryArticleIds = categoryArticles.stream()
+                    .map(Article::getId)
+                    .collect(Collectors.toList());
+            result.addAll(categoryArticleIds);
+            allExcludeIds.addAll(categoryArticleIds);
+        }
+
+        // 2. 全局热门文章
+        LambdaQueryWrapper<Article> hotWrapper = new LambdaQueryWrapper<>();
+        hotWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
+                .orderByDesc(Article::getViewCount)
+                .orderByDesc(Article::getLikeCount)
+                .last("LIMIT 15");
+        List<Article> hotArticles = articleMapper.selectList(hotWrapper);
+        List<Long> hotArticleIds = hotArticles.stream()
+                .map(Article::getId)
+                .collect(Collectors.toList());
+        result.addAll(hotArticleIds);
+        allExcludeIds.addAll(hotArticleIds);
+
+        // 3. 随机探索文章（来自不同分类）
+        int explorationCount = (int) (result.size() * COLD_START_EXPLORATION_RATIO / (1 - COLD_START_EXPLORATION_RATIO));
+        explorationCount = Math.max(5, explorationCount);
+        LambdaQueryWrapper<Article> exploreWrapper = new LambdaQueryWrapper<>();
+        exploreWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
+                .orderByDesc(Article::getCreatedAt)
+                .last("LIMIT " + explorationCount * 3);
+        List<Article> exploreCandidates = articleMapper.selectList(exploreWrapper);
+        if (!CollectionUtils.isEmpty(exploreCandidates)) {
+            Collections.shuffle(exploreCandidates);
+            List<Long> exploreIds = exploreCandidates.stream()
+                    .limit(explorationCount)
+                    .map(Article::getId)
+                    .collect(Collectors.toList());
+            result.addAll(exploreIds);
+        }
+
+        return result;
+    }
+
+    /**
+     * 应用多样性重排和时效性提升
+     * <p>
+     * 1. 时效性提升：7天内发布的文章获得额外加分
+     * 2. 多样性重排：MMR（Maximal Marginal Relevance）启发的重排
+     * - 对同一分类的文章进行惩罚，避免推荐结果同质化
+     * - 确保推荐列表中不同分类的文章比例合理
+     */
+    private List<Long> applyDiversityAndRecency(List<Long> articleIds) {
+        if (CollectionUtils.isEmpty(articleIds)) {
+            return articleIds;
+        }
+
+        // 批量查询文章信息（用于获取分类和发布时间）
+        List<Article> articles = articleMapper.selectBatchIds(articleIds);
+        if (CollectionUtils.isEmpty(articles)) {
+            return articleIds;
+        }
+
+        Map<Long, Article> articleMap = articles.stream()
+                .collect(Collectors.toMap(Article::getId, a -> a, (a, b) -> a));
+
+        // 1. 计算每篇文章的综合分数（基础分 + 时效性加分）
+        Map<Long, Double> scoreMap = new HashMap<>();
+        for (Long articleId : articleIds) {
+            Article article = articleMap.get(articleId);
+            if (article == null) {
+                continue;
+            }
+
+            // 基础分：基于浏览量归一化
+            double baseScore = 0.5;
+            if (article.getViewCount() != null && article.getViewCount() > 0) {
+                baseScore = Math.min(1.0, Math.log10(article.getViewCount()) / 5.0);
+            }
+
+            // 时效性加分
+            double recencyBoost = calculateRecencyBoost(article);
+
+            scoreMap.put(articleId, baseScore + recencyBoost);
+        }
+
+        // 2. MMR 启发的多样性重排
+        List<Long> result = new ArrayList<>();
+        Map<Long, Integer> categoryCount = new HashMap<>();
+        Set<Long> selectedIds = new HashSet<>();
+
+        for (Long articleId : articleIds) {
+            if (selectedIds.contains(articleId)) {
+                continue;
+            }
+
+            Article article = articleMap.get(articleId);
+            if (article == null) {
+                result.add(articleId);
+                selectedIds.add(articleId);
+                continue;
+            }
+
+            double score = scoreMap.getOrDefault(articleId, 0.5);
+
+            // 分类多样性惩罚
+            if (article.getCategoryId() != null) {
+                int count = categoryCount.getOrDefault(article.getCategoryId(), 0);
+                double currentRatio = (double) count / Math.max(1, result.size());
+                if (currentRatio > MAX_CATEGORY_RATIO && count > 0) {
+                    score -= DIVERSITY_PENALTY;
+                }
+            }
+
+            // 分数太低的文章跳过（但保证至少有结果）
+            if (score < 0 && result.size() >= 20) {
+                continue;
+            }
+
+            result.add(articleId);
+            selectedIds.add(articleId);
+
+            if (article.getCategoryId() != null) {
+                categoryCount.merge(article.getCategoryId(), 1, Integer::sum);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 计算文章的时效性加分
+     * 7天内发布的文章获得加分，越新加分越高
+     *
+     * @param article 文章实体
+     * @return 时效性加分 [0, RECENCY_BOOST_SCORE]
+     */
+    private double calculateRecencyBoost(Article article) {
+        LocalDateTime publishTime = article.getPublishAt() != null ? article.getPublishAt() : article.getCreatedAt();
+        if (publishTime == null) {
+            return 0.0;
+        }
+
+        long daysSincePublish = ChronoUnit.DAYS.between(publishTime, LocalDateTime.now());
+        if (daysSincePublish < 0) {
+            daysSincePublish = 0;
+        }
+
+        if (daysSincePublish >= RECENCY_BOOST_DAYS) {
+            return 0.0;
+        }
+
+        // 线性衰减：发布当天加分最高，7天后为0
+        return RECENCY_BOOST_SCORE * (1.0 - (double) daysSincePublish / RECENCY_BOOST_DAYS);
+    }
+
+    /**
+     * 基于用户偏好的文章推荐（兜底策略）
+     */
+    private List<Long> getPreferenceBasedArticleIds(Long userId, List<Long> excludeIds) {
+        List<Long> result = new ArrayList<>();
+
         // 获取用户偏好的分类
         List<UserPreferredCategory> preferredCategories = userPreferredCategoryMapper.selectList(
                 new LambdaQueryWrapper<UserPreferredCategory>().eq(UserPreferredCategory::getUserId, userId));
@@ -188,28 +751,27 @@ public class FeedServiceImpl implements FeedService {
                 .collect(Collectors.toList());
 
         // 查询偏好分类下的文章
-        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
-
         if (!CollectionUtils.isEmpty(categoryIds)) {
-            wrapper.in(Article::getCategoryId, categoryIds);
+            LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                    .in(Article::getCategoryId, categoryIds)
+                    .notIn(!excludeIds.isEmpty(), Article::getId, excludeIds)
+                    .orderByDesc(Article::getViewCount)
+                    .orderByDesc(Article::getCreatedAt)
+                    .last("LIMIT 100");
+            List<Article> preferredArticles = articleMapper.selectList(wrapper);
+            result.addAll(preferredArticles.stream().map(Article::getId).collect(Collectors.toList()));
         }
-
-        // 优先查询偏好分类的文章
-        List<Article> preferredArticles = articleMapper.selectList(
-                wrapper.orderByDesc(Article::getViewCount).orderByDesc(Article::getCreatedAt).last("LIMIT 100"));
-
-        List<Long> articleIds = preferredArticles.stream()
-                .map(Article::getId)
-                .collect(Collectors.toList());
 
         // 如果偏好标签不为空，查询包含这些标签的文章并追加
         if (!CollectionUtils.isEmpty(tagIds)) {
             List<ArticleTag> articleTags = articleTagMapper.selectList(
                     new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getTagId, tagIds));
+            Set<Long> allExcludeIds = new HashSet<>(excludeIds);
+            allExcludeIds.addAll(result);
             List<Long> tagArticleIds = articleTags.stream()
                     .map(ArticleTag::getArticleId)
-                    .filter(id -> !articleIds.contains(id))
+                    .filter(id -> !allExcludeIds.contains(id))
                     .distinct()
                     .collect(Collectors.toList());
 
@@ -220,25 +782,11 @@ public class FeedServiceImpl implements FeedService {
                                 .in(Article::getId, tagArticleIds)
                                 .orderByDesc(Article::getViewCount)
                                 .last("LIMIT 50"));
-                List<Long> tagArticleIdList = tagArticles.stream()
-                        .map(Article::getId)
-                        .collect(Collectors.toList());
-                articleIds.addAll(tagArticleIdList);
+                result.addAll(tagArticles.stream().map(Article::getId).collect(Collectors.toList()));
             }
         }
 
-        // 如果推荐结果不足，补充热门文章
-        if (articleIds.size() < 20) {
-            LambdaQueryWrapper<Article> hotWrapper = new LambdaQueryWrapper<>();
-            hotWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
-                    .notIn(!articleIds.isEmpty(), Article::getId, articleIds)
-                    .orderByDesc(Article::getViewCount)
-                    .last("LIMIT " + (50 - articleIds.size()));
-            List<Article> hotArticles = articleMapper.selectList(hotWrapper);
-            articleIds.addAll(hotArticles.stream().map(Article::getId).collect(Collectors.toList()));
-        }
-
-        return articleIds;
+        return result;
     }
 
     /**

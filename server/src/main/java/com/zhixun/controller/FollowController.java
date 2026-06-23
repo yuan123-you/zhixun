@@ -1,13 +1,11 @@
 package com.zhixun.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zhixun.common.annotation.OperationLog;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.entity.User;
-import com.zhixun.entity.UserSettings;
 import com.zhixun.mapper.UserMapper;
-import com.zhixun.mapper.UserSettingsMapper;
 import com.zhixun.service.FollowService;
 import com.zhixun.service.OnlineStatusService;
 import com.zhixun.vo.UserVO;
@@ -33,7 +31,6 @@ public class FollowController {
 
     private final FollowService followService;
     private final OnlineStatusService onlineStatusService;
-    private final UserSettingsMapper userSettingsMapper;
     private final UserMapper userMapper;
     private final SecurityUtil securityUtil;
 
@@ -42,6 +39,7 @@ public class FollowController {
      */
     @PostMapping("/users/{id}/follow")
     @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "关注", action = "关注/取消关注")
     public R<Map<String, Object>> toggleFollow(@PathVariable Long id) {
         Long userId = securityUtil.getCurrentUserId();
         Map<String, Object> result = followService.toggleFollow(userId, id);
@@ -55,8 +53,9 @@ public class FollowController {
     public R<PageResult<UserVO>> getFollowing(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        return R.ok(followService.getFollowing(id, page, pageSize));
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String keyword) {
+        return R.ok(followService.getFollowing(id, page, pageSize, keyword));
     }
 
     /**
@@ -66,8 +65,9 @@ public class FollowController {
     public R<PageResult<UserVO>> getFollowers(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        return R.ok(followService.getFollowers(id, page, pageSize));
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String keyword) {
+        return R.ok(followService.getFollowers(id, page, pageSize, keyword));
     }
 
     /**
@@ -76,14 +76,8 @@ public class FollowController {
     @GetMapping("/users/{id}/online-status")
     @PreAuthorize("isAuthenticated()")
     public R<Map<String, Object>> getOnlineStatus(@PathVariable Long id) {
-        boolean online = onlineStatusService.getOnlineStatus(id);
-
-        // 查询隐私设置
-        UserSettings settings = userSettingsMapper.selectOne(
-                new LambdaQueryWrapper<UserSettings>().eq(UserSettings::getUserId, id));
-
-        int showOnlineStatus = (settings != null && settings.getShowOnlineStatus() != null)
-                ? settings.getShowOnlineStatus() : 1;
+        Long requesterId = securityUtil.getCurrentUserId();
+        Boolean online = onlineStatusService.getOnlineStatus(id, requesterId);
 
         User user = userMapper.selectById(id);
         String lastActiveAt = null;
@@ -91,12 +85,18 @@ public class FollowController {
             lastActiveAt = user.getLastActiveAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
 
-        // 如果用户隐藏在线状态，始终返回离线
-        int isOnline = (showOnlineStatus == 1 && online) ? 1 : 0;
+        // online 为 null 表示目标用户隐藏了在线状态
+        if (online == null) {
+            return R.ok(Map.of(
+                    "is_online", 0,
+                    "show_online_status", 0,
+                    "last_active_at", ""
+            ));
+        }
 
         return R.ok(Map.of(
-                "is_online", isOnline,
-                "show_online_status", showOnlineStatus,
+                "is_online", online ? 1 : 0,
+                "show_online_status", 1,
                 "last_active_at", lastActiveAt != null ? lastActiveAt : ""
         ));
     }

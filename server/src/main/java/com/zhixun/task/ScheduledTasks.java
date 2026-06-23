@@ -7,6 +7,7 @@ import com.zhixun.entity.ViewHistory;
 import com.zhixun.mapper.ArticleViewHistoryMapper;
 import com.zhixun.mapper.OperationLogMapper;
 import com.zhixun.mapper.ViewHistoryMapper;
+import com.zhixun.service.ArticleService;
 import com.zhixun.service.HotScoreService;
 import com.zhixun.service.RankService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class ScheduledTasks {
 
     private final HotScoreService hotScoreService;
     private final RankService rankService;
+    private final ArticleService articleService;
     private final ViewHistoryMapper viewHistoryMapper;
     private final ArticleViewHistoryMapper articleViewHistoryMapper;
     private final OperationLogMapper operationLogMapper;
@@ -142,6 +144,20 @@ public class ScheduledTasks {
             }
         } catch (Exception e) {
             log.error("更新在线状态失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 每分钟：检查定时发布文章
+     * 查询所有 status=PENDING 且 publish_at <= now() 的文章，将其状态更新为 PUBLISHED
+     */
+    @Scheduled(cron = "0 * * * * ?")
+    public void checkScheduledPublish() {
+        log.info("===== 定时任务：检查定时发布文章 =====");
+        try {
+            articleService.publishScheduledArticles();
+        } catch (Exception e) {
+            log.error("定时发布检查失败: {}", e.getMessage());
         }
     }
 }

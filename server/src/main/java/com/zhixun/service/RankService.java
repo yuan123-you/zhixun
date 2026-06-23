@@ -1,6 +1,8 @@
 package com.zhixun.service;
 
 import com.zhixun.vo.HotArticleVO;
+import com.zhixun.vo.TagVO;
+import com.zhixun.vo.UserVO;
 
 import java.util.List;
 
@@ -36,4 +38,28 @@ public interface RankService {
      * @return 相关文章列表
      */
     List<HotArticleVO> getRelatedArticles(Long articleId, Integer limit);
+
+    /**
+     * 热门标签（最近7天文章数最多的标签）
+     *
+     * @param limit 返回数量
+     * @return 热门标签列表
+     */
+    List<TagVO> getHotTags(int limit);
+
+    /**
+     * 热门用户（最近7天文章浏览量最高的用户）
+     *
+     * @param limit 返回数量
+     * @return 热门用户列表
+     */
+    List<UserVO> getHotUsers(int limit);
+
+    /**
+     * 实时热榜（基于 Redis Sorted Set 滑动窗口）
+     *
+     * @param limit 返回数量
+     * @return 实时热门文章列表
+     */
+    List<HotArticleVO> getRealtimeHot(int limit);
 }

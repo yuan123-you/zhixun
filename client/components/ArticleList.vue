@@ -1,17 +1,24 @@
 <template>
-  <!-- 文章列表组件：支持无限滚动和骨架屏 -->
-  <div class="space-y-4">
+  <!-- 文章列表组件：支持无限滚动、骨架屏、平板双列布局 -->
+  <div>
     <!-- 骨架屏加载状态 -->
     <template v-if="loading && articles.length === 0">
-      <LoadingSkeleton v-for="i in 5" :key="i" type="article" />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <LoadingSkeleton v-for="i in 6" :key="i" type="article" />
+      </div>
     </template>
 
     <!-- 文章列表 -->
     <template v-else>
-      <ArticleCard v-for="article in articles" :key="article.id" :article="article" />
+      <!-- 平板端双列网格，移动端单列 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ArticleCard v-for="article in articles" :key="article.id" :article="article" />
+      </div>
 
       <!-- 加载更多骨架屏 -->
-      <LoadingSkeleton v-if="loading && articles.length > 0" type="article" />
+      <div v-if="loading && articles.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <LoadingSkeleton v-for="i in 2" :key="'more-' + i" type="article" />
+      </div>
 
       <!-- 没有更多数据 -->
       <div v-if="!hasMore && articles.length > 0" class="text-center text-sm text-gray-400 dark:text-gray-500 py-4">
@@ -28,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-/** 文章列表组件：支持无限滚动和骨架屏 */
+/** 文章列表组件：支持无限滚动、骨架屏、平板双列布局 */
 import type { Article } from '~/types'
 
 const props = defineProps<{

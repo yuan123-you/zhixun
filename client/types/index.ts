@@ -20,6 +20,7 @@ export interface Article {
   collectCount: number
   commentCount: number
   viewCount: number
+  shareCount: number
   isLiked: boolean
   isCollected: boolean
   status: ArticleStatus
@@ -69,9 +70,11 @@ export interface Comment {
   user: User
   content: string
   parentId: number | null
+  replyUser?: User
   replies: Comment[]
   likeCount: number
   isLiked: boolean
+  status: number // 0=待审核, 1=正常, 2=已删除
   createdAt: string
 }
 
@@ -103,13 +106,15 @@ export interface Notification {
   createdAt: string
 }
 
-/** 通知类型枚举 */
+/** 通知类型枚举（与后端 NotificationTypeEnum 对齐） */
 export enum NotificationType {
-  System = 0,
-  Like = 1,
-  Comment = 2,
-  Follow = 3,
-  Mention = 4,
+  System = 1,
+  Audit = 2,
+  Interact = 3,
+  Follow = 4,
+  Message = 5,
+  CommentReply = 6,
+  Mention = 7,
 }
 
 /** 消息接口 */
@@ -172,10 +177,23 @@ export interface PageResult<T> {
   page_size: number
 }
 
-/**
- * @deprecated 使用 PageResult 代替，与后端保持一致
- */
-export type SearchResult<T> = PageResult<T>
+/** 搜索结果接口（与后端 SearchResultVO 对齐） */
+export interface SearchResultVO<T = any> {
+  /** 搜索关键词 */
+  keyword: string
+  /** 总结果数 */
+  total: number
+  /** 搜索类型 */
+  type: string
+  /** 文章列表（type=article 或 type=all 时有值） */
+  articles: T[]
+  /** 用户列表（type=user 或 type=all 时有值） */
+  users: T[]
+  /** 图片列表（type=image 或 type=all 时有值） */
+  images: T[]
+  /** 搜索耗时（毫秒） */
+  took: number
+}
 
 /** 登录请求 */
 export interface LoginRequest {

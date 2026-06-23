@@ -1,4 +1,4 @@
-import type { User, UserSettings, Article, PaginationParams, SearchResult } from '~/types'
+import type { User, UserSettings, Article, Comment, PaginationParams, PageResult } from '~/types'
 
 /** 用户API */
 export const userApi = {
@@ -29,12 +29,36 @@ export const userApi = {
   /** 获取浏览历史 */
   getViewHistory: (params?: PaginationParams) => {
     const { get } = useApi()
-    return get<SearchResult<Article>>('/users/me/history', params)
+    return get<PageResult<Article>>('/users/me/history', params)
   },
 
-  /** 获取用户发布的文章 */
+  /** 获取用户发布的文章（他人） */
   getUserArticles: (userId: number, params?: PaginationParams) => {
     const { get } = useApi()
-    return get<SearchResult<Article>>(`/users/${userId}/articles`, params)
+    return get<PageResult<Article>>(`/users/${userId}/articles`, params)
+  },
+
+  /** 获取我发布的文章 */
+  getMyArticles: (params?: PaginationParams) => {
+    const { get } = useApi()
+    return get<PageResult<Article>>('/users/me/articles', params)
+  },
+
+  /** 获取我收藏的文章 */
+  getMyCollections: (params?: PaginationParams) => {
+    const { get } = useApi()
+    return get<PageResult<Article>>('/users/me/collections', params)
+  },
+
+  /** 获取我点赞的文章 */
+  getMyLikes: (params?: PaginationParams) => {
+    const { get } = useApi()
+    return get<PageResult<Article>>('/users/me/likes', params)
+  },
+
+  /** 获取我发表的评论 */
+  getMyComments: (params?: PaginationParams) => {
+    const { get } = useApi()
+    return get<PageResult<Comment>>('/users/me/comments', params)
   },
 }

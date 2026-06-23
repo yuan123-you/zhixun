@@ -64,6 +64,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '敏感词管理', icon: 'Warning' },
       },
       {
+        path: 'banners',
+        name: 'Banners',
+        component: () => import('@/views/banners/index.vue'),
+        meta: { title: '轮播图管理', icon: 'Picture' },
+      },
+      {
+        path: 'announcements',
+        name: 'Announcements',
+        component: () => import('@/views/announcements/index.vue'),
+        meta: { title: '公告管理', icon: 'Bell' },
+      },
+      {
         path: 'operation-logs',
         name: 'OperationLogs',
         component: () => import('@/views/operation-logs/index.vue'),

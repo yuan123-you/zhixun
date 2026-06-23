@@ -8,6 +8,8 @@ import com.zhixun.dto.article.ArticleUpdateRequest;
 import com.zhixun.vo.ArticleDetailVO;
 import com.zhixun.vo.ArticleVO;
 
+import java.util.List;
+
 /**
  * 文章服务接口
  */
@@ -64,4 +66,26 @@ public interface ArticleService {
      * @param request   状态变更请求
      */
     void updateArticleStatus(Long userId, Long articleId, ArticleStatusRequest request);
+
+    /**
+     * 相关推荐（基于标签/分类）
+     * 按匹配标签数降序、浏览量降序排序，结果缓存30分钟
+     *
+     * @param articleId 文章ID
+     * @param limit     返回数量
+     * @return 相关文章列表
+     */
+    List<ArticleVO> getRelatedArticles(Long articleId, Integer limit);
+
+    /**
+     * 增加文章分享次数
+     *
+     * @param articleId 文章ID
+     */
+    void incrementShareCount(Long articleId);
+
+    /**
+     * 定时发布：将到期的待审核文章发布
+     */
+    void publishScheduledArticles();
 }

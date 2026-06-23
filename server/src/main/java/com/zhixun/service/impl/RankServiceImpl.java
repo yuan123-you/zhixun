@@ -14,17 +14,22 @@ import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.service.RankService;
 import com.zhixun.vo.HotArticleVO;
+import com.zhixun.vo.TagVO;
+import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -48,6 +53,8 @@ public class RankServiceImpl implements RankService {
     private static final String RANK_KEY_PREFIX = "rank:hot:";
     /** 排行榜缓存 TTL（5分钟） */
     private static final long RANK_TTL_MINUTES = 5;
+    /** 实时热榜 Redis Sorted Set Key（与 HotScoreServiceImpl 保持一致） */
+    private static final String HOT_RANK_KEY = "hot:rank";
 
     @Override
     public List<HotArticleVO> getHotRank(String period, Long categoryId, Integer limit) {
@@ -205,6 +212,194 @@ public class RankServiceImpl implements RankService {
         wrapper.orderByDesc(Article::getViewCount).last("LIMIT " + limit);
         List<Article> articles = articleMapper.selectList(wrapper);
         return convertToHotArticleVOList(articles);
+    }
+
+    @Override
+    public List<TagVO> getHotTags(int limit) {
+        if (limit <= 0) {
+            limit = 10;
+        }
+
+        // 查询最近7天已发布的文章
+        LocalDateTime since = LocalDateTime.now().minusDays(7);
+        List<Article> recentArticles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>()
+                        .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                        .ge(Article::getCreatedAt, since)
+                        .select(Article::getId));
+
+        if (CollectionUtils.isEmpty(recentArticles)) {
+            return Collections.emptyList();
+        }
+
+        List<Long> articleIds = recentArticles.stream()
+                .map(Article::getId)
+                .collect(Collectors.toList());
+
+        // 查询这些文章的标签关联
+        List<ArticleTag> articleTags = articleTagMapper.selectList(
+                new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
+
+        if (CollectionUtils.isEmpty(articleTags)) {
+            return Collections.emptyList();
+        }
+
+        // 按标签分组统计文章数
+        Map<Long, Long> tagCount = articleTags.stream()
+                .collect(Collectors.groupingBy(ArticleTag::getTagId, Collectors.counting()));
+
+        // 按文章数降序排序，取前 limit 个
+        List<Long> hotTagIds = tagCount.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(limit)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        if (hotTagIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 查询标签详情
+        List<Tag> tags = tagMapper.selectBatchIds(hotTagIds);
+        Map<Long, Tag> tagMap = tags.stream()
+                .collect(Collectors.toMap(Tag::getId, t -> t));
+
+        // 按热度排序构建 VO
+        return hotTagIds.stream()
+                .map(tagId -> {
+                    Tag tag = tagMap.get(tagId);
+                    if (tag == null) {
+                        return null;
+                    }
+                    TagVO vo = new TagVO();
+                    vo.setId(tag.getId());
+                    vo.setName(tag.getName());
+                    vo.setArticleCount(tagCount.get(tagId));
+                    vo.setCreatedAt(tag.getCreatedAt());
+                    return vo;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UserVO> getHotUsers(int limit) {
+        if (limit <= 0) {
+            limit = 10;
+        }
+
+        // 查询最近7天已发布的文章
+        LocalDateTime since = LocalDateTime.now().minusDays(7);
+        List<Article> recentArticles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>()
+                        .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                        .ge(Article::getCreatedAt, since)
+                        .select(Article::getId, Article::getAuthorId,
+                                Article::getViewCount, Article::getLikeCount));
+
+        if (CollectionUtils.isEmpty(recentArticles)) {
+            return Collections.emptyList();
+        }
+
+        // 按作者分组，统计浏览量总和
+        Map<Long, Long> userViewCount = new HashMap<>();
+        for (Article article : recentArticles) {
+            if (article.getAuthorId() != null) {
+                long views = article.getViewCount() != null ? article.getViewCount() : 0L;
+                userViewCount.merge(article.getAuthorId(), views, Long::sum);
+            }
+        }
+
+        // 按浏览量降序排序，取前 limit 个
+        List<Long> hotUserIds = userViewCount.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(limit)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        if (hotUserIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 查询用户详情
+        List<User> users = userMapper.selectBatchIds(hotUserIds);
+        Map<Long, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        // 按热度排序构建 VO
+        return hotUserIds.stream()
+                .map(userId -> {
+                    User user = userMap.get(userId);
+                    if (user == null) {
+                        return null;
+                    }
+                    UserVO vo = new UserVO();
+                    vo.setId(user.getId());
+                    vo.setUsername(user.getUsername());
+                    vo.setNickname(user.getNickname());
+                    vo.setAvatar(user.getAvatar());
+                    vo.setRole(user.getRole() != null ? user.getRole().name() : null);
+                    vo.setStatus(user.getStatus());
+                    vo.setCreatedAt(user.getCreatedAt());
+                    return vo;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<HotArticleVO> getRealtimeHot(int limit) {
+        if (limit <= 0) {
+            limit = 20;
+        }
+
+        // 从 Redis Sorted Set 获取热门文章（按分数降序，滑动窗口由热度分时间衰减实现）
+        Set<ZSetOperations.TypedTuple<String>> tuples = stringRedisTemplate.opsForZSet()
+                .reverseRangeWithScores(HOT_RANK_KEY, 0, limit - 1);
+
+        if (tuples == null || tuples.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 提取文章ID和分数
+        List<Long> articleIds = new ArrayList<>();
+        Map<Long, Double> scoreMap = new HashMap<>();
+        for (ZSetOperations.TypedTuple<String> tuple : tuples) {
+            if (tuple.getValue() != null) {
+                try {
+                    Long articleId = Long.parseLong(tuple.getValue());
+                    articleIds.add(articleId);
+                    scoreMap.put(articleId, tuple.getScore());
+                } catch (NumberFormatException e) {
+                    log.warn("解析实时热榜文章ID失败: {}", tuple.getValue());
+                }
+            }
+        }
+
+        if (articleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 查询文章详情并保持 Sorted Set 顺序
+        List<Article> articles = articleMapper.selectBatchIds(articleIds);
+        Map<Long, Article> articleMap = articles.stream()
+                .collect(Collectors.toMap(Article::getId, a -> a));
+
+        List<Article> orderedArticles = articleIds.stream()
+                .map(articleMap::get)
+                .filter(Objects::nonNull)
+                .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED)
+                .collect(Collectors.toList());
+
+        // 转换为 VO（批量查询作者信息）
+        List<HotArticleVO> voList = convertToHotArticleVOList(orderedArticles);
+
+        // 使用 Redis 中的实时分数覆盖
+        for (HotArticleVO vo : voList) {
+            vo.setScore(scoreMap.getOrDefault(vo.getId(), vo.getScore()));
+        }
+
+        return voList;
     }
 
     // ========== 内部方法 ==========

@@ -1,4 +1,4 @@
-import { useBreakpoints as useVueUseBreakpoints } from '@vueuse/core'
+import { useBreakpoints as useVueUseBreakpoints, useWindowSize } from '@vueuse/core'
 
 /** 响应式断点组合式函数 */
 export const useBreakpoints = () => {
@@ -10,6 +10,9 @@ export const useBreakpoints = () => {
     xl: 1200,
     '2xl': 1920,
   })
+
+  // 使用 useWindowSize 获取响应式的窗口尺寸
+  const { width, height } = useWindowSize()
 
   // 是否为移动端（小于768px）
   const isMobile = computed(() => !breakpoints.md.value)
@@ -30,11 +33,21 @@ export const useBreakpoints = () => {
     return 'desktop'
   })
 
+  // 是否为横屏（window.innerWidth > window.innerHeight）
+  const isLandscape = computed(() => width.value > height.value)
+
+  // 屏幕方向
+  const orientation = computed<'portrait' | 'landscape'>(() => {
+    return isLandscape.value ? 'landscape' : 'portrait'
+  })
+
   return {
     breakpoints,
     isMobile,
     isTablet,
     isDesktop,
     currentBreakpoint,
+    isLandscape,
+    orientation,
   }
 }

@@ -1,0 +1,76 @@
+{
+  "common": {
+    "search": "Search",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "publish": "Publish",
+    "back": "Back",
+    "loadMore": "Load More",
+    "noMore": "No More"
+  },
+  "nav": {
+    "home": "Home",
+    "hot": "Hot",
+    "recommend": "Recommended",
+    "latest": "Latest",
+    "follow": "Following",
+    "messages": "Messages",
+    "profile": "Me",
+    "settings": "Settings"
+  },
+  "article": {
+    "title": "Title",
+    "content": "Content",
+    "category": "Category",
+    "tags": "Tags",
+    "author": "Author",
+    "views": "Views",
+    "likes": "Likes",
+    "favorites": "Favorites",
+    "comments": "Comments",
+    "share": "Share",
+    "publishTime": "Published At"
+  },
+  "user": {
+    "username": "Username",
+    "password": "Password",
+    "email": "Email",
+    "phone": "Phone",
+    "nickname": "Nickname",
+    "avatar": "Avatar",
+    "bio": "Bio",
+    "following": "Following",
+    "followers": "Followers"
+  },
+  "search": {
+    "keyword": "Search Keywords",
+    "suggestions": "Suggestions",
+    "history": "Search History",
+    "hotSearch": "Trending Searches",
+    "all": "All",
+    "users": "Users",
+    "articles": "Articles",
+    "images": "Images"
+  },
+  "settings": {
+    "recommendPrefs": "Recommendation Preferences",
+    "notification": "Notification Settings",
+    "privacy": "Privacy Settings",
+    "display": "Display Settings",
+    "theme": "Theme",
+    "fontSize": "Font Size",
+    "language": "Language"
+  },
+  "error": {
+    "network": "Network Error",
+    "tokenExpired": "Session Expired",
+    "forbidden": "Access Denied",
+    "notFound": "Content Not Found"
+  }
+}

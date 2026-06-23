@@ -143,6 +143,24 @@
             </button>
           </div>
         </div>
+
+        <!-- 语言 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">语言</label>
+          <div class="flex space-x-2">
+            <button
+              v-for="lang in languages"
+              :key="lang.value"
+              class="px-4 py-2 text-sm rounded-lg border transition-colors"
+              :class="locale === lang.value
+                ? 'bg-primary text-white border-primary'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'"
+              @click="switchLanguage(lang.value)"
+            >
+              {{ lang.label }}
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -165,6 +183,7 @@ definePageMeta({
 })
 
 const colorMode = useColorMode()
+const { locale, setLocale } = useI18n()
 
 // 服务器端设置（通知/隐私）
 const serverSettings = reactive<UserSettingsServer>({
@@ -205,6 +224,18 @@ const fontSizes = [
   { label: '中', value: 'medium' },
   { label: '大', value: 'large' },
 ]
+
+const languages = [
+  { label: '中文', value: 'zh-CN' },
+  { label: 'English', value: 'en' },
+]
+
+// 切换语言
+const switchLanguage = async (lang: string) => {
+  await setLocale(lang)
+  localSettings.language = lang
+  saveLocalSettings()
+}
 
 // 切换分类
 const toggleCategory = (categoryId: number, type: 'interested' | 'blocked') => {

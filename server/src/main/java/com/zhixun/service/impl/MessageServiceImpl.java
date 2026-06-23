@@ -7,6 +7,7 @@ import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.util.AesUtil;
+import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.config.RabbitMQConfig;
 import com.zhixun.dto.social.MessageSendRequest;
 import com.zhixun.entity.User;
@@ -49,6 +50,7 @@ public class MessageServiceImpl implements MessageService {
     private final UserSettingsMapper userSettingsMapper;
     private final UserFollowMapper userFollowMapper;
     private final AesUtil aesUtil;
+    private final SensitiveWordUtil sensitiveWordUtil;
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
 
@@ -75,6 +77,11 @@ public class MessageServiceImpl implements MessageService {
 
         // 检查私信权限（是否允许陌生人私信）
         checkMessagePermission(senderId, receiverId);
+
+        // 敏感词检查
+        if (sensitiveWordUtil.containsSensitiveWord(request.getContent())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "消息内容包含敏感词，请修改后重新发送");
+        }
 
         // AES-256-GCM 加密消息内容
         String encryptedContent = aesUtil.encrypt(request.getContent());

@@ -38,7 +38,7 @@ public class AesUtil {
     private static final int KEY_LENGTH = 32;
 
     /** 密钥 */
-    @Value("${jwt.access-secret:zhixun-aes-secret-key-2024-must-be-32b}")
+    @Value("${aes.secret-key:zhixun-aes-secret-key-2024-must-be-32b}")
     private String secretKey;
 
     /**

@@ -1,8 +1,11 @@
 package com.zhixun.config;
 
+import com.zhixun.security.CsrfFilter;
+import com.zhixun.security.DataPermissionInterceptor;
 import com.zhixun.security.JwtAccessDeniedHandler;
 import com.zhixun.security.JwtAuthenticationFilter;
 import com.zhixun.security.JwtUnauthorizedHandler;
+import com.zhixun.security.SecurityHeadersFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +20,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Spring Security 配置
@@ -24,11 +29,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class SecurityConfig implements WebMvcConfigurer {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtUnauthorizedHandler jwtUnauthorizedHandler;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final CsrfFilter csrfFilter;
+    private final SecurityHeadersFilter securityHeadersFilter;
+    private final DataPermissionInterceptor dataPermissionInterceptor;
 
     /**
      * 放行的公开接口
@@ -39,6 +47,7 @@ public class SecurityConfig {
             "/v1/auth/register",
             "/v1/auth/refresh",
             "/v1/auth/send-code",
+            "/v1/auth/graph-captcha",
             "/v1/auth/forgot-password",
             // Swagger / Knife4j
             "/doc.html",
@@ -58,7 +67,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 关闭 CSRF（前后端分离不需要）
+                // 关闭 Spring Security 内置 CSRF（使用自定义双重提交 Cookie 模式替代）
                 .csrf(AbstractHttpConfigurer::disable)
                 // 关闭表单登录
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -88,6 +97,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/v1/rank/**").permitAll()
                         // 搜索（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/search", "/v1/search/suggest", "/v1/search/hot").permitAll()
+                        // 轮播图（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/banners").permitAll()
+                        // 公告（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/announcements").permitAll()
                         // 管理端接口 - 仅 ADMIN 角色可访问
                         .requestMatchers("/v1/admin/**").hasRole("ADMIN")
                         // 用户管理 - 仅 ADMIN 角色可访问
@@ -106,6 +119,12 @@ public class SecurityConfig {
         // 添加 JWT 过滤器
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
+        // 添加 CSRF 双重提交 Cookie 过滤器（在 JWT 过滤器之后）
+        http.addFilterAfter(csrfFilter, JwtAuthenticationFilter.class);
+
+        // 添加安全响应头过滤器（最先执行）
+        http.addFilterBefore(securityHeadersFilter, JwtAuthenticationFilter.class);
+
         return http.build();
     }
 
@@ -123,5 +142,15 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    /**
+     * 注册数据权限拦截器
+     */
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(dataPermissionInterceptor)
+                .addPathPatterns("/v1/articles/**", "/v1/comments/**", "/v1/messages/**",
+                        "/v1/collects/**", "/v1/users/**", "/v1/user/**");
     }
 }

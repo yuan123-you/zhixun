@@ -252,6 +252,8 @@ export const TTL = {
 export const STORAGE_KEYS = {
   /** 刷新令牌 */
   REFRESH_TOKEN: 'refreshToken',
+  /** Access Token 过期时间戳 */
+  TOKEN_EXPIRES_AT: 'token_expires_at',
   /** 分类列表缓存 */
   CATEGORIES_CACHE: 'categories_cache',
   /** 标签列表缓存 */

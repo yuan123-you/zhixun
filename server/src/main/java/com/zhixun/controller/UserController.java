@@ -1,11 +1,13 @@
 package com.zhixun.controller;
 
+import com.zhixun.common.annotation.OperationLog;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.dto.user.ProfileUpdateRequest;
 import com.zhixun.dto.user.SettingsUpdateRequest;
 import com.zhixun.service.CommentService;
+import com.zhixun.service.OnlineStatusService;
 import com.zhixun.service.UserService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.CommentVO;
@@ -21,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * 用户控制器
  */
@@ -31,6 +36,7 @@ public class UserController {
 
     private final UserService userService;
     private final CommentService commentService;
+    private final OnlineStatusService onlineStatusService;
     private final SecurityUtil securityUtil;
 
     /**
@@ -48,6 +54,7 @@ public class UserController {
      */
     @PutMapping("/profile")
     @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "用户设置", action = "修改个人资料")
     public R<Void> updateProfile(@Valid @RequestBody ProfileUpdateRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         userService.updateProfile(userId, request);
@@ -120,9 +127,39 @@ public class UserController {
      */
     @PutMapping("/settings")
     @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "用户设置", action = "修改全局设置")
     public R<Void> updateSettings(@Valid @RequestBody SettingsUpdateRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         userService.updateSettings(userId, request);
         return R.ok();
+    }
+
+    /**
+     * 更新在线状态可见性
+     * 专用端点，修改后自动清除缓存
+     */
+    @PutMapping("/online-status-visibility")
+    @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "用户设置", action = "修改在线状态可见性")
+    public R<Void> updateOnlineStatusVisibility(@RequestBody Map<String, Integer> body) {
+        Long userId = securityUtil.getCurrentUserId();
+        Integer showOnlineStatus = body.get("show_online_status");
+        if (showOnlineStatus == null || (showOnlineStatus != 0 && showOnlineStatus != 1)) {
+            return R.fail(400, "show_online_status 参数错误，仅支持 0 或 1");
+        }
+        onlineStatusService.updateShowOnlineStatus(userId, showOnlineStatus);
+        return R.ok();
+    }
+
+    /**
+     * 批量获取用户在线状态
+     * 用于关注/粉丝列表等场景
+     */
+    @GetMapping("/online-status/batch")
+    @PreAuthorize("isAuthenticated()")
+    public R<Map<Long, Boolean>> batchGetOnlineStatus(@RequestParam List<Long> userIds) {
+        Long requesterId = securityUtil.getCurrentUserId();
+        Map<Long, Boolean> result = onlineStatusService.batchGetOnlineStatus(userIds, requesterId);
+        return R.ok(result);
     }
 }

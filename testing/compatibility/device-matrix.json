@@ -1,0 +1,311 @@
+{
+  "project": "智讯系统",
+  "version": "1.0.0",
+  "lastUpdated": "2026-06-23",
+  "description": "全设备兼容性测试配置矩阵，覆盖主流设备和浏览器",
+  "browsers": {
+    "desktop": [
+      {
+        "name": "Chrome",
+        "versions": ["120", "121", "122", "123", "124", "125"],
+        "platforms": ["Windows 10", "Windows 11", "macOS 14", "macOS 15"],
+        "priority": "high"
+      },
+      {
+        "name": "Firefox",
+        "versions": ["121", "122", "123", "124", "125"],
+        "platforms": ["Windows 10", "Windows 11", "macOS 14", "macOS 15"],
+        "priority": "high"
+      },
+      {
+        "name": "Safari",
+        "versions": ["17.0", "17.2", "17.4", "17.5"],
+        "platforms": ["macOS 14", "macOS 15"],
+        "priority": "high"
+      },
+      {
+        "name": "Edge",
+        "versions": ["120", "121", "122", "123", "124", "125"],
+        "platforms": ["Windows 10", "Windows 11"],
+        "priority": "high"
+      },
+      {
+        "name": "Opera",
+        "versions": ["106", "107", "108"],
+        "platforms": ["Windows 10", "Windows 11"],
+        "priority": "medium"
+      }
+    ],
+    "mobile": [
+      {
+        "name": "Chrome Android",
+        "versions": ["120", "121", "122", "123", "124", "125"],
+        "platforms": ["Android 12", "Android 13", "Android 14"],
+        "priority": "high"
+      },
+      {
+        "name": "Safari iOS",
+        "versions": ["17.0", "17.2", "17.4", "17.5"],
+        "platforms": ["iOS 17", "iOS 18"],
+        "priority": "high"
+      },
+      {
+        "name": "Samsung Internet",
+        "versions": ["23", "24", "25"],
+        "platforms": ["Android 13", "Android 14"],
+        "priority": "medium"
+      },
+      {
+        "name": "Firefox Android",
+        "versions": ["121", "122", "123", "124"],
+        "platforms": ["Android 12", "Android 13", "Android 14"],
+        "priority": "medium"
+      },
+      {
+        "name": "UC Browser",
+        "versions": ["15", "16"],
+        "platforms": ["Android 12", "Android 13"],
+        "priority": "low"
+      },
+      {
+        "name": "QQ Browser",
+        "versions": ["13", "14"],
+        "platforms": ["Android 12", "Android 13"],
+        "priority": "low"
+      }
+    ]
+  },
+  "devices": {
+    "desktop": [
+      {
+        "name": "标准桌面",
+        "screenWidth": 1920,
+        "screenHeight": 1080,
+        "pixelRatio": 1,
+        "priority": "high"
+      },
+      {
+        "name": "2K显示器",
+        "screenWidth": 2560,
+        "screenHeight": 1440,
+        "pixelRatio": 1,
+        "priority": "medium"
+      },
+      {
+        "name": "4K显示器",
+        "screenWidth": 3840,
+        "screenHeight": 2160,
+        "pixelRatio": 1.5,
+        "priority": "medium"
+      },
+      {
+        "name": "小屏笔记本",
+        "screenWidth": 1366,
+        "screenHeight": 768,
+        "pixelRatio": 1,
+        "priority": "high"
+      },
+      {
+        "name": "MacBook Retina",
+        "screenWidth": 1440,
+        "screenHeight": 900,
+        "pixelRatio": 2,
+        "priority": "high"
+      }
+    ],
+    "tablet": [
+      {
+        "name": "iPad Pro 12.9",
+        "screenWidth": 1024,
+        "screenHeight": 1366,
+        "pixelRatio": 2,
+        "userAgent": "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)",
+        "priority": "high"
+      },
+      {
+        "name": "iPad Air",
+        "screenWidth": 820,
+        "screenHeight": 1180,
+        "pixelRatio": 2,
+        "userAgent": "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)",
+        "priority": "high"
+      },
+      {
+        "name": "iPad Mini",
+        "screenWidth": 744,
+        "screenHeight": 1133,
+        "pixelRatio": 2,
+        "userAgent": "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)",
+        "priority": "medium"
+      },
+      {
+        "name": "Samsung Galaxy Tab S9",
+        "screenWidth": 753,
+        "screenHeight": 1205,
+        "pixelRatio": 2,
+        "userAgent": "Mozilla/5.0 (Linux; Android 13; SM-X700)",
+        "priority": "medium"
+      },
+      {
+        "name": "Huawei MatePad Pro",
+        "screenWidth": 800,
+        "screenHeight": 1280,
+        "pixelRatio": 2,
+        "userAgent": "Mozilla/5.0 (Linux; Android 12; MatePad Pro)",
+        "priority": "low"
+      }
+    ],
+    "mobile": [
+      {
+        "name": "iPhone 15 Pro Max",
+        "screenWidth": 430,
+        "screenHeight": 932,
+        "pixelRatio": 3,
+        "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+        "priority": "high"
+      },
+      {
+        "name": "iPhone 15",
+        "screenWidth": 393,
+        "screenHeight": 852,
+        "pixelRatio": 3,
+        "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+        "priority": "high"
+      },
+      {
+        "name": "iPhone 14",
+        "screenWidth": 390,
+        "screenHeight": 844,
+        "pixelRatio": 3,
+        "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
+        "priority": "high"
+      },
+      {
+        "name": "iPhone SE (3rd gen)",
+        "screenWidth": 375,
+        "screenHeight": 667,
+        "pixelRatio": 2,
+        "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+        "priority": "medium"
+      },
+      {
+        "name": "Samsung Galaxy S24 Ultra",
+        "screenWidth": 412,
+        "screenHeight": 915,
+        "pixelRatio": 3.5,
+        "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-S928B)",
+        "priority": "high"
+      },
+      {
+        "name": "Samsung Galaxy S23",
+        "screenWidth": 360,
+        "screenHeight": 780,
+        "pixelRatio": 3,
+        "userAgent": "Mozilla/5.0 (Linux; Android 13; SM-S911B)",
+        "priority": "high"
+      },
+      {
+        "name": "Xiaomi 14",
+        "screenWidth": 393,
+        "screenHeight": 873,
+        "pixelRatio": 2.75,
+        "userAgent": "Mozilla/5.0 (Linux; Android 14; 23127PN0C)",
+        "priority": "medium"
+      },
+      {
+        "name": "Huawei P60 Pro",
+        "screenWidth": 360,
+        "screenHeight": 800,
+        "pixelRatio": 3,
+        "userAgent": "Mozilla/5.0 (Linux; Android 13; ALT-AL10)",
+        "priority": "medium"
+      },
+      {
+        "name": "OPPO Find X7",
+        "screenWidth": 393,
+        "screenHeight": 873,
+        "pixelRatio": 2.75,
+        "userAgent": "Mozilla/5.0 (Linux; Android 14; CPH2653)",
+        "priority": "low"
+      },
+      {
+        "name": "vivo X100",
+        "screenWidth": 393,
+        "screenHeight": 873,
+        "pixelRatio": 2.75,
+        "userAgent": "Mozilla/5.0 (Linux; Android 14; V2324A)",
+        "priority": "low"
+      }
+    ]
+  },
+  "responsiveBreakpoints": [
+    { "name": "xs", "minWidth": 0, "maxWidth": 575, "description": "超小屏手机" },
+    { "name": "sm", "minWidth": 576, "maxWidth": 767, "description": "小屏手机横屏" },
+    { "name": "md", "minWidth": 768, "maxWidth": 991, "description": "平板竖屏" },
+    { "name": "lg", "minWidth": 992, "maxWidth": 1199, "description": "平板横屏/小笔记本" },
+    { "name": "xl", "minWidth": 1200, "maxWidth": 1919, "description": "标准桌面" },
+    { "name": "xxl", "minWidth": 1920, "maxWidth": 9999, "description": "大屏桌面" }
+  ],
+  "testScenarios": [
+    {
+      "id": "TC-COMP-001",
+      "name": "页面布局适配",
+      "description": "验证页面在各断点下布局正确，无溢出或截断",
+      "priority": "high"
+    },
+    {
+      "id": "TC-COMP-002",
+      "name": "触摸交互",
+      "description": "验证移动端触摸操作正常（滑动、点击、长按）",
+      "priority": "high"
+    },
+    {
+      "id": "TC-COMP-003",
+      "name": "字体渲染",
+      "description": "验证各设备字体渲染清晰，无锯齿或模糊",
+      "priority": "medium"
+    },
+    {
+      "id": "TC-COMP-004",
+      "name": "图片加载",
+      "description": "验证图片在各设备分辨率下正确加载，支持WebP/AVIF降级",
+      "priority": "high"
+    },
+    {
+      "id": "TC-COMP-005",
+      "name": "CSS兼容性",
+      "description": "验证CSS特性在各浏览器中正确渲染（Flexbox、Grid、CSS变量等）",
+      "priority": "high"
+    },
+    {
+      "id": "TC-COMP-006",
+      "name": "JavaScript兼容性",
+      "description": "验证JS功能在各浏览器中正常运行（ES6+特性、API兼容性）",
+      "priority": "high"
+    },
+    {
+      "id": "TC-COMP-007",
+      "name": "滚动性能",
+      "description": "验证页面滚动流畅，无卡顿（目标60fps）",
+      "priority": "medium"
+    },
+    {
+      "id": "TC-COMP-008",
+      "name": "横竖屏切换",
+      "description": "验证移动端横竖屏切换后页面布局正确",
+      "priority": "medium"
+    },
+    {
+      "id": "TC-COMP-009",
+      "name": "暗黑模式",
+      "description": "验证系统暗黑模式下页面样式正确",
+      "priority": "low"
+    },
+    {
+      "id": "TC-COMP-010",
+      "name": "网络降级",
+      "description": "验证弱网环境下页面加载和功能可用性（3G/4G/离线）",
+      "priority": "medium"
+    }
+  ]
+}
