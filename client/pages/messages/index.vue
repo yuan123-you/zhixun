@@ -81,7 +81,7 @@ const selectConversation = async (conv: Conversation) => {
   try {
     const { socialApi } = await import('~/api')
     const response = await socialApi.getMessages(conv.id)
-    messages.value = response.data.data.items
+    messages.value = response.data.data.list || response.data.data.items || []
   } catch {
     messages.value = []
   }

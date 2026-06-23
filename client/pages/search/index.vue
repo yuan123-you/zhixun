@@ -186,7 +186,7 @@ const doSearch = async () => {
   try {
     const { searchApi } = await import('~/api')
     const response = await searchApi.search(keyword.value.trim(), activeTab.value as any, { page: 1, pageSize: 20 })
-    searchResults.value = response.data.data.items as Article[]
+    searchResults.value = (response.data.data.list || response.data.data.items || []) as Article[]
   } catch {
     searchResults.value = []
   } finally {

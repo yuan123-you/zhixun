@@ -52,6 +52,9 @@
 
 import type { Article, User, RankItem } from '~/types'
 
+const userStore = useUserStore()
+const config = useRuntimeConfig()
+
 // Tab配置
 const tabs = [
   { key: 'recommend', label: '推荐' },
@@ -67,6 +70,21 @@ const page = ref(1)
 const hotRankItems = ref<RankItem[]>([])
 const recommendUsers = ref<User[]>([])
 
+// 构建API基础URL
+const getApiBase = () => {
+  return import.meta.server
+    ? `${config.apiBase}/api/v1`
+    : (config.public.apiBase as string)
+}
+
+// 通用分页数据获取
+const fetchPage = async (url: string, params: Record<string, any> = {}) => {
+  const base = getApiBase()
+  const query = new URLSearchParams({ page: String(params.page || 1), pageSize: String(params.pageSize || 20), ...params })
+  const res = await $fetch<{ code: number; data: { list?: any[]; items?: any[]; total: number; page: number; page_size: number } }>(`${base}${url}`, { params: Object.fromEntries(query) })
+  return res.data
+}
+
 // 切换Tab
 const switchTab = (key: string) => {
   if (activeTab.value === key) return
@@ -77,34 +95,43 @@ const switchTab = (key: string) => {
   fetchArticles()
 }
 
-// 获取文章列表（SSR）
+// 获取文章列表
 const fetchArticles = async () => {
   if (loading.value) return
+
+  // 关注tab需要登录
+  if (activeTab.value === 'following' && !userStore.isLoggedIn) {
+    articles.value = []
+    hasMore.value = false
+    return
+  }
+
   loading.value = true
 
   try {
-    const { feedApi } = await import('~/api')
-    let response
+    const pageSize = 20
+    let url: string
     switch (activeTab.value) {
       case 'latest':
-        response = await feedApi.getLatestFeed({ page: page.value, pageSize: 20 })
+        url = '/feed/latest'
         break
       case 'following':
-        response = await feedApi.getFollowingFeed({ page: page.value, pageSize: 20 })
+        url = '/feed/following'
         break
       default:
-        response = await feedApi.getRecommendFeed({ page: page.value, pageSize: 20 })
+        url = '/feed/recommend'
     }
 
-    const data = response.data.data
+    const data = await fetchPage(url, { page: page.value, pageSize })
+    const items = data?.list || data?.items || []
     if (page.value === 1) {
-      articles.value = data.items
+      articles.value = items
     } else {
-      articles.value.push(...data.items)
+      articles.value.push(...items)
     }
-    hasMore.value = data.hasMore
+    hasMore.value = items.length >= pageSize
   } catch {
-    // 加载失败处理
+    hasMore.value = false
   } finally {
     loading.value = false
   }
@@ -122,23 +149,33 @@ const toggleFollow = async (userId: number) => {
   await socialApi.toggleFollow(userId)
 }
 
-// SSR数据获取
-const { data: recommendData } = await useAsyncData('home-init', async () => {
-  const { feedApi, rankApi } = await import('~/api')
-  const [feedRes, rankRes] = await Promise.all([
-    feedApi.getRecommendFeed({ page: 1, pageSize: 20 }),
-    rankApi.getHotRank('daily'),
-  ])
-  return {
-    articles: feedRes.data.data.items,
-    hotRank: rankRes.data.data,
+// SSR数据获取 - 使用 useAsyncData + $fetch 确保SSR正确渲染
+// SSR时通过 nitro routeRules proxy /api -> http://server:8080/api
+// 客户端时通过 nginx 代理 /api -> http://server:8080/api
+const { data: feedData } = await useAsyncData('feed-recommend', async () => {
+  try {
+    const res = await $fetch<{ code: number; data: { list?: any[]; items?: any[] } }>('/api/v1/feed/recommend', {
+      params: { page: 1, pageSize: 20 },
+    })
+    return res?.data?.list || res?.data?.items || []
+  } catch {
+    return []
   }
-})
+}, { default: () => [] })
 
-if (recommendData.value) {
-  articles.value = recommendData.value.articles
-  hotRankItems.value = recommendData.value.hotRank
-}
+const { data: rankData } = await useAsyncData('rank-hot', async () => {
+  try {
+    const res = await $fetch<{ code: number; data: any[] }>('/api/v1/rank/hot', {
+      params: { period: 'daily' },
+    })
+    return res?.data || []
+  } catch {
+    return []
+  }
+}, { default: () => [] })
+
+articles.value = feedData.value
+hotRankItems.value = rankData.value
 
 // 页面元信息
 useHead({

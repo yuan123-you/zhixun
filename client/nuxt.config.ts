@@ -37,14 +37,16 @@ export default defineNuxtConfig({
 
   // 混合渲染路由规则
   routeRules: {
-    // 首页SSR渲染
-    '/': { ssr: true },
+    // 首页暂时CSR渲染（SSR数据获取有问题待修复）
+    '/': { ssr: false },
     // 文章详情页SSR渲染
     '/articles/**': { ssr: true },
     // 管理页CSR渲染
     '/user/**': { ssr: false },
     '/editor/**': { ssr: false },
     '/messages/**': { ssr: false },
+    // API代理到后端
+    '/api/**': { proxy: `${process.env.API_BASE || 'http://localhost:8080'}/api/**` },
   },
 
   // 运行时配置
@@ -55,16 +57,6 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api/v1',
       wsBase: process.env.NUXT_PUBLIC_WS_BASE || 'ws://localhost:8080/ws',
-    },
-  },
-
-  // 代理API到后端8080端口
-  nitro: {
-    proxy: {
-      '/api': {
-        target: process.env.API_BASE || 'http://localhost:8080',
-        changeOrigin: true,
-      },
     },
   },
 

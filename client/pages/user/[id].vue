@@ -73,8 +73,8 @@ const { data: articleData } = await useAsyncData(`user-articles-${userId.value}`
 })
 
 if (articleData.value) {
-  articles.value = articleData.value.items
-  hasMore.value = articleData.value.hasMore
+  articles.value = articleData.value.list || articleData.value.items || []
+  hasMore.value = articles.value.length >= 20
 }
 
 // 关注/取关

@@ -1,6 +1,10 @@
 # ==================== 阶段1：Node.js 构建 ====================
 FROM node:20-alpine AS builder
 
+# 构建时API地址（Docker内部网络，SSR用）
+ARG API_BASE=http://server:8080
+ENV API_BASE=${API_BASE}
+
 # 设置工作目录
 WORKDIR /app
 
