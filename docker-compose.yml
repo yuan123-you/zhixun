@@ -217,15 +217,21 @@ services:
     ports:
       - "${CLIENT_PORT:-3000}:3000"
     environment:
-      # 后端API地址（容器内通信）
-      NUXT_PUBLIC_API_BASE: http://server:8080/api/v1
-      NUXT_PUBLIC_WS_BASE: ws://server:8080/ws
-      # 运行时API代理目标
+      # 后端API地址（客户端使用相对路径，经 Nginx 代理）
+      NUXT_PUBLIC_API_BASE: /api/v1
+      NUXT_PUBLIC_WS_BASE: /ws
+      # 运行时API代理目标（服务端容器间通信）
       API_BASE: http://server:8080
       TZ: Asia/Shanghai
     depends_on:
       server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3000/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - zhixun-network
 
@@ -243,6 +249,12 @@ services:
     depends_on:
       server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - zhixun-network
 
@@ -266,7 +278,7 @@ services:
       server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      test: ["CMD-SHELL", "wget --spider --no-check-certificate https://127.0.0.1:443/ 2>/dev/null || wget --spider http://127.0.0.1:80/ --max-redirect=0 2>/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -280,8 +292,10 @@ services:
     image: sonarqube:community
     container_name: zhixun-sonarqube
     restart: unless-stopped
+    profiles:
+      - dev
     ports:
-      - "${SONARQUBE_PORT:-9000}:9000"
+      - "${SONARQUBE_PORT:-9001}:9000"
     environment:
       SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
       SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
@@ -309,6 +323,8 @@ services:
     image: postgres:15-alpine
     container_name: zhixun-sonarqube-db
     restart: unless-stopped
+    profiles:
+      - dev
     environment:
       POSTGRES_USER: ${SONARQUBE_DB_USER:-sonar}
       POSTGRES_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonar123}
