@@ -37,7 +37,7 @@ opensearch:
 
 # CORS 允许的来源
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://glint.novo.ccwu.cc,http://localhost:3000,http://localhost:3001,http://localhost:8080}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://glint.novo.ccwu.cc,http://glint.novo.ccwu.cc,http://localhost:3000,http://localhost:3001}
 
 # 日志级别
 logging:
