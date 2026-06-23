@@ -183,6 +183,8 @@ services:
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
       # AES 密钥
       AES_SECRET_KEY: ${AES_SECRET_KEY:-zhixun-aes-secret-32bytes-key!!}
+      # CORS 允许的来源
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://glint.novo.ccwu.cc,http://localhost:3000,http://localhost:3001}
       # 时区
       TZ: Asia/Shanghai
     depends_on:
