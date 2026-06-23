@@ -308,10 +308,9 @@ public class SearchServiceImpl implements SearchService {
                                     )
                             );
 
-                            // time_decay: 使用 fieldValueFactor 对 createdAt 进行衰减
-                            // 简化实现：用 weight 函数替代 exp decay
+                            // time_decay: 简化实现，使用固定权重
                             fs.functions(f -> f
-                                    .weight(w -> w.value(0.8))
+                                    .weight(0.8)
                             );
 
                             // personal_boost: 用户偏好分类的文章提升1.5倍
