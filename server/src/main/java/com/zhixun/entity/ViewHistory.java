@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 /**
  * 浏览记录实体，对应 cms_view_history 表
+ * 注意：ip 和 user_agent 字段已移除，改为客户端本地存储
  */
 @Data
 @NoArgsConstructor
@@ -25,12 +26,6 @@ public class ViewHistory {
 
     /** 文章ID，对应 article_id */
     private Long articleId;
-
-    /** 访问IP */
-    private String ip;
-
-    /** 用户代理，对应 user_agent */
-    private String userAgent;
 
     /** 浏览时长，对应 view_duration */
     private Integer viewDuration;

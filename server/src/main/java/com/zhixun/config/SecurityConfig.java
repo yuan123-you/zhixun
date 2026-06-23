@@ -86,6 +86,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/v1/rank/**").permitAll()
                         // 搜索（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/search", "/v1/search/suggest", "/v1/search/hot").permitAll()
+                        // 管理端接口 - 仅 ADMIN 角色可访问
+                        .requestMatchers("/v1/admin/**").hasRole("ADMIN")
+                        // 用户管理 - 仅 ADMIN 角色可访问
+                        .requestMatchers("/v1/users/**").hasRole("ADMIN")
+                        // 操作日志 - 仅 ADMIN 角色可访问
+                        .requestMatchers("/v1/operation-logs/**").hasRole("ADMIN")
+                        // 登录日志 - 仅 ADMIN 角色可访问
+                        .requestMatchers("/v1/login-logs/**").hasRole("ADMIN")
+                        // 敏感词管理 - 仅 ADMIN 角色可访问
+                        .requestMatchers("/v1/sensitive-words/**").hasRole("ADMIN")
+                        // 浏览历史 - 仅允许用户访问自己的数据
+                        .requestMatchers("/v1/view-history/**").authenticated()
                         // 其他接口需要认证
                         .anyRequest().authenticated());
 

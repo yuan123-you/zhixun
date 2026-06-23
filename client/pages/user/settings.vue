@@ -15,7 +15,7 @@
             v-for="category in availableCategories"
             :key="category.id"
             class="px-3 py-1.5 text-sm rounded-full border transition-colors"
-            :class="settings.interestedCategories.includes(category.id)
+            :class="serverSettings.interestedCategories.includes(category.id)
               ? 'bg-primary text-white border-primary'
               : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-primary'"
             @click="toggleCategory(category.id, 'interested')"
@@ -33,7 +33,7 @@
             v-for="category in availableCategories"
             :key="category.id"
             class="px-3 py-1.5 text-sm rounded-full border transition-colors"
-            :class="settings.blockedCategories.includes(category.id)
+            :class="serverSettings.blockedCategories.includes(category.id)
               ? 'bg-danger text-white border-danger'
               : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-danger'"
             @click="toggleCategory(category.id, 'blocked')"
@@ -47,7 +47,7 @@
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">感兴趣的标签</label>
         <div class="flex flex-wrap gap-2">
-          <span v-for="tagId in settings.interestedTags" :key="tagId" class="badge-primary flex items-center space-x-1">
+          <span v-for="tagId in serverSettings.interestedTags" :key="tagId" class="badge-primary flex items-center space-x-1">
             <span>标签{{ tagId }}</span>
             <button @click="removeTag(tagId, 'interested')">×</button>
           </span>
@@ -68,19 +68,19 @@
       <div class="space-y-3">
         <label class="flex items-center justify-between">
           <span class="text-sm text-gray-700 dark:text-gray-300">点赞通知</span>
-          <input v-model="settings.enableLikeNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.enableLikeNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
           <span class="text-sm text-gray-700 dark:text-gray-300">评论通知</span>
-          <input v-model="settings.enableCommentNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.enableCommentNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
           <span class="text-sm text-gray-700 dark:text-gray-300">关注通知</span>
-          <input v-model="settings.enableFollowNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.enableFollowNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
           <span class="text-sm text-gray-700 dark:text-gray-300">系统通知</span>
-          <input v-model="settings.enableSystemNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.enableSystemNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
     </section>
@@ -91,15 +91,15 @@
       <div class="space-y-3">
         <label class="flex items-center justify-between">
           <span class="text-sm text-gray-700 dark:text-gray-300">显示在线状态</span>
-          <input v-model="settings.showOnlineStatus" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.showOnlineStatus" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
           <span class="text-sm text-gray-700 dark:text-gray-300">允许陌生人私信</span>
-          <input v-model="settings.allowStrangerMessage" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.allowStrangerMessage" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
           <span class="text-sm text-gray-700 dark:text-gray-300">显示浏览历史</span>
-          <input v-model="settings.showViewHistory" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.showViewHistory" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
     </section>
@@ -116,10 +116,10 @@
               v-for="theme in themes"
               :key="theme.value"
               class="px-4 py-2 text-sm rounded-lg border transition-colors"
-              :class="settings.theme === theme.value
+              :class="localSettings.theme === theme.value
                 ? 'bg-primary text-white border-primary'
                 : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'"
-              @click="settings.theme = theme.value"
+              @click="localSettings.theme = theme.value"
             >
               {{ theme.label }}
             </button>
@@ -134,10 +134,10 @@
               v-for="size in fontSizes"
               :key="size.value"
               class="px-4 py-2 text-sm rounded-lg border transition-colors"
-              :class="settings.fontSize === size.value
+              :class="localSettings.fontSize === size.value
                 ? 'bg-primary text-white border-primary'
                 : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'"
-              @click="settings.fontSize = size.value"
+              @click="localSettings.fontSize = size.value"
             >
               {{ size.label }}
             </button>
@@ -157,7 +157,8 @@
 
 <script setup lang="ts">
 /** 全局设置页 */
-import type { UserSettings, Category } from '~/types'
+import type { UserSettingsServer, UserSettingsLocal, Category } from '~/types'
+import { storage, STORAGE_KEYS } from '~/utils/storage'
 
 definePageMeta({
   middleware: 'auth',
@@ -165,8 +166,8 @@ definePageMeta({
 
 const colorMode = useColorMode()
 
-// 设置数据
-const settings = reactive<UserSettings>({
+// 服务器端设置（通知/隐私）
+const serverSettings = reactive<UserSettingsServer>({
   interestedCategories: [],
   interestedTags: [],
   blockedCategories: [],
@@ -178,10 +179,16 @@ const settings = reactive<UserSettings>({
   showOnlineStatus: true,
   allowStrangerMessage: true,
   showViewHistory: true,
-  theme: 'system',
-  fontSize: 'medium',
-  language: 'zh-CN',
 })
+
+// 本地设置（主题/字体/语言，仅存 localStorage）
+const localSettings = reactive<UserSettingsLocal>(
+  storage.get<UserSettingsLocal>(STORAGE_KEYS.SETTINGS_LOCAL) || {
+    theme: 'system',
+    fontSize: 'medium',
+    language: 'zh-CN',
+  }
+)
 
 const availableCategories = ref<Category[]>([])
 const tagInput = ref('')
@@ -202,11 +209,11 @@ const fontSizes = [
 // 切换分类
 const toggleCategory = (categoryId: number, type: 'interested' | 'blocked') => {
   const key = type === 'interested' ? 'interestedCategories' : 'blockedCategories'
-  const index = settings[key].indexOf(categoryId)
+  const index = serverSettings[key].indexOf(categoryId)
   if (index > -1) {
-    settings[key].splice(index, 1)
+    serverSettings[key].splice(index, 1)
   } else {
-    settings[key].push(categoryId)
+    serverSettings[key].push(categoryId)
   }
 }
 
@@ -215,8 +222,8 @@ const addTag = (type: 'interested' | 'blocked') => {
   if (!tagInput.value.trim()) return
   const key = type === 'interested' ? 'interestedTags' : 'blockedTags'
   const tagId = Number(tagInput.value.trim())
-  if (!settings[key].includes(tagId)) {
-    settings[key].push(tagId)
+  if (!serverSettings[key].includes(tagId)) {
+    serverSettings[key].push(tagId)
   }
   tagInput.value = ''
 }
@@ -224,24 +231,35 @@ const addTag = (type: 'interested' | 'blocked') => {
 // 移除标签
 const removeTag = (tagId: number, type: 'interested' | 'blocked') => {
   const key = type === 'interested' ? 'interestedTags' : 'blockedTags'
-  settings[key] = settings[key].filter((id) => id !== tagId)
+  serverSettings[key] = serverSettings[key].filter((id) => id !== tagId)
 }
 
-// 保存设置
-const saveSettings = async () => {
+// 保存本地设置（主题/字体/语言）
+const saveLocalSettings = () => {
+  storage.set(STORAGE_KEYS.SETTINGS_LOCAL, { ...localSettings })
+  // 应用主题
+  if (localSettings.theme !== 'system') {
+    colorMode.preference = localSettings.theme
+  }
+}
+
+// 保存服务器设置（通知/隐私）
+const saveServerSettings = async () => {
   saving.value = true
   try {
     const { userApi } = await import('~/api')
-    await userApi.updateSettings(settings)
-    // 应用主题
-    if (settings.theme !== 'system') {
-      colorMode.preference = settings.theme
-    }
+    await userApi.updateSettings(serverSettings)
   } catch {
     // 保存失败处理
   } finally {
     saving.value = false
   }
+}
+
+// 保存所有设置
+const saveSettings = async () => {
+  saveLocalSettings()
+  await saveServerSettings()
 }
 
 // 页面元信息

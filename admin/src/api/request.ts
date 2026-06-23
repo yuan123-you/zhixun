@@ -1,6 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import type { ApiResponse } from '@/types'
+import { storage, STORAGE_KEYS } from '@/utils/storage'
 import router from '@/router'
 
 // 创建 Axios 实例
@@ -18,7 +19,7 @@ const service = axios.create({
  */
 service.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = storage.get<string>(STORAGE_KEYS.TOKEN)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -42,8 +43,8 @@ service.interceptors.response.use(
       ElMessage.error(res.message || '请求失败')
       // Token 过期或无效
       if (res.code === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user_permissions')
+        storage.remove(STORAGE_KEYS.TOKEN)
+        storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
         router.push('/login')
       }
       return Promise.reject(new Error(res.message || '请求失败'))
@@ -65,8 +66,8 @@ service.interceptors.response.use(
 
     // 401 自动跳转登录页
     if (status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user_permissions')
+      storage.remove(STORAGE_KEYS.TOKEN)
+      storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
       router.push('/login')
     }
 

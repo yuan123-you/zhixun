@@ -50,18 +50,19 @@ export default defineNuxtConfig({
   // 运行时配置
   runtimeConfig: {
     // 服务端私有配置
+    apiBase: process.env.API_BASE || 'http://localhost:8080',
     // 公共配置（客户端和服务端均可访问）
     public: {
-      apiBase: 'http://localhost:8080/api/v1',
-      wsBase: 'ws://localhost:8080/ws',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api/v1',
+      wsBase: process.env.NUXT_PUBLIC_WS_BASE || 'ws://localhost:8080/ws',
     },
   },
 
   // 代理API到后端8080端口
   nitro: {
     proxy: {
-      '/api/v1': {
-        target: 'http://localhost:8080',
+      '/api': {
+        target: process.env.API_BASE || 'http://localhost:8080',
         changeOrigin: true,
       },
     },

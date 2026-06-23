@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { UserInfo, LoginParams } from '@/types'
 import { loginApi, getUserInfoApi } from '@/api/auth'
+import { storage, STORAGE_KEYS } from '@/utils/storage'
 import router from '@/router'
 
 /**
@@ -10,13 +11,13 @@ import router from '@/router'
  */
 export const useUserStore = defineStore('user', () => {
   /** 认证令牌 */
-  const token = ref<string>(localStorage.getItem('token') || '')
+  const token = ref<string>(storage.get<string>(STORAGE_KEYS.TOKEN) || '')
 
   /** 用户信息 */
   const userInfo = ref<UserInfo | null>(null)
 
   /** 用户权限列表 */
-  const permissions = ref<string[]>([])
+  const permissions = ref<string[]>(storage.get<string[]>(STORAGE_KEYS.USER_PERMISSIONS) || [])
 
   /** 是否已登录 */
   const isLoggedIn = ref(!!token.value)
@@ -33,8 +34,8 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn.value = true
 
     // 持久化存储
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('user_permissions', JSON.stringify(res.data.userInfo.permissions))
+    storage.set(STORAGE_KEYS.TOKEN, res.data.token)
+    storage.set(STORAGE_KEYS.USER_PERMISSIONS, res.data.userInfo.permissions)
 
     // 跳转到首页或来源页
     const redirect = (router.currentRoute.value.query.redirect as string) || '/'
@@ -51,8 +52,8 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn.value = false
 
     // 清除持久化存储
-    localStorage.removeItem('token')
-    localStorage.removeItem('user_permissions')
+    storage.remove(STORAGE_KEYS.TOKEN)
+    storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
 
     router.push('/login')
   }
@@ -64,7 +65,7 @@ export const useUserStore = defineStore('user', () => {
     const res = await getUserInfoApi()
     userInfo.value = res.data
     permissions.value = res.data.permissions
-    localStorage.setItem('user_permissions', JSON.stringify(res.data.permissions))
+    storage.set(STORAGE_KEYS.USER_PERMISSIONS, res.data.permissions)
   }
 
   return {

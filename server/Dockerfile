@@ -25,8 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl tzdata \
     && echo "Asia/Shanghai" > /etc/timezone \
     && rm -rf /var/lib/apt/lists/*
 
-# 创建非 root 用户运行应用
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+# 创建非 root 用户运行应用和日志目录
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser \
+    && mkdir -p /home/appuser/logs/csp \
+    && chown -R appuser:appgroup /home/appuser/logs
 
 # 设置工作目录
 WORKDIR /app

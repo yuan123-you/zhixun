@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import type { User } from '~/types'
+import { storage, STORAGE_KEYS } from '~/utils/storage'
 
 /** 用户状态管理 Store */
 export const useUserStore = defineStore('user', () => {
   // 用户Token
   const token = ref<string>('')
   // 刷新Token
-  const refreshToken = ref<string>('')
+  const refreshToken = ref<string>(storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN) || '')
   // 用户信息
   const userInfo = ref<User | null>(null)
 
@@ -18,9 +19,7 @@ export const useUserStore = defineStore('user', () => {
     token.value = newToken
     refreshToken.value = newRefreshToken
     // 持久化refreshToken到localStorage
-    if (import.meta.client) {
-      localStorage.setItem('refreshToken', newRefreshToken)
-    }
+    storage.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
   }
 
   // 设置用户信息
@@ -40,18 +39,14 @@ export const useUserStore = defineStore('user', () => {
     token.value = ''
     refreshToken.value = ''
     userInfo.value = null
-    if (import.meta.client) {
-      localStorage.removeItem('refreshToken')
-    }
+    storage.remove(STORAGE_KEYS.REFRESH_TOKEN)
   }
 
   // 初始化：从localStorage恢复refreshToken
   const init = () => {
-    if (import.meta.client) {
-      const savedRefreshToken = localStorage.getItem('refreshToken')
-      if (savedRefreshToken) {
-        refreshToken.value = savedRefreshToken
-      }
+    const savedRefreshToken = storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
+    if (savedRefreshToken) {
+      refreshToken.value = savedRefreshToken
     }
   }
 

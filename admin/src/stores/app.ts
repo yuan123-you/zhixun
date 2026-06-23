@@ -1,16 +1,22 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { storage, STORAGE_KEYS } from '@/utils/storage'
 
 /**
  * 应用全局状态管理
  * 管理侧边栏折叠状态、主题等全局UI状态
+ * UI状态持久化到 localStorage
  */
 export const useAppStore = defineStore('app', () => {
   /** 侧边栏是否折叠 */
-  const sidebarCollapsed = ref(false)
+  const sidebarCollapsed = ref<boolean>(
+    storage.get<boolean>(STORAGE_KEYS.SIDEBAR_COLLAPSED) || false
+  )
 
   /** 当前主题（light/dark） */
-  const theme = ref<'light' | 'dark'>('light')
+  const theme = ref<'light' | 'dark'>(
+    storage.get<'light' | 'dark'>(STORAGE_KEYS.THEME) || 'light'
+  )
 
   /** 设备类型 */
   const device = ref<'desktop' | 'mobile'>('desktop')
@@ -20,6 +26,7 @@ export const useAppStore = defineStore('app', () => {
    */
   function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value
+    storage.set(STORAGE_KEYS.SIDEBAR_COLLAPSED, sidebarCollapsed.value)
   }
 
   /**
@@ -27,6 +34,7 @@ export const useAppStore = defineStore('app', () => {
    */
   function setSidebarCollapsed(collapsed: boolean) {
     sidebarCollapsed.value = collapsed
+    storage.set(STORAGE_KEYS.SIDEBAR_COLLAPSED, collapsed)
   }
 
   /**
@@ -34,6 +42,7 @@ export const useAppStore = defineStore('app', () => {
    */
   function toggleTheme() {
     theme.value = theme.value === 'light' ? 'dark' : 'light'
+    storage.set(STORAGE_KEYS.THEME, theme.value)
     document.documentElement.classList.toggle('dark', theme.value === 'dark')
   }
 
@@ -45,6 +54,7 @@ export const useAppStore = defineStore('app', () => {
     // 移动端自动折叠侧边栏
     if (dev === 'mobile') {
       sidebarCollapsed.value = true
+      storage.set(STORAGE_KEYS.SIDEBAR_COLLAPSED, true)
     }
   }
 

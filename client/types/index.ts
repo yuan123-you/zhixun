@@ -188,8 +188,8 @@ export interface PaginationParams {
   pageSize?: number
 }
 
-/** 用户设置接口 */
-export interface UserSettings {
+/** 用户设置接口（服务器端存储，需多设备同步） */
+export interface UserSettingsServer {
   // 推荐偏好
   interestedCategories: number[]
   interestedTags: number[]
@@ -204,8 +204,14 @@ export interface UserSettings {
   showOnlineStatus: boolean
   allowStrangerMessage: boolean
   showViewHistory: boolean
-  // 显示设置
+}
+
+/** 用户本地设置接口（仅本地存储，无需同步） */
+export interface UserSettingsLocal {
   theme: 'light' | 'dark' | 'system'
   fontSize: 'small' | 'medium' | 'large'
   language: string
 }
+
+/** 用户设置接口（合并服务器和本地设置） */
+export interface UserSettings extends UserSettingsServer, UserSettingsLocal {}
