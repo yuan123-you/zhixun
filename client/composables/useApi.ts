@@ -6,9 +6,14 @@ export const useApi = () => {
   const config = useRuntimeConfig()
   const userStore = useUserStore()
 
+  // 服务端使用内部绝对地址（容器间通信），客户端使用相对路径（经 Nginx 代理）
+  const baseURL = import.meta.server
+    ? `${config.apiBase}/api/v1`
+    : (config.public.apiBase as string)
+
   // 创建axios实例
   const instance: AxiosInstance = axios.create({
-    baseURL: config.public.apiBase as string,
+    baseURL,
     timeout: 15000,
     headers: {
       'Content-Type': 'application/json',
@@ -50,6 +55,12 @@ export const useApi = () => {
         const { status } = error.response
         switch (status) {
           case 401:
+            // 没有refreshToken时直接拒绝，不再尝试刷新（避免无限循环）
+            if (!userStore.refreshToken) {
+              userStore.logout()
+              navigateTo('/login')
+              return Promise.reject(new Error('请先登录'))
+            }
             // Token过期，尝试刷新
             return handleTokenRefresh(error.response.config)
           case 403:
@@ -87,7 +98,7 @@ export const useApi = () => {
     if (!isRefreshing) {
       isRefreshing = true
       try {
-        const response = await axios.post(`${config.public.apiBase}/auth/refresh`, {
+        const response = await axios.post(`${baseURL}/auth/refresh`, {
           refreshToken,
         })
         const { token: newToken, refreshToken: newRefreshToken } = response.data.data

@@ -13,7 +13,16 @@ export default defineNuxtPlugin(() => {
     if (!userStore.isLoggedIn) return
     if (ws && ws.readyState === WebSocket.OPEN) return
 
-    const wsUrl = `${config.public.wsBase}/chat?token=${userStore.token}`
+    const wsBase = config.public.wsBase as string
+    let wsUrl: string
+    if (/^wss?:\/\//.test(wsBase)) {
+      // 绝对地址（本地开发直连后端）
+      wsUrl = `${wsBase}/chat?token=${userStore.token}`
+    } else {
+      // 相对地址，根据当前页面协议和主机推导（生产环境经 Nginx 代理）
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      wsUrl = `${protocol}//${window.location.host}${wsBase}/chat?token=${userStore.token}`
+    }
     ws = new WebSocket(wsUrl)
 
     ws.onopen = () => {

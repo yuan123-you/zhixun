@@ -7,7 +7,9 @@ import com.zhixun.dto.auth.ChangePasswordRequest;
 import com.zhixun.dto.auth.ForgotPasswordRequest;
 import com.zhixun.dto.auth.LoginRequest;
 import com.zhixun.dto.auth.RegisterRequest;
+import com.zhixun.dto.auth.SendCodeRequest;
 import com.zhixun.service.AuthService;
+import com.zhixun.service.CaptchaService;
 import com.zhixun.vo.TokenResponse;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
@@ -32,6 +34,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final CaptchaService captchaService;
     private final SecurityUtil securityUtil;
 
     /**
@@ -94,6 +97,16 @@ public class AuthController {
     }
 
     /**
+     * 发送验证码（邮箱）
+     */
+    @PostMapping("/send-code")
+    @SentinelResource(value = "auth-send-code", blockHandler = "sendCodeBlockHandler", blockHandlerClass = AuthController.BlockHandlers.class)
+    public R<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
+        captchaService.sendEmailCode(request.getEmail(), request.getPurpose());
+        return R.ok();
+    }
+
+    /**
      * Sentinel 限流降级处理
      */
     public static class BlockHandlers {
@@ -103,6 +116,10 @@ public class AuthController {
 
         public static R<TokenResponse> loginBlockHandler(LoginRequest request, HttpServletRequest httpRequest, BlockException e) {
             return R.fail(429, "登录请求过于频繁，请稍后重试");
+        }
+
+        public static R<Void> sendCodeBlockHandler(SendCodeRequest request, BlockException e) {
+            return R.fail(429, "验证码发送请求过于频繁，请稍后重试");
         }
     }
 }

@@ -1,17 +1,17 @@
-import type { LoginRequest, RegisterRequest, AuthResponse } from '~/types'
+import type { LoginRequest, RegisterRequest, SendCodeRequest, ForgotPasswordRequest, AuthResponse } from '~/types'
 
 /** 认证组合式函数 */
 export const useAuth = () => {
   const userStore = useUserStore()
-  const { post } = useApi()
+  const { post, put } = useApi()
 
   // 登录
   const login = async (data: LoginRequest) => {
     try {
       const response = await post<AuthResponse>('/auth/login', data)
       const authData = response.data.data
-      userStore.setToken(authData.token, authData.refreshToken)
-      userStore.setUser(authData.user)
+      userStore.setToken(authData.accessToken, authData.refreshToken)
+      userStore.setUser(authData.userInfo)
       return authData
     } catch (error: any) {
       throw new Error(error.message || '登录失败')
@@ -21,13 +21,37 @@ export const useAuth = () => {
   // 注册
   const register = async (data: RegisterRequest) => {
     try {
-      const response = await post<AuthResponse>('/auth/register', data)
+      const response = await post<AuthResponse>('/auth/register', {
+        username: data.username,
+        password: data.password,
+        email: data.email,
+        code: data.code,
+        nickname: data.nickname || undefined,
+      })
       const authData = response.data.data
-      userStore.setToken(authData.token, authData.refreshToken)
-      userStore.setUser(authData.user)
+      userStore.setToken(authData.accessToken, authData.refreshToken)
+      userStore.setUser(authData.userInfo)
       return authData
     } catch (error: any) {
       throw new Error(error.message || '注册失败')
+    }
+  }
+
+  // 发送验证码
+  const sendCode = async (data: SendCodeRequest) => {
+    try {
+      await post('/auth/send-code', data)
+    } catch (error: any) {
+      throw new Error(error.message || '验证码发送失败')
+    }
+  }
+
+  // 忘记密码
+  const forgotPassword = async (data: ForgotPasswordRequest) => {
+    try {
+      await put('/auth/forgot-password', data)
+    } catch (error: any) {
+      throw new Error(error.message || '重置密码失败')
     }
   }
 
@@ -50,8 +74,8 @@ export const useAuth = () => {
         refreshToken: userStore.refreshToken,
       })
       const authData = response.data.data
-      userStore.setToken(authData.token, authData.refreshToken)
-      return authData.token
+      userStore.setToken(authData.accessToken, authData.refreshToken)
+      return authData.accessToken
     } catch {
       userStore.logout()
       navigateTo('/login')
@@ -68,6 +92,8 @@ export const useAuth = () => {
   return {
     login,
     register,
+    sendCode,
+    forgotPassword,
     logout,
     refreshToken,
     isLoggedIn,

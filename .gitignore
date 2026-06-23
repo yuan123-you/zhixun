@@ -41,6 +41,7 @@ spring-shell.log
 application-local.yml
 application-prod.yml
 application-secret.yml
+application-dev.yml
 
 # ==================== 前端构建输出 ====================
 admin/dist/

@@ -38,6 +38,8 @@ public class SecurityConfig {
             "/v1/auth/login",
             "/v1/auth/register",
             "/v1/auth/refresh",
+            "/v1/auth/send-code",
+            "/v1/auth/forgot-password",
             // Swagger / Knife4j
             "/doc.html",
             "/swagger-ui/**",

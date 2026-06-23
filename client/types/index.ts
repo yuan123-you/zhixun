@@ -166,13 +166,38 @@ export interface RegisterRequest {
   username: string
   password: string
   confirmPassword: string
+  email: string
+  code: string
+  nickname?: string
+}
+
+/** 发送验证码请求 */
+export interface SendCodeRequest {
+  email: string
+  purpose: 'register' | 'login' | 'resetPassword'
+}
+
+/** 忘记密码请求 */
+export interface ForgotPasswordRequest {
+  username: string
+  email: string
+  code: string
+  newPassword: string
 }
 
 /** 认证响应 */
 export interface AuthResponse {
-  token: string
+  accessToken: string
   refreshToken: string
-  user: User
+  tokenType: string
+  expiresIn: number
+  userInfo: {
+    id: number
+    username: string
+    nickname: string
+    avatar: string
+    role: string
+  }
 }
 
 /** API响应通用结构 */

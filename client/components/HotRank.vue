@@ -31,7 +31,8 @@ defineProps<{
 }>()
 
 // 格式化数量
-const formatCount = (count: number) => {
+const formatCount = (count: number | undefined) => {
+  if (count == null) return '0'
   if (count >= 10000) return `${(count / 10000).toFixed(1)}万`
   if (count >= 1000) return `${(count / 1000).toFixed(1)}k`
   return count.toString()

@@ -1,5 +1,5 @@
 <template>
-  <!-- 注册页 -->
+  <!-- 忘记密码页 -->
   <div class="w-full max-w-md mx-auto px-4">
     <div class="card p-8">
       <!-- Logo和标题 -->
@@ -7,12 +7,12 @@
         <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
           <span class="text-white font-bold text-2xl">知</span>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">注册知讯</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">加入知讯，开启你的知识之旅</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">忘记密码</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">通过邮箱验证码重置密码</p>
       </div>
 
-      <!-- 注册表单 -->
-      <form class="space-y-4" @submit.prevent="handleRegister">
+      <!-- 重置密码表单 -->
+      <form class="space-y-4" @submit.prevent="handleResetPassword">
         <!-- 用户名 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">用户名</label>
@@ -20,19 +20,8 @@
             v-model="form.username"
             type="text"
             class="input"
-            placeholder="请输入用户名（3-20位字母数字下划线）"
+            placeholder="请输入注册时的用户名"
             required
-          />
-        </div>
-
-        <!-- 昵称 -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">昵称</label>
-          <input
-            v-model="form.nickname"
-            type="text"
-            class="input"
-            placeholder="请输入昵称（选填）"
           />
         </div>
 
@@ -43,14 +32,14 @@
             v-model="form.email"
             type="email"
             class="input"
-            placeholder="请输入邮箱"
+            placeholder="请输入注册时的邮箱"
             required
           />
         </div>
 
         <!-- 邮箱验证码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">邮箱验证码</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">验证码</label>
           <div class="flex gap-2">
             <input
               v-model="form.code"
@@ -71,28 +60,28 @@
           </div>
         </div>
 
-        <!-- 密码 -->
+        <!-- 新密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">密码</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">新密码</label>
           <input
-            v-model="form.password"
+            v-model="form.newPassword"
             type="password"
             class="input"
-            placeholder="请输入密码（需包含大小写字母和数字，至少6位）"
+            placeholder="请输入新密码（需包含大小写字母和数字，至少8位）"
             required
-            minlength="6"
+            minlength="8"
           />
           <p class="text-xs text-gray-400 mt-1">密码需包含大写字母、小写字母和数字</p>
         </div>
 
-        <!-- 确认密码 -->
+        <!-- 确认新密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">确认密码</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">确认新密码</label>
           <input
             v-model="form.confirmPassword"
             type="password"
             class="input"
-            placeholder="请再次输入密码"
+            placeholder="请再次输入新密码"
             required
           />
         </div>
@@ -100,46 +89,49 @@
         <!-- 错误提示 -->
         <p v-if="error" class="text-sm text-danger">{{ error }}</p>
 
-        <!-- 注册按钮 -->
+        <!-- 成功提示 -->
+        <p v-if="success" class="text-sm text-green-600">{{ success }}</p>
+
+        <!-- 重置按钮 -->
         <button
           type="submit"
           class="btn-primary w-full"
           :disabled="loading"
         >
-          {{ loading ? '注册中...' : '注册' }}
+          {{ loading ? '重置中...' : '重置密码' }}
         </button>
       </form>
 
       <!-- 跳转登录 -->
       <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-        已有账号？
-        <NuxtLink to="/login" class="text-primary hover:text-primary-600 font-medium">立即登录</NuxtLink>
+        记起密码了？
+        <NuxtLink to="/login" class="text-primary hover:text-primary-600 font-medium">返回登录</NuxtLink>
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-/** 注册页 */
+/** 忘记密码页 */
 
 definePageMeta({
   layout: 'blank',
   middleware: 'guest',
 })
 
-const { register, sendCode } = useAuth()
+const { sendCode, forgotPassword } = useAuth()
 
 const form = reactive({
   username: '',
-  nickname: '',
   email: '',
   code: '',
-  password: '',
+  newPassword: '',
   confirmPassword: '',
 })
 
 const loading = ref(false)
 const error = ref('')
+const success = ref('')
 const codeCooldown = ref(0)
 let cooldownTimer: ReturnType<typeof setInterval> | null = null
 
@@ -149,15 +141,13 @@ const handleSendCode = async () => {
     error.value = '请先输入邮箱'
     return
   }
-  // 简单邮箱格式校验
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
     error.value = '邮箱格式不正确'
     return
   }
   error.value = ''
   try {
-    await sendCode({ email: form.email, purpose: 'register' })
-    // 开始倒计时
+    await sendCode({ email: form.email, purpose: 'resetPassword' })
     codeCooldown.value = 60
     cooldownTimer = setInterval(() => {
       codeCooldown.value--
@@ -171,36 +161,32 @@ const handleSendCode = async () => {
   }
 }
 
-// 处理注册
-const handleRegister = async () => {
+// 重置密码
+const handleResetPassword = async () => {
   error.value = ''
+  success.value = ''
 
-  // 验证邮箱
+  if (!form.username) {
+    error.value = '请输入用户名'
+    return
+  }
   if (!form.email) {
     error.value = '请输入邮箱'
     return
   }
-
-  // 验证验证码
   if (!form.code || form.code.length !== 6) {
     error.value = '请输入6位验证码'
     return
   }
-
-  // 验证密码一致
-  if (form.password !== form.confirmPassword) {
+  if (form.newPassword !== form.confirmPassword) {
     error.value = '两次输入的密码不一致'
     return
   }
-
-  // 验证密码长度
-  if (form.password.length < 6) {
-    error.value = '密码长度至少6位'
+  if (form.newPassword.length < 8) {
+    error.value = '密码长度至少8位'
     return
   }
-
-  // 验证密码复杂度
-  if (!/[a-z]/.test(form.password) || !/[A-Z]/.test(form.password) || !/\d/.test(form.password)) {
+  if (!/[a-z]/.test(form.newPassword) || !/[A-Z]/.test(form.newPassword) || !/\d/.test(form.newPassword)) {
     error.value = '密码需包含大写字母、小写字母和数字'
     return
   }
@@ -208,10 +194,18 @@ const handleRegister = async () => {
   loading.value = true
 
   try {
-    await register(form)
-    navigateTo('/')
+    await forgotPassword({
+      username: form.username,
+      email: form.email,
+      code: form.code,
+      newPassword: form.newPassword,
+    })
+    success.value = '密码重置成功，即将跳转到登录页'
+    setTimeout(() => {
+      navigateTo('/login')
+    }, 2000)
   } catch (err: any) {
-    error.value = err.message || '注册失败，请重试'
+    error.value = err.message || '重置密码失败，请重试'
   } finally {
     loading.value = false
   }
@@ -219,7 +213,7 @@ const handleRegister = async () => {
 
 // 页面元信息
 useHead({
-  title: '注册 - 知讯',
+  title: '忘记密码 - 知讯',
 })
 
 // 清理定时器

@@ -37,6 +37,11 @@
           />
         </div>
 
+        <!-- 忘记密码 -->
+        <div class="text-right">
+          <NuxtLink to="/forgot-password" class="text-sm text-primary hover:text-primary-600">忘记密码？</NuxtLink>
+        </div>
+
         <!-- 错误提示 -->
         <p v-if="error" class="text-sm text-danger">{{ error }}</p>
 
@@ -85,7 +90,6 @@ const handleLogin = async () => {
 
   try {
     await login(form)
-    // 登录成功，跳转到来源页或首页
     const redirect = (route.query.redirect as string) || '/'
     navigateTo(redirect)
   } catch (err: any) {

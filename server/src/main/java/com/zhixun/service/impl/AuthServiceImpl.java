@@ -19,6 +19,7 @@ import com.zhixun.mapper.LoginLogMapper;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.mapper.UserSettingsMapper;
 import com.zhixun.service.AuthService;
+import com.zhixun.service.CaptchaService;
 import com.zhixun.service.LoginLogService;
 import com.zhixun.service.OpenSearchSyncService;
 import com.zhixun.vo.LoginUserVO;
@@ -57,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final OpenSearchSyncService openSearchSyncService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final CaptchaService captchaService;
 
     /** 登录失败次数 Redis Key 前缀 */
     private static final String LOGIN_FAIL_PREFIX = "auth:login:fail:";
@@ -80,6 +82,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TokenResponse register(RegisterRequest request) {
+        // 校验邮箱验证码（邮箱注册必须验证）
+        if (StringUtils.hasText(request.getEmail())) {
+            if (!StringUtils.hasText(request.getCode())) {
+                throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "邮箱注册需要验证码");
+            }
+            if (!captchaService.verifyCode(request.getEmail(), request.getCode())) {
+                throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期");
+            }
+        }
+
         // 校验用户名唯一性
         Long usernameCount = userMapper.selectCount(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername()));
@@ -319,14 +331,11 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
 
-        // 验证验证码 - 从 Redis 中读取
-        String codeKey = "auth:verify:code:" + request.getUsername();
-        String storedCode = stringRedisTemplate.opsForValue().get(codeKey);
-        if (storedCode == null || !storedCode.equals(request.getCode())) {
+        // 验证验证码 - 使用 CaptchaService
+        String verifyTarget = StringUtils.hasText(request.getEmail()) ? request.getEmail() : request.getUsername();
+        if (!captchaService.verifyCode(verifyTarget, request.getCode())) {
             throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期");
         }
-        // 验证通过后删除验证码
-        stringRedisTemplate.delete(codeKey);
 
         String newPassword = request.getNewPassword();
         if (!newPassword.matches(".*[A-Z].*") || !newPassword.matches(".*[a-z].*") || !newPassword.matches(".*\\d.*")) {

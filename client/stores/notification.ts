@@ -65,7 +65,14 @@ export const useNotificationStore = defineStore('notification', () => {
     const userStore = useUserStore()
     if (!userStore.token) return
 
-    const wsUrl = `${config.public.wsBase}/notifications?token=${userStore.token}`
+    const wsBase = config.public.wsBase as string
+    let wsUrl: string
+    if (/^wss?:\/\//.test(wsBase)) {
+      wsUrl = `${wsBase}/notifications?token=${userStore.token}`
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      wsUrl = `${protocol}//${window.location.host}${wsBase}/notifications?token=${userStore.token}`
+    }
     const ws = new WebSocket(wsUrl)
 
     ws.onopen = () => {

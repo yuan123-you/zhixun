@@ -57,6 +57,27 @@ spring:
           max-attempts: 3
           initial-interval: 1000ms
 
+  # 邮件配置
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: "*"
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+            port: ${MAIL_PORT:587}
+
   # Jackson 配置
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss

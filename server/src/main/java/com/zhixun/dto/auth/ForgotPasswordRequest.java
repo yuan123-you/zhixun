@@ -9,6 +9,9 @@ public class ForgotPasswordRequest {
     @NotBlank(message = "用户名不能为空")
     private String username;
 
+    /** 邮箱（用于验证码校验） */
+    private String email;
+
     @NotBlank(message = "验证码不能为空")
     private String code;
 
