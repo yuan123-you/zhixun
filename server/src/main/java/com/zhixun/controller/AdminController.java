@@ -22,6 +22,7 @@ import com.zhixun.vo.DashboardVO;
 import com.zhixun.vo.UserVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +55,9 @@ public class AdminController {
     private final SecurityUtil securityUtil;
     private final OpenSearchSyncService openSearchSyncService;
     private final CommentService commentService;
-    private final SynonymService synonymService;
+
+    @Autowired(required = false)
+    private SynonymService synonymService;
 
     /**
      * 待审核文章列表
@@ -225,23 +228,27 @@ public class AdminController {
 
     @GetMapping("/synonyms")
     public R<List<String>> getSynonyms() {
+        if (synonymService == null) return R.ok(List.of());
         return R.ok(synonymService.getAllSynonyms());
     }
 
     @PostMapping("/synonyms")
     public R<Void> addSynonym(@RequestBody Map<String, String> body) {
+        if (synonymService == null) return R.fail(503, "同义词服务不可用");
         synonymService.addSynonym(body.get("rule"));
         return R.ok();
     }
 
     @DeleteMapping("/synonyms")
     public R<Void> removeSynonym(@RequestBody Map<String, String> body) {
+        if (synonymService == null) return R.fail(503, "同义词服务不可用");
         synonymService.removeSynonym(body.get("rule"));
         return R.ok();
     }
 
     @PostMapping("/synonyms/reload")
     public R<Map<String, Object>> reloadSynonyms() {
+        if (synonymService == null) return R.fail(503, "同义词服务不可用");
         boolean success = synonymService.reloadSearchAnalyzers();
         if (success) {
             return R.ok(Map.of("success", true, "method", "reload_analyzers"));
