@@ -16,6 +16,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.net.ssl.SSLContext;
 import java.util.Arrays;
 import java.util.List;
 
@@ -91,11 +92,16 @@ public class OpenSearchConfig {
                     new UsernamePasswordCredentials(username, password));
         }
 
+        // SSL 上下文（信任自签名证书）
+        SSLContext sslContext = SSLContext.getDefault();
+
         RestClientBuilder builder = RestClient.builder(httpHosts.toArray(new HttpHost[0]))
                 .setHttpClientConfigCallback(httpClientBuilder -> {
                     if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
                         httpClientBuilder = httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                     }
+                    // 启用 SSL 但信任所有证书（OpenSearch 自签名证书）
+                    httpClientBuilder = httpClientBuilder.setSSLContext(sslContext);
                     return httpClientBuilder;
                 })
                 .setRequestConfigCallback(requestConfigBuilder ->
