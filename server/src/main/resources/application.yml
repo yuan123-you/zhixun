@@ -13,6 +13,8 @@ management:
   endpoint:
     health:
       show-details: always
+      mail:
+        enabled: false
 
 spring:
   application:
