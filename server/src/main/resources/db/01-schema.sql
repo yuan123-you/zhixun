@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS cms_article (
   like_count INT DEFAULT 0,
   comment_count INT DEFAULT 0,
   collect_count INT DEFAULT 0,
+  share_count INT DEFAULT 0,
   hot_score DECIMAL(10,2) DEFAULT 0,
   publish_at DATETIME,
   reject_reason VARCHAR(500),
