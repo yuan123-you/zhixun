@@ -2,17 +2,18 @@ package com.zhixun.service.impl;
 
 import com.zhixun.service.OpenSearchSyncService;
 import lombok.extern.slf4j.Slf4j;
+import org.opensearch.client.OpenSearchClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
- * OpenSearch同步服务Fallback实现（当OpenSearchSyncServiceImpl不可用时自动生效）
+ * OpenSearch同步服务Fallback实现（当OpenSearchClient不可用时自动生效）
  */
 @Slf4j
 @Service
-@ConditionalOnMissingBean(OpenSearchSyncServiceImpl.class)
+@ConditionalOnMissingBean(OpenSearchClient.class)
 public class NoOpOpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
     @Override

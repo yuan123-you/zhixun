@@ -16,6 +16,7 @@ import com.zhixun.vo.SearchSuggestResultVO;
 import com.zhixun.vo.SuggestionVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.opensearch.client.OpenSearchClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnMissingBean(SearchServiceImpl.class)
+@ConditionalOnMissingBean(OpenSearchClient.class)
 public class DatabaseSearchServiceImpl implements SearchService {
 
     private final ArticleMapper articleMapper;
