@@ -11,8 +11,7 @@ import lombok.Data;
 @Data
 public class CommentCreateRequest {
 
-    /** 文章ID */
-    @NotNull(message = "文章ID不能为空")
+    /** 文章ID（由Controller从路径参数自动设置） */
     private Long articleId;
 
     /** 父评论ID */

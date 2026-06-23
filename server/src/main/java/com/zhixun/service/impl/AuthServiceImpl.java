@@ -33,7 +33,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
+
+import java.nio.charset.StandardCharsets;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
@@ -84,21 +87,21 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.CONFLICT, "用户名已存在");
         }
 
-        // 校验邮箱唯一性（如提供）
+        // 校验邮箱唯一性（如提供）- 使用SHA-256哈希校验
         if (StringUtils.hasText(request.getEmail())) {
-            String encryptedEmail = aesUtil.encrypt(request.getEmail());
+            String emailHash = DigestUtils.md5DigestAsHex(request.getEmail().toLowerCase().getBytes(StandardCharsets.UTF_8));
             Long emailCount = userMapper.selectCount(
-                    new LambdaQueryWrapper<User>().eq(User::getEmail, encryptedEmail));
+                    new LambdaQueryWrapper<User>().eq(User::getEmailHash, emailHash));
             if (emailCount > 0) {
                 throw new BusinessException(ErrorCode.USER_EMAIL_EXISTS);
             }
         }
 
-        // 校验手机号唯一性（如提供）
+        // 校验手机号唯一性（如提供）- 使用SHA-256哈希校验
         if (StringUtils.hasText(request.getPhone())) {
-            String encryptedPhone = aesUtil.encrypt(request.getPhone());
+            String phoneHash = DigestUtils.md5DigestAsHex(request.getPhone().getBytes(StandardCharsets.UTF_8));
             Long phoneCount = userMapper.selectCount(
-                    new LambdaQueryWrapper<User>().eq(User::getPhone, encryptedPhone));
+                    new LambdaQueryWrapper<User>().eq(User::getPhoneHash, phoneHash));
             if (phoneCount > 0) {
                 throw new BusinessException(ErrorCode.USER_PHONE_EXISTS);
             }
@@ -112,12 +115,14 @@ public class AuthServiceImpl implements AuthService {
         user.setStatus(User.STATUS_NORMAL);
         user.setRole(RoleEnum.USER);
 
-        // 邮箱/手机号 AES 加密存储
+        // 邮箱/手机号 AES 加密存储，同时存储哈希用于唯一性校验
         if (StringUtils.hasText(request.getEmail())) {
             user.setEmail(aesUtil.encrypt(request.getEmail()));
+            user.setEmailHash(DigestUtils.md5DigestAsHex(request.getEmail().toLowerCase().getBytes(StandardCharsets.UTF_8)));
         }
         if (StringUtils.hasText(request.getPhone())) {
             user.setPhone(aesUtil.encrypt(request.getPhone()));
+            user.setPhoneHash(DigestUtils.md5DigestAsHex(request.getPhone().getBytes(StandardCharsets.UTF_8)));
         }
 
         // 创建用户记录

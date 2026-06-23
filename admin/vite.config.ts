@@ -26,7 +26,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3001,
     // 代理配置，将 /api 请求转发到后端服务
     proxy: {
       '/api': {

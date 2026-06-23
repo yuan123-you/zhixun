@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS sys_user (
   password_hash VARCHAR(255) NOT NULL,
   nickname VARCHAR(50),
   avatar VARCHAR(500),
-  email VARCHAR(100) UNIQUE,
-  phone VARCHAR(100) UNIQUE,
+  email VARCHAR(100),
+  email_hash VARCHAR(64) UNIQUE,
+  phone VARCHAR(100),
+  phone_hash VARCHAR(64) UNIQUE,
   role VARCHAR(20) NOT NULL DEFAULT 'USER',
   status TINYINT NOT NULL DEFAULT 1,
   bio VARCHAR(500),
@@ -150,12 +152,11 @@ CREATE INDEX idx_cms_comment_user ON cms_comment(user_id);
 CREATE INDEX idx_cms_comment_parent ON cms_comment(parent_id);
 
 -- 10. cms_view_history 浏览记录表
+-- 注意：ip 和 user_agent 字段已移除，改为客户端本地存储
 CREATE TABLE IF NOT EXISTS cms_view_history (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   user_id BIGINT,
   article_id BIGINT NOT NULL,
-  ip VARCHAR(50),
-  user_agent VARCHAR(500),
   view_duration INT,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE SET NULL,
@@ -259,9 +260,6 @@ CREATE TABLE IF NOT EXISTS user_settings (
   show_online_status TINYINT DEFAULT 1,
   message_permission TINYINT DEFAULT 0,
   save_view_history TINYINT DEFAULT 1,
-  font_size TINYINT DEFAULT 1,
-  theme VARCHAR(20) DEFAULT 'light',
-  language VARCHAR(10) DEFAULT 'zh-CN',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE

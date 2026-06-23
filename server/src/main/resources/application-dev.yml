@@ -29,15 +29,17 @@ logging:
     com.zhixun: DEBUG
     com.zhixun.mapper: DEBUG
 
-# MinIO 开发环境
+# MinIO 开发环境（本地未运行时禁用）
 minio:
+  enabled: false
   endpoint: http://localhost:9000
   access-key: minioadmin
   secret-key: minioadmin
   bucket-name: zhixun
 
-# OpenSearch 开发环境
+# OpenSearch 开发环境（本地未运行时禁用）
 opensearch:
+  enabled: false
   hosts: http://localhost:9200
   username: admin
   password: admin

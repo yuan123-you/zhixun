@@ -47,10 +47,10 @@ public class UserSettings {
     /** 字体大小，对应 font_size */
     private Integer fontSize;
 
-    /** 主题 */
+    /** 主题，对应 theme */
     private String theme;
 
-    /** 语言 */
+    /** 语言，对应 language */
     private String language;
 
     /** 创建时间 */

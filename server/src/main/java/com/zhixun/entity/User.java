@@ -40,8 +40,14 @@ public class User implements Serializable {
     /** 邮箱 */
     private String email;
 
+    /** 邮箱哈希（用于唯一性校验） */
+    private String emailHash;
+
     /** 手机号 */
     private String phone;
+
+    /** 手机号哈希（用于唯一性校验） */
+    private String phoneHash;
 
     /** 角色 */
     private RoleEnum role;

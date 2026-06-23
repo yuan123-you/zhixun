@@ -1,10 +1,14 @@
 package com.zhixun.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 跨域配置
@@ -12,11 +16,15 @@ import org.springframework.web.filter.CorsFilter;
 @Configuration
 public class CorsConfig {
 
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:8080}")
+    private String allowedOrigins;
+
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        // 允许所有来源（开发阶段），生产环境应配置具体域名
-        config.addAllowedOriginPattern("*");
+        // 仅允许配置的来源
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        config.setAllowedOrigins(origins);
         // 允许所有请求头
         config.addAllowedHeader("*");
         // 允许所有请求方法
