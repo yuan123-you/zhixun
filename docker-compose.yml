@@ -156,6 +156,12 @@ services:
       MYSQL_DB: ${MYSQL_DATABASE:-zhixun}
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
+      # MySQL 从库（单节点部署时指向主库）
+      MYSQL_SLAVE_HOST: mysql
+      MYSQL_SLAVE_PORT: 3306
+      MYSQL_SLAVE_DB: ${MYSQL_DATABASE:-zhixun}
+      MYSQL_SLAVE_USER: root
+      MYSQL_SLAVE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
       # Redis 连接信息
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -226,6 +232,12 @@ services:
       MYSQL_DB: ${MYSQL_DATABASE:-zhixun}
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
+      # MySQL 从库（单节点部署时指向主库）
+      MYSQL_SLAVE_HOST: mysql
+      MYSQL_SLAVE_PORT: 3306
+      MYSQL_SLAVE_DB: ${MYSQL_DATABASE:-zhixun}
+      MYSQL_SLAVE_USER: root
+      MYSQL_SLAVE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
       # Redis 连接信息
       REDIS_HOST: redis
       REDIS_PORT: 6379
