@@ -3,7 +3,7 @@
   <div class="card p-4 flex items-center space-x-3">
     <!-- 用户头像 -->
     <NuxtLink :to="`/user/${user.id}`">
-      <img :src="user.avatar || '/default-avatar.png'" :alt="user.nickname" class="w-12 h-12 rounded-full object-cover" />
+      <UserAvatar :src="user.avatar" :alt="user.nickname" size="lg" />
     </NuxtLink>
 
     <!-- 用户信息 -->

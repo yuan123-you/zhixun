@@ -63,10 +63,10 @@
         <!-- 用户头像菜单（已登录） -->
         <div v-if="userStore.isLoggedIn" class="relative group">
           <button class="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <img
-              :src="userStore.userInfo?.avatar || '/default-avatar.png'"
+            <UserAvatar
+              :src="userStore.userInfo?.avatar"
               :alt="userStore.userInfo?.nickname"
-              class="w-8 h-8 rounded-full object-cover"
+              size="sm"
             />
           </button>
           <!-- 下拉菜单 -->

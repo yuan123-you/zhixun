@@ -18,7 +18,7 @@
         <div class="flex items-center text-xs text-gray-400 dark:text-gray-500 space-x-4">
           <!-- 作者 -->
           <div class="flex items-center space-x-1">
-            <img :src="article.authorAvatar || article.author?.avatar || '/default-avatar.png'" :alt="article.authorName || article.author?.nickname" class="w-5 h-5 rounded-full object-cover" />
+            <UserAvatar :src="article.authorAvatar || article.author?.avatar" :alt="article.authorName || article.author?.nickname" size="xs" />
             <span>{{ article.authorName || article.author?.nickname }}</span>
           </div>
 

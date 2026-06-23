@@ -8,7 +8,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <img :src="conversation.user?.avatar || '/default-avatar.png'" class="w-10 h-10 rounded-full object-cover" alt="头像" />
+      <UserAvatar :src="conversation.user?.avatar" alt="头像" size="md" />
       <div class="ml-3">
         <p class="font-medium text-gray-900 dark:text-white">{{ conversation.user?.nickname }}</p>
         <p class="text-xs text-green-500">在线</p>
@@ -20,7 +20,7 @@
       <div v-for="message in messages" :key="message.id" class="flex" :class="isMine(message) ? 'justify-end' : 'justify-start'">
         <!-- 对方消息 -->
         <div v-if="!isMine(message)" class="flex items-end space-x-2 max-w-[70%]">
-          <img :src="message.sender?.avatar || '/default-avatar.png'" class="w-8 h-8 rounded-full object-cover shrink-0" alt="头像" />
+          <UserAvatar :src="message.sender?.avatar" alt="头像" size="sm" />
           <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-2">
             <p class="text-sm text-gray-900 dark:text-white">{{ message.content }}</p>
             <span class="text-2xs text-gray-400 mt-1 block">{{ formatTime(message.createdAt) }}</span>

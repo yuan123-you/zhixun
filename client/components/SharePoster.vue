@@ -23,7 +23,7 @@
 
             <!-- 作者信息 -->
             <div class="flex items-center space-x-3 mb-4">
-              <img :src="article?.author?.avatar || article?.authorAvatar || '/default-avatar.png'" :alt="article?.author?.nickname || article?.authorName" class="w-10 h-10 rounded-full object-cover" crossorigin="anonymous" />
+              <UserAvatar :src="article?.author?.avatar || article?.authorAvatar" :alt="article?.author?.nickname || article?.authorName" size="md" />
               <span class="text-sm font-medium text-gray-700">{{ article?.author?.nickname || article?.authorName }}</span>
             </div>
 

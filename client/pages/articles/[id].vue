@@ -17,7 +17,7 @@
       <!-- 作者信息 -->
       <div class="flex items-center space-x-3 mb-6">
         <NuxtLink :to="`/user/${article.author?.id}`">
-          <img :src="article.author?.avatar || '/default-avatar.png'" :alt="article.author?.nickname" class="w-10 h-10 rounded-full object-cover" />
+          <UserAvatar :src="article.author?.avatar" :alt="article.author?.nickname" size="md" />
         </NuxtLink>
         <div>
           <NuxtLink :to="`/user/${article.author?.id}`" class="text-sm font-medium text-gray-900 dark:text-white hover:text-primary transition-colors">

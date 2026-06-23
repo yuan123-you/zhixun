@@ -2,7 +2,7 @@
   <!-- 单条评论项组件（供 CommentSection 内部使用） -->
   <div class="flex space-x-3">
     <!-- 用户头像 -->
-    <img :src="comment.user?.avatar || '/default-avatar.png'" :alt="comment.user?.nickname" class="w-8 h-8 rounded-full object-cover shrink-0" />
+    <UserAvatar :src="comment.user?.avatar" :alt="comment.user?.nickname" size="sm" />
 
     <div class="flex-1 min-w-0">
       <!-- 用户名和内容 -->

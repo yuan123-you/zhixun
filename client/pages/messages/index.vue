@@ -19,7 +19,7 @@
               :class="{ 'bg-gray-50 dark:bg-gray-700/50': activeConversation?.id === conv.id }"
               @click="selectConversation(conv)"
             >
-              <img :src="conv.user?.avatar || '/default-avatar.png'" class="w-12 h-12 rounded-full object-cover shrink-0" alt="头像" />
+              <UserAvatar :src="conv.user?.avatar" alt="头像" size="lg" />
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium text-gray-900 dark:text-white">{{ conv.user?.nickname }}</span>

@@ -5,7 +5,7 @@
     <div class="card p-6 mb-6">
       <div class="flex items-start space-x-4">
         <!-- 头像 -->
-        <img :src="userStore.userInfo?.avatar || '/default-avatar.png'" class="w-20 h-20 rounded-full object-cover shrink-0" alt="头像" />
+        <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="xl" />
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">

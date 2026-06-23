@@ -49,7 +49,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
             <!-- 用户头像 -->
-            <img v-if="item.type === 'user' && item.avatar" :src="item.avatar" class="w-6 h-6 rounded-full mr-2 shrink-0 object-cover" />
+            <UserAvatar v-if="item.type === 'user'" :src="item.avatar" :alt="item.text" size="xs" class="mr-2" />
             <span v-html="highlightKeyword(item.text)"></span>
             <span class="ml-auto text-xs text-gray-400">{{ item.type === 'user' ? '用户' : item.type === 'article' ? '文章' : '标签' }}</span>
           </button>

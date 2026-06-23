@@ -6,7 +6,7 @@
       <div class="flex items-start space-x-4">
         <!-- 头像 -->
         <div class="relative shrink-0">
-          <img :src="userInfo?.avatar || '/default-avatar.png'" class="w-20 h-20 rounded-full object-cover" alt="头像" />
+          <UserAvatar :src="userInfo?.avatar" alt="头像" size="xl" />
           <!-- 在线状态指示灯 -->
           <span
             class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800"
@@ -87,11 +87,7 @@
             <div class="flex items-center space-x-3 min-w-0 flex-1">
               <!-- 头像 + 在线状态 -->
               <div class="relative shrink-0">
-                <img
-                  :src="user.avatar || '/default-avatar.png'"
-                  class="w-10 h-10 rounded-full object-cover"
-                  :alt="user.nickname"
-                />
+                <UserAvatar :src="user.avatar" :alt="user.nickname" size="md" />
                 <span
                   class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800"
                   :class="user.isOnline ? 'bg-green-500' : 'bg-gray-400'"

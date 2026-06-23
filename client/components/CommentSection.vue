@@ -3,7 +3,7 @@
   <div class="space-y-6">
     <!-- 评论输入框 -->
     <div v-if="userStore.isLoggedIn" class="flex space-x-3">
-      <img :src="userStore.userInfo?.avatar || '/default-avatar.png'" class="w-10 h-10 rounded-full object-cover shrink-0" alt="头像" />
+      <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="md" />
       <div class="flex-1">
         <textarea
           v-model="commentContent"
