@@ -12,7 +12,7 @@ services:
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun321}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-zhixun}
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
@@ -28,7 +28,7 @@ services:
       --max-connections=500
       --innodb-buffer-pool-size=256M
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-zhixun123456}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-zhixun321}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -87,8 +87,8 @@ services:
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-zhixun321}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-zhixun321}
       TZ: Asia/Shanghai
     volumes:
       - minio_data:/data
@@ -114,7 +114,7 @@ services:
       discovery.type: single-node
       OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
       DISABLE_SECURITY_PLUGIN: "false"
-      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_PASSWORD:-Zhixun2024!}
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_PASSWORD:-zhixun321}
       bootstrap.memory_lock: "true"
       TZ: Asia/Shanghai
     volumes:
@@ -127,7 +127,7 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: ["CMD-SHELL", "curl -ksfo /dev/null -u admin:${OPENSEARCH_PASSWORD:-admin} https://localhost:9200 || exit 1"]
+      test: ["CMD-SHELL", "curl -ksfo /dev/null -u admin:${OPENSEARCH_PASSWORD:-zhixun321} https://localhost:9200 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -155,13 +155,13 @@ services:
       MYSQL_PORT: 3306
       MYSQL_DB: ${MYSQL_DATABASE:-zhixun}
       MYSQL_USER: root
-      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun321}
       # MySQL 从库（单节点部署时指向主库）
       MYSQL_SLAVE_HOST: mysql
       MYSQL_SLAVE_PORT: 3306
       MYSQL_SLAVE_DB: ${MYSQL_DATABASE:-zhixun}
       MYSQL_SLAVE_USER: root
-      MYSQL_SLAVE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
+      MYSQL_SLAVE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun321}
       # Redis 连接信息
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -175,13 +175,13 @@ services:
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       # MinIO 连接信息
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-zhixun321}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-zhixun321}
       MINIO_BUCKET: ${MINIO_BUCKET:-zhixun}
       # OpenSearch 连接信息
       OPENSEARCH_HOSTS: https://opensearch:9200
       OPENSEARCH_USERNAME: admin
-      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-admin}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-zhixun321}
       # JWT 密钥
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-zhixun-access-secret-key-2024-must-be-at-least-256-bits-long}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-zhixun-refresh-secret-key-2024-must-be-at-least-256-bits-long}
@@ -231,13 +231,13 @@ services:
       MYSQL_PORT: 3306
       MYSQL_DB: ${MYSQL_DATABASE:-zhixun}
       MYSQL_USER: root
-      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun321}
       # MySQL 从库（单节点部署时指向主库）
       MYSQL_SLAVE_HOST: mysql
       MYSQL_SLAVE_PORT: 3306
       MYSQL_SLAVE_DB: ${MYSQL_DATABASE:-zhixun}
       MYSQL_SLAVE_USER: root
-      MYSQL_SLAVE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun123456}
+      MYSQL_SLAVE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-zhixun321}
       # Redis 连接信息
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -251,13 +251,13 @@ services:
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       # MinIO 连接信息
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-zhixun321}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-zhixun321}
       MINIO_BUCKET: ${MINIO_BUCKET:-zhixun}
       # OpenSearch 连接信息
       OPENSEARCH_HOSTS: https://opensearch:9200
       OPENSEARCH_USERNAME: admin
-      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-admin}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-zhixun321}
       # JWT 密钥
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-zhixun-access-secret-key-2024-must-be-at-least-256-bits-long}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-zhixun-refresh-secret-key-2024-must-be-at-least-256-bits-long}

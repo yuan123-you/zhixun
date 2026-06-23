@@ -91,8 +91,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.GET, "/v1/categories", "/v1/categories/tree").permitAll()
                         // 标签列表和热门标签（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/tags", "/v1/tags/hot").permitAll()
-                        // 信息流（推荐、最新公开，关注需认证）
-                        .requestMatchers(HttpMethod.GET, "/v1/feed/recommend", "/v1/feed/latest").permitAll()
+                        // 信息流（推荐、最新、热门公开，关注需认证）
+                        .requestMatchers(HttpMethod.GET, "/v1/feed/recommend", "/v1/feed/latest", "/v1/feed/hot").permitAll()
                         // 排行榜（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/rank/**").permitAll()
                         // 搜索（公开）
@@ -101,6 +101,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.GET, "/v1/banners").permitAll()
                         // 公告（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/announcements").permitAll()
+                        // 推荐用户（公开，需在 /v1/users/** ADMIN规则之前）
+                        .requestMatchers(HttpMethod.GET, "/v1/users/recommend").permitAll()
                         // 管理端接口 - 仅 ADMIN 角色可访问
                         .requestMatchers("/v1/admin/**").hasRole("ADMIN")
                         // 用户管理 - 仅 ADMIN 角色可访问
