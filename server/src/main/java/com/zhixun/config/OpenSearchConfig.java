@@ -93,7 +93,12 @@ public class OpenSearchConfig {
         }
 
         // SSL 上下文（信任自签名证书）
-        SSLContext sslContext = SSLContext.getDefault();
+        SSLContext sslContext;
+        try {
+            sslContext = SSLContext.getDefault();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create SSL context", e);
+        }
 
         RestClientBuilder builder = RestClient.builder(httpHosts.toArray(new HttpHost[0]))
                 .setHttpClientConfigCallback(httpClientBuilder -> {
