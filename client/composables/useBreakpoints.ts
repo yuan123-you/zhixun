@@ -20,7 +20,9 @@ export const useBreakpoints = () => {
   // 是否为平板端（768px - 1023px）
   const isTablet = computed(() => {
     const current = breakpoints.current()
-    return current.includes('md') && !current.includes('lg')
+    if (!current) return false
+    const arr = Array.isArray(current) ? current : [current]
+    return arr.includes('md') && !arr.includes('lg')
   })
 
   // 是否为桌面端（大于等于1024px）
