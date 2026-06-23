@@ -4,7 +4,7 @@ import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.service.FileService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "minio.enabled", havingValue = "false", matchIfMissing = false)
+@ConditionalOnMissingBean(FileServiceImpl.class)
 public class LocalFileServiceImpl implements FileService {
 
     private static final String UPLOAD_DIR = "./uploads";
