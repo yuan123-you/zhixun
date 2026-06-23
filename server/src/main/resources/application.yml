@@ -3,6 +3,16 @@ server:
   servlet:
     context-path: /api
 
+# Actuator 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 spring:
   application:
     name: zhixun-server
