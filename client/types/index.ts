@@ -10,7 +10,12 @@ export interface Article {
   categoryId: number
   categoryName: string
   tags: Tag[]
-  author: User
+  /** 作者对象（部分接口返回） */
+  author?: User
+  /** 作者昵称（后端ArticleVO扁平字段） */
+  authorName?: string
+  /** 作者头像（后端ArticleVO扁平字段） */
+  authorAvatar?: string
   likeCount: number
   collectCount: number
   commentCount: number
@@ -18,6 +23,7 @@ export interface Article {
   isLiked: boolean
   isCollected: boolean
   status: ArticleStatus
+  isTop?: number
   createdAt: string
   updatedAt: string
 }
@@ -134,26 +140,42 @@ export interface Conversation {
   updatedAt: string
 }
 
-/** 排行项接口 */
+/** 排行项接口（与后端 HotArticleVO 对齐） */
 export interface RankItem {
-  rank: number
-  articleId: number
+  /** 文章ID（后端字段名 id） */
+  id: number
+  /** 标题 */
   title: string
-  author: string
-  heatScore: number
-  likeCount: number
-  commentCount: number
-  viewCount: number
+  /** 作者昵称（后端字段名 authorNickname） */
+  authorNickname?: string
+  /** 热度分数（后端字段名 score） */
+  score?: number
+  /** 浏览量 */
+  viewCount?: number
+  /** 点赞数 */
+  likeCount?: number
+  /** 评论数 */
+  commentCount?: number
+  /** 创建时间 */
+  createdAt?: string
 }
 
-/** 搜索结果接口 */
-export interface SearchResult<T> {
-  items: T[]
+/** 分页结果接口（与后端 PageResult 对齐） */
+export interface PageResult<T> {
+  /** 数据列表（后端字段名 list） */
+  list: T[]
+  /** 总记录数 */
   total: number
+  /** 当前页码 */
   page: number
-  pageSize: number
-  hasMore: boolean
+  /** 每页大小（后端字段名 page_size） */
+  page_size: number
 }
+
+/**
+ * @deprecated 使用 PageResult 代替，与后端保持一致
+ */
+export type SearchResult<T> = PageResult<T>
 
 /** 登录请求 */
 export interface LoginRequest {
@@ -175,6 +197,14 @@ export interface RegisterRequest {
 export interface SendCodeRequest {
   email: string
   purpose: 'register' | 'login' | 'resetPassword'
+  captchaKey: string
+  captchaAnswer: string
+}
+
+/** 图形验证码响应 */
+export interface GraphCaptchaResponse {
+  captchaKey: string
+  image: string
 }
 
 /** 忘记密码请求 */

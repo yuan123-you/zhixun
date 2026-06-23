@@ -37,8 +37,8 @@ export default defineNuxtConfig({
 
   // 混合渲染路由规则
   routeRules: {
-    // 首页暂时CSR渲染（SSR数据获取有问题待修复）
-    '/': { ssr: false },
+    // 首页SSR渲染
+    '/': { ssr: true },
     // 文章详情页SSR渲染
     '/articles/**': { ssr: true },
     // 管理页CSR渲染
