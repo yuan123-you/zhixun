@@ -7,6 +7,7 @@ import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/admin/',
   plugins: [
     vue(),
     // Element Plus 自动导入
