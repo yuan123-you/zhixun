@@ -172,8 +172,8 @@ minio:
 # OpenSearch 配置
 opensearch:
   hosts: ${OPENSEARCH_HOSTS:http://localhost:9200}
-  username: ${OPENSEARCH_USERNAME:admin}
-  password: ${OPENSEARCH_PASSWORD:zhixun321!}
+  username: ${OPENSEARCH_USERNAME:}
+  password: ${OPENSEARCH_PASSWORD:}
   connect-timeout: 5000
   socket-timeout: 60000
   index-prefix: zhixun_

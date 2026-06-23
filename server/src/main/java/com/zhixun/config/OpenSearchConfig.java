@@ -84,15 +84,20 @@ public class OpenSearchConfig {
                 })
                 .toList();
 
-        // 认证信息
+        // 认证信息（仅当用户名和密码都非空时启用）
         BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY,
-                new UsernamePasswordCredentials(username, password));
+        if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
+            credentialsProvider.setCredentials(AuthScope.ANY,
+                    new UsernamePasswordCredentials(username, password));
+        }
 
         RestClientBuilder builder = RestClient.builder(httpHosts.toArray(new HttpHost[0]))
-                .setHttpClientConfigCallback(httpClientBuilder ->
-                        httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-                )
+                .setHttpClientConfigCallback(httpClientBuilder -> {
+                    if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
+                        httpClientBuilder = httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                    }
+                    return httpClientBuilder;
+                })
                 .setRequestConfigCallback(requestConfigBuilder ->
                         requestConfigBuilder
                                 .setConnectTimeout(connectTimeout)
