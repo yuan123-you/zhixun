@@ -15,6 +15,7 @@ import com.zhixun.entity.ArticleTag;
 import com.zhixun.entity.ArticleViewHistory;
 import com.zhixun.entity.Category;
 import com.zhixun.entity.Comment;
+import com.zhixun.entity.LoginLog;
 import com.zhixun.entity.Notification;
 import com.zhixun.entity.OperationLog;
 import com.zhixun.entity.SecurityAuditLog;
