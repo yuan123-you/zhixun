@@ -7,10 +7,10 @@
 set -e
 
 # ==================== 配置区 ====================
-PROJECT_DIR="/root/zhixun"              # 服务器上项目目录
+PROJECT_DIR="$HOME/zhixun"              # 服务器上项目目录
 BRANCH="master"                         # 部署分支
 COMPOSE_FILE="docker-compose.yml"       # Docker Compose 配置文件
-BACKUP_DIR="/root/zhixun-backups"       # 备份目录
+BACKUP_DIR="$HOME/zhixun-backups"       # 备份目录
 HEALTH_CHECK_TIMEOUT=120                # 健康检查超时时间（秒）
 HEALTH_CHECK_INTERVAL=5                 # 健康检查间隔（秒）
 
