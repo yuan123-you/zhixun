@@ -16,7 +16,7 @@ import com.zhixun.vo.SearchSuggestResultVO;
 import com.zhixun.vo.SuggestionVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnMissingBean(SearchServiceImpl.class)
+@ConditionalOnProperty(name = "opensearch.enabled", havingValue = "false")
 public class DatabaseSearchServiceImpl implements SearchService {
 
     private final ArticleMapper articleMapper;
