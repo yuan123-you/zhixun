@@ -61,6 +61,11 @@
           @retry="handleRetry"
         />
       </div>
+
+      <!-- 右侧边栏 -->
+      <div class="hidden lg:block w-80 shrink-0 space-y-6">
+        <LazyHotRank :items="hotRankItems" />
+      </div>
     </div>
     </PullToRefresh>
   </div>
@@ -69,7 +74,7 @@
 <script setup lang="ts">
 /** 首页：推荐/热门/最新/关注四个Tab，文章卡片列表 */
 
-import type { Article, PageResult, ApiResponse } from '~/types'
+import type { Article, PageResult, ApiResponse, RankItem } from '~/types'
 import type { BannerItem, AnnouncementItem } from '~/api/banner'
 
 const userStore = useUserStore()
@@ -94,6 +99,7 @@ const error = ref<string | null>(null)
 const page = ref(1)
 const bannerList = ref<BannerItem[]>([])
 const announcementList = ref<AnnouncementItem[]>([])
+const hotRankItems = ref<RankItem[]>([])
 
 // 请求缓存
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
@@ -277,13 +283,14 @@ const { data: homeData } = await useAsyncData('home-init', async () => {
   const base = getApiBase()
   const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
 
-  const [feedRes, bannerRes, announcementRes] = await Promise.all([
+  const [feedRes, bannerRes, announcementRes, hotRankRes] = await Promise.all([
     $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
       params: { page: 1, pageSize: 20 },
       headers,
     }).catch(() => null),
     $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }).catch(() => null),
     $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, { headers }).catch(() => null),
+    $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, { params: { limit: 10 }, headers }).catch(() => null),
   ])
 
   return {
@@ -291,13 +298,15 @@ const { data: homeData } = await useAsyncData('home-init', async () => {
     refreshKey: (feedRes?.data as any)?.refresh_key || '',
     banners: bannerRes?.data || [],
     announcements: announcementRes?.data || [],
+    hotRank: hotRankRes?.data || [],
   }
-}, { default: () => ({ feed: [] as Article[], refreshKey: '', banners: [] as BannerItem[], announcements: [] as AnnouncementItem[] }) })
+}, { default: () => ({ feed: [] as Article[], refreshKey: '', banners: [] as BannerItem[], announcements: [] as AnnouncementItem[], hotRank: [] as RankItem[] }) })
 
 articles.value = homeData.value.feed
 refreshKey.value = homeData.value.refreshKey
 bannerList.value = homeData.value.banners
 announcementList.value = homeData.value.announcements
+hotRankItems.value = homeData.value.hotRank
 
 // 页面元信息
 useHead({
