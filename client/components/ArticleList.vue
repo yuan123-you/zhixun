@@ -32,11 +32,11 @@
 
       <!-- 没有更多数据 -->
       <div v-if="!hasMore && !error && articles.length > 0" class="text-center text-sm text-gray-400 dark:text-gray-500 py-4">
-        没有更多了
+        {{ $t('common.noMore') }}
       </div>
 
       <!-- 空状态 -->
-      <EmptyState v-if="!loading && !error && articles.length === 0" title="暂无文章" description="快去发现精彩内容吧" />
+      <EmptyState v-if="!loading && !error && articles.length === 0" :title="$t('article.noArticles')" :description="$t('article.noArticlesDesc')" />
     </template>
 
     <!-- 无限滚动触发器 -->

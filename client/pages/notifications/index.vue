@@ -3,7 +3,7 @@
   <div class="max-w-4xl mx-auto px-4 py-6">
     <!-- 页面头部 -->
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">消息中心</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('message.title') }}</h1>
       <div class="flex items-center gap-3">
         <!-- 通知tab下的批量操作按钮 -->
         <template v-if="activeMainTab === 'notifications' && batchMode">
@@ -11,21 +11,21 @@
             class="btn btn-sm btn-ghost text-gray-600 dark:text-gray-300"
             @click="exitBatchMode"
           >
-            取消
+            {{ $t('common.cancel') }}
           </button>
           <button
             class="btn btn-sm btn-ghost text-primary"
             :disabled="selectedIds.length === 0"
             @click="batchRead"
           >
-            标记已读({{ selectedIds.length }})
+            {{ $t('message.markAsRead') }}({{ selectedIds.length }})
           </button>
           <button
             class="btn btn-sm btn-ghost text-danger"
             :disabled="selectedIds.length === 0"
             @click="batchDelete"
           >
-            删除({{ selectedIds.length }})
+            {{ $t('common.delete') }}({{ selectedIds.length }})
           </button>
         </template>
         <template v-if="activeMainTab === 'notifications' && !batchMode">
@@ -34,14 +34,14 @@
             class="btn btn-sm btn-ghost text-gray-600 dark:text-gray-300"
             @click="enterBatchMode"
           >
-            批量管理
+            {{ $t('common.batchManage') }}
           </button>
           <button
             v-if="notificationStore.unreadCount > 0"
             class="btn btn-sm btn-primary"
             @click="markAllRead"
           >
-            全部已读
+            {{ $t('common.markAllRead') }}
           </button>
         </template>
       </div>
@@ -73,7 +73,7 @@
           <div class="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
             <!-- 搜索会话 -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-              <input type="text" class="input text-sm" placeholder="搜索会话..." />
+              <input type="text" class="input text-sm" :placeholder="$t('message.searchConversation')" />
             </div>
 
             <!-- 会话列表 -->
@@ -99,7 +99,7 @@
               </button>
 
               <!-- 空状态 -->
-              <EmptyState v-if="conversations.length === 0" title="暂无会话" description="开始一段新的对话吧" />
+              <EmptyState v-if="conversations.length === 0" :title="$t('message.noConversations')" :description="$t('message.startConversation')" />
             </div>
           </div>
 
@@ -119,7 +119,7 @@
                 <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <p class="text-gray-500 dark:text-gray-400">选择一个会话开始聊天</p>
+                <p class="text-gray-500 dark:text-gray-400">{{ $t('message.selectConversation') }}</p>
               </div>
             </div>
           </div>
@@ -159,8 +159,8 @@
         <!-- 空状态 -->
         <EmptyState
           v-else-if="notifications.length === 0"
-          title="暂无通知"
-          description="还没有收到任何通知"
+          :title="$t('message.noNotifications')"
+          :description="$t('message.noNotificationsDesc')"
         />
 
         <!-- 通知列表 -->
@@ -258,7 +258,7 @@
               <button
                 v-if="!notification.isRead"
                 class="p-1.5 text-gray-400 hover:text-primary rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title="标记已读"
+                :title="$t('message.markAsRead')"
                 @click.stop="markAsRead(notification)"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,7 +267,7 @@
               </button>
               <button
                 class="p-1.5 text-gray-400 hover:text-danger rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title="删除"
+                :title="$t('message.deleteNotification')"
                 @click.stop="deleteNotification(notification)"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,14 +301,15 @@ definePageMeta({
 
 const notificationStore = useNotificationStore()
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
+const { t } = useI18n()
 
 // ===== 主Tab =====
 const activeMainTab = ref<'messages' | 'notifications'>('messages')
 const messageUnreadCount = ref(0)
 
 const mainTabs = computed(() => [
-  { key: 'messages', label: '私信', unread: messageUnreadCount.value },
-  { key: 'notifications', label: '通知', unread: notificationStore.unreadCount },
+  { key: 'messages', label: t('message.privateMessage'), unread: messageUnreadCount.value },
+  { key: 'notifications', label: t('message.notification'), unread: notificationStore.unreadCount },
 ])
 
 const switchMainTab = (key: string) => {
@@ -392,12 +393,12 @@ if (import.meta.client) {
 
 // ===== 通知相关 =====
 const tabs = [
-  { label: '全部', value: 0 },
-  { label: '系统通知', value: NotificationType.System },
-  { label: '审核通知', value: NotificationType.Audit },
-  { label: '互动通知', value: NotificationType.Interact },
-  { label: '关注通知', value: NotificationType.Follow },
-  { label: '私信通知', value: NotificationType.Message },
+  { label: t('common.search'), value: 0 },
+  { label: t('message.systemNotification'), value: NotificationType.System },
+  { label: t('message.auditNotification'), value: NotificationType.Audit },
+  { label: t('message.interactNotification'), value: NotificationType.Interact },
+  { label: t('message.followNotification'), value: NotificationType.Follow },
+  { label: t('message.messageNotification'), value: NotificationType.Message },
 ]
 
 const activeTab = ref(0)
@@ -436,7 +437,7 @@ const fetchNotifications = async () => {
     notifications.value = data?.list || []
     total.value = data?.total || 0
   } catch {
-    notificationError.value = '加载通知失败，请重试'
+    notificationError.value = t('message.loadNotificationsFailed')
     notifications.value = []
     total.value = 0
   } finally {
@@ -461,7 +462,7 @@ const loadMore = async () => {
     notifications.value.push(...newItems)
     total.value = data?.total || 0
   } catch {
-    notificationError.value = '加载更多失败，请重试'
+    notificationError.value = t('message.loadMoreNotificationsFailed')
     page.value--
   } finally {
     loadingMore.value = false
@@ -600,15 +601,15 @@ const batchDelete = async () => {
 
 const getTypeLabel = (type: NotificationType) => {
   const map: Record<number, string> = {
-    [NotificationType.System]: '系统通知',
-    [NotificationType.Audit]: '审核通知',
-    [NotificationType.Interact]: '互动通知',
-    [NotificationType.Follow]: '关注通知',
-    [NotificationType.Message]: '私信通知',
-    [NotificationType.CommentReply]: '评论回复',
-    [NotificationType.Mention]: '@提及',
+    [NotificationType.System]: t('message.systemNotification'),
+    [NotificationType.Audit]: t('message.auditNotification'),
+    [NotificationType.Interact]: t('message.interactNotification'),
+    [NotificationType.Follow]: t('message.followNotification'),
+    [NotificationType.Message]: t('message.messageNotification'),
+    [NotificationType.CommentReply]: t('message.commentReply'),
+    [NotificationType.Mention]: t('message.mention'),
   }
-  return map[type] || '通知'
+  return map[type] || t('message.notification')
 }
 
 // 格式化时间
@@ -638,6 +639,6 @@ onMounted(async () => {
 })
 
 useHead({
-  title: '消息中心 - 知讯',
+  title: () => t('message.title') + ' - 知讯',
 })
 </script>

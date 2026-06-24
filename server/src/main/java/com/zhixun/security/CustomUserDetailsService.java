@@ -1,6 +1,5 @@
 package com.zhixun.security;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zhixun.entity.User;
 import com.zhixun.enums.RoleEnum;
 import com.zhixun.mapper.UserMapper;
@@ -28,12 +27,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // 从数据库查询用户（password 字段默认不查询，需显式指定）
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>()
-                        .eq(User::getUsername, username)
-                        .select(User::getId, User::getUsername, User::getPasswordHash,
-                                User::getStatus, User::getRole));
+        // 从数据库查询用户（使用自定义 SQL 查询包含 passwordHash，因为 @TableField(select = false) 会阻止 MyBatis-Plus 查询该字段）
+        User user = userMapper.selectByUsernameWithPassword(username);
         if (user == null) {
             log.warn("用户不存在: {}", username);
             throw new UsernameNotFoundException("用户不存在: " + username);

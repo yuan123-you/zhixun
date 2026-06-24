@@ -158,13 +158,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenResponse login(LoginRequest request, HttpServletRequest httpRequest) {
-        // 查询用户（password 字段默认不查询，需显式指定）
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>()
-                        .eq(User::getUsername, request.getUsername())
-                        .select(User::getId, User::getUsername, User::getPasswordHash,
-                                User::getNickname, User::getAvatar, User::getEmail, User::getPhone,
-                                User::getStatus, User::getRole, User::getLastLoginAt));
+        // 查询用户（使用自定义 SQL 查询包含 passwordHash，因为 @TableField(select = false) 会阻止 MyBatis-Plus 查询该字段）
+        User user = userMapper.selectByUsernameWithPassword(request.getUsername());
 
         // 记录登录日志
         LoginLog loginLog = buildLoginLog(request.getUsername(), httpRequest);
@@ -303,10 +298,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void changePassword(Long userId, ChangePasswordRequest request) {
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>()
-                        .eq(User::getId, userId)
-                        .select(User::getId, User::getPasswordHash));
+        User user = userMapper.selectByIdWithPassword(userId);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }

@@ -49,12 +49,6 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: '/api' },
       ],
-      // 内联加载画面：在JS加载/水合前显示，避免白屏
-      script: [
-        {
-          innerHTML: `document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('app-splash');if(s)s.style.display='flex'});`,
-        },
-      ],
     },
   },
 

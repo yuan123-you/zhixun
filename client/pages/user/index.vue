@@ -6,7 +6,7 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
-      返回
+      {{ $t('common.back') }}
     </button>
 
     <!-- 个人资料卡 -->
@@ -18,13 +18,13 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ userStore.userInfo?.nickname }}</h2>
-            <NuxtLink to="/user/settings" class="btn-secondary text-sm">编辑资料</NuxtLink>
+            <NuxtLink to="/user/settings" class="btn-secondary text-sm">{{ $t('user.editProfile') }}</NuxtLink>
           </div>
           <p v-if="userStore.userInfo?.bio" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ userStore.userInfo?.bio }}</p>
           <div class="flex items-center space-x-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.articleCount }}</strong> 文章</span>
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followCount }}</strong> 关注</span>
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followerCount }}</strong> 粉丝</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.articleCount }}</strong> {{ $t('article.articles') }}</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followCount }}</strong> {{ $t('user.following') }}</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followerCount }}</strong> {{ $t('user.followers') }}</span>
           </div>
         </div>
       </div>
@@ -66,10 +66,10 @@
           <p class="text-sm text-gray-700 dark:text-gray-300">{{ comment.content }}</p>
           <div class="flex items-center justify-between mt-2">
             <span class="text-xs text-gray-400">{{ formatDate(comment.createdAt) }}</span>
-            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-xs text-primary hover:text-primary-600">查看文章</NuxtLink>
+            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-xs text-primary hover:text-primary-600">{{ $t('article.viewArticle') }}</NuxtLink>
           </div>
         </div>
-        <EmptyState v-if="!loading && myComments.length === 0" title="暂无评论" />
+        <EmptyState v-if="!loading && myComments.length === 0" :title="$t('user.noComments')" />
       </div>
 
       <!-- 浏览历史 -->
@@ -90,6 +90,7 @@ definePageMeta({
 
 const userStore = useUserStore()
 const router = useRouter()
+const { t } = useI18n()
 
 // 返回上一页
 const goBack = () => {
@@ -101,11 +102,11 @@ const goBack = () => {
 }
 
 const tabs = [
-  { key: 'published', label: '我发布的' },
-  { key: 'collected', label: '我的收藏' },
-  { key: 'liked', label: '我的点赞' },
-  { key: 'comments', label: '我的评论' },
-  { key: 'history', label: '浏览历史' },
+  { key: 'published', label: computed(() => t('user.myPublished')) },
+  { key: 'collected', label: computed(() => t('user.myCollections')) },
+  { key: 'liked', label: computed(() => t('user.myLikes')) },
+  { key: 'comments', label: computed(() => t('user.myComments')) },
+  { key: 'history', label: computed(() => t('user.viewHistory')) },
 ]
 
 const activeTab = ref('published')
@@ -189,7 +190,7 @@ const loadTabData = async () => {
       }
     }
   } catch {
-    tabError.value = '数据加载失败，请重试'
+    tabError.value = t('user.loadDataFailed')
   } finally {
     loading.value = false
   }
@@ -236,7 +237,7 @@ const loadMore = async () => {
     }
   } catch {
     currentPage.value--
-    tabError.value = '加载更多失败，请重试'
+    tabError.value = t('user.loadMoreFailed')
   } finally {
     loading.value = false
   }
@@ -254,6 +255,6 @@ onMounted(() => {
 
 // 页面元信息
 useHead({
-  title: '个人中心 - 知讯',
+  title: () => t('nav.profile') + ' - 知讯',
 })
 </script>

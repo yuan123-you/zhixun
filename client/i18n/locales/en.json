@@ -17,7 +17,14 @@
     "refresh": "Refresh",
     "loading": "Loading...",
     "clear": "Clear",
-    "gotIt": "Got it"
+    "gotIt": "Got it",
+    "loadFailed": "Failed to load, please try again later",
+    "retry": "Click to retry",
+    "retrying": "Retrying...",
+    "networkError": "Network connection error, please check your network and try again",
+    "serverError": "Server is temporarily unavailable, please try again later",
+    "noData": "No content yet",
+    "noDataDesc": "Go discover great content"
   },
   "nav": {
     "home": "Home",
@@ -58,11 +65,19 @@
     "followers": "Followers",
     "followed": "Following",
     "followBtn": "Follow",
-    "heat": "Heat"
+    "heat": "Heat",
+    "noArticles": "No articles yet",
+    "noArticlesDesc": "Go discover great content",
+    "relatedArticles": "Related Articles",
+    "toc": "Table of Contents"
   },
   "hotRank": {
     "title": "Trending",
-    "empty": "No trending data"
+    "empty": "No trending data",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "loadFailed": "Failed to load rankings, please try again later"
   },
   "hotTags": {
     "title": "Popular Tags",
@@ -82,7 +97,18 @@
     "following": "Following",
     "followers": "Followers",
     "confirmPassword": "Confirm Password",
-    "newPassword": "New Password"
+    "newPassword": "New Password",
+    "editProfile": "Edit Profile",
+    "myPublished": "My Articles",
+    "myCollections": "My Collections",
+    "myLikes": "My Likes",
+    "myComments": "My Comments",
+    "viewHistory": "View History",
+    "loadDataFailed": "Failed to load data, please try again later",
+    "loadMoreFailed": "Failed to load more, please try again later",
+    "noComments": "No comments yet",
+    "noFollowing": "No following yet",
+    "noFollowers": "No followers yet"
   },
   "search": {
     "keyword": "Search Keywords",
@@ -111,7 +137,8 @@
     "mostLikes": "Most Likes",
     "typeUser": "User",
     "typeArticle": "Article",
-    "typeTag": "Tag"
+    "typeTag": "Tag",
+    "searchFailed": "Search failed, please try again later"
   },
   "settings": {
     "recommendPrefs": "Recommendation Preferences",
@@ -182,9 +209,9 @@
     "portraitBetter": "Portrait mode for better experience"
   },
   "error": {
-    "network": "Network Error",
-    "tokenExpired": "Session Expired",
-    "forbidden": "Access Denied",
-    "notFound": "Content Not Found"
+    "network": "Network connection error, please check your network and try again",
+    "tokenExpired": "Session expired, please login again",
+    "forbidden": "Access denied",
+    "notFound": "Content not found or has been deleted"
   }
 }

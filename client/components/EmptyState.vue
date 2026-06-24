@@ -26,7 +26,7 @@ withDefaults(defineProps<{
   title?: string
   description?: string
 }>(), {
-  title: '暂无内容',
+  title: '',
   description: '',
 })
 </script>

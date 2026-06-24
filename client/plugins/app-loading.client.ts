@@ -1,22 +1,21 @@
-/** 应用水合完成后移除加载画面 */
+/** 应用水合完成后移除加载封面 */
 export default defineNuxtPlugin(() => {
   if (!import.meta.client) return
 
-  // 等待应用水合完成后移除加载画面
   const removeSplash = () => {
     const splash = document.getElementById('app-splash')
-    if (splash) {
+    if (splash && !splash.classList.contains('fade-out')) {
       splash.classList.add('fade-out')
-      setTimeout(() => splash.remove(), 300)
+      setTimeout(() => splash.remove(), 500)
     }
   }
 
   // 监听 Nuxt 页面就绪事件
   const nuxtApp = useNuxtApp()
   nuxtApp.hook('page:finish', () => {
-    nextTick(() => setTimeout(removeSplash, 50))
+    nextTick(() => setTimeout(removeSplash, 100))
   })
 
-  // 兜底：3秒后强制移除
-  setTimeout(removeSplash, 3000)
+  // 兜底：5秒后强制移除
+  setTimeout(removeSplash, 5000)
 })

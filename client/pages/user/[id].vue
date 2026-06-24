@@ -6,7 +6,7 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
-      返回
+      {{ $t('common.back') }}
     </button>
 
     <!-- 用户资料卡 -->
@@ -32,18 +32,18 @@
               :class="userInfo?.isFollowing ? 'btn-secondary' : 'btn-primary'"
               @click="toggleFollow"
             >
-              {{ userInfo?.isFollowing ? '已关注' : '关注' }}
+              {{ userInfo?.isFollowing ? $t('article.followed') : $t('article.followBtn') }}
             </button>
           </div>
           <p v-if="userInfo?.bio" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ userInfo?.bio }}</p>
           <div class="flex items-center space-x-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
             <button class="hover:text-primary transition-colors" @click="activeTab = 'following'">
-              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followCount }}</strong> 关注
+              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followCount }}</strong> {{ $t('user.following') }}
             </button>
             <button class="hover:text-primary transition-colors" @click="activeTab = 'followers'">
-              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followerCount }}</strong> 粉丝
+              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followerCount }}</strong> {{ $t('user.followers') }}
             </button>
-            <span><strong class="text-gray-900 dark:text-white">{{ userInfo?.articleCount }}</strong> 文章</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userInfo?.articleCount }}</strong> {{ $t('article.articles') }}</span>
           </div>
         </div>
       </div>
@@ -57,7 +57,7 @@
           :class="activeTab === 'following' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
           @click="activeTab = 'following'"
         >
-          关注
+          {{ $t('user.following') }}
           <span v-if="activeTab === 'following'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full"></span>
         </button>
         <button
@@ -65,7 +65,7 @@
           :class="activeTab === 'followers' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
           @click="activeTab = 'followers'"
         >
-          粉丝
+          {{ $t('user.followers') }}
           <span v-if="activeTab === 'followers'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full"></span>
         </button>
       </div>
@@ -85,7 +85,7 @@
           <svg class="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <p class="text-sm">{{ activeTab === 'following' ? '暂无关注用户' : '暂无粉丝' }}</p>
+          <p class="text-sm">{{ activeTab === 'following' ? $t('user.noFollowing') : $t('user.noFollowers') }}</p>
         </div>
 
         <!-- 用户列表 -->
@@ -134,7 +134,7 @@
               @click="toggleFollowUser(user)"
             >
               <span v-if="followLoading[user.id]" class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin inline-block mr-1"></span>
-              {{ user.isFollowing ? '已关注' : '关注' }}
+              {{ user.isFollowing ? $t('article.followed') : $t('article.followBtn') }}
             </button>
           </div>
         </div>
@@ -145,7 +145,7 @@
             class="text-sm text-primary hover:text-primary-600 transition-colors"
             @click="loadMoreList"
           >
-            加载更多
+            {{ $t('common.loadMore') }}
           </button>
         </div>
       </div>
@@ -153,7 +153,7 @@
 
     <!-- Ta的文章列表 -->
     <div class="mt-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ta的文章</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ $t('article.articles') }}</h3>
       <ArticleList :articles="articles" :loading="loading" :has-more="hasMore" :error="articlesError" @load-more="loadMore" @retry="retryArticles" />
     </div>
   </div>
@@ -167,6 +167,7 @@ import type { FollowUser } from '~/api/social'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 const userId = computed(() => Number(route.params.id))
 
 // 返回上一页
@@ -238,7 +239,7 @@ const { data: articleData } = await useAsyncData(`user-articles-${userId.value}`
     )
     return response.data.data
   } catch (error: any) {
-    articlesError.value = error.message || '加载文章失败'
+    articlesError.value = error.message || t('article.loadArticleFailed')
     return null
   }
 })
@@ -275,7 +276,7 @@ const fetchFollowing = async (page: number = 1) => {
     followingHasMore.value = data?.hasMore ?? items.length >= 20
     followingPage.value = page
   } catch (error: any) {
-    listError.value = error.message || '加载关注列表失败'
+    listError.value = error.message || t('user.loadDataFailed')
   }
 }
 
@@ -295,7 +296,7 @@ const fetchFollowers = async (page: number = 1) => {
     followersHasMore.value = data?.hasMore ?? items.length >= 20
     followersPage.value = page
   } catch (error: any) {
-    listError.value = error.message || '加载粉丝列表失败'
+    listError.value = error.message || t('user.loadDataFailed')
   }
 }
 
@@ -357,7 +358,7 @@ const toggleFollow = async () => {
       await fetchFollowers(1)
     }
   } catch (error: any) {
-    console.error('关注操作失败:', error.message)
+    console.error(t('article.followFailed') + ':', error.message)
   }
 }
 
@@ -404,7 +405,7 @@ const toggleFollowUser = async (user: FollowUser) => {
       }
     }
   } catch (error: any) {
-    console.error('关注操作失败:', error.message)
+    console.error(t('article.followFailed') + ':', error.message)
   } finally {
     followLoading.value[user.id] = false
   }
@@ -430,7 +431,7 @@ const retryArticles = async () => {
     articles.value = data?.list || data?.items || []
     hasMore.value = articles.value.length >= 20
   } catch (error: any) {
-    articlesError.value = error.message || '加载文章失败'
+    articlesError.value = error.message || t('article.loadArticleFailed')
   } finally {
     loading.value = false
   }
@@ -452,6 +453,6 @@ onMounted(async () => {
 
 // 页面元信息
 useHead({
-  title: () => userInfo.value ? `${userInfo.value.nickname}的主页 - 知讯` : '用户主页 - 知讯',
+  title: () => userInfo.value ? `${userInfo.value.nickname} - 知讯` : t('nav.profile') + ' - 知讯',
 })
 </script>

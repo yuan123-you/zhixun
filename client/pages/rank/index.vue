@@ -1,7 +1,7 @@
 <template>
   <!-- 排行榜页 -->
   <div class="max-w-4xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">排行榜</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ $t('hotRank.title') }}</h1>
 
     <!-- 日榜/周榜/月榜切换 -->
     <div class="flex items-center space-x-2 mb-6">
@@ -54,7 +54,7 @@
         <!-- 热度值 -->
         <div class="text-right shrink-0">
           <span class="text-sm font-bold text-accent">{{ formatHeat(item.score ?? 0) }}</span>
-          <p class="text-2xs text-gray-400">热度</p>
+          <p class="text-2xs text-gray-400">{{ $t('article.heat') }}</p>
         </div>
       </div>
     </div>
@@ -68,7 +68,7 @@
     <ErrorRetry v-if="error && !loading" :message="error" :on-retry="retryLastRequest" />
 
     <!-- 空状态 -->
-    <EmptyState v-if="!loading && !error && rankItems.length === 0" title="暂无排行数据" />
+    <EmptyState v-if="!loading && !error && rankItems.length === 0" :title="$t('hotRank.empty')" />
   </div>
 </template>
 
@@ -76,10 +76,12 @@
 /** 排行榜页：日榜/周榜/月榜 */
 import type { RankItem } from '~/types'
 
+const { t } = useI18n()
+
 const tabs = [
-  { key: 'daily', label: '日榜' },
-  { key: 'weekly', label: '周榜' },
-  { key: 'monthly', label: '月榜' },
+  { key: 'daily', label: computed(() => t('hotRank.daily')) },
+  { key: 'weekly', label: computed(() => t('hotRank.weekly')) },
+  { key: 'monthly', label: computed(() => t('hotRank.monthly')) },
 ]
 
 const activeTab = ref('daily')
@@ -109,7 +111,7 @@ const fetchRank = async () => {
     )
     rankItems.value = data.data.data
   } catch {
-    error.value = '加载排行榜失败，请重试'
+    error.value = t('hotRank.loadFailed')
     rankItems.value = []
   } finally {
     loading.value = false
@@ -148,6 +150,6 @@ if (initialData.value) {
 
 // 页面元信息
 useHead({
-  title: '排行榜 - 知讯',
+  title: () => t('hotRank.title') + ' - 知讯',
 })
 </script>
