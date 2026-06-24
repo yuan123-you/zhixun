@@ -290,7 +290,7 @@ const { data: homeData } = await useAsyncData('home-init', async () => {
     }).catch(() => null),
     $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }).catch(() => null),
     $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, { headers }).catch(() => null),
-    $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, { params: { limit: 10 }, headers }).catch(() => null),
+    $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, { params: { period: 'all', limit: 10 }, headers }).catch(() => null),
   ])
 
   return {
