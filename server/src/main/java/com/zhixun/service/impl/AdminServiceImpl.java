@@ -264,9 +264,9 @@ public class AdminServiceImpl implements AdminService {
                     .or().like(User::getEmail, keyword));
         }
 
-        // 角色筛选
+        // 角色筛选（兼容大小写）
         if (StringUtils.hasText(role)) {
-            wrapper.eq(User::getRole, RoleEnum.valueOf(role));
+            wrapper.eq(User::getRole, RoleEnum.valueOf(role.toUpperCase()));
         }
 
         // 状态筛选

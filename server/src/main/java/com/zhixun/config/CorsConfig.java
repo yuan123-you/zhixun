@@ -25,9 +25,9 @@ public class CorsConfig {
         // 仅允许配置的来源
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
         config.setAllowedOrigins(origins);
-        // 允许的请求头（包含 CSRF 防护所需的 X-XSRF-TOKEN）
+        // 允许的请求头（包含 CSRF 防护所需的 X-XSRF-TOKEN 和 SSR 标识所需的 X-SSR-Request）
         config.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Requested-With"
+                "Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Requested-With", "X-SSR-Request", "X-SSR-Secret"
         ));
         // 允许所有请求方法
         config.addAllowedMethod("*");

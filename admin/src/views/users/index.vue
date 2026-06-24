@@ -14,9 +14,9 @@
         </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="queryParams.role" placeholder="全部角色" clearable>
-            <el-option label="管理员" value="admin" />
-            <el-option label="编辑" value="editor" />
-            <el-option label="普通用户" value="user" />
+            <el-option label="管理员" value="ADMIN" />
+            <el-option label="超级管理员" value="SUPER_ADMIN" />
+            <el-option label="普通用户" value="USER" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -51,7 +51,7 @@
           <el-table-column prop="phone" label="手机号" width="130" />
           <el-table-column label="角色" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.role === 'admin' ? 'danger' : row.role === 'editor' ? 'warning' : 'info'">
+              <el-tag :type="row.role?.toUpperCase() === 'ADMIN' || row.role?.toUpperCase() === 'SUPER_ADMIN' ? 'danger' : row.role?.toUpperCase() === 'EDITOR' ? 'warning' : 'info'">
                 {{ roleMap[row.role] || row.role }}
               </el-tag>
             </template>
@@ -166,6 +166,10 @@ const total = ref(0)
 
 /** 角色映射 */
 const roleMap: Record<string, string> = {
+  ADMIN: '管理员',
+  SUPER_ADMIN: '超级管理员',
+  EDITOR: '编辑',
+  USER: '普通用户',
   admin: '管理员',
   editor: '编辑',
   user: '普通用户',

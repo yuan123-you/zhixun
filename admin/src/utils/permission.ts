@@ -11,8 +11,9 @@ import { useUserStore } from '@/stores/user'
  */
 export function hasPermission(permission: string): boolean {
   const userStore = useUserStore()
-  // 管理员拥有所有权限
-  if (userStore.userInfo?.role === 'admin') return true
+  // 管理员拥有所有权限（兼容大小写：后端返回 ADMIN / SUPER_ADMIN）
+  const role = userStore.userInfo?.role?.toUpperCase()
+  if (role === 'ADMIN' || role === 'SUPER_ADMIN') return true
   return userStore.permissions.includes(permission)
 }
 
@@ -41,7 +42,7 @@ export function hasAllPermissions(permissions: string[]): boolean {
  */
 export function checkRole(role: string): boolean {
   const userStore = useUserStore()
-  return userStore.userInfo?.role === role
+  return userStore.userInfo?.role?.toUpperCase() === role.toUpperCase()
 }
 
 /**
@@ -49,5 +50,7 @@ export function checkRole(role: string): boolean {
  * @returns 是否为管理员
  */
 export function isAdmin(): boolean {
-  return checkRole('admin')
+  const userStore = useUserStore()
+  const role = userStore.userInfo?.role?.toUpperCase()
+  return role === 'ADMIN' || role === 'SUPER_ADMIN'
 }
