@@ -12,17 +12,20 @@
     "publish": "Publish",
     "back": "Back",
     "loadMore": "Load More",
-    "noMore": "No More"
+    "noMore": "No More",
+    "refreshing": "Refreshing",
+    "refresh": "Refresh"
   },
   "nav": {
     "home": "Home",
-    "hot": "Hot",
+    "hot": "Ranking",
     "recommend": "Recommended",
     "latest": "Latest",
     "follow": "Following",
     "messages": "Messages",
-    "profile": "Me",
-    "settings": "Settings"
+    "profile": "Profile",
+    "settings": "Settings",
+    "write": "Write"
   },
   "article": {
     "title": "Title",
@@ -35,7 +38,27 @@
     "favorites": "Favorites",
     "comments": "Comments",
     "share": "Share",
-    "publishTime": "Published At"
+    "publishTime": "Published At",
+    "justNow": "Just now",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago",
+    "articles": "Articles",
+    "followers": "Followers",
+    "followed": "Following",
+    "followBtn": "Follow",
+    "heat": "Heat"
+  },
+  "hotRank": {
+    "title": "Trending",
+    "empty": "No trending data"
+  },
+  "hotTags": {
+    "title": "Popular Tags",
+    "viewAll": "View All"
+  },
+  "recommendUsers": {
+    "title": "Recommended"
   },
   "user": {
     "username": "Username",
