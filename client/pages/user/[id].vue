@@ -170,6 +170,22 @@ const userStore = useUserStore()
 const { t } = useI18n()
 const userId = computed(() => Number(route.params.id))
 
+// Toast 提示
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  if (!import.meta.client) return
+  const toast = document.createElement('div')
+  toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm transition-all duration-300 transform translate-x-0 opacity-100 ${
+    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+  }`
+  toast.textContent = message
+  document.body.appendChild(toast)
+  setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateX(100%)'
+    setTimeout(() => toast.remove(), 300)
+  }, 2000)
+}
+
 // 返回上一页
 const goBack = () => {
   if (window.history.length > 1) {
@@ -358,7 +374,7 @@ const toggleFollow = async () => {
       await fetchFollowers(1)
     }
   } catch (error: any) {
-    console.error(t('article.followFailed') + ':', error.message)
+    showToast(t('article.followFailed') || '关注操作失败', 'error')
   }
 }
 
@@ -405,15 +421,33 @@ const toggleFollowUser = async (user: FollowUser) => {
       }
     }
   } catch (error: any) {
-    console.error(t('article.followFailed') + ':', error.message)
+    showToast(t('article.followFailed') || '关注操作失败', 'error')
   } finally {
     followLoading.value[user.id] = false
   }
 }
 
+// 文章分页
+const articlePage = ref(1)
+const articlePageSize = 20
+
 // 加载更多文章
-const loadMore = () => {
-  // 加载更多文章
+const loadMore = async () => {
+  if (loading.value || !hasMore.value) return
+  articlePage.value++
+  loading.value = true
+  try {
+    const { userApi } = await import('~/api')
+    const response = await userApi.getUserArticles(userId.value, { page: articlePage.value, pageSize: articlePageSize })
+    const data = response.data.data
+    const items = data?.list || data?.items || []
+    articles.value.push(...items)
+    hasMore.value = items.length >= articlePageSize
+  } catch {
+    articlePage.value--
+  } finally {
+    loading.value = false
+  }
 }
 
 // 重试加载文章

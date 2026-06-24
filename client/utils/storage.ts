@@ -234,6 +234,8 @@ export const storage = {
 export const TTL = {
   /** 5 分钟 */
   MINUTE_5: 5 * 60 * 1000,
+  /** 10 分钟 */
+  MINUTE_10: 10 * 60 * 1000,
   /** 30 分钟 */
   MINUTE_30: 30 * 60 * 1000,
   /** 1 小时 */

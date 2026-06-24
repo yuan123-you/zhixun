@@ -19,10 +19,7 @@
           </svg>
         </button>
 
-        <!-- 品牌名 -->
-        <NuxtLink to="/" class="flex items-center shrink-0">
-          <span class="text-lg md:text-xl font-bold text-gray-900 dark:text-white">知讯</span>
-        </NuxtLink>
+
       </div>
 
       <!-- 导航链接（桌面端/平板端） -->

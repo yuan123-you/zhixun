@@ -73,13 +73,13 @@
           <div class="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
             <!-- 搜索会话 -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-              <input type="text" class="input text-sm" :placeholder="t('message.searchConversation')" />
+              <input v-model="conversationSearch" type="text" class="input text-sm" :placeholder="t('message.searchConversation')" />
             </div>
 
             <!-- 会话列表 -->
             <div class="flex-1 overflow-y-auto">
               <button
-                v-for="conv in conversations"
+                v-for="conv in filteredConversations"
                 :key="conv.id"
                 class="w-full flex items-center space-x-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 :class="{ 'bg-gray-50 dark:bg-gray-700/50': activeConversation?.id === conv.id }"
@@ -320,6 +320,16 @@ const switchMainTab = (key: string) => {
 const conversations = ref<Conversation[]>([])
 const activeConversation = ref<Conversation | null>(null)
 const messages = ref<Message[]>([])
+const conversationSearch = ref('')
+
+// 搜索过滤会话列表
+const filteredConversations = computed(() => {
+  const keyword = conversationSearch.value.trim().toLowerCase()
+  if (!keyword) return conversations.value
+  return conversations.value.filter(conv =>
+    conv.user?.nickname?.toLowerCase().includes(keyword)
+  )
+})
 
 // 加载会话列表
 const loadConversations = async () => {

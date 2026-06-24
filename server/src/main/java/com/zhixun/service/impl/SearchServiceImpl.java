@@ -1,5 +1,6 @@
 package com.zhixun.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.config.OpenSearchConfig;
 import com.zhixun.config.Slave;
@@ -26,6 +27,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.HighlightField;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -35,6 +37,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -52,8 +56,12 @@ public class SearchServiceImpl implements SearchService {
     private final SecurityUtil securityUtil;
     private final UserPreferredCategoryMapper userPreferredCategoryMapper;
     private final UserFollowMapper userFollowMapper;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final ObjectMapper objectMapper;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String SUGGEST_CACHE_PREFIX = "search:suggest:";
+    private static final long SUGGEST_CACHE_TTL_MINUTES = 5;
 
     @Override
     @Slave
@@ -97,9 +105,17 @@ public class SearchServiceImpl implements SearchService {
                 break;
             case "all":
             default:
-                searchArticles(keyword, categoryId, tagId, timeRange, startDate, endDate, sort, page, pageSize, result);
-                searchUsers(keyword, 1, 5, result);
-                searchImages(keyword, 1, 6, result);
+                CompletableFuture<Long> articleFuture = CompletableFuture.supplyAsync(() ->
+                        searchArticles(keyword, categoryId, tagId, timeRange, startDate, endDate, sort, page, pageSize, result));
+                CompletableFuture<Long> userFuture = CompletableFuture.supplyAsync(() ->
+                        searchUsers(keyword, 1, 5, result));
+                CompletableFuture<Long> imageFuture = CompletableFuture.supplyAsync(() ->
+                        searchImages(keyword, 1, 6, result));
+                try {
+                    CompletableFuture.allOf(articleFuture, userFuture, imageFuture).join();
+                } catch (Exception e) {
+                    log.error("并行搜索部分失败: {}", e.getMessage());
+                }
                 total = (result.getArticles() != null ? result.getArticles().size() : 0)
                         + (result.getUsers() != null ? result.getUsers().size() : 0)
                         + (result.getImages() != null ? result.getImages().size() : 0);
@@ -114,12 +130,24 @@ public class SearchServiceImpl implements SearchService {
     @Override
     @Slave
     public SearchSuggestResultVO getSuggestions(String keyword) {
+        // 检查缓存
+        String cacheKey = SUGGEST_CACHE_PREFIX + keyword;
+        try {
+            String cached = stringRedisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return objectMapper.readValue(cached, SearchSuggestResultVO.class);
+            }
+        } catch (Exception e) {
+            log.warn("读取搜索建议缓存失败: {}", e.getMessage());
+        }
+
         SearchSuggestResultVO result = new SearchSuggestResultVO();
         List<SuggestionVO> completions = new ArrayList<>();
 
-        if (!StringUtils.hasText(keyword) || keyword.length() < 2) {
+        if (!StringUtils.hasText(keyword)) {
             result.setCompletions(completions);
             result.setHotSearches(searchHistoryService.getHotSearchKeywords(5));
+            cacheSuggestResult(cacheKey, result);
             return result;
         }
 
@@ -221,6 +249,10 @@ public class SearchServiceImpl implements SearchService {
 
         result.setCompletions(distinctCompletions);
         result.setHotSearches(searchHistoryService.getHotSearchKeywords(5));
+
+        // 写入缓存
+        cacheSuggestResult(cacheKey, result);
+
         return result;
     }
 
@@ -523,6 +555,18 @@ public class SearchServiceImpl implements SearchService {
     }
 
     // ========== 辅助方法 ==========
+
+    /**
+     * 缓存搜索建议结果
+     */
+    private void cacheSuggestResult(String cacheKey, SearchSuggestResultVO result) {
+        try {
+            String json = objectMapper.writeValueAsString(result);
+            stringRedisTemplate.opsForValue().set(cacheKey, json, SUGGEST_CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("写入搜索建议缓存失败: {}", e.getMessage());
+        }
+    }
 
     private void applyArticleSort(org.opensearch.client.opensearch.core.SearchRequest.Builder s, String sort) {
         if ("hot".equals(sort)) {

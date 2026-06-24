@@ -132,8 +132,12 @@ public class UserServiceImpl implements UserService {
 
         userMapper.updateById(user);
 
-        // 同步到 OpenSearch
-        openSearchSyncService.syncUser(userId);
+        // 同步到 OpenSearch（非关键操作，失败不影响主事务）
+        try {
+            openSearchSyncService.syncUser(userId);
+        } catch (Exception e) {
+            log.error("更新用户资料同步OpenSearch失败, userId={}: {}", userId, e.getMessage());
+        }
     }
 
     @Override

@@ -46,6 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.zhixun.config.RedisConfig;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,6 +83,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final FeedService feedService;
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper;
 
     /** 浏览量 Redis Key 前缀 */
     private static final String VIEW_COUNT_PREFIX = "article:view:";
@@ -88,6 +93,18 @@ public class ArticleServiceImpl implements ArticleService {
 
     /** 相关推荐缓存时间（30分钟） */
     private static final long RELATED_CACHE_MINUTES = 30;
+
+    /** 文章列表缓存 Key 前缀 */
+    private static final String ARTICLE_LIST_PREFIX = "article:list:";
+
+    /** 文章列表缓存时间（2分钟） */
+    private static final long ARTICLE_LIST_CACHE_MINUTES = 2;
+
+    /** 文章详情缓存 Key 前缀 */
+    private static final String ARTICLE_DETAIL_PREFIX = "article:detail:";
+
+    /** 文章详情缓存时间（5分钟） */
+    private static final long ARTICLE_DETAIL_CACHE_MINUTES = 5;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -147,11 +164,19 @@ public class ArticleServiceImpl implements ArticleService {
         // 处理标签关联
         handleTags(article.getId(), request.getTagIds());
 
-        // 同步到 OpenSearch（仅已发布状态才同步）
+        // 同步到 OpenSearch（仅已发布状态才同步，非关键操作，失败不影响主事务）
         if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
-            openSearchSyncService.syncArticle(article.getId());
+            try {
+                openSearchSyncService.syncArticle(article.getId());
+            } catch (Exception e) {
+                log.error("创建文章同步到OpenSearch失败, articleId={}: {}", article.getId(), e.getMessage());
+            }
             // Fan-out on write：推送到粉丝时间线
-            feedService.fanoutOnPublish(userId, article.getId(), article.getPublishAt());
+            try {
+                feedService.fanoutOnPublish(userId, article.getId(), article.getPublishAt());
+            } catch (Exception e) {
+                log.error("推送粉丝时间线失败, articleId={}: {}", article.getId(), e.getMessage());
+            }
         }
 
         return article.getId();
@@ -192,13 +217,32 @@ public class ArticleServiceImpl implements ArticleService {
         // 更新标签关联
         handleTags(articleId, request.getTagIds());
 
-        // 同步到 OpenSearch
-        openSearchSyncService.syncArticle(articleId);
+        // 同步到 OpenSearch（非关键操作，失败不影响主事务）
+        try {
+            openSearchSyncService.syncArticle(articleId);
+        } catch (Exception e) {
+            log.error("更新文章同步到OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
+        }
+
+        // 清除文章相关缓存
+        clearArticleCache(articleId);
     }
 
     @Override
     @Slave
     public ArticleDetailVO getArticleDetail(Long articleId, Long currentUserId) {
+        // 尝试从 Redis 缓存获取（仅未登录用户且文章已发布时使用缓存）
+        if (currentUserId == null) {
+            ArticleDetailVO cached = getArticleDetailFromCache(articleId);
+            if (cached != null) {
+                // 记录浏览历史（异步）
+                recordViewHistoryAsync(articleId, currentUserId);
+                // 增加浏览量（异步）
+                incrementViewCountAsync(articleId);
+                return cached;
+            }
+        }
+
         Article article = getArticleOrThrow(articleId);
 
         // 未登录用户只能查看已发布的文章
@@ -260,6 +304,11 @@ public class ArticleServiceImpl implements ArticleService {
             log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
         }
 
+        // 缓存文章详情（仅已发布文章）
+        if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
+            cacheArticleDetail(articleId, vo);
+        }
+
         // 记录浏览历史（异步）
         recordViewHistoryAsync(articleId, currentUserId);
 
@@ -272,6 +321,18 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Slave
     public PageResult<ArticleVO> getArticleList(ArticleQueryRequest request) {
+        // 仅对公开查询（默认已发布状态）启用缓存
+        boolean useCache = request.getStatus() == null || request.getStatus() == ArticleStatusEnum.PUBLISHED.getValue();
+        String cacheKey = null;
+
+        if (useCache) {
+            cacheKey = buildArticleListCacheKey(request);
+            PageResult<ArticleVO> cached = getArticleListFromCache(cacheKey);
+            if (cached != null) {
+                return cached;
+            }
+        }
+
         // 构建查询条件
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
 
@@ -331,7 +392,14 @@ public class ArticleServiceImpl implements ArticleService {
         // 批量查询关联数据
         List<ArticleVO> voList = convertToVOList(result.getRecords());
 
-        return new PageResult<>(voList, result.getTotal(), request.getPageNum(), request.getPageSize());
+        PageResult<ArticleVO> pageResult = new PageResult<>(voList, result.getTotal(), request.getPageNum(), request.getPageSize());
+
+        // 缓存结果
+        if (useCache && cacheKey != null) {
+            cacheArticleList(cacheKey, pageResult);
+        }
+
+        return pageResult;
     }
 
     @Override
@@ -359,9 +427,16 @@ public class ArticleServiceImpl implements ArticleService {
         // 删除标签关联
         articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleId));
 
-        // 从 OpenSearch 删除文章和关联图片索引
-        openSearchSyncService.deleteArticle(articleId);
-        openSearchSyncService.deleteImagesByArticle(articleId);
+        // 从 OpenSearch 删除文章和关联图片索引（非关键操作，失败不影响主事务）
+        try {
+            openSearchSyncService.deleteArticle(articleId);
+            openSearchSyncService.deleteImagesByArticle(articleId);
+        } catch (Exception e) {
+            log.error("删除文章OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
+        }
+
+        // 清除文章相关缓存
+        clearArticleCache(articleId);
     }
 
     @Override
@@ -439,17 +514,32 @@ public class ArticleServiceImpl implements ArticleService {
             log.warn("RabbitMQ 推送文章状态变更通知失败: {}", e.getMessage());
         }
 
-        // 同步到 OpenSearch
+        // 同步到 OpenSearch（非关键操作，失败不影响主事务）
         if (targetStatus == ArticleStatusEnum.PUBLISHED) {
-            openSearchSyncService.syncArticle(articleId);
-            openSearchSyncService.syncImagesByArticle(articleId);
+            try {
+                openSearchSyncService.syncArticle(articleId);
+                openSearchSyncService.syncImagesByArticle(articleId);
+            } catch (Exception e) {
+                log.error("更新文章状态同步OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
+            }
             // Fan-out on write：推送到粉丝时间线
-            feedService.fanoutOnPublish(article.getAuthorId(), articleId, article.getPublishAt());
+            try {
+                feedService.fanoutOnPublish(article.getAuthorId(), articleId, article.getPublishAt());
+            } catch (Exception e) {
+                log.error("推送粉丝时间线失败, articleId={}: {}", articleId, e.getMessage());
+            }
         } else {
             // 非发布状态从索引中删除
-            openSearchSyncService.deleteArticle(articleId);
-            openSearchSyncService.deleteImagesByArticle(articleId);
+            try {
+                openSearchSyncService.deleteArticle(articleId);
+                openSearchSyncService.deleteImagesByArticle(articleId);
+            } catch (Exception e) {
+                log.error("删除文章OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
+            }
         }
+
+        // 清除文章相关缓存
+        clearArticleCache(articleId);
     }
 
     @Override
@@ -593,11 +683,19 @@ public class ArticleServiceImpl implements ArticleService {
                 article.setStatus(ArticleStatusEnum.PUBLISHED);
                 articleMapper.updateById(article);
 
-                // 同步到 OpenSearch
-                openSearchSyncService.syncArticle(article.getId());
+                // 同步到 OpenSearch（非关键操作，失败不影响发布）
+                try {
+                    openSearchSyncService.syncArticle(article.getId());
+                } catch (Exception e) {
+                    log.error("定时发布同步OpenSearch失败, articleId={}: {}", article.getId(), e.getMessage());
+                }
 
-                // 推送到粉丝时间线
-                feedService.fanoutOnPublish(article.getAuthorId(), article.getId(), article.getPublishAt());
+                // 推送到粉丝时间线（非关键操作，失败不影响发布）
+                try {
+                    feedService.fanoutOnPublish(article.getAuthorId(), article.getId(), article.getPublishAt());
+                } catch (Exception e) {
+                    log.error("定时推送粉丝时间线失败, articleId={}: {}", article.getId(), e.getMessage());
+                }
 
                 // 清除相关 Redis 缓存
                 clearArticleCache(article.getId());
@@ -618,8 +716,29 @@ public class ArticleServiceImpl implements ArticleService {
         try {
             stringRedisTemplate.delete(VIEW_COUNT_PREFIX + articleId);
             stringRedisTemplate.delete(RELATED_ARTICLES_PREFIX + articleId);
+            stringRedisTemplate.delete(ARTICLE_DETAIL_PREFIX + articleId);
+            // 清除文章列表缓存（使用 SCAN 安全扫描删除所有列表缓存）
+            Set<String> listKeys = new java.util.HashSet<>();
+            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(ARTICLE_LIST_PREFIX + "*")
+                            .count(100)
+                            .build())) {
+                while (cursor.hasNext()) {
+                    listKeys.add(cursor.next());
+                }
+            }
+            if (!listKeys.isEmpty()) {
+                stringRedisTemplate.delete(listKeys);
+            }
         } catch (Exception e) {
             log.warn("清除文章 {} 缓存失败: {}", articleId, e.getMessage());
+        }
+        // 递增数据版本号，通知客户端数据已变更
+        try {
+            RedisConfig.incrementDataVersion(stringRedisTemplate);
+        } catch (Exception e) {
+            log.debug("递增数据版本号失败: {}", e.getMessage());
         }
     }
 
@@ -749,6 +868,9 @@ public class ArticleServiceImpl implements ArticleService {
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getArticleId));
 
+        // 批量查询 Redis 浏览量（multiGet 替代 N 次单独查询）
+        Map<Long, Long> viewCountMap = batchGetViewCounts(articleIds);
+
         // 构建 VO 列表
         return articles.stream().map(article -> {
             ArticleVO vo = new ArticleVO();
@@ -759,13 +881,9 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
             // 浏览数 = 数据库值 + Redis增量
             long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
-            try {
-                String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + article.getId());
-                if (viewCountStr != null) {
-                    viewCount += Long.parseLong(viewCountStr);
-                }
-            } catch (Exception e) {
-                log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
+            Long redisIncrement = viewCountMap.get(article.getId());
+            if (redisIncrement != null) {
+                viewCount += redisIncrement;
             }
             vo.setViewCount(viewCount);
             vo.setLikeCount(article.getLikeCount());
@@ -829,28 +947,247 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 异步增加浏览量（Redis 计数）
+     * 异步增加浏览量（Redis 计数，Lua 脚本保证原子性）
      */
     @Async
     public void incrementViewCountAsync(Long articleId) {
         try {
             String key = VIEW_COUNT_PREFIX + articleId;
-            Long count = stringRedisTemplate.opsForValue().increment(key);
-            // 设置过期时间（首次计数时）
-            if (count != null && count == 1) {
-                stringRedisTemplate.expire(key, 1, TimeUnit.HOURS);
-            }
-            // 当累计浏览量达到阈值时，批量写入数据库
-            if (count != null && count % 10 == 0) {
-                // 使用 SQL 增量更新，避免覆盖已有浏览量
+            // 使用 Lua 脚本保证原子性：自增 + 检查阈值 + 批量写入DB
+            String luaScript =
+                "local count = redis.call('INCR', KEYS[1]) " +
+                "if count == 1 then " +
+                "  redis.call('EXPIRE', KEYS[1], ARGV[2]) " +
+                "end " +
+                "if count % tonumber(ARGV[1]) == 0 then " +
+                "  redis.call('SET', KEYS[1], '0') " +
+                "  return count " +
+                "end " +
+                "return 0";
+
+            Long result = stringRedisTemplate.execute(
+                    new org.springframework.data.redis.core.script.DefaultRedisScript<>(luaScript, Long.class),
+                    java.util.Collections.singletonList(key),
+                    String.valueOf(10),  // 每10次批量写入DB
+                    String.valueOf(3600) // 1小时过期
+            );
+
+            // 批量写入数据库
+            if (result != null && result > 0) {
                 articleMapper.update(null, new LambdaUpdateWrapper<Article>()
                         .eq(Article::getId, articleId)
-                        .setSql("view_count = view_count + " + count));
-                // 重置 Redis 计数
-                stringRedisTemplate.opsForValue().set(key, "0");
+                        .setSql("view_count = view_count + " + result));
             }
         } catch (Exception e) {
             log.error("增加浏览量失败: {}", e.getMessage());
         }
+    }
+
+    /**
+     * 批量获取文章的 Redis 浏览量增量（使用 multiGet 替代 N 次单独查询）
+     */
+    private Map<Long, Long> batchGetViewCounts(List<Long> articleIds) {
+        Map<Long, Long> result = new HashMap<>();
+        if (CollectionUtils.isEmpty(articleIds)) {
+            return result;
+        }
+        try {
+            List<String> keys = articleIds.stream()
+                    .map(id -> VIEW_COUNT_PREFIX + id)
+                    .collect(Collectors.toList());
+            List<String> values = stringRedisTemplate.opsForValue().multiGet(keys);
+            if (values != null) {
+                for (int i = 0; i < articleIds.size(); i++) {
+                    String val = values.get(i);
+                    if (val != null) {
+                        try {
+                            result.put(articleIds.get(i), Long.parseLong(val));
+                        } catch (NumberFormatException e) {
+                            log.warn("解析Redis浏览量失败, articleId={}: {}", articleIds.get(i), val);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("批量获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * 构建文章列表缓存 Key（基于查询参数的哈希值）
+     */
+    private String buildArticleListCacheKey(ArticleQueryRequest request) {
+        String raw = String.format("%s:%s:%s:%s:%s:%s",
+                request.getCategoryId(),
+                request.getTagId(),
+                request.getKeyword(),
+                request.getSortBy(),
+                request.getPageNum(),
+                request.getPageSize());
+        int hash = raw.hashCode();
+        return ARTICLE_LIST_PREFIX + Math.abs(hash);
+    }
+
+    /**
+     * 从缓存获取文章列表
+     */
+    private PageResult<ArticleVO> getArticleListFromCache(String cacheKey) {
+        try {
+            String json = stringRedisTemplate.opsForValue().get(cacheKey);
+            if (json != null) {
+                ObjectMapper mapper = objectMapper.copy();
+                mapper.registerModule(new JavaTimeModule());
+                return mapper.readValue(json, mapper.getTypeFactory()
+                        .constructParametricType(PageResult.class, ArticleVO.class));
+            }
+        } catch (Exception e) {
+            log.warn("获取文章列表缓存失败: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 缓存文章列表
+     */
+    private void cacheArticleList(String cacheKey, PageResult<ArticleVO> pageResult) {
+        try {
+            ObjectMapper mapper = objectMapper.copy();
+            mapper.registerModule(new JavaTimeModule());
+            String json = mapper.writeValueAsString(pageResult);
+            long ttl = RedisConfig.jitteredTTLFromMinutes(ARTICLE_LIST_CACHE_MINUTES);
+            stringRedisTemplate.opsForValue().set(cacheKey, json, ttl, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("缓存文章列表失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 从缓存获取文章详情
+     */
+    private ArticleDetailVO getArticleDetailFromCache(Long articleId) {
+        try {
+            String json = stringRedisTemplate.opsForValue().get(ARTICLE_DETAIL_PREFIX + articleId);
+            if (json != null) {
+                ObjectMapper mapper = objectMapper.copy();
+                mapper.registerModule(new JavaTimeModule());
+                return mapper.readValue(json, ArticleDetailVO.class);
+            }
+        } catch (Exception e) {
+            log.warn("获取文章详情缓存失败, articleId={}: {}", articleId, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 缓存文章详情
+     */
+    private void cacheArticleDetail(Long articleId, ArticleDetailVO vo) {
+        try {
+            ObjectMapper mapper = objectMapper.copy();
+            mapper.registerModule(new JavaTimeModule());
+            String json = mapper.writeValueAsString(vo);
+            long ttl = RedisConfig.jitteredTTLFromMinutes(ARTICLE_DETAIL_CACHE_MINUTES);
+            stringRedisTemplate.opsForValue().set(ARTICLE_DETAIL_PREFIX + articleId, json, ttl, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("缓存文章详情失败, articleId={}: {}", articleId, e.getMessage());
+        }
+    }
+
+    @Override
+    public Map<String, Object> checkArticleDetailConsistency() {
+        Map<String, Object> result = new HashMap<>();
+        List<Long> inconsistentIds = new ArrayList<>();
+        int checkedCount = 0;
+        int fixedCount = 0;
+
+        try {
+            // 扫描所有文章详情缓存 Key
+            Set<String> detailKeys = new java.util.HashSet<>();
+            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(ARTICLE_DETAIL_PREFIX + "*")
+                            .count(100)
+                            .build())) {
+                while (cursor.hasNext()) {
+                    detailKeys.add(cursor.next());
+                }
+            }
+
+            checkedCount = detailKeys.size();
+            ObjectMapper mapper = objectMapper.copy();
+            mapper.registerModule(new JavaTimeModule());
+
+            for (String key : detailKeys) {
+                try {
+                    String json = stringRedisTemplate.opsForValue().get(key);
+                    if (json == null) {
+                        continue;
+                    }
+
+                    ArticleDetailVO cached = mapper.readValue(json, ArticleDetailVO.class);
+                    Long articleId = cached.getId();
+                    if (articleId == null) {
+                        continue;
+                    }
+
+                    // 从数据库获取最新数据
+                    Article dbArticle = articleMapper.selectById(articleId);
+                    if (dbArticle == null || dbArticle.getDeletedAt() != null) {
+                        // 数据库中文章已删除，清除缓存
+                        stringRedisTemplate.delete(key);
+                        inconsistentIds.add(articleId);
+                        fixedCount++;
+                        continue;
+                    }
+
+                    // 对比关键字段
+                    boolean inconsistent = false;
+                    if (!Objects.equals(cached.getTitle(), dbArticle.getTitle())) {
+                        inconsistent = true;
+                    }
+                    if (!Objects.equals(cached.getSummary(), dbArticle.getSummary())) {
+                        inconsistent = true;
+                    }
+                    if (dbArticle.getStatus() != null && !Objects.equals(cached.getStatus(), dbArticle.getStatus().getValue())) {
+                        inconsistent = true;
+                    }
+                    if (!Objects.equals(cached.getCategoryId(), dbArticle.getCategoryId())) {
+                        inconsistent = true;
+                    }
+                    // 对比计数类字段（允许浏览量有小幅差异，因为 Redis 增量可能未刷回）
+                    if (dbArticle.getLikeCount() != null && cached.getLikeCount() != null
+                            && Math.abs(dbArticle.getLikeCount() - cached.getLikeCount()) > 1) {
+                        inconsistent = true;
+                    }
+                    if (dbArticle.getCommentCount() != null && cached.getCommentCount() != null
+                            && Math.abs(dbArticle.getCommentCount() - cached.getCommentCount()) > 1) {
+                        inconsistent = true;
+                    }
+                    if (dbArticle.getCollectCount() != null && cached.getCollectCount() != null
+                            && Math.abs(dbArticle.getCollectCount() - cached.getCollectCount()) > 1) {
+                        inconsistent = true;
+                    }
+
+                    if (inconsistent) {
+                        // 清除过期缓存，下次请求时重新从数据库加载
+                        stringRedisTemplate.delete(key);
+                        inconsistentIds.add(articleId);
+                        fixedCount++;
+                        log.info("缓存不一致：文章 {} 缓存已过期，已清除", articleId);
+                    }
+                } catch (Exception e) {
+                    log.warn("检查缓存 Key {} 一致性失败: {}", key, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("扫描文章详情缓存失败: {}", e.getMessage());
+        }
+
+        result.put("checkedCount", checkedCount);
+        result.put("inconsistentCount", inconsistentIds.size());
+        result.put("fixedCount", fixedCount);
+        result.put("inconsistentIds", inconsistentIds);
+        return result;
     }
 }

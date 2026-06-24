@@ -159,6 +159,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Tag, PageParams } from '@/types'
 import { getTagList, createTag, updateTag, deleteTag, mergeTag, syncArticleCount, searchTags } from '@/api/tag'
+import { useRequestCache } from '@/composables/useRequestCache'
+
+/** 标签缓存实例 */
+const tagCache = useRequestCache({
+  ttl: 3 * 60 * 1000,
+  staleWhileRevalidate: true,
+})
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -236,6 +243,7 @@ async function handleSubmit() {
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
+    tagCache.invalidateByPrefix('/tags')
     loadTags()
   } catch {
     // 错误已在拦截器中处理
@@ -253,6 +261,7 @@ async function handleDelete(tag: Tag) {
     })
     await deleteTag(tag.id)
     ElMessage.success('删除成功')
+    tagCache.invalidateByPrefix('/tags')
     loadTags()
   } catch {
     // 用户取消或请求失败
@@ -269,6 +278,7 @@ async function handleSyncArticleCount() {
     syncLoading.value = true
     await syncArticleCount()
     ElMessage.success('同步成功')
+    tagCache.invalidateByPrefix('/tags')
     loadTags()
   } catch {
     // 用户取消或请求失败
@@ -337,6 +347,7 @@ async function handleMerge() {
     await mergeTag(mergeForm.sourceTagId!, mergeForm.targetTagId!)
     ElMessage.success('合并成功')
     mergeDialogVisible.value = false
+    tagCache.invalidateByPrefix('/tags')
     loadTags()
   } catch {
     // 用户取消或请求失败
@@ -373,12 +384,12 @@ function getHotLabel(count: number): string {
   return '冷门'
 }
 
-async function loadTags() {
+async function loadTags(force = false) {
   loading.value = true
   try {
-    const res = await getTagList(queryParams)
-    tagList.value = res.data.list
-    total.value = res.data.total
+    const result = await tagCache.request('/tags', queryParams as unknown as Record<string, unknown>, { force })
+    tagList.value = result.list
+    total.value = result.total
   } catch {
     // 错误已在拦截器中处理
   } finally {

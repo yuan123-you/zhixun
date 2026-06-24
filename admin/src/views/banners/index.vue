@@ -121,6 +121,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Banner } from '@/types'
 import { getBannerList, createBanner, updateBanner, deleteBanner } from '@/api/banner'
+import { useRequestCache } from '@/composables/useRequestCache'
+
+/** 轮播图缓存实例 */
+const bannerCache = useRequestCache<Banner[]>({
+  ttl: 5 * 60 * 1000,
+  staleWhileRevalidate: true,
+})
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -192,6 +199,7 @@ async function handleSubmit() {
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
+    bannerCache.invalidateByPrefix('/admin/banners')
     loadBanners()
   } catch {
     // 错误已在拦截器中处理
@@ -210,6 +218,7 @@ async function handleDelete(banner: Banner) {
     })
     await deleteBanner(banner.id)
     ElMessage.success('删除成功')
+    bannerCache.invalidateByPrefix('/admin/banners')
     loadBanners()
   } catch {
     // 用户取消或请求失败
@@ -217,11 +226,11 @@ async function handleDelete(banner: Banner) {
 }
 
 /** 加载轮播图列表 */
-async function loadBanners() {
+async function loadBanners(force = false) {
   loading.value = true
   try {
-    const res = await getBannerList()
-    bannerList.value = res.data
+    const result = await bannerCache.request('/admin/banners', undefined, { force })
+    bannerList.value = result
   } catch {
     // 错误已在拦截器中处理
   } finally {

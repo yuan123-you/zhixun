@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.dto.social.MessageSendRequest;
+import com.zhixun.entity.User;
+import com.zhixun.mapper.UserMapper;
 import com.zhixun.security.HtmlWhitelistFilter;
 import com.zhixun.service.MessageService;
 import com.zhixun.common.util.JwtUtil;
 import com.zhixun.service.OnlineStatusService;
+import com.zhixun.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -36,6 +39,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final MessageService messageService;
     private final SensitiveWordUtil sensitiveWordUtil;
+    private final UserMapper userMapper;
 
     /** 在线用户连接映射：userId -> WebSocketSession */
     private static final Map<Long, WebSocketSession> ONLINE_USERS = new ConcurrentHashMap<>();
@@ -174,7 +178,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         MessageSendRequest request = new MessageSendRequest();
         request.setReceiverId(receiverId);
         request.setContent(content);
-        messageService.sendMessage(senderId, request);
+        MessageVO messageVO = messageService.sendMessage(senderId, request);
+
+        // 查询发送者信息
+        User sender = userMapper.selectById(senderId);
+        String senderNickname = sender != null ? sender.getNickname() : "";
+        String senderAvatar = sender != null ? sender.getAvatar() : "";
 
         // 转发消息给目标用户
         WebSocketSession receiverSession = ONLINE_USERS.get(receiverId);
@@ -184,7 +193,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                         "type", "CHAT",
                         "data", Map.of(
                                 "senderId", senderId,
-                                "content", content
+                                "content", content,
+                                "senderNickname", senderNickname,
+                                "senderAvatar", senderAvatar,
+                                "createdAt", messageVO.getCreatedAt().toString()
                         )
                 );
                 String json = objectMapper.writeValueAsString(message);
@@ -258,5 +270,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public static boolean isUserOnline(Long userId) {
         WebSocketSession session = ONLINE_USERS.get(userId);
         return session != null && session.isOpen();
+    }
+
+    /**
+     * 向指定用户发送消息（供外部调用，如 MQ 消费者）
+     */
+    public static void sendToUser(Long userId, TextMessage message) {
+        WebSocketSession session = ONLINE_USERS.get(userId);
+        if (session != null && session.isOpen()) {
+            try {
+                session.sendMessage(message);
+            } catch (IOException e) {
+                log.error("发送 WebSocket 消息失败: userId={}", userId);
+            }
+        }
     }
 }

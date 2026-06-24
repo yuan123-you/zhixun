@@ -102,6 +102,9 @@
         <router-view />
       </el-main>
     </el-container>
+
+    <!-- 返回顶部 -->
+    <BackToTop />
   </el-container>
 </template>
 

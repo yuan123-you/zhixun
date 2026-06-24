@@ -23,9 +23,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -46,6 +44,10 @@ public class NotificationServiceImpl implements NotificationService {
 
     /** 未读通知数 Redis Key 前缀 */
     private static final String UNREAD_COUNT_PREFIX = "notification:unread:";
+    /** 通知列表缓存 Key 前缀 */
+    private static final String NOTIFICATION_LIST_PREFIX = "notification:list:";
+    /** 用户通知设置缓存 Key 前缀 */
+    private static final String NOTIFICATION_SETTINGS_PREFIX = "notification:settings:";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -80,6 +82,9 @@ public class NotificationServiceImpl implements NotificationService {
                 existing.setRelatedId(relatedId);
                 notificationMapper.updateById(existing);
 
+                // 清除该用户的通知列表缓存
+                clearNotificationListCache(userId);
+
                 // 推送通知（仍需推送以提醒用户）
                 pushNotification(userId, existing, type);
                 // 异步发送邮件通知
@@ -99,6 +104,9 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationMapper.insert(notification);
 
+        // 清除该用户的通知列表缓存
+        clearNotificationListCache(userId);
+
         // 更新 Redis 未读计数
         String unreadKey = UNREAD_COUNT_PREFIX + userId;
         stringRedisTemplate.opsForValue().increment(unreadKey);
@@ -113,25 +121,72 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public PageResult<NotificationVO> getNotifications(Long userId, Integer type, Integer page, Integer pageSize) {
-        LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Notification::getUserId, userId);
+        // 构建缓存 Key
+        String cacheKey = NOTIFICATION_LIST_PREFIX + userId + ":" + (type != null ? type : "all") + ":" + page + ":" + pageSize;
 
-        // 按类型筛选
-        if (type != null) {
-            NotificationTypeEnum typeEnum = NotificationTypeEnum.values()[type - 1];
-            wrapper.eq(Notification::getType, typeEnum);
+        // 尝试从缓存获取通知ID列表
+        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        List<Notification> notifications;
+        long total;
+
+        if (cachedIds != null) {
+            // 缓存命中，解析ID列表并批量查询
+            List<Long> ids = Arrays.stream(cachedIds.split(","))
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+
+            if (ids.isEmpty()) {
+                return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
+            }
+
+            // 从缓存中获取 total 值
+            String totalKey = cacheKey + ":total";
+            String totalStr = stringRedisTemplate.opsForValue().get(totalKey);
+            total = totalStr != null ? Long.parseLong(totalStr) : ids.size();
+
+            // 批量查询通知详情，保持缓存中的顺序
+            List<Notification> fetched = notificationMapper.selectBatchIds(ids);
+            Map<Long, Notification> notificationMap = fetched.stream()
+                    .collect(Collectors.toMap(Notification::getId, n -> n));
+            notifications = ids.stream()
+                    .map(notificationMap::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } else {
+            // 缓存未命中，查数据库
+            LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Notification::getUserId, userId);
+
+            if (type != null) {
+                NotificationTypeEnum typeEnum = NotificationTypeEnum.values()[type - 1];
+                wrapper.eq(Notification::getType, typeEnum);
+            }
+
+            wrapper.orderByDesc(Notification::getCreatedAt);
+
+            Page<Notification> notificationPage = new Page<>(page, pageSize);
+            Page<Notification> result = notificationMapper.selectPage(notificationPage, wrapper);
+            notifications = result.getRecords();
+            total = result.getTotal();
+
+            // 缓存通知ID列表（逗号分隔），2分钟TTL
+            String idsStr = notifications.stream()
+                    .map(n -> String.valueOf(n.getId()))
+                    .collect(Collectors.joining(","));
+            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, 2, TimeUnit.MINUTES);
+            // 缓存 total 值
+            String totalKey = cacheKey + ":total";
+            stringRedisTemplate.opsForValue().set(totalKey, String.valueOf(total), 2, TimeUnit.MINUTES);
         }
 
-        wrapper.orderByDesc(Notification::getCreatedAt);
+        // 批量查询分组计数，解决 N+1 问题
+        Map<String, Integer> groupCountMap = batchQueryGroupCounts(notifications);
 
-        Page<Notification> notificationPage = new Page<>(page, pageSize);
-        Page<Notification> result = notificationMapper.selectPage(notificationPage, wrapper);
-
-        List<NotificationVO> voList = result.getRecords().stream()
-                .map(this::buildNotificationVO)
+        List<NotificationVO> voList = notifications.stream()
+                .map(notification -> buildNotificationVO(notification, groupCountMap))
                 .collect(Collectors.toList());
 
-        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+        return new PageResult<>(voList, total, page, pageSize);
     }
 
     @Override
@@ -151,6 +206,9 @@ public class NotificationServiceImpl implements NotificationService {
             notification.setIsRead(1);
             notificationMapper.updateById(notification);
 
+            // 清除该用户的通知列表缓存
+            clearNotificationListCache(userId);
+
             // 减少 Redis 未读计数
             decrementUnreadCount(userId);
         }
@@ -165,6 +223,9 @@ public class NotificationServiceImpl implements NotificationService {
                 .eq(Notification::getIsRead, 0)
                 .set(Notification::getIsRead, 1);
         notificationMapper.update(null, updateWrapper);
+
+        // 清除该用户的通知列表缓存
+        clearNotificationListCache(userId);
 
         // 清除 Redis 未读计数
         String unreadKey = UNREAD_COUNT_PREFIX + userId;
@@ -210,6 +271,9 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         notificationMapper.deleteById(notificationId);
+
+        // 清除该用户的通知列表缓存
+        clearNotificationListCache(userId);
     }
 
     @Override
@@ -237,6 +301,9 @@ public class NotificationServiceImpl implements NotificationService {
                 .in(Notification::getId, notificationIds)
                 .set(Notification::getIsRead, 1);
         notificationMapper.update(null, updateWrapper);
+
+        // 清除该用户的通知列表缓存
+        clearNotificationListCache(userId);
 
         // 减少 Redis 未读计数
         String unreadKey = UNREAD_COUNT_PREFIX + userId;
@@ -272,6 +339,9 @@ public class NotificationServiceImpl implements NotificationService {
                 .in(Notification::getId, notificationIds);
         notificationMapper.delete(deleteWrapper);
 
+        // 清除该用户的通知列表缓存
+        clearNotificationListCache(userId);
+
         // 减少 Redis 未读计数
         if (unreadCount > 0) {
             String unreadKey = UNREAD_COUNT_PREFIX + userId;
@@ -294,13 +364,41 @@ public class NotificationServiceImpl implements NotificationService {
      * 检查用户是否允许接收该类型通知
      */
     private boolean isNotificationAllowed(Long userId, NotificationTypeEnum typeEnum) {
-        LambdaQueryWrapper<UserSettings> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserSettings::getUserId, userId);
-        UserSettings settings = userSettingsMapper.selectOne(wrapper);
+        // 先从缓存获取用户设置
+        String settingsKey = NOTIFICATION_SETTINGS_PREFIX + userId;
+        UserSettings settings;
 
-        // 如果没有设置记录，默认允许
-        if (settings == null) {
-            return true;
+        String cachedSettings = stringRedisTemplate.opsForValue().get(settingsKey);
+        if (cachedSettings != null) {
+            // 缓存命中，解析设置值
+            if ("null".equals(cachedSettings)) {
+                // 缓存了"无设置记录"的状态
+                return true;
+            }
+            // 格式：notifySystem,notifyInteract,notifyMessage,notifyFollow
+            String[] parts = cachedSettings.split(",");
+            settings = new UserSettings();
+            settings.setNotifySystem(parseInteger(parts[0]));
+            settings.setNotifyInteract(parseInteger(parts[1]));
+            settings.setNotifyMessage(parseInteger(parts[2]));
+            settings.setNotifyFollow(parseInteger(parts[3]));
+        } else {
+            // 缓存未命中，查数据库
+            LambdaQueryWrapper<UserSettings> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(UserSettings::getUserId, userId);
+            settings = userSettingsMapper.selectOne(wrapper);
+
+            // 写入缓存（5分钟TTL）
+            if (settings == null) {
+                stringRedisTemplate.opsForValue().set(settingsKey, "null", 5, TimeUnit.MINUTES);
+                return true;
+            } else {
+                String settingsValue = nullableInt(settings.getNotifySystem()) + ","
+                        + nullableInt(settings.getNotifyInteract()) + ","
+                        + nullableInt(settings.getNotifyMessage()) + ","
+                        + nullableInt(settings.getNotifyFollow());
+                stringRedisTemplate.opsForValue().set(settingsKey, settingsValue, 5, TimeUnit.MINUTES);
+            }
         }
 
         return switch (typeEnum) {
@@ -309,6 +407,20 @@ public class NotificationServiceImpl implements NotificationService {
             case MESSAGE -> settings.getNotifyMessage() != null && settings.getNotifyMessage() == 1;
             case FOLLOW -> settings.getNotifyFollow() != null && settings.getNotifyFollow() == 1;
         };
+    }
+
+    /**
+     * 将可空 Integer 转为字符串，null 用 "N" 表示
+     */
+    private String nullableInt(Integer value) {
+        return value != null ? String.valueOf(value) : "N";
+    }
+
+    /**
+     * 解析缓存中的整数值，"N" 表示 null
+     */
+    private Integer parseInteger(String value) {
+        return "N".equals(value) ? null : Integer.parseInt(value);
     }
 
     /**
@@ -399,9 +511,42 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
+     * 批量查询分组内通知数量，解决 N+1 问题
+     */
+    private Map<String, Integer> batchQueryGroupCounts(List<Notification> notifications) {
+        // 收集所有非空的 groupKey
+        Set<String> groupKeys = notifications.stream()
+                .map(Notification::getGroupKey)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (groupKeys.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // 需要知道 userId（同一用户的通知列表）
+        Long userId = notifications.isEmpty() ? null : notifications.get(0).getUserId();
+
+        // 一次性查询所有分组的计数
+        Map<String, Integer> groupCountMap = new HashMap<>();
+        if (userId != null) {
+            LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Notification::getUserId, userId)
+                    .in(Notification::getGroupKey, groupKeys)
+                    .select(Notification::getGroupKey);
+            List<Notification> groupNotifications = notificationMapper.selectList(wrapper);
+            groupNotifications.stream()
+                    .collect(Collectors.groupingBy(Notification::getGroupKey, Collectors.counting()))
+                    .forEach((key, count) -> groupCountMap.put(key, count.intValue()));
+        }
+
+        return groupCountMap;
+    }
+
+    /**
      * 构建通知 VO
      */
-    private NotificationVO buildNotificationVO(Notification notification) {
+    private NotificationVO buildNotificationVO(Notification notification, Map<String, Integer> groupCountMap) {
         NotificationVO vo = new NotificationVO();
         vo.setId(notification.getId());
         vo.setType(notification.getType() != null ? notification.getType().getValue() : null);
@@ -412,17 +557,28 @@ public class NotificationServiceImpl implements NotificationService {
         vo.setGroupKey(notification.getGroupKey());
         vo.setCreatedAt(notification.getCreatedAt());
 
-        // 如果有分组键，查询分组内通知数量
+        // 从批量查询的 Map 中获取分组计数
         if (notification.getGroupKey() != null) {
-            LambdaQueryWrapper<Notification> groupWrapper = new LambdaQueryWrapper<>();
-            groupWrapper.eq(Notification::getUserId, notification.getUserId())
-                    .eq(Notification::getGroupKey, notification.getGroupKey());
-            long groupCount = notificationMapper.selectCount(groupWrapper);
-            vo.setGroupedCount((int) groupCount);
+            Integer count = groupCountMap.get(notification.getGroupKey());
+            vo.setGroupedCount(count != null ? count : 1);
         } else {
             vo.setGroupedCount(1);
         }
 
         return vo;
+    }
+
+    /**
+     * 清除用户通知列表缓存
+     */
+    private void clearNotificationListCache(Long userId) {
+        try {
+            Set<String> keys = stringRedisTemplate.keys(NOTIFICATION_LIST_PREFIX + userId + ":*");
+            if (keys != null && !keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+        } catch (Exception e) {
+            log.warn("清除通知列表缓存失败: {}", e.getMessage());
+        }
     }
 }

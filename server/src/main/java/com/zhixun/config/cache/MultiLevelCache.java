@@ -120,15 +120,47 @@ public class MultiLevelCache implements Cache {
         l1Cache.invalidate(key);
         String l2Key = buildL2Key(key);
         redisTemplate.delete(l2Key);
+        // 发布缓存失效通知，让其他实例也清除 L1
+        try {
+            redisTemplate.convertAndSend("cache:evict:" + name, key.toString());
+        } catch (Exception e) {
+            log.warn("发布缓存失效通知失败: cache={}, key={}", name, key);
+        }
         log.debug("清除多级缓存: cache={}, key={}", name, key);
     }
 
     @Override
     public void clear() {
         l1Cache.invalidateAll();
-        // Redis 无法按前缀批量删除（除非使用 keys 命令，生产环境不推荐）
-        // 这里只清除 L1，L2 依赖 TTL 自然过期
-        log.warn("清除多级缓存: cache={}, 仅清除L1，L2依赖TTL自然过期", name);
+        // 使用 SCAN 命令安全地批量删除 L2 中匹配的 key
+        String pattern = l2KeyPrefix + name + ":*";
+        try {
+            java.util.Set<String> keys = new java.util.HashSet<>();
+            org.springframework.data.redis.core.Cursor<String> cursor = redisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(pattern)
+                            .count(100)
+                            .build());
+            while (cursor.hasNext()) {
+                keys.add(cursor.next());
+            }
+            cursor.close();
+            if (!keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+            log.debug("清除多级缓存: cache={}, L1+L2共清除{}条", name, keys.size());
+        } catch (Exception e) {
+            log.warn("清除L2缓存失败: cache={}, error={}", name, e.getMessage());
+        }
+    }
+
+    /**
+     * 仅清除 L1 (Caffeine) 本地缓存
+     * 用于接收其他实例的缓存失效通知时调用
+     */
+    public void invalidateL1(Object key) {
+        l1Cache.invalidate(key);
+        log.debug("L1缓存失效(远程通知): cache={}, key={}", name, key);
     }
 
     /**

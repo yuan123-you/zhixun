@@ -72,6 +72,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Category } from '@/types'
 import { getCategoryTree, createCategory, updateCategory, deleteCategory } from '@/api/category'
+import { useRequestCache } from '@/composables/useRequestCache'
+
+/** 分类缓存实例 */
+const categoryCache = useRequestCache<Category[]>({
+  ttl: 5 * 60 * 1000,
+  staleWhileRevalidate: true,
+})
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -145,6 +152,7 @@ async function handleSubmit() {
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
+    categoryCache.invalidateByPrefix('/categories')
     loadCategories()
   } catch {
     // 错误已在拦截器中处理
@@ -163,6 +171,7 @@ async function handleDelete(category: Category) {
     })
     await deleteCategory(category.id)
     ElMessage.success('删除成功')
+    categoryCache.invalidateByPrefix('/categories')
     loadCategories()
   } catch {
     // 用户取消或请求失败
@@ -170,12 +179,12 @@ async function handleDelete(category: Category) {
 }
 
 /** 加载分类列表 */
-async function loadCategories() {
+async function loadCategories(force = false) {
   loading.value = true
   try {
-    const res = await getCategoryTree()
-    categoryTree.value = res.data
-    flatCategories.value = flattenCategories(res.data)
+    const result = await categoryCache.request('/categories/tree', undefined, { force })
+    categoryTree.value = result
+    flatCategories.value = flattenCategories(result)
   } catch {
     // 错误已在拦截器中处理
   } finally {

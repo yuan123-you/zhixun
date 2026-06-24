@@ -10,22 +10,29 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "axios": "^1.7.0",
-    "@pinia/nuxt": "^0.5.0",
-    "@vueuse/nuxt": "^11.0.0",
     "@nuxtjs/color-mode": "^3.4.0",
     "@nuxtjs/i18n": "^9.0.0",
+    "@pinia/nuxt": "^0.5.0",
+    "@vueuse/nuxt": "^11.0.0",
+    "axios": "^1.7.0",
     "html2canvas": "^1.4.1",
     "nuxt": "^3.14.0",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "@nuxt/test-utils": "^4.0.3",
     "@nuxtjs/tailwindcss": "^6.12.0",
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^20.10.6",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.5.0",
+    "vitest": "^4.1.9",
     "vue-tsc": "^2.0.0"
   }
 }

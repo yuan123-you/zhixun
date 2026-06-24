@@ -155,7 +155,7 @@
     "articles": "文章",
     "images": "图片",
     "placeholder": "搜索文章、用户...",
-    "minChars": "请输入至少2个字符进行搜索",
+    "minChars": "请输入搜索关键词",
     "noResults": "未找到相关结果",
     "noResultsDesc": "换个关键词试试吧",
     "relatedUsers": "相关用户",

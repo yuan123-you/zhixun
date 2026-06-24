@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -158,6 +159,37 @@ public class ScheduledTasks {
             articleService.publishScheduledArticles();
         } catch (Exception e) {
             log.error("定时发布检查失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 每30分钟：检查缓存一致性
+     * 对比 Redis 缓存中的文章详情与数据库最新数据，
+     * 发现不一致时自动清除过期缓存
+     */
+    @Scheduled(cron = "0 */30 * * * ?")
+    public void checkCacheConsistency() {
+        log.info("===== 定时任务：检查缓存一致性 =====");
+        try {
+            checkArticleDetailConsistency();
+        } catch (Exception e) {
+            log.error("缓存一致性检查失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 检查文章详情缓存一致性
+     * 对比 Redis 缓存中的文章详情与数据库最新数据，发现不一致时自动清除过期缓存
+     */
+    private void checkArticleDetailConsistency() {
+        Map<String, Object> result = articleService.checkArticleDetailConsistency();
+        int checkedCount = result.get("checkedCount") instanceof Integer ? (Integer) result.get("checkedCount") : 0;
+        int inconsistentCount = result.get("inconsistentCount") instanceof Integer ? (Integer) result.get("inconsistentCount") : 0;
+        int fixedCount = result.get("fixedCount") instanceof Integer ? (Integer) result.get("fixedCount") : 0;
+        if (inconsistentCount > 0) {
+            log.warn("缓存一致性检查：检查 {} 条，不一致 {} 条，已修复 {} 条", checkedCount, inconsistentCount, fixedCount);
+        } else {
+            log.info("缓存一致性检查：检查 {} 条，全部一致", checkedCount);
         }
     }
 }

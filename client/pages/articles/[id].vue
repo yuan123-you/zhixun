@@ -269,6 +269,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const { resolveUrl } = useResourceUrl()
 const { t } = useI18n()
+const { invalidateArticle, invalidateUser } = useCacheInvalidation()
 
 // 返回上一页
 const goBack = () => {
@@ -379,6 +380,8 @@ const toggleLike = async () => {
   const response = await interactionApi.toggleLike(article.value.id)
   article.value.isLiked = response.data.data.isLiked
   article.value.likeCount = response.data.data.likeCount
+  // 失效文章列表缓存，确保列表页数据一致
+  invalidateArticle()
 }
 
 // 收藏
@@ -392,6 +395,8 @@ const toggleCollect = async () => {
   const response = await interactionApi.toggleCollect(article.value.id)
   article.value.isCollected = response.data.data.isCollected
   article.value.collectCount = response.data.data.collectCount
+  // 失效文章列表缓存，确保列表页数据一致
+  invalidateArticle()
 }
 
 // 关注作者
@@ -405,6 +410,8 @@ const toggleFollowAuthor = async () => {
     const { socialApi } = await import('~/api')
     await socialApi.toggleFollow(article.value.author.id)
     article.value.author.isFollowing = !article.value.author.isFollowing
+    // 失效用户相关缓存
+    invalidateUser()
   } catch (error: any) {
     console.error(t('article.followFailed') + ':', error.message)
   }
@@ -421,6 +428,8 @@ const submitComment = async (data: { content: string; parentId?: number }) => {
   const response = await interactionApi.createComment(article.value.id, data)
   comments.value.unshift(response.data.data)
   article.value.commentCount++
+  // 失效文章列表缓存，确保列表页数据一致
+  invalidateArticle()
 }
 
 // 点赞评论

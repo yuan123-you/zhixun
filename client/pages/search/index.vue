@@ -22,8 +22,7 @@
           </svg>
         </button>
       </div>
-      <!-- 最少字符提示 -->
-      <p v-if="keyword.trim().length === 1" class="text-xs text-amber-500 mt-1.5 ml-2">{{ t('search.minChars') }}</p>
+
     </div>
 
     <!-- 搜索建议/热门搜索（未搜索时） -->

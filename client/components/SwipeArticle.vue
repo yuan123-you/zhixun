@@ -97,7 +97,7 @@ const onTouchMove = (e: TouchEvent) => {
   if (!isHorizontalSwipe.value) return
 
   // 阻止默认滚动
-  e.preventDefault()
+  if (e.cancelable) e.preventDefault()
 
   if (diffX < 0) {
     // 左滑 → 下一篇

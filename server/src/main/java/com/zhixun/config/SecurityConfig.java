@@ -89,8 +89,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.GET, "/v1/articles", "/v1/articles/**").permitAll()
                         // 分类列表和分类树（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/categories", "/v1/categories/tree").permitAll()
-                        // 标签列表和热门标签（公开）
-                        .requestMatchers(HttpMethod.GET, "/v1/tags", "/v1/tags/hot").permitAll()
+                        // 标签列表、热门标签、标签云、搜索标签（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/tags", "/v1/tags/hot", "/v1/tags/cloud", "/v1/tags/search").permitAll()
                         // 信息流（推荐、最新、热门公开，关注需认证）
                         .requestMatchers(HttpMethod.GET, "/v1/feed/recommend", "/v1/feed/latest", "/v1/feed/hot").permitAll()
                         // 排行榜（公开）

@@ -91,6 +91,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import type { OperationLog, OperationLogQuery } from '@/types'
 import { getOperationLogList } from '@/api/operationLog'
+import { useRequestCache } from '@/composables/useRequestCache'
+
+/** 操作日志缓存实例 */
+const logCache = useRequestCache({
+  ttl: 2 * 60 * 1000,
+  staleWhileRevalidate: true,
+})
 
 const loading = ref(false)
 const logList = ref<OperationLog[]>([])
@@ -154,12 +161,12 @@ function handleDetail(log: OperationLog) {
 }
 
 /** 加载日志列表 */
-async function loadLogs() {
+async function loadLogs(force = false) {
   loading.value = true
   try {
-    const res = await getOperationLogList(queryParams)
-    logList.value = res.data.list
-    total.value = res.data.total
+    const result = await logCache.request('/operation-logs', queryParams as unknown as Record<string, unknown>, { force })
+    logList.value = result.list
+    total.value = result.total
   } catch {
     // 错误已在拦截器中处理
   } finally {

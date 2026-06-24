@@ -43,6 +43,8 @@ const formatCount = (count: number | undefined) => {
   if (count == null) return '0'
   if (count >= 10000) return `${(count / 10000).toFixed(1)}万`
   if (count >= 1000) return `${(count / 1000).toFixed(1)}k`
-  return count.toString()
+  if (count >= 100) return Math.round(count).toString()
+  if (count >= 1) return count.toFixed(1)
+  return count.toFixed(2)
 }
 </script>

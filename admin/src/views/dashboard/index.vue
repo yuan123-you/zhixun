@@ -123,6 +123,7 @@ import {
 import type { DashboardData, Article } from '@/types'
 import { getDashboardData } from '@/api/dashboard'
 import { formatNumber } from '@/utils/format'
+import { useRequestCache } from '@/composables/useRequestCache'
 
 // 注册 ECharts 组件
 use([
@@ -135,6 +136,12 @@ use([
 ])
 
 const router = useRouter()
+
+/** 仪表盘缓存实例 */
+const dashboardCache = useRequestCache<DashboardData>({
+  ttl: 2 * 60 * 1000,
+  staleWhileRevalidate: true,
+})
 
 /** 仪表盘数据 */
 const dashboardData = ref<DashboardData>({
@@ -203,8 +210,8 @@ function handleAudit(article: Article) {
 /** 加载仪表盘数据 */
 async function loadDashboard() {
   try {
-    const res = await getDashboardData()
-    dashboardData.value = res.data
+    const result = await dashboardCache.request('/dashboard')
+    dashboardData.value = result
   } catch {
     // 错误已在拦截器中处理
   }

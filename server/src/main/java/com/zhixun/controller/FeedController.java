@@ -5,8 +5,10 @@ import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.service.FeedService;
 import com.zhixun.vo.ArticleVO;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,10 +31,11 @@ public class FeedController {
      * 首页个性化推荐
      */
     @GetMapping("/recommend")
-    public R<PageResult<ArticleVO>> recommend(
+    public ResponseEntity<R<PageResult<ArticleVO>>> recommend(
             @RequestParam(defaultValue = "0") Integer refresh,
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            HttpServletResponse response) {
         // 尝试获取当前登录用户ID（未登录为 null）
         Long userId = null;
         try {
@@ -40,48 +43,62 @@ public class FeedController {
         } catch (Exception e) {
             // 未登录用户
         }
-        return R.ok(feedService.getRecommendFeed(userId, refresh, page, pageSize));
+        // 设置 Cache-Control：公共缓存，最大缓存60秒
+        response.setHeader("Cache-Control", "public, max-age=60");
+        return ResponseEntity.ok(R.ok(feedService.getRecommendFeed(userId, refresh, page, pageSize)));
     }
 
     /**
      * 最新发布
      */
     @GetMapping("/latest")
-    public R<PageResult<ArticleVO>> latest(
+    public ResponseEntity<R<PageResult<ArticleVO>>> latest(
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        return R.ok(feedService.getLatestFeed(page, pageSize));
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            HttpServletResponse response) {
+        // 设置 Cache-Control：公共缓存，最大缓存60秒
+        response.setHeader("Cache-Control", "public, max-age=60");
+        return ResponseEntity.ok(R.ok(feedService.getLatestFeed(page, pageSize)));
     }
 
     /**
      * 关注动态（页码分页）
      */
     @GetMapping("/following")
-    public R<PageResult<ArticleVO>> following(
+    public ResponseEntity<R<PageResult<ArticleVO>>> following(
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            HttpServletResponse response) {
         Long userId = securityUtil.getCurrentUserId();
-        return R.ok(feedService.getFollowingFeed(userId, page, pageSize));
+        // 关注动态为个人数据，设置 no-cache
+        response.setHeader("Cache-Control", "no-cache");
+        return ResponseEntity.ok(R.ok(feedService.getFollowingFeed(userId, page, pageSize)));
     }
 
     /**
      * 关注动态（游标分页，支持无限滚动）
      */
     @GetMapping("/following/cursor")
-    public R<PageResult<ArticleVO>> followingByCursor(
+    public ResponseEntity<R<PageResult<ArticleVO>>> followingByCursor(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime cursor,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            HttpServletResponse response) {
         Long userId = securityUtil.getCurrentUserId();
-        return R.ok(feedService.getFollowingFeedByCursor(userId, cursor, pageSize));
+        // 关注动态为个人数据，设置 no-cache
+        response.setHeader("Cache-Control", "no-cache");
+        return ResponseEntity.ok(R.ok(feedService.getFollowingFeedByCursor(userId, cursor, pageSize)));
     }
 
     /**
      * 热门推荐
      */
     @GetMapping("/hot")
-    public R<PageResult<ArticleVO>> hot(
+    public ResponseEntity<R<PageResult<ArticleVO>>> hot(
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        return R.ok(feedService.getHotFeed(page, pageSize));
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            HttpServletResponse response) {
+        // 设置 Cache-Control：公共缓存，最大缓存120秒
+        response.setHeader("Cache-Control", "public, max-age=120");
+        return ResponseEntity.ok(R.ok(feedService.getHotFeed(page, pageSize)));
     }
 }

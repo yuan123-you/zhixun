@@ -154,8 +154,12 @@ public class TagServiceImpl implements TagService {
             targetTag.setArticleCount(newTargetCount);
             tagMapper.updateById(targetTag);
 
-            // 同步OpenSearch
-            openSearchSyncService.syncArticles(affectedArticleIds);
+            // 同步OpenSearch（非关键操作，失败不影响主事务）
+            try {
+                openSearchSyncService.syncArticles(affectedArticleIds);
+            } catch (Exception e) {
+                log.error("标签合并同步OpenSearch失败, affectedArticleIds={}: {}", affectedArticleIds, e.getMessage());
+            }
         }
 
         // 删除源标签

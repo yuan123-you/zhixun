@@ -5,12 +5,12 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -29,8 +29,26 @@ public class RedisConfig {
     /** 最小 TTL（秒） */
     private static final long MIN_TTL_SECONDS = 1;
 
+    /** 数据版本号 Redis Key */
+    public static final String DATA_VERSION_KEY = "data:version";
+
+    /**
+     * 递增数据版本号
+     */
+    public static long incrementDataVersion(StringRedisTemplate stringRedisTemplate) {
+        return stringRedisTemplate.opsForValue().increment(DATA_VERSION_KEY);
+    }
+
+    /**
+     * 获取当前数据版本号
+     */
+    public static long getDataVersion(StringRedisTemplate stringRedisTemplate) {
+        String version = stringRedisTemplate.opsForValue().get(DATA_VERSION_KEY);
+        return version != null ? Long.parseLong(version) : 0;
+    }
+
     @Bean
-    @ConditionalOnBean(RedisConnectionFactory.class)
+
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
@@ -54,11 +72,18 @@ public class RedisConfig {
         template.afterPropertiesSet();
         return template;
     }
+@Bean
 
-    @Bean
-    @ConditionalOnBean(RedisConnectionFactory.class)
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
         return new StringRedisTemplate(connectionFactory);
+    }
+
+    @Bean
+
+    public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory connectionFactory) {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(connectionFactory);
+        return container;
     }
 
     /**

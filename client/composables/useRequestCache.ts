@@ -3,12 +3,15 @@
  *
  * 功能：
  * - 内存级请求缓存，避免短时间内重复请求相同数据
+ * - localStorage 持久化：跨页面刷新保留缓存数据
  * - 请求去重：同一时刻对同一接口的并发请求自动合并
  * - TTL 过期策略：缓存数据在指定时间后自动失效
  * - stale-while-revalidate：优先返回缓存数据，后台静默刷新
  * - 缓存手动清除与批量清除
  * - 兼容 SSR（服务端不缓存）
  */
+
+import { storage, TTL as STORAGE_TTL } from '~/utils/storage'
 
 interface CacheEntry<T> {
   data: T
@@ -23,7 +26,14 @@ interface RequestCacheOptions {
   staleWhileRevalidate?: boolean
   /** 缓存最大条目数，默认 100 */
   maxEntries?: number
+  /** 是否启用 localStorage 持久化，默认 true */
+  persist?: boolean
+  /** localStorage 持久化 TTL，默认 30 分钟 */
+  persistTtl?: number
 }
+
+/** localStorage 持久化缓存键前缀 */
+const PERSIST_KEY_PREFIX = 'req_cache_'
 
 // 全局内存缓存（客户端共享）
 const memoryCache = new Map<string, CacheEntry<any>>()
@@ -35,6 +45,8 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
     ttl: defaultTtl = 5 * 60 * 1000,
     staleWhileRevalidate: defaultSWR = true,
     maxEntries = 100,
+    persist = true,
+    persistTtl = STORAGE_TTL.MINUTE_30,
   } = defaultOptions
 
   // SSR 不缓存
@@ -48,6 +60,13 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
       ? JSON.stringify(Object.entries(params).sort(([a], [b]) => a.localeCompare(b)))
       : ''
     return `${url}:${sortedParams}`
+  }
+
+  /**
+   * 生成 localStorage 持久化键
+   */
+  const persistKey = (key: string): string => {
+    return `${PERSIST_KEY_PREFIX}${key}`
   }
 
   /**
@@ -74,7 +93,15 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
   }
 
   /**
-   * 设置缓存
+   * 从 localStorage 读取持久化缓存
+   */
+  const readPersistedCache = <T>(key: string): CacheEntry<T> | null => {
+    if (!isClient || !persist) return null
+    return storage.get<CacheEntry<T>>(persistKey(key))
+  }
+
+  /**
+   * 设置缓存（内存 + localStorage）
    */
   const setCache = <T>(key: string, data: T, ttl?: number): void => {
     if (!isClient) return
@@ -87,11 +114,17 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
       }
     }
 
-    memoryCache.set(key, {
+    const entry: CacheEntry<T> = {
       data,
       cachedAt: Date.now(),
       ttl: ttl || defaultTtl,
-    })
+    }
+    memoryCache.set(key, entry)
+
+    // 持久化到 localStorage
+    if (persist) {
+      storage.set(persistKey(key), entry, persistTtl)
+    }
   }
 
   /**
@@ -118,7 +151,7 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
       return cached
     }
 
-    // 2. SWR 策略：有过期缓存时先返回旧数据，后台刷新
+    // 2. SWR 策略：有过期内存缓存时先返回旧数据，后台刷新
     if (swr) {
       const staleData = getStaleCache<T>(key)
       if (staleData !== null) {
@@ -134,13 +167,44 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
       }
     }
 
-    // 3. 请求去重：同一时刻同一 key 的请求共享同一个 Promise
+    // 3. 内存缓存未命中，尝试 localStorage 持久化缓存
+    if (persist) {
+      const persisted = readPersistedCache<T>(key)
+      if (persisted) {
+        const age = Date.now() - persisted.cachedAt
+        // 持久化缓存未过期，回填内存缓存
+        if (age < ttl) {
+          memoryCache.set(key, persisted)
+          // 后台静默刷新
+          if (swr) {
+            requestFn()
+              .then((freshData) => {
+                setCache(key, freshData, ttl)
+              })
+              .catch(() => {})
+          }
+          return persisted.data
+        }
+        // 持久化缓存过期但在 persistTtl 内，先返回旧数据后台刷新
+        if (age < persistTtl && swr) {
+          memoryCache.set(key, persisted)
+          requestFn()
+            .then((freshData) => {
+              setCache(key, freshData, ttl)
+            })
+            .catch(() => {})
+          return persisted.data
+        }
+      }
+    }
+
+    // 4. 请求去重：同一时刻同一 key 的请求共享同一个 Promise
     const pending = pendingRequests.get(key)
     if (pending) {
       return pending as Promise<T>
     }
 
-    // 4. 发起新请求
+    // 5. 发起新请求
     const requestPromise = requestFn()
       .then((data) => {
         setCache(key, data, ttl)
@@ -170,6 +234,9 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
 
     // 清除缓存
     memoryCache.delete(key)
+    if (persist) {
+      storage.remove(persistKey(key))
+    }
 
     // 清除去重
     pendingRequests.delete(key)
@@ -186,6 +253,9 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
     const key = generateKey(url, params)
     memoryCache.delete(key)
     pendingRequests.delete(key)
+    if (persist) {
+      storage.remove(persistKey(key))
+    }
   }
 
   /**
@@ -195,6 +265,18 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
     for (const key of memoryCache.keys()) {
       if (key.startsWith(urlPrefix)) {
         memoryCache.delete(key)
+        if (persist) {
+          storage.remove(persistKey(key))
+        }
+      }
+    }
+    // 也清理 localStorage 中匹配前缀的缓存
+    if (persist) {
+      const storageKeys = storage.keys()
+      for (const sk of storageKeys) {
+        if (sk.startsWith(PERSIST_KEY_PREFIX + urlPrefix)) {
+          storage.remove(sk)
+        }
       }
     }
   }
@@ -205,6 +287,14 @@ export function useRequestCache(defaultOptions: RequestCacheOptions = {}) {
   const clearAll = (): void => {
     memoryCache.clear()
     pendingRequests.clear()
+    if (persist) {
+      const storageKeys = storage.keys()
+      for (const sk of storageKeys) {
+        if (sk.startsWith(PERSIST_KEY_PREFIX)) {
+          storage.remove(sk)
+        }
+      }
+    }
   }
 
   /**

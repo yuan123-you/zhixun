@@ -32,15 +32,40 @@ export default defineNuxtPlugin(() => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        // 根据消息类型分发处理
+        // 根据消息类型分发处理，与后端 ChatWebSocketHandler 对齐
         switch (data.type) {
-          case 'message':
+          case 'CHAT':
             // 新私信消息
             notificationStore.incrementUnread()
+            // 触发浏览器系统通知
+            showBrowserNotification(data.data)
+            // 通过自定义事件通知聊天页面实时更新
+            if (import.meta.client) {
+              window.dispatchEvent(new CustomEvent('ws:chat', { detail: data.data }))
+            }
             break
-          case 'notification':
-            // 系统通知
-            notificationStore.addNotification(data.payload)
+          case 'ONLINE':
+            // 用户上线通知
+            if (import.meta.client) {
+              window.dispatchEvent(new CustomEvent('ws:online', { detail: data.data }))
+            }
+            break
+          case 'OFFLINE':
+            // 用户下线通知
+            if (import.meta.client) {
+              window.dispatchEvent(new CustomEvent('ws:offline', { detail: data.data }))
+            }
+            break
+          case 'READ':
+            // 消息已读通知
+            if (import.meta.client) {
+              window.dispatchEvent(new CustomEvent('ws:read', { detail: data.data }))
+            }
+            break
+          case 'NOTIFICATION':
+            // 系统通知（来自 RabbitMQ 推送）
+            notificationStore.addNotification(data.data)
+            showBrowserNotification(data.data)
             break
         }
       } catch {
@@ -111,3 +136,31 @@ export default defineNuxtPlugin(() => {
     },
   }
 })
+
+/** 浏览器系统通知：显示发送者信息和消息预览 */
+function showBrowserNotification(data: Record<string, any>) {
+  if (!import.meta.client) return
+  if (!('Notification' in window)) return
+
+  const senderId = data.senderId
+  const content = data.content || data.title || '新消息'
+  const senderName = data.senderNickname || data.title || '用户'
+
+  if (Notification.permission === 'granted') {
+    new Notification(`${senderName} 发来私信`, {
+      body: content.length > 50 ? content.substring(0, 50) + '...' : content,
+      icon: data.senderAvatar || '/favicon.svg',
+      tag: `chat-${senderId}`,
+    })
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        new Notification(`${senderName} 发来私信`, {
+          body: content.length > 50 ? content.substring(0, 50) + '...' : content,
+          icon: data.senderAvatar || '/favicon.svg',
+          tag: `chat-${senderId}`,
+        })
+      }
+    })
+  }
+}

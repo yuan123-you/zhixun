@@ -121,6 +121,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Announcement } from '@/types'
 import { getAnnouncementList, createAnnouncement, updateAnnouncement, deleteAnnouncement } from '@/api/announcement'
+import { useRequestCache } from '@/composables/useRequestCache'
+
+/** 公告缓存实例 */
+const announcementCache = useRequestCache<Announcement[]>({
+  ttl: 5 * 60 * 1000,
+  staleWhileRevalidate: true,
+})
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -189,6 +196,7 @@ async function handleSubmit() {
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
+    announcementCache.invalidate('/admin/announcements')
     loadAnnouncements()
   } catch {
     // 错误已在拦截器中处理
@@ -207,6 +215,7 @@ async function handleDelete(announcement: Announcement) {
     })
     await deleteAnnouncement(announcement.id)
     ElMessage.success('删除成功')
+    announcementCache.invalidate('/admin/announcements')
     loadAnnouncements()
   } catch {
     // 用户取消或请求失败
@@ -214,11 +223,11 @@ async function handleDelete(announcement: Announcement) {
 }
 
 /** 加载公告列表 */
-async function loadAnnouncements() {
+async function loadAnnouncements(force = false) {
   loading.value = true
   try {
-    const res = await getAnnouncementList()
-    announcementList.value = res.data
+    const result = await announcementCache.request('/admin/announcements', undefined, { force })
+    announcementList.value = result
   } catch {
     // 错误已在拦截器中处理
   } finally {

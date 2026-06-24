@@ -24,7 +24,8 @@
     "networkError": "Network connection error, please check your network and try again",
     "serverError": "Server is temporarily unavailable, please try again later",
     "noData": "No content yet",
-    "noDataDesc": "Go discover great content"
+    "noDataDesc": "Go discover great content",
+    "backToTop": "Back to top"
   },
   "nav": {
     "home": "Home",
@@ -120,7 +121,7 @@
     "articles": "Articles",
     "images": "Images",
     "placeholder": "Search articles, users...",
-    "minChars": "Please enter at least 2 characters",
+    "minChars": "Please enter a search keyword",
     "noResults": "No results found",
     "noResultsDesc": "Try a different keyword",
     "relatedUsers": "Related Users",

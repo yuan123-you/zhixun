@@ -28,8 +28,9 @@ public class MultiLevelCacheConfig {
      */
     @Bean("multiLevelCacheManager")
     @ConditionalOnBean(RedisConnectionFactory.class)
-    public CacheManager multiLevelCacheManager(RedisTemplate<String, Object> redisTemplate) {
+    public CacheManager multiLevelCacheManager(RedisTemplate<String, Object> redisTemplate,
+                                               CacheInvalidationListener cacheInvalidationListener) {
         log.info("初始化多级缓存管理器 (L1=Caffeine, L2=Redis)");
-        return new MultiLevelCacheManager(redisTemplate);
+        return new MultiLevelCacheManager(redisTemplate, cacheInvalidationListener);
     }
 }

@@ -75,7 +75,7 @@ export const useSwipe = (
     }
 
     // 非水平滑动不处理
-    if (axis === 'horizontal' && preventDefaultOnHorizontal) {
+    if (axis === 'horizontal' && preventDefaultOnHorizontal && e.cancelable) {
       e.preventDefault()
     }
 
@@ -143,7 +143,7 @@ export const useSwipe = (
       return
     }
 
-    if (axis === 'horizontal' && preventDefaultOnHorizontal) {
+    if (axis === 'horizontal' && preventDefaultOnHorizontal && e.cancelable) {
       e.preventDefault()
     }
 

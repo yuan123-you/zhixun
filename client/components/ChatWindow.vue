@@ -11,7 +11,7 @@
       <UserAvatar :src="conversation.user?.avatar" alt="头像" size="md" />
       <div class="ml-3">
         <p class="font-medium text-gray-900 dark:text-white">{{ conversation.user?.nickname }}</p>
-        <p class="text-xs text-green-500">在线</p>
+        <p class="text-xs" :class="isOnline ? 'text-green-500' : 'text-gray-400'">{{ isOnline ? '在线' : '离线' }}</p>
       </div>
     </div>
 
@@ -23,7 +23,7 @@
           <UserAvatar :src="message.sender?.avatar" alt="头像" size="sm" />
           <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-2">
             <p class="text-sm text-gray-900 dark:text-white">{{ message.content }}</p>
-            <span class="text-2xs text-gray-400 mt-1 block">{{ formatTime(message.createdAt) }}</span>
+            <span class="text-[10px] text-gray-400 mt-1 block">{{ formatTime(message.createdAt) }}</span>
           </div>
         </div>
 
@@ -31,7 +31,7 @@
         <div v-else class="flex items-end space-x-2 max-w-[70%]">
           <div class="bg-primary text-white rounded-2xl rounded-br-sm px-4 py-2">
             <p class="text-sm">{{ message.content }}</p>
-            <span class="text-2xs text-primary-200 mt-1 block">{{ formatTime(message.createdAt) }}</span>
+            <span class="text-[10px] text-primary-200 mt-1 block">{{ formatTime(message.createdAt) }}</span>
           </div>
         </div>
       </div>
@@ -58,6 +58,7 @@
 <script setup lang="ts">
 /** 聊天窗口组件 */
 import type { Conversation, Message } from '~/types'
+import { socialApi } from '~/api'
 
 const props = defineProps<{
   conversation: Conversation | null
@@ -72,6 +73,7 @@ const emit = defineEmits<{
 const userStore = useUserStore()
 const inputContent = ref('')
 const messageListRef = ref<HTMLElement | null>(null)
+const isOnline = ref(false)
 
 // 判断是否是我的消息
 const isMine = (message: Message) => {
@@ -91,11 +93,30 @@ const sendMessage = () => {
   })
 }
 
-// 格式化时间
+// 格式化时间：YYYY-MM-DD HH:MM:SS
 const formatTime = (time: string) => {
   const date = new Date(time)
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
+
+// 查询对方用户在线状态
+const fetchOnlineStatus = async () => {
+  if (!props.conversation?.user?.id) return
+  try {
+    const { data } = await socialApi.getOnlineStatus(props.conversation.user.id)
+    isOnline.value = data.data?.[props.conversation.user.id] ?? false
+  } catch {
+    isOnline.value = false
+  }
+}
+
+// 监听会话变化，刷新在线状态
+watch(() => props.conversation?.user?.id, (newId) => {
+  if (newId) {
+    fetchOnlineStatus()
+  }
+}, { immediate: true })
 
 // 监听消息变化，自动滚动到底部
 watch(() => props.messages.length, () => {

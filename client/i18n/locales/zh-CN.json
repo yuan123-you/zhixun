@@ -24,7 +24,8 @@
     "networkError": "网络连接异常，请检查网络后重试",
     "serverError": "服务器开小差了，请稍后重试",
     "noData": "暂无内容",
-    "noDataDesc": "快去发现精彩内容吧"
+    "noDataDesc": "快去发现精彩内容吧",
+    "backToTop": "返回顶部"
   },
   "nav": {
     "home": "首页",
@@ -120,7 +121,7 @@
     "articles": "文章",
     "images": "图片",
     "placeholder": "搜索文章、用户...",
-    "minChars": "请输入至少2个字符进行搜索",
+    "minChars": "请输入搜索关键词",
     "noResults": "未找到相关结果",
     "noResultsDesc": "换个关键词试试吧",
     "relatedUsers": "相关用户",

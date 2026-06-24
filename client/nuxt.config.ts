@@ -49,13 +49,22 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: '/api' },
       ],
+      // 预连接常用外部域名，加速资源加载
     },
+    // 页面级 preload/prefetch 策略：减少不必要的预加载
+    pageTransition: { name: 'page', mode: 'out-in' },
   },
 
   // 混合渲染路由规则
   routeRules: {
-    // 首页SSR渲染
-    '/': { ssr: true },
+    // 首页SSR渲染 + SWR缓存60秒
+    '/': { ssr: true, swr: 60 },
+    // 排行榜SSR + SWR缓存5分钟
+    '/rank': { swr: 300 },
+    // 发现页SSR + SWR缓存2分钟
+    '/discover': { swr: 120 },
+    // 标签页SSR + SWR缓存5分钟
+    '/tags': { swr: 300 },
     // 文章详情页SSR渲染
     '/articles/**': { ssr: true },
     // 管理页CSR渲染
@@ -108,4 +117,40 @@ export default defineNuxtConfig({
 
   // 兼容性日期
   compatibilityDate: '2024-11-01',
+
+  // Vite 构建优化
+  vite: {
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-vue': ['vue', 'vue-router'],
+            'vendor-pinia': ['pinia', '@pinia/nuxt'],
+            'vendor-utils': ['axios', 'qrcode', 'html2canvas'],
+          },
+        },
+      },
+    },
+  },
+
+  // Nitro 服务端配置
+  nitro: {
+    compressPublicAssets: true,
+  },
+
+  // 图片优化模块（建议安装 @nuxt/image 以获得自动图片优化、懒加载等能力）
+  // 安装方式：npx nuxi module add image
+  // modules 中添加 '@nuxt/image' 后可启用以下配置：
+  // image: {
+  //   quality: 80,
+  //   format: ['webp', 'avif'],
+  //   screens: {
+  //     xs: 320,
+  //     sm: 640,
+  //     md: 768,
+  //     lg: 1024,
+  //     xl: 1280,
+  //   },
+  // },
 })

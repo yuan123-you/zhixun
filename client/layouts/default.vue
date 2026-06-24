@@ -105,6 +105,9 @@
       </svg>
     </button>
 
+    <!-- 返回顶部 -->
+    <BackToTop />
+
     <!-- 移动端底部Tab导航栏 -->
     <MobileNav />
 

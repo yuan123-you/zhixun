@@ -7,7 +7,7 @@
         <div class="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
           <!-- 搜索会话 -->
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <input type="text" class="input text-sm" :placeholder="t('message.searchConversation')" />
+            <input v-model="conversationSearch" type="text" class="input text-sm" :placeholder="t('message.searchConversation')" />
           </div>
 
           <!-- 会话列表 -->
@@ -22,7 +22,7 @@
 
             <template v-else>
               <button
-                v-for="conv in conversations"
+                v-for="conv in filteredConversations"
                 :key="conv.id"
                 class="w-full flex items-center space-x-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 :class="{ 'bg-gray-50 dark:bg-gray-700/50': activeConversation?.id === conv.id }"
@@ -90,6 +90,16 @@ const messages = ref<Message[]>([])
 const loading = ref(false)
 const conversationsError = ref('')
 const unreadTotal = ref(0)
+const conversationSearch = ref('')
+
+// 搜索过滤会话列表
+const filteredConversations = computed(() => {
+  const keyword = conversationSearch.value.trim().toLowerCase()
+  if (!keyword) return conversations.value
+  return conversations.value.filter(conv =>
+    conv.user?.nickname?.toLowerCase().includes(keyword)
+  )
+})
 
 // 加载会话列表
 const loadConversations = async () => {
@@ -160,18 +170,53 @@ const sendMessage = async (content: string) => {
   }
 }
 
-// WebSocket集成：监听新消息，更新会话列表
+// WebSocket集成：监听新消息，更新会话列表和聊天窗口
 if (import.meta.client) {
-  const { $ws } = useNuxtApp()
+  // 监听会话列表变化，更新未读总数
   watch(
     () => conversations.value,
     () => {
-      // 会话列表变化时更新未读总数
       const total = conversations.value.reduce((sum, c) => sum + c.unreadCount, 0)
       unreadTotal.value = total
     },
     { deep: true }
   )
+
+  // 监听 WebSocket 聊天消息，实时更新聊天界面
+  const handleWsChat = ((event: CustomEvent) => {
+    const chatData = event.detail
+    if (!chatData) return
+    // 如果当前正在与发送者聊天，将消息添加到聊天窗口
+    if (activeConversation.value && activeConversation.value.user?.id === chatData.senderId) {
+      messages.value.push({
+        id: Date.now(),
+        conversationId: activeConversation.value.id,
+        senderId: chatData.senderId,
+        sender: { id: chatData.senderId, nickname: chatData.senderNickname, avatar: chatData.senderAvatar } as any,
+        content: chatData.content,
+        type: 0,
+        isRead: false,
+        createdAt: chatData.createdAt || new Date().toISOString(),
+      })
+    }
+    // 刷新会话列表
+    loadConversations()
+  }) as EventListener
+
+  // 监听在线/离线状态变化
+  const handleWsOnline = () => { loadConversations() }
+  const handleWsOffline = () => { loadConversations() }
+
+  onMounted(() => {
+    window.addEventListener('ws:chat', handleWsChat)
+    window.addEventListener('ws:online', handleWsOnline)
+    window.addEventListener('ws:offline', handleWsOffline)
+  })
+  onUnmounted(() => {
+    window.removeEventListener('ws:chat', handleWsChat)
+    window.removeEventListener('ws:online', handleWsOnline)
+    window.removeEventListener('ws:offline', handleWsOffline)
+  })
 }
 
 // 页面加载时获取数据

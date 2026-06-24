@@ -31,6 +31,7 @@ public class MultiLevelCacheManager implements CacheManager {
     private final Map<String, MultiLevelCache> cacheMap = new ConcurrentHashMap<>();
     private final RedisTemplate<String, Object> redisTemplate;
     private final String l2KeyPrefix;
+    private final CacheInvalidationListener cacheInvalidationListener;
 
     /** 默认 L1 最大容量 */
     private static final int DEFAULT_L1_MAX_SIZE = 200;
@@ -42,13 +43,16 @@ public class MultiLevelCacheManager implements CacheManager {
     /** L2 Key 前缀 */
     private static final String DEFAULT_L2_KEY_PREFIX = "mlc:";
 
-    public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate) {
-        this(redisTemplate, DEFAULT_L2_KEY_PREFIX);
+    public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate,
+                                  CacheInvalidationListener cacheInvalidationListener) {
+        this(redisTemplate, DEFAULT_L2_KEY_PREFIX, cacheInvalidationListener);
     }
 
-    public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate, String l2KeyPrefix) {
+    public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate, String l2KeyPrefix,
+                                  CacheInvalidationListener cacheInvalidationListener) {
         this.redisTemplate = redisTemplate;
         this.l2KeyPrefix = l2KeyPrefix;
+        this.cacheInvalidationListener = cacheInvalidationListener;
     }
 
     @Override
@@ -79,6 +83,11 @@ public class MultiLevelCacheManager implements CacheManager {
 
         log.info("创建多级缓存: name={}, L1(maxSize={}, expire={}min), L2(ttl={}s)",
                 name, config.l1MaxSize, config.l1ExpireMinutes, config.l2TtlSeconds);
+
+        // 订阅缓存失效通知频道，保证多实例间 L1 缓存一致性
+        if (cacheInvalidationListener != null) {
+            cacheInvalidationListener.subscribe(name);
+        }
 
         return cache;
     }

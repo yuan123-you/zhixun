@@ -25,6 +25,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
         <span v-if="isRefreshing">刷新中...</span>
+        <span v-else-if="lastRefreshFailed" class="text-red-500 dark:text-red-400">刷新失败</span>
         <span v-else-if="pullDistance >= THRESHOLD">释放刷新</span>
         <span v-else>下拉刷新</span>
       </div>
@@ -43,11 +44,13 @@
 </template>
 
 <script setup lang="ts">
-/** 下拉刷新组件：触摸下拉触发刷新回调 */
+/** 下拉刷新组件：触摸下拉触发刷新回调，支持错误状态反馈 */
 
 const props = withDefaults(defineProps<{
   /** 刷新回调 */
   onRefresh?: () => Promise<void>
+  /** 外部错误状态（供父组件传入，用于显示刷新失败提示） */
+  error?: string
 }>(), {})
 
 const THRESHOLD = 60
@@ -56,6 +59,14 @@ const startY = ref(0)
 const pullDistance = ref(0)
 const isRefreshing = ref(false)
 const canPull = ref(true)
+const lastRefreshFailed = ref(false)
+
+// 监听外部错误状态
+watch(() => props.error, (val) => {
+  if (val) {
+    lastRefreshFailed.value = true
+  }
+})
 
 const onTouchStart = (e: TouchEvent) => {
   // 只在页面滚动到顶部时才允许下拉
@@ -73,7 +84,7 @@ const onTouchMove = (e: TouchEvent) => {
   const currentY = e.touches[0].clientY
   const diff = currentY - startY.value
 
-  if (diff > 0) {
+  if (diff > 0 && e.cancelable) {
     // 阻止默认滚动行为
     e.preventDefault()
     // 使用阻尼效果，下拉越远阻力越大
@@ -90,6 +101,9 @@ const onTouchEnd = async () => {
 
     try {
       await props.onRefresh?.()
+      lastRefreshFailed.value = false
+    } catch {
+      lastRefreshFailed.value = true
     } finally {
       isRefreshing.value = false
       pullDistance.value = 0

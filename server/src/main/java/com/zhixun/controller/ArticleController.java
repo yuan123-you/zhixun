@@ -13,8 +13,10 @@ import com.zhixun.vo.ArticleDetailVO;
 import com.zhixun.vo.ArticleVO;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,15 +69,19 @@ public class ArticleController {
      * 文章列表（公开）
      */
     @GetMapping
-    public R<PageResult<ArticleVO>> list(ArticleQueryRequest request) {
-        return R.ok(articleService.getArticleList(request));
+    public ResponseEntity<R<PageResult<ArticleVO>>> list(ArticleQueryRequest request,
+                                                         HttpServletResponse response) {
+        // 设置 Cache-Control：公共缓存，最大缓存60秒
+        response.setHeader("Cache-Control", "public, max-age=60");
+        return ResponseEntity.ok(R.ok(articleService.getArticleList(request)));
     }
 
     /**
      * 文章详情（公开）
      */
     @GetMapping("/{id}")
-    public R<ArticleDetailVO> detail(@PathVariable Long id) {
+    public ResponseEntity<R<ArticleDetailVO>> detail(@PathVariable Long id,
+                                                      HttpServletResponse response) {
         // 尝试获取当前登录用户ID（未登录为 null）
         Long currentUserId = null;
         try {
@@ -83,7 +89,9 @@ public class ArticleController {
         } catch (Exception e) {
             // 未登录用户，currentUserId 保持为 null
         }
-        return R.ok(articleService.getArticleDetail(id, currentUserId));
+        // 设置 Cache-Control：公共缓存，最大缓存60秒
+        response.setHeader("Cache-Control", "public, max-age=60");
+        return ResponseEntity.ok(R.ok(articleService.getArticleDetail(id, currentUserId)));
     }
 
     /**
@@ -113,10 +121,13 @@ public class ArticleController {
      * 相关推荐
      */
     @GetMapping("/{id}/related")
-    public R<List<ArticleVO>> related(
+    public ResponseEntity<R<List<ArticleVO>>> related(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "6") Integer limit) {
-        return R.ok(articleService.getRelatedArticles(id, limit));
+            @RequestParam(defaultValue = "6") Integer limit,
+            HttpServletResponse response) {
+        // 设置 Cache-Control：公共缓存，最大缓存120秒
+        response.setHeader("Cache-Control", "public, max-age=120");
+        return ResponseEntity.ok(R.ok(articleService.getRelatedArticles(id, limit)));
     }
 
     /**

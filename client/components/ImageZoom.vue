@@ -7,7 +7,7 @@
         class="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center overflow-hidden"
         @click.self="close"
         @touchstart.passive="onTouchStart"
-        @touchmove.prevent="onTouchMove"
+        @touchmove="onTouchMove"
         @touchend.passive="onTouchEnd"
         @dblclick="resetZoom"
       >
@@ -128,6 +128,7 @@ const onTouchStart = (e: TouchEvent) => {
 }
 
 const onTouchMove = (e: TouchEvent) => {
+  if (e.cancelable) e.preventDefault()
   if (e.touches.length === 2) {
     // 双指缩放
     const currentDistance = getDistance(e.touches)

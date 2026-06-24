@@ -17,6 +17,7 @@ import com.zhixun.mapper.CommentMapper;
 import com.zhixun.service.LikeService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.TagVO;
+import com.zhixun.config.RedisConfig;
 import com.zhixun.entity.ArticleTag;
 import com.zhixun.entity.Tag;
 import com.zhixun.entity.User;
@@ -63,6 +64,18 @@ public class LikeServiceImpl implements LikeService {
     private static final String LIKE_COUNT_PREFIX = "like:count:";
     /** 浏览量 Redis Key 前缀 */
     private static final String VIEW_COUNT_PREFIX = "article:view:";
+    /** 文章详情缓存 Key 前缀 */
+    private static final String ARTICLE_DETAIL_PREFIX = "article:detail:";
+    /** 文章列表缓存 Key 前缀 */
+    private static final String ARTICLE_LIST_PREFIX = "article:list:";
+    /** 相关推荐缓存 Key 前缀 */
+    private static final String RELATED_ARTICLES_PREFIX = "article:related:";
+    /** 排行榜缓存 Key 前缀 */
+    private static final String RANK_KEY_PREFIX = "rank:hot:";
+    /** 热门动态缓存 Key 前缀 */
+    private static final String HOT_FEED_KEY_PREFIX = "feed:hot:";
+    /** 推荐缓存 Key 前缀 */
+    private static final String RECOMMEND_KEY_PREFIX = "feed:recommend:";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -106,6 +119,11 @@ public class LikeServiceImpl implements LikeService {
         stringRedisTemplate.opsForValue().set(statusKey, liked ? "1" : "0", 1, TimeUnit.HOURS);
         String countKey = LIKE_COUNT_PREFIX + targetId + ":" + targetType;
         stringRedisTemplate.opsForValue().set(countKey, String.valueOf(likeCount), 1, TimeUnit.HOURS);
+
+        // 清除文章相关缓存，确保列表和详情页数据一致
+        if (targetTypeEnum == LikeTargetTypeEnum.ARTICLE) {
+            clearArticleCache(targetId);
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("isLiked", liked);
@@ -312,5 +330,79 @@ public class LikeServiceImpl implements LikeService {
             }
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 清除文章相关缓存
+     */
+    private void clearArticleCache(Long articleId) {
+        try {
+            stringRedisTemplate.delete(ARTICLE_DETAIL_PREFIX + articleId);
+            stringRedisTemplate.delete(RELATED_ARTICLES_PREFIX + articleId);
+            // 清除文章列表缓存（使用 SCAN 替代 KEYS）
+            Set<String> listKeys = new java.util.HashSet<>();
+            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(ARTICLE_LIST_PREFIX + "*")
+                            .count(100)
+                            .build())) {
+                while (cursor.hasNext()) {
+                    listKeys.add(cursor.next());
+                }
+            }
+            if (!listKeys.isEmpty()) {
+                stringRedisTemplate.delete(listKeys);
+            }
+            // 清除排行榜缓存
+            Set<String> rankKeys = new java.util.HashSet<>();
+            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(RANK_KEY_PREFIX + "*")
+                            .count(100)
+                            .build())) {
+                while (cursor.hasNext()) {
+                    rankKeys.add(cursor.next());
+                }
+            }
+            if (!rankKeys.isEmpty()) {
+                stringRedisTemplate.delete(rankKeys);
+            }
+            // 清除热门动态缓存
+            Set<String> hotKeys = new java.util.HashSet<>();
+            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(HOT_FEED_KEY_PREFIX + "*")
+                            .count(100)
+                            .build())) {
+                while (cursor.hasNext()) {
+                    hotKeys.add(cursor.next());
+                }
+            }
+            if (!hotKeys.isEmpty()) {
+                stringRedisTemplate.delete(hotKeys);
+            }
+            // 清除推荐缓存
+            Set<String> recommendKeys = new java.util.HashSet<>();
+            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(RECOMMEND_KEY_PREFIX + "*")
+                            .count(100)
+                            .build())) {
+                while (cursor.hasNext()) {
+                    recommendKeys.add(cursor.next());
+                }
+            }
+            if (!recommendKeys.isEmpty()) {
+                stringRedisTemplate.delete(recommendKeys);
+            }
+        } catch (Exception e) {
+            log.warn("清除文章相关缓存失败, articleId={}: {}", articleId, e.getMessage());
+        }
+        // 递增数据版本号，通知客户端数据已变更
+        try {
+            RedisConfig.incrementDataVersion(stringRedisTemplate);
+        } catch (Exception e) {
+            log.debug("递增数据版本号失败: {}", e.getMessage());
+        }
     }
 }

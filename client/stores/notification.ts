@@ -7,10 +7,6 @@ export const useNotificationStore = defineStore('notification', () => {
   const unreadCount = ref<number>(0)
   // 通知列表
   const notifications = ref<Notification[]>([])
-  // WebSocket连接实例
-  const wsInstance = ref<WebSocket | null>(null)
-  // WebSocket连接状态
-  const isConnected = ref<boolean>(false)
 
   // 设置未读数量
   const setUnreadCount = (count: number) => {
@@ -57,67 +53,9 @@ export const useNotificationStore = defineStore('notification', () => {
     unreadCount.value = 0
   }
 
-  // 连接WebSocket
-  const connectWebSocket = () => {
-    if (!import.meta.client) return
-
-    const config = useRuntimeConfig()
-    const userStore = useUserStore()
-    if (!userStore.token) return
-
-    const wsBase = config.public.wsBase as string
-    let wsUrl: string
-    if (/^wss?:\/\//.test(wsBase)) {
-      wsUrl = `${wsBase}/notifications?token=${userStore.token}`
-    } else {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      wsUrl = `${protocol}//${window.location.host}${wsBase}/notifications?token=${userStore.token}`
-    }
-    const ws = new WebSocket(wsUrl)
-
-    ws.onopen = () => {
-      isConnected.value = true
-    }
-
-    ws.onmessage = (event) => {
-      try {
-        const notification: Notification = JSON.parse(event.data)
-        addNotification(notification)
-      } catch {
-        // 忽略无效消息
-      }
-    }
-
-    ws.onclose = () => {
-      isConnected.value = false
-      // 3秒后自动重连
-      setTimeout(() => {
-        if (userStore.isLoggedIn) {
-          connectWebSocket()
-        }
-      }, 3000)
-    }
-
-    ws.onerror = () => {
-      isConnected.value = false
-    }
-
-    wsInstance.value = ws
-  }
-
-  // 断开WebSocket
-  const disconnectWebSocket = () => {
-    if (wsInstance.value) {
-      wsInstance.value.close()
-      wsInstance.value = null
-      isConnected.value = false
-    }
-  }
-
   return {
     unreadCount,
     notifications,
-    isConnected,
     setUnreadCount,
     incrementUnread,
     decrementUnread,
@@ -125,7 +63,5 @@ export const useNotificationStore = defineStore('notification', () => {
     addNotification,
     markAsRead,
     markAllAsRead,
-    connectWebSocket,
-    disconnectWebSocket,
   }
 })

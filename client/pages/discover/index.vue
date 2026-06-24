@@ -1,27 +1,9 @@
 <template>
   <!-- 发现页 -->
   <div class="max-w-4xl mx-auto px-4 py-6">
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('nav.discover') }}</h1>
-      <button
-        class="flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors px-3 py-2 rounded-full hover:bg-primary/5 no-tap-highlight"
-        :disabled="refreshing"
-        @click="refreshAll"
-      >
-        <svg
-          class="w-4 h-4 transition-transform"
-          :class="{ 'animate-spin': refreshing }"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        <span>{{ refreshing ? t('common.refreshing') : t('common.refresh') }}</span>
-      </button>
-    </div>
 
-    <PullToRefresh :on-refresh="refreshAll">
+
+    <PullToRefresh :on-refresh="() => refreshAll()" :error="usersError || rankError || tagsError">
       <!-- 热榜 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
@@ -95,11 +77,20 @@
             <span v-if="usersUpdateTime" class="text-xs text-gray-400">{{ usersUpdateTime }}</span>
           </div>
           <button
-            class="text-sm text-primary hover:text-primary-dark transition-colors"
+            class="flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="usersLoading"
-            @click="fetchRecommendUsers"
+            @click="shuffleUsers"
           >
-            换一批
+            <svg
+              class="w-4 h-4 transition-transform"
+              :class="{ 'animate-spin': usersLoading }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{{ usersLoading ? t('common.refreshing') : t('common.refresh') }}</span>
           </button>
         </div>
         <div v-if="usersLoading" class="space-y-3">
@@ -123,6 +114,7 @@
 <script setup lang="ts">
 /** 发现页：热榜、热门标签、推荐用户 - 联网实时加载确保数据真实性 */
 import type { RankItem, User, Tag, ApiResponse } from '~/types'
+import { storage } from '~/utils/storage'
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()
@@ -130,26 +122,115 @@ const { t } = useI18n()
 
 const hotRankItems = ref<RankItem[]>([])
 const hotTags = ref<Tag[]>([])
-const recommendUsers = ref<User[]>([])
 
 const rankLoading = ref(false)
 const tagsLoading = ref(false)
-const usersLoading = ref(false)
-const refreshing = ref(false)
 
 const rankError = ref('')
 const tagsError = ref('')
-const usersError = ref('')
 
 const rankUpdateTime = ref('')
 const tagsUpdateTime = ref('')
 const usersUpdateTime = ref('')
 
-// 推荐用户换一批的偏移量
-const userOffset = ref(0)
-
 // 请求缓存
 const { cachedRequest, forceRequest, invalidate } = useRequestCache({ ttl: 5 * 60 * 1000 })
+
+// 推荐用户"换一批"：使用 useShuffleRefresh 实现去重和洗牌
+const {
+  items: recommendUsers,
+  loading: usersLoading,
+  error: usersError,
+  refresh: shuffleUsers,
+} = useShuffleRefresh<User>({
+  fetchFn: async (offset, limit) => {
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<User[]>>(`${base}/users/recommend`, {
+      params: { limit, offset, _t: Date.now() },
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+      cache: 'no-store',
+    })
+    return res?.data || []
+  },
+  limit: 5,
+  getItemId: (user) => user.id,
+  shuffle: true,
+  debounceMs: 300,
+})
+
+// 监听推荐用户数据变化后更新时间
+watch(recommendUsers, () => {
+  usersUpdateTime.value = formatTime()
+})
+
+// 全部刷新：使用 useRefresh 统一管理
+const { refresh: refreshAll } = useRefresh({
+  onRefresh: async () => {
+    const base = getApiBase()
+
+    const forceFetchRank = async () => {
+      rankLoading.value = true
+      rankError.value = ''
+      try {
+        const url = `${base}/rank/hot`
+        const params = { period: 'daily' }
+        const res = await forceRequest<ApiResponse<RankItem[]>>(
+          () => $fetch<ApiResponse<RankItem[]>>(url, {
+            params: { ...params, _t: Date.now() },
+            cache: 'no-store',
+          }),
+          url,
+          params,
+        )
+        hotRankItems.value = res?.data || []
+        rankUpdateTime.value = formatTime()
+      } catch {
+        rankError.value = '热榜加载失败，请稍后重试'
+        hotRankItems.value = []
+      } finally {
+        rankLoading.value = false
+      }
+    }
+
+    const forceFetchTags = async () => {
+      tagsLoading.value = true
+      tagsError.value = ''
+      try {
+        const url = `${base}/tags/hot`
+        const params = { limit: 20 }
+        const res = await forceRequest<ApiResponse<Tag[]>>(
+          () => $fetch<ApiResponse<Tag[]>>(url, {
+            params: { ...params, _t: Date.now() },
+            cache: 'no-store',
+          }),
+          url,
+          params,
+        )
+        hotTags.value = res?.data || []
+        tagsUpdateTime.value = formatTime()
+      } catch {
+        tagsError.value = '热门标签加载失败，请稍后重试'
+        hotTags.value = []
+      } finally {
+        tagsLoading.value = false
+      }
+    }
+
+    const forceFetchUsers = async () => {
+      await shuffleUsers()
+      usersUpdateTime.value = formatTime()
+    }
+
+    await Promise.allSettled([
+      forceFetchRank(),
+      forceFetchTags(),
+      forceFetchUsers(),
+    ])
+  },
+  debounceMs: 500,
+  showError: true,
+  errorMessage: '刷新失败，请稍后重试',
+})
 
 // 自动刷新定时器
 let autoRefreshTimer: ReturnType<typeof setInterval> | null = null
@@ -236,122 +317,8 @@ const fetchHotTags = async () => {
   }
 }
 
-// 获取推荐用户 - 使用缓存避免重复请求
-const fetchRecommendUsers = async () => {
-  usersLoading.value = true
-  usersError.value = ''
-  try {
-    const base = getApiBase()
-    const url = `${base}/users/recommend`
-    const params = { limit: 5, offset: userOffset.value }
-    const res = await cachedRequest<ApiResponse<User[]>>(
-      () => $fetch<ApiResponse<User[]>>(url, {
-        params: { ...params, _t: Date.now() },
-        headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-        cache: 'no-store',
-      }),
-      url,
-      params,
-    )
-    recommendUsers.value = res?.data || []
-    userOffset.value += 5
-    usersUpdateTime.value = formatTime()
-  } catch {
-    usersError.value = '推荐用户加载失败，请稍后重试'
-    recommendUsers.value = []
-  } finally {
-    usersLoading.value = false
-  }
-}
-
-// 全部刷新 - 使用 forceRequest 强制获取最新数据
-const refreshAll = async () => {
-  if (refreshing.value) return
-  refreshing.value = true
-  userOffset.value = 0
-
-  const base = getApiBase()
-
-  const forceFetchRank = async () => {
-    rankLoading.value = true
-    rankError.value = ''
-    try {
-      const url = `${base}/rank/hot`
-      const params = { period: 'daily' }
-      const res = await forceRequest<ApiResponse<RankItem[]>>(
-        () => $fetch<ApiResponse<RankItem[]>>(url, {
-          params: { ...params, _t: Date.now() },
-          cache: 'no-store',
-        }),
-        url,
-        params,
-      )
-      hotRankItems.value = res?.data || []
-      rankUpdateTime.value = formatTime()
-    } catch {
-      rankError.value = '热榜加载失败，请稍后重试'
-      hotRankItems.value = []
-    } finally {
-      rankLoading.value = false
-    }
-  }
-
-  const forceFetchTags = async () => {
-    tagsLoading.value = true
-    tagsError.value = ''
-    try {
-      const url = `${base}/tags/hot`
-      const params = { limit: 20 }
-      const res = await forceRequest<ApiResponse<Tag[]>>(
-        () => $fetch<ApiResponse<Tag[]>>(url, {
-          params: { ...params, _t: Date.now() },
-          cache: 'no-store',
-        }),
-        url,
-        params,
-      )
-      hotTags.value = res?.data || []
-      tagsUpdateTime.value = formatTime()
-    } catch {
-      tagsError.value = '热门标签加载失败，请稍后重试'
-      hotTags.value = []
-    } finally {
-      tagsLoading.value = false
-    }
-  }
-
-  const forceFetchUsers = async () => {
-    usersLoading.value = true
-    usersError.value = ''
-    try {
-      const url = `${base}/users/recommend`
-      const params = { limit: 5, offset: 0 }
-      const res = await forceRequest<ApiResponse<User[]>>(
-        () => $fetch<ApiResponse<User[]>>(url, {
-          params: { ...params, _t: Date.now() },
-          cache: 'no-store',
-        }),
-        url,
-        params,
-      )
-      recommendUsers.value = res?.data || []
-      userOffset.value = 5
-      usersUpdateTime.value = formatTime()
-    } catch {
-      usersError.value = '推荐用户加载失败，请稍后重试'
-      recommendUsers.value = []
-    } finally {
-      usersLoading.value = false
-    }
-  }
-
-  await Promise.allSettled([
-    forceFetchRank(),
-    forceFetchTags(),
-    forceFetchUsers(),
-  ])
-  refreshing.value = false
-}
+// 获取推荐用户 - 委托给 useShuffleRefresh
+const fetchRecommendUsers = () => shuffleUsers()
 
 // 关注/取关
 const toggleFollow = async (userId: number) => {
@@ -435,6 +402,31 @@ recommendUsers.value = userData.value
 
 // 客户端挂载后：如果SSR数据为空则立即获取，并启动自动刷新
 onMounted(() => {
+  // 将 SSR 获取的数据持久化到 localStorage
+  if (import.meta.client) {
+    const base = getApiBase()
+    const cacheKey = (url: string, params?: Record<string, any>) => {
+      const sortedParams = params
+        ? JSON.stringify(Object.entries(params).sort(([a], [b]) => a.localeCompare(b)))
+        : ''
+      return `${url}:${sortedParams}`
+    }
+    const persistData = (key: string, data: any) => {
+      if (data && (Array.isArray(data) ? data.length > 0 : true)) {
+        storage.set(`req_cache_${key}`, { data, cachedAt: Date.now(), ttl: 5 * 60 * 1000 }, 30 * 60 * 1000)
+      }
+    }
+    if (hotRankItems.value.length > 0) {
+      persistData(cacheKey(`${base}/rank/hot`, { period: 'daily' }), hotRankItems.value)
+    }
+    if (hotTags.value.length > 0) {
+      persistData(cacheKey(`${base}/tags/hot`, { limit: 20 }), hotTags.value)
+    }
+    if (recommendUsers.value.length > 0) {
+      persistData(cacheKey(`${base}/users/recommend`, { limit: 5 }), recommendUsers.value)
+    }
+  }
+
   if (hotRankItems.value.length === 0) {
     fetchHotRank()
   }
@@ -442,7 +434,7 @@ onMounted(() => {
     fetchHotTags()
   }
   if (recommendUsers.value.length === 0) {
-    fetchRecommendUsers()
+    shuffleUsers()
   }
   startAutoRefresh()
 })

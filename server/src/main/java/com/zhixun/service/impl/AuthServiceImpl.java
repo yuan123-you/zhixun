@@ -142,15 +142,23 @@ public class AuthServiceImpl implements AuthService {
         // 创建用户记录
         userMapper.insert(user);
 
-        // 同步到 OpenSearch
-        openSearchSyncService.syncUser(user.getId());
+        // 同步到 OpenSearch（非关键操作，失败不影响注册事务）
+        try {
+            openSearchSyncService.syncUser(user.getId());
+        } catch (Exception e) {
+            log.error("注册用户同步到OpenSearch失败, userId={}: {}", user.getId(), e.getMessage());
+        }
 
         // 创建默认用户设置记录
         UserSettings userSettings = new UserSettings();
         userSettings.setUserId(user.getId());
         userSettings.setNotifySystem(1);
         userSettings.setNotifyInteract(1);
-        userSettingsMapper.insert(userSettings);
+        try {
+            userSettingsMapper.insert(userSettings);
+        } catch (Exception e) {
+            log.error("创建用户默认设置失败, userId={}: {}", user.getId(), e.getMessage());
+        }
 
         // 生成双 Token
         return buildTokenResponse(user);

@@ -30,9 +30,25 @@ export default defineNuxtPlugin(() => {
           const response = await authApi.refreshToken(refreshToken)
           const authData = response.data.data
           userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
+          userStore.setUser(authData.userInfo)
         } catch {
           // 刷新失败，清除无效的refreshToken
           userStore.logout()
+        }
+      }
+    }
+
+    // 已登录时从后端获取最新用户信息，确保刷新后数据是最新的
+    const fetchLatestUserInfo = async () => {
+      if (userStore.token && userStore.userInfo?.id) {
+        try {
+          const { get: apiGet } = useApi()
+          const response = await apiGet<any>(`/users/${userStore.userInfo.id}`)
+          if (response.data?.data) {
+            userStore.setUser(response.data.data)
+          }
+        } catch {
+          // 获取失败不影响当前缓存的用户信息
         }
       }
     }
@@ -44,10 +60,10 @@ export default defineNuxtPlugin(() => {
       }
     })
 
-    // 延迟执行Token检查，不阻塞首屏渲染
+    // 延迟执行Token检查和用户信息刷新，不阻塞首屏渲染
     requestIdleCallback
-      ? requestIdleCallback(() => checkAndRefreshToken())
-      : setTimeout(() => checkAndRefreshToken(), 1000)
+      ? requestIdleCallback(() => { checkAndRefreshToken(); fetchLatestUserInfo() })
+      : setTimeout(() => { checkAndRefreshToken(); fetchLatestUserInfo() }, 1000)
   }
 
   // 提供全局 $api 对象

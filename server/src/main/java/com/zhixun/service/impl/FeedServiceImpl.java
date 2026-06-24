@@ -77,6 +77,16 @@ public class FeedServiceImpl implements FeedService {
     /** 推荐缓存 TTL（10分钟） */
     private static final long RECOMMEND_TTL_MINUTES = 10;
 
+    /** 最新动态缓存 Key 前缀 */
+    private static final String LATEST_FEED_KEY_PREFIX = "feed:latest:";
+    /** 最新动态缓存 TTL（2分钟） */
+    private static final long LATEST_FEED_TTL_MINUTES = 2;
+
+    /** 热门动态缓存 Key 前缀 */
+    private static final String HOT_FEED_KEY_PREFIX = "feed:hot:";
+    /** 热门动态缓存 TTL（5分钟） */
+    private static final long HOT_FEED_TTL_MINUTES = 5;
+
     /** 关注动态缓存 Key 前缀 */
     private static final String FOLLOWING_FEED_KEY_PREFIX = "feed:following:";
     /** 关注动态缓存 TTL（5分钟） */
@@ -149,6 +159,14 @@ public class FeedServiceImpl implements FeedService {
     @Override
     @Slave
     public PageResult<ArticleVO> getLatestFeed(Integer page, Integer pageSize) {
+        // 尝试从 Redis 缓存获取
+        String cacheKey = LATEST_FEED_KEY_PREFIX + page + ":" + pageSize;
+        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cachedIds != null) {
+            return getPagedFromCache(cacheKey, page, pageSize);
+        }
+
+        // 缓存未命中，查询数据库
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .orderByDesc(Article::getIsTop)
@@ -158,6 +176,16 @@ public class FeedServiceImpl implements FeedService {
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
         List<ArticleVO> voList = convertToVOList(result.getRecords());
+
+        // 缓存文章ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
+        if (!CollectionUtils.isEmpty(voList)) {
+            String idsStr = voList.stream()
+                    .map(vo -> String.valueOf(vo.getId()))
+                    .collect(Collectors.joining(","));
+            long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(LATEST_FEED_TTL_MINUTES);
+            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+        }
+
         return new PageResult<>(voList, result.getTotal(), page, pageSize);
     }
 
@@ -234,6 +262,14 @@ public class FeedServiceImpl implements FeedService {
     @Override
     @Slave
     public PageResult<ArticleVO> getHotFeed(Integer page, Integer pageSize) {
+        // 尝试从 Redis 缓存获取
+        String cacheKey = HOT_FEED_KEY_PREFIX + page + ":" + pageSize;
+        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cachedIds != null) {
+            return getPagedFromCache(cacheKey, page, pageSize);
+        }
+
+        // 缓存未命中，查询数据库
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .orderByDesc(Article::getViewCount)
@@ -244,6 +280,16 @@ public class FeedServiceImpl implements FeedService {
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
         List<ArticleVO> voList = convertToVOList(result.getRecords());
+
+        // 缓存文章ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
+        if (!CollectionUtils.isEmpty(voList)) {
+            String idsStr = voList.stream()
+                    .map(vo -> String.valueOf(vo.getId()))
+                    .collect(Collectors.joining(","));
+            long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(HOT_FEED_TTL_MINUTES);
+            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+        }
+
         return new PageResult<>(voList, result.getTotal(), page, pageSize);
     }
 

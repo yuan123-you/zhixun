@@ -16,13 +16,13 @@ export const useCache = () => {
 
   /**
    * 获取分类列表（带缓存）
-   * 首次加载后缓存 30 分钟，过期后先返回旧数据再后台刷新
+   * 首次加载后缓存 10 分钟，过期后先返回旧数据再后台刷新
    */
   const getCategories = async (): Promise<Category[]> => {
     const cached = storage.get<CacheItem<Category[]>>(STORAGE_KEYS.CATEGORIES_CACHE)
 
     // 缓存未过期，直接返回
-    if (cached && Date.now() - cached.cachedAt < TTL.MINUTE_30) {
+    if (cached && Date.now() - cached.cachedAt < TTL.MINUTE_10) {
       return cached.data
     }
 
@@ -51,7 +51,7 @@ export const useCache = () => {
   const getTags = async (): Promise<Tag[]> => {
     const cached = storage.get<CacheItem<Tag[]>>(STORAGE_KEYS.TAGS_CACHE)
 
-    if (cached && Date.now() - cached.cachedAt < TTL.MINUTE_30) {
+    if (cached && Date.now() - cached.cachedAt < TTL.MINUTE_10) {
       return cached.data
     }
 

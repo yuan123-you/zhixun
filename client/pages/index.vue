@@ -1,7 +1,7 @@
 <template>
   <!-- 首页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-4 2xl:px-8 py-6">
-    <PullToRefresh :on-refresh="handleRefresh">
+    <PullToRefresh :on-refresh="() => handleRefresh()" :error="error || undefined">
     <div class="flex gap-6">
       <!-- 左侧主内容区 -->
       <div class="flex-1 min-w-0">
@@ -76,6 +76,7 @@
 
 import type { Article, PageResult, ApiResponse, RankItem } from '~/types'
 import type { BannerItem, AnnouncementItem } from '~/api/banner'
+import { storage } from '~/utils/storage'
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()
@@ -93,7 +94,6 @@ const tabs = [
 const activeTab = ref('recommend')
 const articles = ref<Article[]>([])
 const loading = ref(false)
-const refreshing = ref(false)
 const hasMore = ref(true)
 const error = ref<string | null>(null)
 const page = ref(1)
@@ -136,18 +136,28 @@ const switchTab = (key: string) => {
   if (key === 'recommend') {
     refreshKey.value = ''
   }
+  // 切换Tab时失效对应的feed缓存
+  const { invalidateByPrefix } = useRequestCache()
+  const feedPrefixMap: Record<string, string> = {
+    recommend: '/feed/recommend',
+    hot: '/feed/hot',
+    latest: '/feed/latest',
+    following: '/feed/following',
+  }
+  const prefix = feedPrefixMap[key]
+  if (prefix) {
+    invalidateByPrefix(prefix)
+  }
   fetchArticles()
 }
 
-// 推荐刷新：换一批
-const handleRefresh = async () => {
-  if (refreshing.value) return
-  refreshing.value = true
-  error.value = null
-  page.value = 1
-  hasMore.value = true
+// 推荐刷新：换一批 - 使用 useRefresh 统一管理加载状态和错误处理
+const { loading: refreshing, refresh: handleRefresh } = useRefresh({
+  onRefresh: async () => {
+    error.value = null
+    page.value = 1
+    hasMore.value = true
 
-  try {
     const base = getApiBase()
     const params: Record<string, any> = {
       page: 1,
@@ -168,13 +178,14 @@ const handleRefresh = async () => {
     articles.value = items
     refreshKey.value = (data as any)?.refresh_key || ''
     hasMore.value = items.length >= 20
-  } catch {
-    error.value = t('common.loadFailed')
+  },
+  debounceMs: 300,
+  showError: true,
+  errorMessage: undefined, // 使用默认错误消息
+  onError: () => {
     hasMore.value = false
-  } finally {
-    refreshing.value = false
-  }
-}
+  },
+})
 
 // 获取文章列表
 const fetchArticles = async () => {
@@ -279,18 +290,18 @@ const refreshBannerAndAnnouncements = async () => {
 }
 
 // SSR数据获取 - 使用单个 useAsyncData + Promise.all 并行请求，避免串行等待
+// 热门排行榜已移至客户端懒加载，减少 SSR 请求数
 const { data: homeData } = await useAsyncData('home-init', async () => {
   const base = getApiBase()
   const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
 
-  const [feedRes, bannerRes, announcementRes, hotRankRes] = await Promise.all([
+  const [feedRes, bannerRes, announcementRes] = await Promise.all([
     $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
       params: { page: 1, pageSize: 20 },
       headers,
     }).catch(() => null),
     $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }).catch(() => null),
     $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, { headers }).catch(() => null),
-    $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, { params: { period: 'all', limit: 10 }, headers }).catch(() => null),
   ])
 
   return {
@@ -298,15 +309,70 @@ const { data: homeData } = await useAsyncData('home-init', async () => {
     refreshKey: (feedRes?.data as any)?.refresh_key || '',
     banners: bannerRes?.data || [],
     announcements: announcementRes?.data || [],
-    hotRank: hotRankRes?.data || [],
   }
-}, { default: () => ({ feed: [] as Article[], refreshKey: '', banners: [] as BannerItem[], announcements: [] as AnnouncementItem[], hotRank: [] as RankItem[] }) })
+}, {
+  default: () => ({ feed: [] as Article[], refreshKey: '', banners: [] as BannerItem[], announcements: [] as AnnouncementItem[] }),
+  // 客户端缓存：60秒内使用缓存，避免导航回首页时重复请求
+  getCachedData(key, nuxtApp) {
+    const cached = nuxtApp.payload.data[key] || nuxtApp.static.data[key]
+    if (!cached) return undefined
+    const cacheTimestamp = (nuxtApp.payload as any)._homeInitTimestamp || 0
+    const now = Date.now()
+    if (now - cacheTimestamp > 60 * 1000) return undefined
+    return cached
+  },
+})
+
+// 记录缓存时间戳，供 getCachedData 判断过期
+if (import.meta.client) {
+  const nuxtApp = useNuxtApp()
+  ;(nuxtApp.payload as any)._homeInitTimestamp = Date.now()
+}
 
 articles.value = homeData.value.feed
 refreshKey.value = homeData.value.refreshKey
 bannerList.value = homeData.value.banners
 announcementList.value = homeData.value.announcements
-hotRankItems.value = homeData.value.hotRank
+
+// 热门排行榜：客户端懒加载，减少 SSR 请求压力
+const { data: lazyHotRank } = useLazyData<RankItem[]>({
+  fetchFn: async () => {
+    const base = getApiBase()
+    const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
+    const res = await $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, {
+      params: { period: 'all', limit: 10 },
+      headers,
+    }).catch(() => null)
+    return res?.data || []
+  },
+  immediate: true,
+  defaultData: [],
+})
+watch(lazyHotRank, (val) => {
+  if (val && val.length > 0) {
+    hotRankItems.value = val
+  }
+})
+
+// 客户端挂载后：将 SSR 数据持久化到 localStorage，供后续页面导航使用
+onMounted(() => {
+  if (import.meta.client && bannerList.value.length > 0) {
+    const base = getApiBase()
+    // 生成与 useRequestCache 一致的缓存 key
+    const cacheKey = (url: string, params?: Record<string, any>) => {
+      const sortedParams = params
+        ? JSON.stringify(Object.entries(params).sort(([a], [b]) => a.localeCompare(b)))
+        : ''
+      return `${url}:${sortedParams}`
+    }
+    // 直接写入 localStorage 持久化，供下次页面加载时使用
+    const persistData = (key: string, data: any) => {
+      storage.set(`req_cache_${key}`, { data, cachedAt: Date.now(), ttl: 10 * 60 * 1000 }, 30 * 60 * 1000)
+    }
+    persistData(cacheKey(`${base}/banners`), bannerList.value)
+    persistData(cacheKey(`${base}/announcements`), announcementList.value)
+  }
+})
 
 // 页面元信息
 useHead({

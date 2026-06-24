@@ -1,5 +1,6 @@
 import { ref, shallowRef } from 'vue'
 import { get } from '@/api/request'
+import { storage, TTL } from '@/utils/storage'
 
 /** 缓存条目 */
 interface CacheEntry<T> {
@@ -18,7 +19,14 @@ interface RequestCacheOptions {
   retryCount?: number
   /** 重试间隔（毫秒），默认 1000 */
   retryInterval?: number
+  /** 是否启用 localStorage 持久化，默认 true */
+  persist?: boolean
+  /** localStorage 持久化 TTL，默认 30 分钟 */
+  persistTtl?: number
 }
+
+/** localStorage 持久化缓存键前缀 */
+const PERSIST_KEY_PREFIX = 'req_cache_'
 
 /** 全局缓存存储 */
 const cacheMap = new Map<string, CacheEntry<unknown>>()
@@ -34,6 +42,26 @@ function createCacheKey(url: string, params?: Record<string, unknown>): string {
     .map((k) => `${k}=${JSON.stringify(params[k])}`)
     .join('&')
   return `${url}?${sorted}`
+}
+
+/** 生成 localStorage 持久化键 */
+function persistKey(cacheKey: string): string {
+  return `${PERSIST_KEY_PREFIX}${cacheKey}`
+}
+
+/** 从 localStorage 读取持久化缓存 */
+function readPersistedCache<T>(cacheKey: string): CacheEntry<T> | null {
+  return storage.get<CacheEntry<T>>(persistKey(cacheKey))
+}
+
+/** 写入 localStorage 持久化缓存 */
+function writePersistedCache<T>(cacheKey: string, entry: CacheEntry<T>, persistTtl: number): void {
+  storage.set(persistKey(cacheKey), entry, persistTtl)
+}
+
+/** 删除 localStorage 持久化缓存 */
+function removePersistedCache(cacheKey: string): void {
+  storage.remove(persistKey(cacheKey))
 }
 
 /** 清理过期缓存 */
@@ -55,6 +83,7 @@ function pruneExpired(): void {
  * - 支持 TTL 过期
  * - 支持 stale-while-revalidate
  * - 支持强制刷新与缓存失效
+ * - 支持 localStorage 持久化（跨页面刷新保留缓存）
  */
 export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) {
   const {
@@ -62,6 +91,8 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
     staleWhileRevalidate = true,
     retryCount = 0,
     retryInterval = 1000,
+    persist = true,
+    persistTtl = TTL.MINUTE_30,
   } = options
 
   const loading = ref(false)
@@ -86,7 +117,7 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
     // 定期清理
     pruneExpired()
 
-    // 1. 非强制刷新时，检查缓存
+    // 1. 非强制刷新时，检查内存缓存
     if (!force) {
       const cached = cacheMap.get(cacheKey) as CacheEntry<T> | undefined
       if (cached) {
@@ -103,9 +134,34 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
           return cached.data
         }
       }
+
+      // 2. 内存缓存未命中，尝试 localStorage 持久化缓存
+      if (persist) {
+        const persisted = readPersistedCache<T>(cacheKey)
+        if (persisted) {
+          const age = Date.now() - persisted.timestamp
+          // 持久化缓存未过期，回填内存缓存并返回
+          if (age < effectiveTtl) {
+            cacheMap.set(cacheKey, persisted)
+            data.value = persisted.data
+            // 后台静默刷新以获取最新数据
+            if (staleWhileRevalidate) {
+              backgroundRefresh(cacheKey, url, params, effectiveTtl)
+            }
+            return persisted.data
+          }
+          // 持久化缓存过期但在 persistTtl 内，先返回旧数据后台刷新
+          if (age < persistTtl && staleWhileRevalidate) {
+            cacheMap.set(cacheKey, persisted)
+            data.value = persisted.data
+            backgroundRefresh(cacheKey, url, params, effectiveTtl)
+            return persisted.data
+          }
+        }
+      }
     }
 
-    // 2. 检查是否有进行中的相同请求（去重）
+    // 3. 检查是否有进行中的相同请求（去重）
     const pending = pendingMap.get(cacheKey) as Promise<T> | undefined
     if (pending) {
       const result = await pending
@@ -113,7 +169,7 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
       return result
     }
 
-    // 3. 发起新请求
+    // 4. 发起新请求
     loading.value = true
     error.value = null
 
@@ -125,11 +181,17 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
       data.value = result
 
       // 写入缓存
-      cacheMap.set(cacheKey, {
+      const entry: CacheEntry<T> = {
         data: result,
         timestamp: Date.now(),
         ttl: effectiveTtl,
-      })
+      }
+      cacheMap.set(cacheKey, entry)
+
+      // 写入 localStorage 持久化
+      if (persist) {
+        writePersistedCache(cacheKey, entry, persistTtl)
+      }
 
       return result
     } catch (err) {
@@ -184,11 +246,15 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
     refreshPromise
       .then((result) => {
         data.value = result
-        cacheMap.set(cacheKey, {
+        const entry: CacheEntry<T> = {
           data: result,
           timestamp: Date.now(),
           ttl: effectiveTtl,
-        })
+        }
+        cacheMap.set(cacheKey, entry)
+        if (persist) {
+          writePersistedCache(cacheKey, entry, persistTtl)
+        }
       })
       .catch(() => {
         // 后台刷新失败不影响已展示的旧数据
@@ -204,6 +270,9 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
   function invalidate(url: string, params?: Record<string, unknown>): void {
     const cacheKey = createCacheKey(url, params)
     cacheMap.delete(cacheKey)
+    if (persist) {
+      removePersistedCache(cacheKey)
+    }
   }
 
   /**
@@ -213,6 +282,18 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
     for (const key of cacheMap.keys()) {
       if (key.startsWith(urlPrefix)) {
         cacheMap.delete(key)
+        if (persist) {
+          removePersistedCache(key)
+        }
+      }
+    }
+    // 也清理 localStorage 中匹配前缀的缓存
+    if (persist) {
+      const storageKeys = storage.keys()
+      for (const sk of storageKeys) {
+        if (sk.startsWith(PERSIST_KEY_PREFIX + urlPrefix)) {
+          storage.remove(sk)
+        }
       }
     }
   }
@@ -223,6 +304,14 @@ export function useRequestCache<T = unknown>(options: RequestCacheOptions = {}) 
   function clearAll(): void {
     cacheMap.clear()
     pendingMap.clear()
+    if (persist) {
+      const storageKeys = storage.keys()
+      for (const sk of storageKeys) {
+        if (sk.startsWith(PERSIST_KEY_PREFIX)) {
+          storage.remove(sk)
+        }
+      }
+    }
   }
 
   return {

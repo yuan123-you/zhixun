@@ -12,6 +12,7 @@ import com.zhixun.entity.SensitiveWhitelist;
 import com.zhixun.entity.SensitiveWord;
 import com.zhixun.entity.SecurityAuditLog;
 import com.zhixun.service.AdminService;
+import com.zhixun.service.ArticleService;
 import com.zhixun.service.CommentService;
 import com.zhixun.service.OperationLogService;
 import com.zhixun.service.OpenSearchSyncService;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +57,7 @@ public class AdminController {
     private final SecurityUtil securityUtil;
     private final OpenSearchSyncService openSearchSyncService;
     private final CommentService commentService;
+    private final ArticleService articleService;
 
     @Autowired(required = false)
     private SynonymService synonymService;
@@ -314,5 +317,24 @@ public class AdminController {
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         return R.ok(operationLogService.getLogStats(startDate, endDate));
+    }
+
+    /**
+     * 缓存一致性检查
+     * 对比 Redis 缓存中的数据与数据库中的最新数据，返回不一致的条目
+     */
+    @GetMapping("/cache/consistency")
+    public R<Map<String, Object>> checkCacheConsistency() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Map<String, Object> articleResult = articleService.checkArticleDetailConsistency();
+            result.put("articleDetail", articleResult);
+            result.put("consistent", articleResult.get("inconsistentCount") instanceof Integer
+                    && (Integer) articleResult.get("inconsistentCount") == 0);
+        } catch (Exception e) {
+            result.put("consistent", false);
+            result.put("error", e.getMessage());
+        }
+        return R.ok(result);
     }
 }

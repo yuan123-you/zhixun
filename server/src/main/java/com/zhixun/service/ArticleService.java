@@ -9,6 +9,7 @@ import com.zhixun.vo.ArticleDetailVO;
 import com.zhixun.vo.ArticleVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 文章服务接口
@@ -88,4 +89,12 @@ public interface ArticleService {
      * 定时发布：将到期的待审核文章发布
      */
     void publishScheduledArticles();
+
+    /**
+     * 检查文章详情缓存与数据库数据的一致性
+     * 返回不一致的文章ID列表及修复结果
+     *
+     * @return 一致性检查结果（包含不一致条目数、修复条目数等）
+     */
+    Map<String, Object> checkArticleDetailConsistency();
 }

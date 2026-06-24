@@ -176,6 +176,19 @@ export const useApi = () => {
   instance.interceptors.response.use(
     (response: AxiosResponse<ApiResponse>) => {
       const { data } = response
+
+      // 检查数据版本号，版本号变化时清除请求缓存
+      const serverVersion = response.headers['x-data-version']
+      if (serverVersion && import.meta.client) {
+        const storedVersion = localStorage.getItem('data-version')
+        if (storedVersion && serverVersion !== storedVersion) {
+          // 版本号变化，清除所有请求缓存
+          const { clearAll } = useRequestCache()
+          clearAll()
+        }
+        localStorage.setItem('data-version', String(serverVersion))
+      }
+
       // 业务错误码处理
       if (data.code !== 0 && data.code !== 200) {
         // Token过期，尝试刷新

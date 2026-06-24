@@ -18,6 +18,7 @@ import com.zhixun.vo.TagVO;
 import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class RankServiceImpl implements RankService {
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
     private final StringRedisTemplate stringRedisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /** 排行榜缓存 Key 前缀 */
     private static final String RANK_KEY_PREFIX = "rank:hot:";
@@ -81,28 +83,13 @@ public class RankServiceImpl implements RankService {
         }
 
         // 缓存未命中，查询数据库
-        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
+        List<Article> articles = queryHotArticles(period, categoryId, limit);
 
-        // 按时间周期筛选
-        LocalDateTime since = getSinceTime(period);
-        if (since != null) {
-            wrapper.ge(Article::getCreatedAt, since);
+        // 如果指定周期内没有文章，回退到全时段查询
+        if (articles.isEmpty() && period != null) {
+            log.info("周期[{}]内无文章，回退到全时段查询", period);
+            articles = queryHotArticles(null, categoryId, limit);
         }
-
-        // 按分类筛选
-        if (categoryId != null) {
-            wrapper.eq(Article::getCategoryId, categoryId);
-        }
-
-        // 按热度排序（浏览量*1 + 点赞*5 + 评论*3 + 收藏*8 的近似排序）
-        wrapper.orderByDesc(Article::getViewCount)
-                .orderByDesc(Article::getLikeCount)
-                .orderByDesc(Article::getCommentCount)
-                .orderByDesc(Article::getCollectCount)
-                .last("LIMIT " + limit * 2);
-
-        List<Article> articles = articleMapper.selectList(wrapper);
 
         // 计算热度分并排序
         List<Article> sortedArticles = articles.stream()
@@ -134,9 +121,25 @@ public class RankServiceImpl implements RankService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<HotArticleVO> getHotArticles(Long categoryId, Integer limit) {
         if (limit == null || limit <= 0) {
             limit = 10;
+        }
+
+        // 构建缓存 Key
+        String cacheKey = "rank:hot-articles:" + (categoryId != null ? categoryId : "all") + ":" + limit;
+
+        // 尝试从 Redis 缓存获取
+        try {
+            if (redisTemplate != null) {
+                Object cached = redisTemplate.opsForValue().get(cacheKey);
+                if (cached != null) {
+                    return (List<HotArticleVO>) cached;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("从Redis获取热门文章缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
@@ -152,7 +155,12 @@ public class RankServiceImpl implements RankService {
                 .last("LIMIT " + limit);
 
         List<Article> articles = articleMapper.selectList(wrapper);
-        return convertToHotArticleVOList(articles);
+        List<HotArticleVO> result = convertToHotArticleVOList(articles);
+
+        // 写入 Redis 缓存
+        cacheResult(cacheKey, result);
+
+        return result;
     }
 
     @Override
@@ -225,9 +233,25 @@ public class RankServiceImpl implements RankService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<TagVO> getHotTags(int limit) {
         if (limit <= 0) {
             limit = 10;
+        }
+
+        // 构建缓存 Key
+        String cacheKey = "rank:hot-tags:" + limit;
+
+        // 尝试从 Redis 缓存获取
+        try {
+            if (redisTemplate != null) {
+                Object cached = redisTemplate.opsForValue().get(cacheKey);
+                if (cached != null) {
+                    return (List<TagVO>) cached;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("从Redis获取热门标签缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
         // 查询最近7天已发布的文章
@@ -238,8 +262,12 @@ public class RankServiceImpl implements RankService {
                         .ge(Article::getCreatedAt, since)
                         .select(Article::getId));
 
+        // 如果最近7天无文章，回退到全时段查询
         if (CollectionUtils.isEmpty(recentArticles)) {
-            return Collections.emptyList();
+            log.info("最近7天无文章，回退到全时段热门标签查询");
+            List<TagVO> result = getAllTimeHotTags(limit);
+            cacheResult(cacheKey, result);
+            return result;
         }
 
         List<Long> articleIds = recentArticles.stream()
@@ -251,7 +279,10 @@ public class RankServiceImpl implements RankService {
                 new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
 
         if (CollectionUtils.isEmpty(articleTags)) {
-            return Collections.emptyList();
+            // 近期文章无标签关联，回退到全时段
+            List<TagVO> result = getAllTimeHotTags(limit);
+            cacheResult(cacheKey, result);
+            return result;
         }
 
         // 按标签分组统计文章数
@@ -266,7 +297,9 @@ public class RankServiceImpl implements RankService {
                 .collect(Collectors.toList());
 
         if (hotTagIds.isEmpty()) {
-            return Collections.emptyList();
+            List<TagVO> result = getAllTimeHotTags(limit);
+            cacheResult(cacheKey, result);
+            return result;
         }
 
         // 查询标签详情
@@ -275,7 +308,7 @@ public class RankServiceImpl implements RankService {
                 .collect(Collectors.toMap(Tag::getId, t -> t));
 
         // 按热度排序构建 VO
-        return hotTagIds.stream()
+        List<TagVO> result = hotTagIds.stream()
                 .map(tagId -> {
                     Tag tag = tagMap.get(tagId);
                     if (tag == null) {
@@ -290,12 +323,38 @@ public class RankServiceImpl implements RankService {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
+        // 如果结果不足，补充全时段热门标签
+        if (result.size() < limit) {
+            result = supplementWithAllTimeTags(result, limit);
+        }
+
+        // 写入 Redis 缓存
+        cacheResult(cacheKey, result);
+
+        return result;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<UserVO> getHotUsers(int limit) {
         if (limit <= 0) {
             limit = 10;
+        }
+
+        // 构建缓存 Key
+        String cacheKey = "rank:hot-users:" + limit;
+
+        // 尝试从 Redis 缓存获取
+        try {
+            if (redisTemplate != null) {
+                Object cached = redisTemplate.opsForValue().get(cacheKey);
+                if (cached != null) {
+                    return (List<UserVO>) cached;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("从Redis获取热门用户缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
         // 查询最近7天已发布的文章
@@ -307,8 +366,12 @@ public class RankServiceImpl implements RankService {
                         .select(Article::getId, Article::getAuthorId,
                                 Article::getViewCount, Article::getLikeCount));
 
+        // 如果最近7天无文章，回退到全时段查询
         if (CollectionUtils.isEmpty(recentArticles)) {
-            return Collections.emptyList();
+            log.info("最近7天无文章，回退到全时段热门用户查询");
+            List<UserVO> result = getAllTimeHotUsers(limit);
+            cacheResult(cacheKey, result);
+            return result;
         }
 
         // 按作者分组，统计浏览量总和
@@ -328,7 +391,9 @@ public class RankServiceImpl implements RankService {
                 .collect(Collectors.toList());
 
         if (hotUserIds.isEmpty()) {
-            return Collections.emptyList();
+            List<UserVO> result = getAllTimeHotUsers(limit);
+            cacheResult(cacheKey, result);
+            return result;
         }
 
         // 查询用户详情
@@ -337,7 +402,7 @@ public class RankServiceImpl implements RankService {
                 .collect(Collectors.toMap(User::getId, u -> u));
 
         // 按热度排序构建 VO
-        return hotUserIds.stream()
+        List<UserVO> result = hotUserIds.stream()
                 .map(userId -> {
                     User user = userMap.get(userId);
                     if (user == null) {
@@ -358,6 +423,16 @@ public class RankServiceImpl implements RankService {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
+        // 如果结果不足，补充全时段热门用户
+        if (result.size() < limit) {
+            result = supplementWithAllTimeUsers(result, limit);
+        }
+
+        // 写入 Redis 缓存
+        cacheResult(cacheKey, result);
+
+        return result;
     }
 
     @Override
@@ -433,6 +508,132 @@ public class RankServiceImpl implements RankService {
     }
 
     /**
+     * 查询热门文章（按周期和分类筛选）
+     */
+    private List<Article> queryHotArticles(String period, Long categoryId, Integer limit) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
+
+        // 按时间周期筛选
+        LocalDateTime since = getSinceTime(period);
+        if (since != null) {
+            wrapper.ge(Article::getCreatedAt, since);
+        }
+
+        // 按分类筛选
+        if (categoryId != null) {
+            wrapper.eq(Article::getCategoryId, categoryId);
+        }
+
+        // 按热度排序（浏览量*1 + 点赞*5 + 评论*3 + 收藏*8 的近似排序）
+        wrapper.orderByDesc(Article::getViewCount)
+                .orderByDesc(Article::getLikeCount)
+                .orderByDesc(Article::getCommentCount)
+                .orderByDesc(Article::getCollectCount)
+                .last("LIMIT " + limit * 2);
+
+        return articleMapper.selectList(wrapper);
+    }
+
+    /**
+     * 全时段热门标签（按文章数降序）
+     */
+    private List<TagVO> getAllTimeHotTags(int limit) {
+        List<Tag> tags = tagMapper.selectList(
+                new LambdaQueryWrapper<Tag>()
+                        .orderByDesc(Tag::getArticleCount)
+                        .last("LIMIT " + limit));
+        return tags.stream().map(tag -> {
+            TagVO vo = new TagVO();
+            vo.setId(tag.getId());
+            vo.setName(tag.getName());
+            vo.setArticleCount(tag.getArticleCount());
+            vo.setCreatedAt(tag.getCreatedAt());
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 补充全时段热门标签（去重）
+     */
+    private List<TagVO> supplementWithAllTimeTags(List<TagVO> existing, int limit) {
+        Set<Long> existingIds = existing.stream().map(TagVO::getId).collect(Collectors.toSet());
+        List<Tag> allTags = tagMapper.selectList(
+                new LambdaQueryWrapper<Tag>()
+                        .orderByDesc(Tag::getArticleCount)
+                        .last("LIMIT " + limit));
+        for (Tag tag : allTags) {
+            if (existing.size() >= limit) break;
+            if (!existingIds.contains(tag.getId())) {
+                TagVO vo = new TagVO();
+                vo.setId(tag.getId());
+                vo.setName(tag.getName());
+                vo.setArticleCount(tag.getArticleCount());
+                vo.setCreatedAt(tag.getCreatedAt());
+                existing.add(vo);
+                existingIds.add(tag.getId());
+            }
+        }
+        return existing;
+    }
+
+    /**
+     * 全时段热门用户（按文章数降序）
+     */
+    private List<UserVO> getAllTimeHotUsers(int limit) {
+        List<User> users = userMapper.selectList(
+                new LambdaQueryWrapper<User>()
+                        .gt(User::getArticleCount, 0)
+                        .orderByDesc(User::getArticleCount)
+                        .last("LIMIT " + limit));
+        return users.stream().map(user -> {
+            UserVO vo = new UserVO();
+            vo.setId(user.getId());
+            vo.setUsername(user.getUsername());
+            vo.setNickname(user.getNickname());
+            vo.setAvatar(user.getAvatar());
+            vo.setRole(user.getRole() != null ? user.getRole().name() : null);
+            vo.setStatus(user.getStatus());
+            vo.setCreatedAt(user.getCreatedAt());
+            vo.setFollowCount(user.getFollowCount());
+            vo.setFollowerCount(user.getFollowerCount());
+            vo.setArticleCount(user.getArticleCount());
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 补充全时段热门用户（去重）
+     */
+    private List<UserVO> supplementWithAllTimeUsers(List<UserVO> existing, int limit) {
+        Set<Long> existingIds = existing.stream().map(UserVO::getId).collect(Collectors.toSet());
+        List<User> allUsers = userMapper.selectList(
+                new LambdaQueryWrapper<User>()
+                        .gt(User::getArticleCount, 0)
+                        .orderByDesc(User::getArticleCount)
+                        .last("LIMIT " + limit));
+        for (User user : allUsers) {
+            if (existing.size() >= limit) break;
+            if (!existingIds.contains(user.getId())) {
+                UserVO vo = new UserVO();
+                vo.setId(user.getId());
+                vo.setUsername(user.getUsername());
+                vo.setNickname(user.getNickname());
+                vo.setAvatar(user.getAvatar());
+                vo.setRole(user.getRole() != null ? user.getRole().name() : null);
+                vo.setStatus(user.getStatus());
+                vo.setCreatedAt(user.getCreatedAt());
+                vo.setFollowCount(user.getFollowCount());
+                vo.setFollowerCount(user.getFollowerCount());
+                vo.setArticleCount(user.getArticleCount());
+                existing.add(vo);
+                existingIds.add(user.getId());
+            }
+        }
+        return existing;
+    }
+
+    /**
      * 简单热度分计算（用于排序）
      */
     private double calculateSimpleHotScore(Article article) {
@@ -481,10 +682,22 @@ public class RankServiceImpl implements RankService {
         Map<Long, Article> articleMap = articles.stream()
                 .collect(Collectors.toMap(Article::getId, a -> a));
 
+        // 批量查询作者信息
+        Set<Long> userIds = articles.stream().map(Article::getAuthorId).collect(Collectors.toSet());
+        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
         return pageIds.stream()
                 .map(articleMap::get)
                 .filter(a -> a != null)
-                .map(this::convertToHotArticleVO)
+                .map(article -> {
+                    HotArticleVO vo = convertToHotArticleVO(article);
+                    User author = userMap.get(article.getAuthorId());
+                    if (author != null) {
+                        vo.setAuthorNickname(author.getNickname());
+                    }
+                    return vo;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -536,12 +749,21 @@ public class RankServiceImpl implements RankService {
         vo.setScore(calculateSimpleHotScore(article));
         vo.setCreatedAt(article.getCreatedAt());
 
-        // 查询作者昵称
-        User author = userMapper.selectById(article.getAuthorId());
-        if (author != null) {
-            vo.setAuthorNickname(author.getNickname());
-        }
-
         return vo;
+    }
+
+    /**
+     * 将结果写入 Redis 缓存（5分钟TTL）
+     */
+    private <T> void cacheResult(String cacheKey, List<T> result) {
+        if (result != null && !result.isEmpty()) {
+            try {
+                if (redisTemplate != null) {
+                    redisTemplate.opsForValue().set(cacheKey, result, RANK_TTL_MINUTES, TimeUnit.MINUTES);
+                }
+            } catch (Exception e) {
+                log.warn("缓存数据到Redis失败: {}", e.getMessage());
+            }
+        }
     }
 }

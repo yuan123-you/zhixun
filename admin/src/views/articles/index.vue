@@ -129,7 +129,7 @@
     <AuditDialog
       v-model="auditDialogVisible"
       :article-id="currentArticle?.id"
-      @success="loadArticles"
+      @success="handleAuditSuccess"
     />
   </div>
 </template>
@@ -216,6 +216,12 @@ function handleAudit(article: Article) {
   auditDialogVisible.value = true
 }
 
+/** 审核成功回调 */
+function handleAuditSuccess() {
+  articleCache.invalidateByPrefix('/articles')
+  loadArticles()
+}
+
 /** 下架文章 */
 async function handleOffline(article: Article) {
   try {
@@ -226,7 +232,7 @@ async function handleOffline(article: Article) {
     })
     await offlineArticle(article.id)
     ElMessage.success('下架成功')
-    articleCache.invalidate('/articles', queryParams as unknown as Record<string, unknown>)
+    articleCache.invalidateByPrefix('/articles')
     loadArticles()
   } catch {
     // 用户取消或请求失败
@@ -243,7 +249,7 @@ async function handleDelete(article: Article) {
     })
     await deleteArticle(article.id)
     ElMessage.success('删除成功')
-    articleCache.invalidate('/articles', queryParams as unknown as Record<string, unknown>)
+    articleCache.invalidateByPrefix('/articles')
     loadArticles()
   } catch {
     // 用户取消或请求失败

@@ -105,11 +105,11 @@ const fetchRank = async () => {
   try {
     const { rankApi } = await import('~/api')
     const data = await cachedRequest(
-      (params: { period: string }) => rankApi.getHotRank(params.period),
+      () => rankApi.getHotRank(activeTab.value).then(res => res.data?.data || []),
       '/rank/hot',
       { period: activeTab.value },
     )
-    rankItems.value = data.data.data
+    rankItems.value = data || []
   } catch {
     error.value = t('hotRank.loadFailed')
     rankItems.value = []
@@ -134,19 +134,23 @@ const getRankClass = (index: number) => {
 // 格式化热度值
 const formatHeat = (score: number) => {
   if (score >= 10000) return `${(score / 10000).toFixed(1)}万`
-  return score.toString()
+  if (score >= 100) return Math.round(score).toString()
+  if (score >= 1) return score.toFixed(1)
+  return score.toFixed(2)
 }
 
 // SSR数据获取
 const { data: initialData } = await useAsyncData('rank-init', async () => {
-  const { rankApi } = await import('~/api')
-  const response = await rankApi.getHotRank('daily')
-  return response.data.data
+  try {
+    const { rankApi } = await import('~/api')
+    const response = await rankApi.getHotRank('daily')
+    return response.data?.data || []
+  } catch {
+    return []
+  }
 })
 
-if (initialData.value) {
-  rankItems.value = initialData.value
-}
+rankItems.value = initialData.value || []
 
 // 页面元信息
 useHead({

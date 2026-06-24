@@ -24,11 +24,14 @@ import com.zhixun.mapper.UserMapper;
 import com.zhixun.security.HtmlWhitelistFilter;
 import com.zhixun.service.CommentService;
 import com.zhixun.service.NotificationService;
+import com.zhixun.config.RedisConfig;
 import com.zhixun.vo.CommentReportVO;
 import com.zhixun.vo.CommentVO;
 import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -57,6 +60,10 @@ public class CommentServiceImpl implements CommentService {
     private final SensitiveWordUtil sensitiveWordUtil;
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
+
+    /** Redis 模板（可选，Redis 不可用时为 null） */
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
 
     /** @提及正则：匹配 @username（用户名由字母、数字、下划线、中文组成，2-20个字符） */
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([\\w\\u4e00-\\u9fa5]{2,20})");
@@ -97,11 +104,28 @@ public class CommentServiceImpl implements CommentService {
 
         // 评论默认待审核，审核通过后再增加文章评论数
 
-        // 发送回复通知：如果是回复评论，通知被回复的评论作者
-        sendReplyNotification(userId, comment, request);
+        // 发送回复通知：如果是回复评论，通知被回复的评论作者（非关键操作，失败不影响评论创建）
+        try {
+            sendReplyNotification(userId, comment, request);
+        } catch (Exception e) {
+            log.error("发送评论回复通知失败, commentId={}: {}", comment.getId(), e.getMessage());
+        }
 
-        // 解析@提及并发送通知
-        sendMentionNotifications(userId, comment, request.getContent());
+        // 解析@提及并发送通知（非关键操作，失败不影响评论创建）
+        try {
+            sendMentionNotifications(userId, comment, request.getContent());
+        } catch (Exception e) {
+            log.error("发送评论@提及通知失败, commentId={}: {}", comment.getId(), e.getMessage());
+        }
+
+        // 递增数据版本号，通知客户端数据已变更
+        try {
+            if (stringRedisTemplate != null) {
+                RedisConfig.incrementDataVersion(stringRedisTemplate);
+            }
+        } catch (Exception e) {
+            log.debug("递增数据版本号失败: {}", e.getMessage());
+        }
 
         return comment.getId();
     }
@@ -157,6 +181,15 @@ public class CommentServiceImpl implements CommentService {
                     .gt(Article::getCommentCount, 0)
                     .setSql("comment_count = comment_count - 1"));
         }
+
+        // 递增数据版本号，通知客户端数据已变更
+        try {
+            if (stringRedisTemplate != null) {
+                RedisConfig.incrementDataVersion(stringRedisTemplate);
+            }
+        } catch (Exception e) {
+            log.debug("递增数据版本号失败: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -199,6 +232,15 @@ public class CommentServiceImpl implements CommentService {
         }
 
         log.info("管理员{}审核评论{}，动作：{}，原因：{}", userId, commentId, action, reason);
+
+        // 递增数据版本号，通知客户端数据已变更
+        try {
+            if (stringRedisTemplate != null) {
+                RedisConfig.incrementDataVersion(stringRedisTemplate);
+            }
+        } catch (Exception e) {
+            log.debug("递增数据版本号失败: {}", e.getMessage());
+        }
     }
 
     @Override

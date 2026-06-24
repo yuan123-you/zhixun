@@ -10,8 +10,8 @@ export const useUserStore = defineStore('user', () => {
   const refreshToken = ref<string>(storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN) || '')
   // Token过期时间戳（毫秒）
   const tokenExpiresAt = ref<number>(storage.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT) || 0)
-  // 用户信息
-  const userInfo = ref<User | null>(null)
+  // 用户信息（从 localStorage 恢复，确保刷新后仍可用）
+  const userInfo = ref<User | null>(storage.get<User>(STORAGE_KEYS.USER_SUMMARY) || null)
 
   // 是否已登录
   const isLoggedIn = computed(() => !!token.value && !!userInfo.value)
@@ -34,12 +34,16 @@ export const useUserStore = defineStore('user', () => {
   // 设置用户信息
   const setUser = (user: User) => {
     userInfo.value = user
+    // 持久化用户信息到localStorage，确保页面刷新后登录状态不丢失
+    storage.set(STORAGE_KEYS.USER_SUMMARY, user)
   }
 
   // 更新用户资料
   const updateProfile = (data: Partial<User>) => {
     if (userInfo.value) {
       userInfo.value = { ...userInfo.value, ...data }
+      // 同步更新localStorage中的用户信息
+      storage.set(STORAGE_KEYS.USER_SUMMARY, userInfo.value)
     }
   }
 
@@ -52,6 +56,7 @@ export const useUserStore = defineStore('user', () => {
     storage.remove(STORAGE_KEYS.ACCESS_TOKEN)
     storage.remove(STORAGE_KEYS.REFRESH_TOKEN)
     storage.remove(STORAGE_KEYS.TOKEN_EXPIRES_AT)
+    storage.remove(STORAGE_KEYS.USER_SUMMARY)
   }
 
   // 初始化：从localStorage恢复token
@@ -67,6 +72,10 @@ export const useUserStore = defineStore('user', () => {
     const savedExpiresAt = storage.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT)
     if (savedExpiresAt) {
       tokenExpiresAt.value = savedExpiresAt
+    }
+    const savedUserInfo = storage.get<User>(STORAGE_KEYS.USER_SUMMARY)
+    if (savedUserInfo) {
+      userInfo.value = savedUserInfo
     }
   }
 
