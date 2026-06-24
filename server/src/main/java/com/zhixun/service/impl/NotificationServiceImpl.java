@@ -346,6 +346,11 @@ public class NotificationServiceImpl implements NotificationService {
                 return;
             }
 
+            // 跳过无效邮箱（如种子数据中的 @example.com 等不可达地址）
+            if (isInvalidEmail(user.getEmail())) {
+                return;
+            }
+
             // 检查用户是否允许邮件通知
             if (!isNotificationAllowed(userId, typeEnum)) {
                 return;
@@ -361,6 +366,21 @@ public class NotificationServiceImpl implements NotificationService {
         } catch (Exception e) {
             log.warn("通知邮件发送失败: userId={}, error={}", userId, e.getMessage());
         }
+    }
+
+    /**
+     * 判断邮箱是否为无效地址（不可达）
+     * 过滤种子数据中的假邮箱和明显无效的域名
+     */
+    private boolean isInvalidEmail(String email) {
+        if (email == null) return true;
+        String lower = email.toLowerCase();
+        return lower.endsWith("@example.com")
+                || lower.endsWith("@example.org")
+                || lower.endsWith("@example.net")
+                || lower.endsWith("@test.com")
+                || lower.endsWith("@localhost")
+                || !lower.contains("@");
     }
 
     /**

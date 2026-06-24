@@ -103,6 +103,12 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.GET, "/v1/announcements").permitAll()
                         // 推荐用户（公开，需在 /v1/users/** ADMIN规则之前）
                         .requestMatchers(HttpMethod.GET, "/v1/users/recommend").permitAll()
+                        // 用户关注/在线状态（需认证，需在 /v1/users/** ADMIN规则之前）
+                        .requestMatchers(HttpMethod.POST, "/v1/users/{id}/follow").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/v1/users/{id}/following", "/v1/users/{id}/followers").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/users/{id}/online-status").authenticated()
+                        // 用户信息查看（公开，需在 /v1/users/** ADMIN规则之前）
+                        .requestMatchers(HttpMethod.GET, "/v1/users/{id}").permitAll()
                         // 管理端接口 - 仅 ADMIN 角色可访问
                         .requestMatchers("/v1/admin/**").hasRole("ADMIN")
                         // 用户管理 - 仅 ADMIN 角色可访问

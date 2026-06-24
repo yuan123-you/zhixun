@@ -63,6 +63,13 @@ public class CaptchaService {
      * @param captchaAnswer 图形验证码答案
      */
     public void sendEmailCode(String email, String purpose, String captchaKey, String captchaAnswer) {
+        // 0. 校验邮箱地址有效性
+        if (email == null || email.isBlank() || email.toLowerCase().endsWith("@example.com")
+                || email.toLowerCase().endsWith("@example.org") || email.toLowerCase().endsWith("@test.com")
+                || !email.contains("@")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "邮箱地址无效");
+        }
+
         // 1. 校验图形验证码
         if (!graphCaptchaService.verify(captchaKey, captchaAnswer)) {
             throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "图形验证码错误或已过期");
