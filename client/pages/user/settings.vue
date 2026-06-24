@@ -1,7 +1,16 @@
 <template>
   <!-- 全局设置页 -->
   <div class="max-w-2xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">设置</h1>
+    <!-- 返回导航 -->
+    <div class="flex items-center gap-3 mb-6">
+      <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors" @click="goBack">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        返回
+      </button>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">设置</h1>
+    </div>
 
     <!-- 推荐偏好 -->
     <section class="card p-6 mb-6">
@@ -181,6 +190,17 @@ import { storage, STORAGE_KEYS } from '~/utils/storage'
 definePageMeta({
   middleware: 'auth',
 })
+
+const router = useRouter()
+
+// 返回上一页
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    navigateTo('/')
+  }
+}
 
 const colorMode = useColorMode()
 const { locale, setLocale } = useI18n()

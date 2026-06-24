@@ -22,9 +22,9 @@
     <div v-if="rankItems.length > 0" class="space-y-3">
       <div
         v-for="(item, index) in rankItems"
-        :key="item.articleId"
+        :key="item.id"
         class="card p-4 flex items-center space-x-4 hover:shadow-md transition-shadow cursor-pointer"
-        @click="navigateTo(`/articles/${item.articleId}`)"
+        @click="navigateTo(`/articles/${item.id}`)"
       >
         <!-- 排名 -->
         <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm" :class="getRankClass(index)">
@@ -35,7 +35,7 @@
         <div class="flex-1 min-w-0">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1">{{ item.title }}</h3>
           <div class="flex items-center space-x-4 mt-1 text-xs text-gray-400">
-            <span>{{ item.author }}</span>
+            <span>{{ item.authorNickname }}</span>
             <span class="flex items-center space-x-0.5">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -53,17 +53,22 @@
 
         <!-- 热度值 -->
         <div class="text-right shrink-0">
-          <span class="text-sm font-bold text-accent">{{ formatHeat(item.heatScore) }}</span>
+          <span class="text-sm font-bold text-accent">{{ formatHeat(item.score ?? 0) }}</span>
           <p class="text-2xs text-gray-400">热度</p>
         </div>
       </div>
     </div>
 
     <!-- 加载状态 -->
-    <LoadingSkeleton v-if="loading" v-for="i in 5" :key="i" type="article" />
+    <template v-if="loading">
+      <LoadingSkeleton v-for="i in 5" :key="i" type="article" />
+    </template>
+
+    <!-- 错误状态 -->
+    <ErrorRetry v-if="error && !loading" :message="error" :on-retry="retryLastRequest" />
 
     <!-- 空状态 -->
-    <EmptyState v-if="!loading && rankItems.length === 0" title="暂无排行数据" />
+    <EmptyState v-if="!loading && !error && rankItems.length === 0" title="暂无排行数据" />
   </div>
 </template>
 
@@ -80,6 +85,9 @@ const tabs = [
 const activeTab = ref('daily')
 const rankItems = ref<RankItem[]>([])
 const loading = ref(false)
+const error = ref('')
+
+const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
 
 // 切换Tab
 const switchTab = (key: string) => {
@@ -91,15 +99,26 @@ const switchTab = (key: string) => {
 // 获取排行数据
 const fetchRank = async () => {
   loading.value = true
+  error.value = ''
   try {
     const { rankApi } = await import('~/api')
-    const response = await rankApi.getHotRank(activeTab.value as any)
-    rankItems.value = response.data.data
+    const data = await cachedRequest(
+      (params: { period: string }) => rankApi.getHotRank(params.period),
+      '/rank/hot',
+      { period: activeTab.value },
+    )
+    rankItems.value = data.data.data
   } catch {
+    error.value = '加载排行榜失败，请重试'
     rankItems.value = []
   } finally {
     loading.value = false
   }
+}
+
+// 重试上次失败的请求
+const retryLastRequest = () => {
+  fetchRank()
 }
 
 // 获取排名样式

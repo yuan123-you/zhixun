@@ -1,4 +1,4 @@
-/** WebSocket插件：私信实时通信 */
+/** WebSocket插件：私信实时通信 - 延迟连接，不阻塞首屏渲染 */
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
   const userStore = useUserStore()
@@ -82,13 +82,16 @@ export default defineNuxtPlugin(() => {
     }
   }
 
-  // 监听用户登录状态变化
+  // 监听用户登录状态变化，延迟连接避免阻塞首屏
   if (import.meta.client) {
     watch(
       () => userStore.isLoggedIn,
       (loggedIn) => {
         if (loggedIn) {
-          connect()
+          // 延迟到浏览器空闲时连接，不阻塞首屏渲染
+          requestIdleCallback
+            ? requestIdleCallback(() => connect())
+            : setTimeout(() => connect(), 2000)
         } else {
           disconnect()
         }

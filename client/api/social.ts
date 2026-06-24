@@ -16,7 +16,7 @@ export const socialApi = {
   /** 切换关注状态 */
   toggleFollow: (userId: number) => {
     const { post } = useApi()
-    return post<{ isFollowing: boolean; followerCount: number }>(`/users/${userId}/follow`)
+    return post<{ followed: boolean; followCount: number; followerCount: number }>(`/users/${userId}/follow`)
   },
 
   /** 获取关注列表 */

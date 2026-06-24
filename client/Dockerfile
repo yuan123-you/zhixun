@@ -52,6 +52,11 @@ EXPOSE 3000
 ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV NODE_ENV=production
+# Nuxt 运行时环境变量（通过 NUXT_ 前缀覆盖 runtimeConfig）
+# 这些值可在 docker-compose 中通过环境变量覆盖
+ENV NUXT_API_BASE=http://server:8080
+ENV NUXT_PUBLIC_API_BASE=/api/v1
+ENV NUXT_PUBLIC_WS_BASE=/ws
 
 # 健康检查
 HEALTHCHECK --interval=15s --timeout=10s --start-period=30s --retries=3 \

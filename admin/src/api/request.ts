@@ -1,5 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ApiResponse } from '@/types'
 import { storage, STORAGE_KEYS } from '@/utils/storage'
 import router from '@/router'
@@ -68,12 +68,21 @@ service.interceptors.response.use(
     const messages: Record<number, string> = {
       400: '请求参数错误',
       401: '未授权，请重新登录',
-      403: '拒绝访问',
+      403: '暂无权限',
       404: '请求资源不存在',
       500: '服务器内部错误',
     }
-    const message = messages[status] || `请求失败: ${error.message}`
-    ElMessage.error(message)
+    // 403 弹框友好提醒，其余状态码用轻提示
+    if (status === 403) {
+      ElMessageBox.alert(
+        '抱歉，您暂时没有权限执行此操作，如有疑问请联系管理员。',
+        '暂无权限',
+        { confirmButtonText: '我知道了', type: 'warning' }
+      ).catch(() => {})
+    } else {
+      const message = messages[status] || `请求失败: ${error.message}`
+      ElMessage.error(message)
+    }
 
     // 401 自动跳转登录页
     if (status === 401) {

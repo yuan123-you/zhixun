@@ -12,7 +12,7 @@
           v-model="keyword"
           type="text"
           class="flex-1 bg-transparent border-none outline-none ml-2 text-gray-900 dark:text-white placeholder-gray-400"
-          placeholder="搜索文章、用户..."
+          :placeholder="$t('search.placeholder')"
           @input="handleInput"
           @keydown.enter="doSearch"
         />
@@ -23,14 +23,14 @@
         </button>
       </div>
       <!-- 最少字符提示 -->
-      <p v-if="keyword.trim().length === 1" class="text-xs text-amber-500 mt-1.5 ml-2">请输入至少2个字符进行搜索</p>
+      <p v-if="keyword.trim().length === 1" class="text-xs text-amber-500 mt-1.5 ml-2">{{ $t('search.minChars') }}</p>
     </div>
 
     <!-- 搜索建议/热门搜索（未搜索时） -->
     <div v-if="!hasSearched">
       <!-- 搜索建议 -->
       <div v-if="suggestions.length > 0" class="mb-6">
-        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">搜索建议</h3>
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{{ $t('search.suggestions') }}</h3>
         <div class="space-y-1">
           <button
             v-for="item in suggestions"
@@ -51,7 +51,7 @@
             <!-- 用户头像 -->
             <UserAvatar v-if="item.type === 'user'" :src="item.avatar" :alt="item.text" size="xs" class="mr-2" />
             <span v-html="highlightKeyword(item.text)"></span>
-            <span class="ml-auto text-xs text-gray-400">{{ item.type === 'user' ? '用户' : item.type === 'article' ? '文章' : '标签' }}</span>
+            <span class="ml-auto text-xs text-gray-400">{{ item.type === 'user' ? $t('search.typeUser') : item.type === 'article' ? $t('search.typeArticle') : $t('search.typeTag') }}</span>
           </button>
         </div>
       </div>
@@ -59,8 +59,8 @@
       <!-- 搜索历史 -->
       <div v-if="searchHistory.length > 0" class="mb-6">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">搜索历史</h3>
-          <button class="text-xs text-gray-400 hover:text-danger" @click="clearHistory">清除</button>
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('search.history') }}</h3>
+          <button class="text-xs text-gray-400 hover:text-danger" @click="clearHistory">{{ $t('common.clear') }}</button>
         </div>
         <div class="flex flex-wrap gap-2">
           <button v-for="item in searchHistory" :key="item" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600" @click="keyword = item; doSearch()">
@@ -71,7 +71,7 @@
 
       <!-- 热门搜索 -->
       <div v-if="hotSearches.length > 0">
-        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">热门搜索</h3>
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{{ $t('search.hotSearch') }}</h3>
         <div class="space-y-1">
           <button v-for="(item, index) in hotSearches" :key="item" class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" @click="keyword = item; doSearch()">
             <span class="w-5 text-center text-xs font-bold" :class="index < 3 ? 'text-danger' : 'text-gray-400'">{{ index + 1 }}</span>
@@ -103,23 +103,23 @@
       <div class="flex items-center flex-wrap gap-3 mb-4 text-sm">
         <!-- 分类筛选 -->
         <select v-model="filterCategoryId" class="input py-1.5 text-sm w-auto min-w-[120px]" @change="doSearch()">
-          <option :value="undefined">全部分类</option>
+          <option :value="undefined">{{ $t('search.allCategories') }}</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
 
         <!-- 时间范围筛选 -->
         <select v-model="filterTimeRange" class="input py-1.5 text-sm w-auto min-w-[120px]" @change="doSearch()">
-          <option :value="undefined">全部时间</option>
-          <option value="24h">最近24小时</option>
-          <option value="7d">最近7天</option>
-          <option value="30d">最近30天</option>
+          <option :value="undefined">{{ $t('search.allTime') }}</option>
+          <option value="24h">{{ $t('search.last24h') }}</option>
+          <option value="7d">{{ $t('search.last7d') }}</option>
+          <option value="30d">{{ $t('search.last30d') }}</option>
         </select>
 
         <!-- 排序 -->
         <select v-model="sortBy" class="input py-1.5 text-sm w-auto min-w-[120px]" @change="doSearch()">
-          <option value="relevance">相关度</option>
-          <option value="latest">最新发布</option>
-          <option value="popular">最多点赞</option>
+          <option value="relevance">{{ $t('search.relevance') }}</option>
+          <option value="latest">{{ $t('search.latestPublish') }}</option>
+          <option value="popular">{{ $t('search.mostLikes') }}</option>
         </select>
       </div>
 
@@ -166,6 +166,9 @@
         </template>
       </div>
 
+      <!-- 搜索失败 -->
+      <ErrorRetry v-else-if="searchError" :message="searchError" :on-retry="retrySearch" />
+
       <!-- 搜索结果列表 -->
       <div v-else-if="hasAnyResult">
         <!-- ===== 综合Tab ===== -->
@@ -173,8 +176,8 @@
           <!-- 用户区块 -->
           <div v-if="allUserResults.length > 0" class="mb-6">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">相关用户</h3>
-              <button v-if="tabCounts.users > 3" class="text-xs text-primary hover:underline" @click="switchTab('users')">查看全部 ({{ tabCounts.users }})</button>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('search.relatedUsers') }}</h3>
+              <button v-if="tabCounts.users > 3" class="text-xs text-primary hover:underline" @click="switchTab('users')">{{ $t('search.viewAll') }} ({{ tabCounts.users }})</button>
             </div>
             <div class="space-y-3">
               <UserCard v-for="user in allUserResults" :key="'u-'+user.id" :user="user" :show-follow-button="true" @toggle-follow="toggleFollow" />
@@ -184,8 +187,8 @@
           <!-- 文章区块 -->
           <div v-if="allArticleResults.length > 0" class="mb-6">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">相关文章</h3>
-              <button v-if="tabCounts.articles > 5" class="text-xs text-primary hover:underline" @click="switchTab('articles')">查看全部 ({{ tabCounts.articles }})</button>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('search.relatedArticles') }}</h3>
+              <button v-if="tabCounts.articles > 5" class="text-xs text-primary hover:underline" @click="switchTab('articles')">{{ $t('search.viewAll') }} ({{ tabCounts.articles }})</button>
             </div>
             <div class="space-y-3">
               <ArticleCard v-for="item in allArticleResults" :key="'a-'+item.id" :article="item" />
@@ -195,8 +198,8 @@
           <!-- 图片区块 -->
           <div v-if="allImageResults.length > 0" class="mb-6">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">相关图片</h3>
-              <button v-if="tabCounts.images > 6" class="text-xs text-primary hover:underline" @click="switchTab('images')">查看全部 ({{ tabCounts.images }})</button>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('search.relatedImages') }}</h3>
+              <button v-if="tabCounts.images > 6" class="text-xs text-primary hover:underline" @click="switchTab('images')">{{ $t('search.viewAll') }} ({{ tabCounts.images }})</button>
             </div>
             <ImageGrid :images="allImageResults" @click="handleImageClick" />
           </div>
@@ -214,9 +217,9 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            加载中...
+            {{ $t('common.loading') }}
           </div>
-          <div v-if="!hasMoreArticles && articleResults.length > 0" class="py-4 text-center text-sm text-gray-400">没有更多了</div>
+          <div v-if="!hasMoreArticles && articleResults.length > 0" class="py-4 text-center text-sm text-gray-400">{{ $t('common.noMore') }}</div>
         </template>
 
         <!-- ===== 用户Tab ===== -->
@@ -231,9 +234,9 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            加载中...
+            {{ $t('common.loading') }}
           </div>
-          <div v-if="!hasMoreUsers && userResults.length > 0" class="py-4 text-center text-sm text-gray-400">没有更多了</div>
+          <div v-if="!hasMoreUsers && userResults.length > 0" class="py-4 text-center text-sm text-gray-400">{{ $t('common.noMore') }}</div>
         </template>
 
         <!-- ===== 图片Tab ===== -->
@@ -246,14 +249,14 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            加载中...
+            {{ $t('common.loading') }}
           </div>
-          <div v-if="!hasMoreImages && imageResults.length > 0" class="py-4 text-center text-sm text-gray-400">没有更多了</div>
+          <div v-if="!hasMoreImages && imageResults.length > 0" class="py-4 text-center text-sm text-gray-400">{{ $t('common.noMore') }}</div>
         </template>
       </div>
 
       <!-- 空结果 -->
-      <EmptyState v-else title="未找到相关结果" description="换个关键词试试吧" />
+      <EmptyState v-else :title="$t('search.noResults')" :description="$t('search.noResultsDesc')" />
     </div>
   </div>
 </template>
@@ -265,13 +268,20 @@ import type { SuggestionItem, SearchParams } from '~/api/search'
 
 const route = useRoute()
 const router = useRouter()
+const { resolveUrl } = useResourceUrl()
+const userStore = useUserStore()
+const { t } = useI18n()
+
+// 请求缓存：搜索建议用短TTL，热门搜索和分类用长TTL
+const { cachedRequest: cachedRequestShort } = useRequestCache({ ttl: 2 * 60 * 1000 })
+const { cachedRequest: cachedRequestLong } = useRequestCache({ ttl: 10 * 60 * 1000 })
 
 // 搜索Tab
 const searchTabs = [
-  { key: 'all', label: '综合' },
-  { key: 'articles', label: '文章' },
-  { key: 'users', label: '用户' },
-  { key: 'images', label: '图片' },
+  { key: 'all', label: computed(() => t('search.all')) },
+  { key: 'articles', label: computed(() => t('search.articles')) },
+  { key: 'users', label: computed(() => t('search.users')) },
+  { key: 'images', label: computed(() => t('search.images')) },
 ]
 
 const keyword = ref((route.query.keyword as string) || '')
@@ -282,6 +292,7 @@ const filterTimeRange = ref<'24h' | '7d' | '30d' | undefined>(undefined)
 const hasSearched = ref(false)
 const loading = ref(false)
 const loadingMore = ref(false)
+const searchError = ref('')
 const suggestions = ref<SuggestionItem[]>([])
 const hotSearches = ref<string[]>([])
 const searchHistory = ref<string[]>([])
@@ -366,7 +377,11 @@ const handleInput = () => {
     if (keyword.value.trim()) {
       try {
         const { searchApi } = await import('~/api')
-        const response = await searchApi.getSuggestions(keyword.value.trim())
+        const response = await cachedRequestShort(
+          () => searchApi.getSuggestions(keyword.value.trim()),
+          '/search/suggestions',
+          { keyword: keyword.value.trim() }
+        )
         const data = response.data.data
         suggestions.value = data?.completions || []
       } catch {
@@ -380,7 +395,7 @@ const handleInput = () => {
 
 // 执行搜索
 const doSearch = async (loadMore = false) => {
-  if (!keyword.value.trim() || keyword.value.trim().length < 2) return
+  if (!keyword.value.trim()) return
   hasSearched.value = true
 
   if (!loadMore) {
@@ -390,6 +405,7 @@ const doSearch = async (loadMore = false) => {
     userResults.value = []
     imageResults.value = []
     tabCounts.value = { all: 0, articles: 0, users: 0, images: 0 }
+    searchError.value = ''
   } else {
     loadingMore.value = true
     currentPage.value++
@@ -410,23 +426,17 @@ const doSearch = async (loadMore = false) => {
     const response = await searchApi.search(keyword.value.trim(), activeTab.value as any, params)
     const result = response.data.data
 
-    // 更新计数
-    tabCounts.value.articles = (result as any).total || result.articles?.length || 0
-    tabCounts.value.users = (result as any).total || result.users?.length || 0
-    tabCounts.value.images = (result as any).total || result.images?.length || 0
-    tabCounts.value.all = tabCounts.value.articles + tabCounts.value.users + tabCounts.value.images
-
+    // 更新计数 & 填充结果
     if (activeTab.value === 'all') {
-      // 综合搜索：所有结果一次性返回
+      // 综合搜索：所有结果一次性返回，用实际数组长度作为各分类计数
       articleResults.value = (result.articles || []) as Article[]
       userResults.value = (result.users || []) as User[]
       imageResults.value = (result.images || []).map((img: any) => ({
-        url: img.coverImage || '',
+        url: resolveUrl(img.coverImage) || '',
         title: img.title || '',
         articleTitle: img.title || '',
         author: img.authorName || img.author?.nickname || '',
       }))
-      // 综合搜索时，用实际返回数量作为计数
       tabCounts.value.articles = articleResults.value.length
       tabCounts.value.users = userResults.value.length
       tabCounts.value.images = imageResults.value.length
@@ -449,7 +459,7 @@ const doSearch = async (loadMore = false) => {
       tabCounts.value.users = result.total || userResults.value.length
     } else if (activeTab.value === 'images') {
       const newImages = (result.images || []).map((img: any) => ({
-        url: img.coverImage || '',
+        url: resolveUrl(img.coverImage) || '',
         title: img.title || '',
         articleTitle: img.title || '',
         author: img.authorName || img.author?.nickname || '',
@@ -471,6 +481,7 @@ const doSearch = async (loadMore = false) => {
       articleResults.value = []
       userResults.value = []
       imageResults.value = []
+      searchError.value = t('search.searchFailed')
     }
   } finally {
     loading.value = false
@@ -479,6 +490,12 @@ const doSearch = async (loadMore = false) => {
 
   // 更新URL
   router.replace({ query: { keyword: keyword.value.trim() } })
+}
+
+// 重试搜索
+const retrySearch = async () => {
+  searchError.value = ''
+  await doSearch()
 }
 
 // 设置无限滚动
@@ -529,9 +546,16 @@ const clearKeyword = () => {
 
 // 关键词高亮
 const highlightKeyword = (text: string) => {
-  if (!keyword.value.trim()) return text
-  const regex = new RegExp(`(${keyword.value.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return text.replace(regex, '<span class="text-primary font-medium">$1</span>')
+  if (!keyword.value.trim()) return escapeHtml(text)
+  const escaped = escapeHtml(text)
+  const escapedKeyword = escapeHtml(keyword.value.trim())
+  const regex = new RegExp(`(${escapedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return escaped.replace(regex, '<span class="text-primary font-medium">$1</span>')
+}
+
+// HTML转义，防止XSS
+const escapeHtml = (str: string) => {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 // 保存搜索历史
@@ -556,7 +580,10 @@ const clearHistory = () => {
 const loadHotSearches = async () => {
   try {
     const { searchApi } = await import('~/api')
-    const response = await searchApi.getHotSearches()
+    const response = await cachedRequestLong(
+      () => searchApi.getHotSearches(),
+      '/search/hot'
+    )
     hotSearches.value = response.data.data
   } catch {
     // 忽略加载失败
@@ -581,7 +608,10 @@ const loadSearchHistory = () => {
 const loadCategories = async () => {
   try {
     const { get } = useApi()
-    const response = await get<Category[]>('/categories')
+    const response = await cachedRequestLong(
+      () => get<Category[]>('/categories'),
+      '/categories'
+    )
     categories.value = response.data.data || []
   } catch {
     // 忽略加载失败
@@ -590,17 +620,22 @@ const loadCategories = async () => {
 
 // 关注/取关用户
 const toggleFollow = async (userId: number) => {
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
   try {
     const { socialApi } = await import('~/api')
-    await socialApi.toggleFollow(userId)
+    const response = await socialApi.toggleFollow(userId)
+    const result = response.data.data
     // 更新本地状态
     const user = userResults.value.find((u) => u.id === userId)
     if (user) {
-      user.isFollowing = !user.isFollowing
-      user.followerCount += user.isFollowing ? 1 : -1
+      user.isFollowing = result.followed
+      user.followerCount = result.followerCount
     }
-  } catch {
-    // 忽略
+  } catch (error: any) {
+    console.error('关注操作失败:', error.message)
   }
 }
 
@@ -611,6 +646,6 @@ const handleImageClick = (image: any) => {
 
 // 页面元信息
 useHead({
-  title: () => keyword.value ? `搜索 "${keyword.value}" - 知讯` : '搜索 - 知讯',
+  title: () => keyword.value ? `${t('common.search')} "${keyword.value}" - 知讯` : `${t('common.search')} - 知讯`,
 })
 </script>

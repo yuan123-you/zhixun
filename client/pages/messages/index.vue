@@ -12,28 +12,38 @@
 
           <!-- 会话列表 -->
           <div class="flex-1 overflow-y-auto">
-            <button
-              v-for="conv in conversations"
-              :key="conv.id"
-              class="w-full flex items-center space-x-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-              :class="{ 'bg-gray-50 dark:bg-gray-700/50': activeConversation?.id === conv.id }"
-              @click="selectConversation(conv)"
-            >
-              <UserAvatar :src="conv.user?.avatar" alt="头像" size="lg" />
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{ conv.user?.nickname }}</span>
-                  <span class="text-2xs text-gray-400">{{ formatTime(conv.updatedAt) }}</span>
-                </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ conv.lastMessage?.content }}</p>
-              </div>
-              <span v-if="conv.unreadCount > 0" class="w-5 h-5 bg-danger text-white text-2xs rounded-full flex items-center justify-center shrink-0">
-                {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
-              </span>
-            </button>
+            <!-- 加载状态 -->
+            <div v-if="loading" class="flex items-center justify-center py-16">
+              <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
 
-            <!-- 空状态 -->
-            <EmptyState v-if="conversations.length === 0" title="暂无会话" description="开始一段新的对话吧" />
+            <!-- 错误重试 -->
+            <ErrorRetry v-else-if="conversationsError" :message="conversationsError" :on-retry="loadConversations" />
+
+            <template v-else>
+              <button
+                v-for="conv in conversations"
+                :key="conv.id"
+                class="w-full flex items-center space-x-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                :class="{ 'bg-gray-50 dark:bg-gray-700/50': activeConversation?.id === conv.id }"
+                @click="selectConversation(conv)"
+              >
+                <UserAvatar :src="conv.user?.avatar" alt="头像" size="lg" />
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ conv.user?.nickname }}</span>
+                    <span class="text-2xs text-gray-400">{{ formatTime(conv.updatedAt) }}</span>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ conv.lastMessage?.content }}</p>
+                </div>
+                <span v-if="conv.unreadCount > 0" class="w-5 h-5 bg-danger text-white text-2xs rounded-full flex items-center justify-center shrink-0">
+                  {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
+                </span>
+              </button>
+
+              <!-- 空状态 -->
+              <EmptyState v-if="conversations.length === 0" title="暂无会话" description="开始一段新的对话吧" />
+            </template>
           </div>
         </div>
 
@@ -71,19 +81,27 @@ definePageMeta({
   middleware: 'auth',
 })
 
+const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
+
 const conversations = ref<Conversation[]>([])
 const activeConversation = ref<Conversation | null>(null)
 const messages = ref<Message[]>([])
 const loading = ref(false)
+const conversationsError = ref('')
 const unreadTotal = ref(0)
 
 // 加载会话列表
 const loadConversations = async () => {
   loading.value = true
+  conversationsError.value = ''
   try {
-    const { data } = await socialApi.getConversations()
-    conversations.value = data.data.list || []
+    const response = await cachedRequest(
+      () => socialApi.getConversations(),
+      '/conversations'
+    )
+    conversations.value = response.data.data.list || []
   } catch {
+    conversationsError.value = '加载会话列表失败，请重试'
     conversations.value = []
   } finally {
     loading.value = false
@@ -134,6 +152,8 @@ const sendMessage = async (content: string) => {
       conv.lastMessage = data.data
       conv.updatedAt = data.data.createdAt
     }
+    // 重新加载未读消息总数
+    loadUnreadCount()
   } catch {
     // 发送失败处理
   }

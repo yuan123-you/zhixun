@@ -53,9 +53,11 @@ client/dist/
 admin/src/auto-imports.d.ts
 admin/src/components.d.ts
 
-# ==================== 敏感文件 ====================
+# ==================== 本地开发工具 ====================
+.redis/
 .ssh_key
 dump.rdb
+appendonly.aof
 temp-images/
 test-api.json
 .trae/

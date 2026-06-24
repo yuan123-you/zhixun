@@ -1,6 +1,7 @@
 package com.zhixun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
@@ -46,6 +47,7 @@ import com.zhixun.mapper.UserMapper;
 import com.zhixun.mapper.ViewHistoryMapper;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.service.AdminService;
+import com.zhixun.service.NotificationService;
 import com.zhixun.service.OperationLogService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.CommentVO;
@@ -100,6 +102,7 @@ public class AdminServiceImpl implements AdminService {
     private final ViewHistoryMapper viewHistoryMapper;
     private final OperationLogService operationLogService;
     private final SensitiveWordUtil sensitiveWordUtil;
+    private final NotificationService notificationService;
 
     @Override
     public PageResult<ArticleVO> getPendingArticles(Integer page, Integer pageSize) {
@@ -287,6 +290,9 @@ public class AdminServiceImpl implements AdminService {
             vo.setRole(user.getRole() != null ? user.getRole().getValue() : null);
             vo.setStatus(user.getStatus());
             vo.setCreatedAt(user.getCreatedAt());
+            vo.setFollowCount(user.getFollowCount());
+            vo.setFollowerCount(user.getFollowerCount());
+            vo.setArticleCount(user.getArticleCount());
             return vo;
         }).collect(Collectors.toList());
 
@@ -447,6 +453,15 @@ public class AdminServiceImpl implements AdminService {
         Comment comment = commentMapper.selectById(commentId);
         if (comment == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "评论不存在");
+        }
+
+        // 减少文章评论数（仅当评论之前是正常状态时才减少）
+        CommentStatusEnum originalStatus = comment.getStatus();
+        if (originalStatus == CommentStatusEnum.NORMAL) {
+            articleMapper.update(null, new LambdaUpdateWrapper<Article>()
+                    .eq(Article::getId, comment.getArticleId())
+                    .gt(Article::getCommentCount, 0)
+                    .setSql("comment_count = comment_count - 1"));
         }
 
         // 软删除
@@ -640,21 +655,22 @@ public class AdminServiceImpl implements AdminService {
      */
     private void sendAuditNotification(Long authorId, Long articleId, String action, String reason) {
         try {
-            Notification notification = new Notification();
-            notification.setUserId(authorId);
-            notification.setType(NotificationTypeEnum.AUDIT);
-
+            String title;
+            String content;
             if ("approve".equals(action)) {
-                notification.setTitle("文章审核通过");
-                notification.setContent("您的文章已通过审核，现已发布");
+                title = "文章审核通过";
+                content = "您的文章已通过审核，现已发布";
             } else {
-                notification.setTitle("文章审核驳回");
-                notification.setContent("您的文章未通过审核，原因：" + (reason != null ? reason : "无"));
+                title = "文章审核驳回";
+                content = "您的文章未通过审核，原因：" + (reason != null ? reason : "无");
             }
-
-            notification.setIsRead(0);
-            notification.setRelatedId(articleId);
-            notificationMapper.insert(notification);
+            notificationService.createNotification(
+                    authorId,
+                    NotificationTypeEnum.AUDIT.getValue(),
+                    title,
+                    content,
+                    articleId
+            );
         } catch (Exception e) {
             log.error("发送审核通知失败: {}", e.getMessage());
         }

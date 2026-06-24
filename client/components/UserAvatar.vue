@@ -54,21 +54,15 @@ const props = withDefaults(defineProps<{
 })
 
 const config = useRuntimeConfig()
+const { resolveUrl } = useResourceUrl()
 
 const isLoading = ref(true)
 const isLoaded = ref(false)
 const hasError = ref(false)
 
-// 解析头像URL：相对路径拼接API基础地址
+// 解析头像URL：将内部 MinIO 地址替换为公网可访问的地址
 const resolveAvatarUrl = (url: string | null | undefined): string | null => {
-  if (!url) return null
-  // 已经是完整URL（http/https/data:）直接返回
-  if (/^(https?:|data:)/.test(url)) return url
-  // 以/开头的相对路径，直接使用（Nuxt代理会处理）
-  if (url.startsWith('/')) return url
-  // 其他相对路径，拼接公共API基础地址
-  const base = config.public.apiBase as string
-  return `${base}/${url}`
+  return resolveUrl(url)
 }
 
 // 计算实际头像源

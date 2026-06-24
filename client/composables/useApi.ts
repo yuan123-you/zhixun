@@ -9,6 +9,9 @@ let globalIsRefreshing = false
 let globalRefreshPromise: Promise<string> | null = null
 const globalPendingRequests: Array<(token: string) => void> = []
 
+/** 全局 axios 实例（单例模式，避免重复创建） */
+let globalInstance: AxiosInstance | null = null
+
 /** API请求封装组合式函数 */
 export const useApi = () => {
   const config = useRuntimeConfig()
@@ -18,6 +21,25 @@ export const useApi = () => {
   const baseURL = import.meta.server
     ? `${config.apiBase}/api/v1`
     : (config.public.apiBase as string)
+
+  // 复用全局实例（仅当 baseURL 一致时）
+  if (globalInstance) {
+    return {
+      instance: globalInstance,
+      get: <T = any>(url: string, params?: Record<string, any>, options?: AxiosRequestConfig) => {
+        return globalInstance!.get<ApiResponse<T>>(url, { params, ...options })
+      },
+      post: <T = any>(url: string, data?: Record<string, any>, options?: AxiosRequestConfig) => {
+        return globalInstance!.post<ApiResponse<T>>(url, data, options)
+      },
+      put: <T = any>(url: string, data?: Record<string, any>, options?: AxiosRequestConfig) => {
+        return globalInstance!.put<ApiResponse<T>>(url, data, options)
+      },
+      delete: <T = any>(url: string, options?: AxiosRequestConfig) => {
+        return globalInstance!.delete<ApiResponse<T>>(url, options)
+      },
+    }
+  }
 
   // 创建axios实例
   const instance: AxiosInstance = axios.create({
@@ -46,9 +68,13 @@ export const useApi = () => {
   const refreshAccessToken = async (): Promise<string> => {
     const currentRefreshToken = userStore.refreshToken
     if (!currentRefreshToken) {
-      userStore.logout()
-      navigateTo('/login')
-      throw new Error('登录已过期，请重新登录')
+      // 用户从未登录过（没有accessToken），静默拒绝，不提示"过期"
+      if (userStore.token) {
+        if (import.meta.client) showAuthExpiredToast()
+        userStore.logout()
+        navigateTo('/login')
+      }
+      throw new Error('请先登录')
     }
 
     // 如果已经在刷新中，复用同一个Promise
@@ -71,6 +97,7 @@ export const useApi = () => {
 
         return accessToken
       } catch {
+        if (import.meta.client) showAuthExpiredToast()
         userStore.logout()
         navigateTo('/login')
         throw new Error('登录已过期，请重新登录')
@@ -123,6 +150,28 @@ export const useApi = () => {
     }
   )
 
+  // 403 权限不足弹框提醒（防止重复弹出）
+  let forbiddenDialogVisible = false
+  const showForbiddenDialog = (message?: string) => {
+    if (!import.meta.client || forbiddenDialogVisible) return
+    forbiddenDialogVisible = true
+    const overlay = document.createElement('div')
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/30'
+    overlay.innerHTML = `
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl px-5 py-3 mx-4 text-center text-sm text-gray-700 dark:text-gray-200">
+        ${message || '暂无权限访问'}
+      </div>
+    `
+    document.body.appendChild(overlay)
+    const close = () => {
+      overlay.style.opacity = '0'
+      overlay.style.transition = 'opacity 0.15s'
+      setTimeout(() => { overlay.remove(); forbiddenDialogVisible = false }, 150)
+    }
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
+    setTimeout(close, 1500)
+  }
+
   // 响应拦截器：统一错误处理，401时自动刷新Token并重试
   instance.interceptors.response.use(
     (response: AxiosResponse<ApiResponse>) => {
@@ -146,20 +195,30 @@ export const useApi = () => {
           case 401:
             // 没有refreshToken时直接拒绝，不再尝试刷新（避免无限循环）
             if (!userStore.refreshToken) {
-              userStore.logout()
-              navigateTo('/login')
+              // 用户从未登录过（没有accessToken），静默拒绝，不提示"过期"
+              if (userStore.token) {
+                if (import.meta.client) showAuthExpiredToast()
+                userStore.logout()
+                navigateTo('/login')
+              }
               return Promise.reject(new Error('请先登录'))
             }
             // Token过期，尝试刷新
             return handleTokenRefresh(error.response.config)
-          case 403:
-            return Promise.reject(new Error('没有权限访问'))
+          case 403: {
+            // 认证相关接口返回403时，提示用户名或密码错误而非权限不足
+            const requestUrl = error.response.config?.url || ''
+            const isAuthEndpoint = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register')
+            const forbiddenMsg = isAuthEndpoint ? '用户名或密码错误' : '没有权限'
+            showForbiddenDialog(isAuthEndpoint ? '用户名或密码错误' : undefined)
+            return Promise.reject(new Error(forbiddenMsg))
+          }
           case 404:
-            return Promise.reject(new Error('请求的资源不存在'))
+            return Promise.reject(new Error('内容不存在'))
           case 429:
-            return Promise.reject(new Error('请求过于频繁，请稍后再试'))
+            return Promise.reject(new Error('操作太频繁，稍后再试'))
           case 500:
-            return Promise.reject(new Error('服务器内部错误'))
+            return Promise.reject(new Error('服务器开小差了'))
           default:
             return Promise.reject(new Error(error.response.data?.message || '请求失败'))
         }
@@ -168,7 +227,7 @@ export const useApi = () => {
       if (error.code === 'ECONNABORTED') {
         return Promise.reject(new Error('请求超时，请稍后重试'))
       }
-      return Promise.reject(new Error('网络异常，请检查网络连接'))
+      return Promise.reject(new Error('网络异常，请检查网络'))
     }
   )
 
@@ -176,9 +235,13 @@ export const useApi = () => {
   const handleTokenRefresh = async (requestConfig: AxiosRequestConfig) => {
     const currentRefreshToken = userStore.refreshToken
     if (!currentRefreshToken) {
-      userStore.logout()
-      navigateTo('/login')
-      return Promise.reject(new Error('登录已过期，请重新登录'))
+      // 用户从未登录过（没有accessToken），静默拒绝，不提示"过期"
+      if (userStore.token) {
+        if (import.meta.client) showAuthExpiredToast()
+        userStore.logout()
+        navigateTo('/login')
+      }
+      return Promise.reject(new Error('请先登录'))
     }
 
     // 如果已经在刷新中，将请求加入等待队列
@@ -225,6 +288,9 @@ export const useApi = () => {
     return instance.delete<ApiResponse<T>>(url, options)
   }
 
+  // 保存到全局实例
+  globalInstance = instance
+
   return {
     instance,
     get,
@@ -232,6 +298,34 @@ export const useApi = () => {
     put,
     delete: del,
   }
+}
+
+/**
+ * 登录过期提示 Toast（防止重复弹出）
+ */
+let authExpiredToastVisible = false
+function showAuthExpiredToast() {
+  if (authExpiredToastVisible) return
+  authExpiredToastVisible = true
+
+  const toast = document.createElement('div')
+  toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium transition-all duration-300 transform bg-amber-500 flex items-center gap-2'
+  toast.innerHTML = `
+    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>登录已过期，请重新登录</span>
+  `
+  document.body.appendChild(toast)
+
+  setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translate(-50%, -20px)'
+    setTimeout(() => {
+      toast.remove()
+      authExpiredToastVisible = false
+    }, 300)
+  }, 2000)
 }
 
 /**

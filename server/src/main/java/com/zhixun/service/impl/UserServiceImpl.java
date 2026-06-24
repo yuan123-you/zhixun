@@ -42,6 +42,8 @@ import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.CategoryMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -77,6 +79,13 @@ public class UserServiceImpl implements UserService {
     private final AesUtil aesUtil;
     private final OpenSearchSyncService openSearchSyncService;
     private final OnlineStatusService onlineStatusService;
+
+    /** Redis 模板（可选，Redis 不可用时为 null） */
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
+
+    /** 浏览量 Redis Key 前缀 */
+    private static final String VIEW_COUNT_PREFIX = "article:view:";
 
     @Override
     @Slave
@@ -465,6 +474,10 @@ public class UserServiceImpl implements UserService {
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);
         vo.setStatus(user.getStatus());
         vo.setCreatedAt(user.getCreatedAt());
+        vo.setFollowCount(user.getFollowCount());
+        vo.setFollowerCount(user.getFollowerCount());
+        vo.setArticleCount(user.getArticleCount());
+        vo.setBio(user.getBio());
 
         // 解密邮箱和手机号
         try {
@@ -513,7 +526,19 @@ public class UserServiceImpl implements UserService {
             vo.setSummary(article.getSummary());
             vo.setCoverImage(article.getCoverImage());
             vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
-            vo.setViewCount(article.getViewCount());
+            // 浏览数 = 数据库值 + Redis增量
+            long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
+            try {
+                if (stringRedisTemplate != null) {
+                    String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + article.getId());
+                    if (viewCountStr != null) {
+                        viewCount += Long.parseLong(viewCountStr);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
+            }
+            vo.setViewCount(viewCount);
             vo.setLikeCount(article.getLikeCount());
             vo.setCommentCount(article.getCommentCount());
             vo.setCollectCount(article.getCollectCount());

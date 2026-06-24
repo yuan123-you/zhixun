@@ -1,7 +1,16 @@
 <template>
   <!-- 文章编辑器 -->
   <div class="max-w-7xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">写文章</h1>
+    <!-- 返回导航 -->
+    <div class="flex items-center gap-3 mb-6">
+      <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors" @click="goBack">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        返回
+      </button>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">写文章</h1>
+    </div>
 
     <!-- 标题输入 -->
     <input
@@ -152,7 +161,7 @@
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">封面图</label>
       <div class="flex items-center space-x-4">
         <div v-if="form.coverImage" class="relative w-40 h-28 rounded-lg overflow-hidden">
-          <img :src="form.coverImage" alt="封面" class="w-full h-full object-cover" />
+          <img :src="resolveUrl(form.coverImage) || ''" alt="封面" class="w-full h-full object-cover" />
           <button class="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center text-xs" @click="form.coverImage = ''">×</button>
         </div>
         <label class="btn-secondary cursor-pointer">
@@ -198,6 +207,18 @@ import type { Category } from '~/types'
 definePageMeta({
   middleware: 'auth',
 })
+
+const router = useRouter()
+const { resolveUrl } = useResourceUrl()
+
+// 返回上一页
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    navigateTo('/')
+  }
+}
 
 // 移动端Tab状态
 const activeTab = ref<'edit' | 'preview'>('edit')

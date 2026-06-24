@@ -6,11 +6,15 @@
       <!-- 左侧主内容区 -->
       <div class="flex-1 min-w-0">
         <!-- 轮播图 -->
-        <BannerCarousel :banners="bannerList" />
+        <LazyBannerCarousel v-if="bannerList.length > 0" :banners="bannerList" />
+        <!-- 轮播图骨架屏 -->
+        <div v-else class="animate-pulse rounded-xl overflow-hidden">
+          <div class="w-full bg-gray-200 dark:bg-gray-700" style="padding-bottom: 40%"></div>
+        </div>
 
         <!-- 公告栏 -->
         <div v-if="announcementList.length > 0" class="mt-4">
-          <AnnouncementBar :announcements="announcementList" />
+          <LazyAnnouncementBar :announcements="announcementList" />
         </div>
 
         <!-- Tab切换 - 平板端增大触摸区域 -->
@@ -52,76 +56,10 @@
           :articles="articles"
           :loading="loading"
           :has-more="hasMore"
+          :error="error"
           @load-more="loadMore"
+          @retry="handleRetry"
         />
-      </div>
-
-      <!-- 右侧栏（桌面端可见，平板端通过侧边栏展示） -->
-      <aside class="hidden lg:block w-80 2xl:w-96 shrink-0 space-y-6">
-        <!-- 热榜 -->
-        <HotRank :items="hotRankItems" />
-
-        <!-- 热门标签 -->
-        <div class="card">
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h3 class="font-semibold text-gray-900 dark:text-white">{{ $t('hotTags.title') }}</h3>
-            <NuxtLink to="/tags" class="text-xs text-primary hover:text-primary-dark transition-colors">{{ $t('hotTags.viewAll') }}</NuxtLink>
-          </div>
-          <div class="p-4 flex flex-wrap gap-2">
-            <NuxtLink
-              v-for="tag in hotTags"
-              :key="tag.id"
-              :to="`/tags`"
-              class="px-3 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors"
-            >
-              {{ tag.name }}
-            </NuxtLink>
-          </div>
-        </div>
-
-        <!-- 推荐用户 -->
-        <div class="card">
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="font-semibold text-gray-900 dark:text-white">{{ $t('recommendUsers.title') }}</h3>
-          </div>
-          <div class="p-4 space-y-4">
-            <UserCard v-for="user in recommendUsers" :key="user.id" :user="user" :show-follow-button="true" @toggle-follow="toggleFollow" />
-          </div>
-        </div>
-      </aside>
-    </div>
-
-    <!-- 移动端/平板端：热榜和推荐用户入口（右侧栏在小屏不可见，补充展示） -->
-    <div class="lg:hidden mt-6 space-y-6">
-      <!-- 热榜 -->
-      <HotRank :items="hotRankItems" />
-
-      <!-- 热门标签 -->
-      <div class="card">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h3 class="font-semibold text-gray-900 dark:text-white">热门标签</h3>
-          <NuxtLink to="/tags" class="text-xs text-primary hover:text-primary-dark transition-colors">查看全部</NuxtLink>
-        </div>
-        <div class="p-4 flex flex-wrap gap-2">
-          <NuxtLink
-            v-for="tag in hotTags"
-            :key="tag.id"
-            to="/tags"
-            class="px-3 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors"
-          >
-            {{ tag.name }}
-          </NuxtLink>
-        </div>
-      </div>
-
-      <!-- 推荐用户 -->
-      <div class="card">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 class="font-semibold text-gray-900 dark:text-white">推荐关注</h3>
-        </div>
-        <div class="p-4 space-y-4">
-          <UserCard v-for="user in recommendUsers" :key="user.id" :user="user" :show-follow-button="true" @toggle-follow="toggleFollow" />
-        </div>
       </div>
     </div>
     </PullToRefresh>
@@ -129,9 +67,9 @@
 </template>
 
 <script setup lang="ts">
-/** 首页：推荐/热门/最新/关注四个Tab，文章卡片列表，右侧热榜/推荐栏 */
+/** 首页：推荐/热门/最新/关注四个Tab，文章卡片列表 */
 
-import type { Article, User, RankItem, PageResult, ApiResponse, Tag } from '~/types'
+import type { Article, PageResult, ApiResponse } from '~/types'
 import type { BannerItem, AnnouncementItem } from '~/api/banner'
 
 const userStore = useUserStore()
@@ -152,12 +90,13 @@ const articles = ref<Article[]>([])
 const loading = ref(false)
 const refreshing = ref(false)
 const hasMore = ref(true)
+const error = ref<string | null>(null)
 const page = ref(1)
-const hotRankItems = ref<RankItem[]>([])
-const recommendUsers = ref<User[]>([])
 const bannerList = ref<BannerItem[]>([])
 const announcementList = ref<AnnouncementItem[]>([])
-const hotTags = ref<Tag[]>([])
+
+// 请求缓存
+const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
 
 // 推荐刷新机制
 const refreshKey = ref('')
@@ -186,6 +125,7 @@ const switchTab = (key: string) => {
   articles.value = []
   page.value = 1
   hasMore.value = true
+  error.value = null
   // 切换到推荐Tab时重置refreshKey
   if (key === 'recommend') {
     refreshKey.value = ''
@@ -197,6 +137,7 @@ const switchTab = (key: string) => {
 const handleRefresh = async () => {
   if (refreshing.value) return
   refreshing.value = true
+  error.value = null
   page.value = 1
   hasMore.value = true
 
@@ -222,6 +163,7 @@ const handleRefresh = async () => {
     refreshKey.value = (data as any)?.refresh_key || ''
     hasMore.value = items.length >= 20
   } catch {
+    error.value = t('common.loadFailed')
     hasMore.value = false
   } finally {
     refreshing.value = false
@@ -240,6 +182,7 @@ const fetchArticles = async () => {
   }
 
   loading.value = true
+  error.value = null
 
   try {
     const pageSize = 20
@@ -276,6 +219,7 @@ const fetchArticles = async () => {
     }
     hasMore.value = items.length >= pageSize
   } catch {
+    error.value = t('common.loadFailed')
     hasMore.value = false
   } finally {
     loading.value = false
@@ -283,133 +227,77 @@ const fetchArticles = async () => {
 }
 
 // 加载更多
-const loadMore = () => {
+const loadMore = async () => {
+  const prevPage = page.value
   page.value++
+  try {
+    await fetchArticles()
+  } catch {
+    // 加载失败，回退页码
+    page.value = prevPage
+  }
+}
+
+// 重试上次失败的请求
+const handleRetry = () => {
+  error.value = null
   fetchArticles()
 }
 
-// 关注/取关
-const toggleFollow = async (userId: number) => {
-  if (!userStore.isLoggedIn) {
-    navigateTo('/login')
-    return
-  }
-  try {
-    const { socialApi } = await import('~/api')
-    await socialApi.toggleFollow(userId)
-    // 更新本地用户关注状态
-    const user = recommendUsers.value.find(u => u.id === userId)
-    if (user) {
-      user.isFollowing = !user.isFollowing
-      user.followerCount += user.isFollowing ? 1 : -1
-    }
-  } catch (error: any) {
-    console.error('关注操作失败:', error.message)
-  }
-}
+// 客户端刷新banner和公告数据（使用请求缓存）
+const refreshBannerAndAnnouncements = async () => {
+  if (!import.meta.client) return
+  const base = getApiBase()
+  const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
 
-// 加载推荐用户
-const fetchRecommendUsers = async () => {
   try {
-    const base = getApiBase()
-    const res = await $fetch<ApiResponse<User[]>>(`${base}/users/recommend`, {
-      params: { limit: 5 },
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    recommendUsers.value = res?.data || []
+    const [banners, announcements] = await Promise.all([
+      cachedRequest(
+        () => $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }),
+        `${base}/banners`,
+        undefined,
+        { ttl: 10 * 60 * 1000 }
+      ),
+      cachedRequest(
+        () => $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, { headers }),
+        `${base}/announcements`,
+        undefined,
+        { ttl: 10 * 60 * 1000 }
+      ),
+    ])
+    bannerList.value = banners?.data || bannerList.value
+    announcementList.value = announcements?.data || announcementList.value
   } catch {
-    recommendUsers.value = []
+    // 静默失败，保留现有数据
   }
 }
 
-// SSR数据获取 - 使用 useAsyncData + $fetch 确保SSR正确渲染
-// SSR时通过 nitro routeRules proxy /api -> http://server:8080/api
-// 客户端时通过 nginx 代理 /api -> http://server:8080/api
-const { data: feedData } = await useAsyncData('feed-recommend', async () => {
-  try {
-    const base = getApiBase()
-    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
+// SSR数据获取 - 使用单个 useAsyncData + Promise.all 并行请求，避免串行等待
+const { data: homeData } = await useAsyncData('home-init', async () => {
+  const base = getApiBase()
+  const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
+
+  const [feedRes, bannerRes, announcementRes] = await Promise.all([
+    $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
       params: { page: 1, pageSize: 20 },
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    // 保存首次加载的refresh_key
-    const list = res?.data?.list || []
-    refreshKey.value = (res?.data as any)?.refresh_key || ''
-    return list
-  } catch {
-    return []
-  }
-}, { default: () => [] })
+      headers,
+    }).catch(() => null),
+    $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }).catch(() => null),
+    $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, { headers }).catch(() => null),
+  ])
 
-const { data: rankData } = await useAsyncData('rank-hot', async () => {
-  try {
-    const base = getApiBase()
-    const res = await $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, {
-      params: { period: 'weekly' },
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    return res?.data || []
-  } catch {
-    return []
+  return {
+    feed: feedRes?.data?.list || [],
+    refreshKey: (feedRes?.data as any)?.refresh_key || '',
+    banners: bannerRes?.data || [],
+    announcements: announcementRes?.data || [],
   }
-}, { default: () => [] })
+}, { default: () => ({ feed: [] as Article[], refreshKey: '', banners: [] as BannerItem[], announcements: [] as AnnouncementItem[] }) })
 
-const { data: userData } = await useAsyncData('users-recommend', async () => {
-  try {
-    const base = getApiBase()
-    const res = await $fetch<ApiResponse<User[]>>(`${base}/users/recommend`, {
-      params: { limit: 5 },
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    return res?.data || []
-  } catch {
-    return []
-  }
-}, { default: () => [] })
-
-const { data: bannerData } = await useAsyncData('banners-active', async () => {
-  try {
-    const base = getApiBase()
-    const res = await $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, {
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    return res?.data || []
-  } catch {
-    return []
-  }
-}, { default: () => [] })
-
-const { data: announcementData } = await useAsyncData('announcements-active', async () => {
-  try {
-    const base = getApiBase()
-    const res = await $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, {
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    return res?.data || []
-  } catch {
-    return []
-  }
-}, { default: () => [] })
-
-const { data: tagData } = await useAsyncData('tags-hot-home', async () => {
-  try {
-    const base = getApiBase()
-    const res = await $fetch<ApiResponse<Tag[]>>(`${base}/tags/hot`, {
-      params: { limit: 10 },
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    return res?.data || []
-  } catch {
-    return []
-  }
-}, { default: () => [] })
-
-articles.value = feedData.value
-hotRankItems.value = rankData.value
-recommendUsers.value = userData.value
-bannerList.value = bannerData.value
-announcementList.value = announcementData.value
-hotTags.value = tagData.value
+articles.value = homeData.value.feed
+refreshKey.value = homeData.value.refreshKey
+bannerList.value = homeData.value.banners
+announcementList.value = homeData.value.announcements
 
 // 页面元信息
 useHead({

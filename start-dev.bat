@@ -1,106 +1,159 @@
 @echo off
 chcp 65001 >nul
-title 智讯系统 - 一键启动
+title Zhixun - Dev Start
 
 echo ============================================
-echo    智讯系统 - 本地开发一键启动脚本
+echo    Zhixun - Local Dev Quick Start
 echo ============================================
 echo.
 
-:: ==================== 前置检查 ====================
-echo [1/5] 检查前置环境...
+:: ==================== Load .env ====================
+echo [1/6] Loading .env ...
+set "ENV_FILE=%~dp0.env"
+if exist "%ENV_FILE%" (
+    for /f "usebackq tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
+        set "LINE=%%a"
+        if not "%%a"=="" (
+            echo %%a | findstr /b "#" >nul 2>&1
+            if errorlevel 1 (
+                set "%%a=%%b"
+            )
+        )
+    )
+    echo [OK] .env loaded
+) else (
+    echo [WARN] .env not found, using application.yml defaults
+)
+echo.
+
+:: ==================== Prerequisites ====================
+echo [2/6] Checking prerequisites...
 
 where java >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] 未找到 Java 17+，请先安装 JDK 17
+    echo [ERROR] Java 17+ not found, please install JDK 17
     pause
     exit /b 1
 )
 
 where node >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] 未找到 Node.js，请先安装 Node.js 18+
+    echo [ERROR] Node.js not found, please install Node.js 18+
     pause
     exit /b 1
 )
 
 where mvn >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [警告] 未找到 Maven，将尝试使用 mvnw
+    echo [WARN] Maven not found, will try mvnw
 )
 
-echo [OK] 环境检查通过
+echo [OK] Prerequisites check passed
 echo.
 
-:: ==================== 启动 MySQL ====================
-echo [2/5] 检查 MySQL...
+:: ==================== MySQL ====================
+echo [3/6] Checking MySQL...
 mysql -u root -p123456 -e "SELECT 1" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [警告] MySQL 未运行或密码不匹配，尝试用 Docker 启动...
+    echo [WARN] MySQL not running or password mismatch, trying Docker...
     docker run -d --name zhixun-mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_DATABASE=zhixun -v "%~dp0server\src\main\resources\db":/docker-entrypoint-initdb.d mysql:8.0 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci >nul 2>&1
     if %errorlevel% neq 0 (
-        echo [警告] Docker 启动 MySQL 失败，请手动确保 MySQL 可用
+        echo [WARN] Docker MySQL failed, please ensure MySQL is available manually
     ) else (
-        echo [OK] MySQL Docker 容器已启动，等待初始化...
+        echo [OK] MySQL Docker container started, waiting for init...
         timeout /t 30 /nobreak >nul
     )
 ) else (
-    echo [OK] MySQL 已连接
+    echo [OK] MySQL connected
 )
 echo.
 
-:: ==================== 启动 Redis ====================
-echo [3/5] 检查 Redis...
+:: ==================== Redis ====================
+echo [4/6] Checking Redis...
 redis-cli ping >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [警告] Redis 未运行，尝试用 Docker 启动...
-    docker run -d --name zhixun-redis -p 6379:6379 redis:7-alpine redis-server --appendonly yes >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo [警告] Docker 启动 Redis 失败，请手动确保 Redis 可用
+if %errorlevel% equ 0 (
+    echo [OK] Redis connected
+    goto :redis_done
+)
+
+:: Redis not running, try Docker
+docker run -d --name zhixun-redis -p 6379:6379 redis:7-alpine redis-server --appendonly yes >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] Redis Docker container started
+    goto :redis_done
+)
+
+:: Docker not available, try local embedded Redis
+set "REDIS_DIR=%~dp0.redis"
+if not exist "%REDIS_DIR%\redis-server.exe" (
+    echo [INFO] Downloading Redis for Windows...
+    if not exist "%REDIS_DIR%" mkdir "%REDIS_DIR%"
+    powershell -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip' -OutFile '%REDIS_DIR%\redis.zip' }" 2>nul
+    if exist "%REDIS_DIR%\redis.zip" (
+        echo [INFO] Extracting Redis...
+        powershell -Command "& { Expand-Archive -Path '%REDIS_DIR%\redis.zip' -DestinationPath '%REDIS_DIR%' -Force }" 2>nul
+        del /q "%REDIS_DIR%\redis.zip" >nul 2>&1
+        if not exist "%REDIS_DIR%\redis-server.exe" (
+            for /d %%i in ("%REDIS_DIR%\Redis-*") do (
+                move /y "%%i\*" "%REDIS_DIR%\" >nul 2>&1
+                rd /q "%%i" >nul 2>&1
+            )
+        )
+    )
+)
+
+if exist "%REDIS_DIR%\redis-server.exe" (
+    echo [INFO] Starting local Redis...
+    start "Zhixun-Redis" /min "%REDIS_DIR%\redis-server.exe" --appendonly yes --maxmemory 256mb
+    timeout /t 3 /nobreak >nul
+    "%REDIS_DIR%\redis-cli.exe" ping >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo [OK] Redis started (local embedded mode)
     ) else (
-        echo [OK] Redis Docker 容器已启动
+        echo [WARN] Redis start failed, backend may not work properly
     )
 ) else (
-    echo [OK] Redis 已连接
+    echo [WARN] Redis download failed, please install Redis manually or start Docker
+    echo        Download: https://github.com/tporadowski/redis/releases
 )
+
+:redis_done
 echo.
 
-:: ==================== 启动后端 ====================
-echo [4/5] 启动 Spring Boot 后端 (端口 8080)...
-start "智讯-后端" cmd /k "cd /d "%~dp0server" && mvn spring-boot:run -Dspring-boot.run.profiles=dev"
-echo [OK] 后端启动中，等待服务就绪...
+:: ==================== Backend ====================
+echo [5/6] Starting Spring Boot backend (port 8080)...
+start "Zhixun-Backend" cmd /k "cd /d "%~dp0server" && mvn spring-boot:run -Dspring-boot.run.profiles=dev"
+echo [OK] Backend starting, please wait...
 echo.
 
-:: ==================== 安装前端依赖并启动 ====================
-echo [5/5] 启动前端服务...
+:: ==================== Frontend ====================
+echo [6/6] Starting frontend services...
 
-:: C端前端
 if not exist "%~dp0client\node_modules" (
-    echo [安装] C端前端依赖中...
+    echo [INFO] Installing client dependencies...
     cd /d "%~dp0client" && npm install
 )
 
-:: 管理后台
 if not exist "%~dp0admin\node_modules" (
-    echo [安装] 管理后台依赖中...
+    echo [INFO] Installing admin dependencies...
     cd /d "%~dp0admin" && npm install
 )
 
-echo [启动] C端前端 (端口 3000)...
-start "智讯-C端前端" cmd /k "cd /d "%~dp0client" && npm run dev"
+echo [INFO] Starting client (port 3000)...
+start "Zhixun-Client" cmd /k "cd /d "%~dp0client" && npm run dev"
 
-echo [启动] 管理后台 (端口 3001)...
-start "智讯-管理后台" cmd /k "cd /d "%~dp0admin" && npm run dev"
+echo [INFO] Starting admin (port 3001)...
+start "Zhixun-Admin" cmd /k "cd /d "%~dp0admin" && npm run dev"
 
 echo.
 echo ============================================
-echo    所有服务已启动！
+echo    All services started!
 echo ============================================
 echo.
-echo    后端 API:    http://localhost:8080/api/v1
-echo    C端前端:      http://localhost:3000
-echo    管理后台:      http://localhost:3001
+echo    Backend API:  http://localhost:8080/api/v1
+echo    Client:       http://localhost:3000
+echo    Admin:        http://localhost:3001
 echo.
-echo    注意: 后端首次启动需要约30秒，请耐心等待
+echo    Note: Backend takes ~30s on first start
 echo ============================================
 pause

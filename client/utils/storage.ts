@@ -250,6 +250,8 @@ export const TTL = {
 
 /** 本地存储键名常量 */
 export const STORAGE_KEYS = {
+  /** 访问令牌 */
+  ACCESS_TOKEN: 'accessToken',
   /** 刷新令牌 */
   REFRESH_TOKEN: 'refreshToken',
   /** Access Token 过期时间戳 */

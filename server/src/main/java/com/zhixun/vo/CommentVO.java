@@ -26,6 +26,9 @@ public class CommentVO {
     /** 点赞数 */
     private Integer likeCount;
 
+    /** 评论用户ID */
+    private Long userId;
+
     /** 评论用户信息 */
     private UserVO user;
 

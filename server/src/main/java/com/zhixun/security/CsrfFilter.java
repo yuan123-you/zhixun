@@ -50,6 +50,16 @@ public class CsrfFilter extends OncePerRequestFilter {
     @Value("${ssr.secret:}")
     private String ssrSecret;
 
+    /** 跳过 CSRF 校验的公开接口（这些接口已有图形验证码等防刷机制，且 CSRF 攻击无法获利） */
+    private static final String[] CSRF_EXCLUDED_PATHS = {
+            "/v1/auth/login",
+            "/v1/auth/register",
+            "/v1/auth/refresh",
+            "/v1/auth/send-code",
+            "/v1/auth/graph-captcha",
+            "/v1/auth/forgot-password",
+    };
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
@@ -58,6 +68,17 @@ public class CsrfFilter extends OncePerRequestFilter {
             ensureCsrfCookie(request, response);
             filterChain.doFilter(request, response);
             return;
+        }
+
+        // 公开认证接口跳过 CSRF 校验（首次访问时浏览器尚无 XSRF-TOKEN Cookie）
+        // 使用 getServletPath() 获取不含 context-path 的路径，与排除列表匹配
+        String servletPath = request.getServletPath();
+        for (String excludedPath : CSRF_EXCLUDED_PATHS) {
+            if (excludedPath.equals(servletPath)) {
+                ensureCsrfCookie(request, response);
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
 
         // WebSocket 握手请求放行

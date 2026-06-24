@@ -39,59 +39,80 @@
 
     <!-- 文章列表 -->
     <el-card shadow="never" class="table-card">
-      <el-table v-loading="loading" :data="articleList" stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="authorName" label="作者" width="120" />
-        <el-table-column prop="categoryName" label="分类" width="120" />
-        <el-table-column label="标签" width="180">
-          <template #default="{ row }">
-            <el-tag
-              v-for="tag in row.tags"
-              :key="tag.id"
-              size="small"
-              class="mr-1"
-            >
-              {{ tag.name }}
-            </el-tag>
+      <!-- 骨架屏：首次加载时展示 -->
+      <template v-if="isFirstLoad">
+        <el-skeleton :rows="8" animated />
+      </template>
+
+      <template v-else>
+        <el-table v-loading="loading" :data="articleList" stripe>
+          <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="authorName" label="作者" width="120" />
+          <el-table-column prop="categoryName" label="分类" width="120" />
+          <el-table-column label="标签" width="180">
+            <template #default="{ row }">
+              <el-tag
+                v-for="tag in row.tags"
+                :key="tag.id"
+                size="small"
+                class="mr-1"
+              >
+                {{ tag.name }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <StatusTag :status="row.status" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="viewCount" label="浏览" width="80" />
+          <el-table-column prop="likeCount" label="点赞" width="80" />
+          <el-table-column prop="createdAt" label="创建时间" width="170" />
+          <el-table-column label="操作" width="220" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
+              <el-button
+                v-if="row.status === 'pending'"
+                type="success"
+                link
+                size="small"
+                @click="handleAudit(row)"
+              >
+                审核
+              </el-button>
+              <el-button
+                v-if="row.status === 'published'"
+                type="warning"
+                link
+                size="small"
+                @click="handleOffline(row)"
+              >
+                下架
+              </el-button>
+              <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            </template>
+          </el-table-column>
+
+          <!-- 错误重试空状态 -->
+          <template #empty>
+            <div class="table-empty">
+              <template v-if="hasError">
+                <el-icon :size="40" color="#909399"><CircleCloseFilled /></el-icon>
+                <p>数据加载失败</p>
+                <el-button type="primary" size="small" @click="loadArticles()">重新加载</el-button>
+              </template>
+              <template v-else>
+                <el-empty description="暂无文章数据" />
+              </template>
+            </div>
           </template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <StatusTag :status="row.status" />
-          </template>
-        </el-table-column>
-        <el-table-column prop="viewCount" label="浏览" width="80" />
-        <el-table-column prop="likeCount" label="点赞" width="80" />
-        <el-table-column prop="createdAt" label="创建时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
-            <el-button
-              v-if="row.status === 'pending'"
-              type="success"
-              link
-              size="small"
-              @click="handleAudit(row)"
-            >
-              审核
-            </el-button>
-            <el-button
-              v-if="row.status === 'published'"
-              type="warning"
-              link
-              size="small"
-              @click="handleOffline(row)"
-            >
-              下架
-            </el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+        </el-table>
+      </template>
 
       <!-- 分页 -->
-      <div class="pagination-wrapper">
+      <div v-if="!isFirstLoad" class="pagination-wrapper">
         <el-pagination
           v-model:current-page="queryParams.page"
           v-model:page-size="queryParams.pageSize"
@@ -116,14 +137,36 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { Article, ArticleQuery, ArticleStatus, Category } from '@/types'
-import { getArticleList, deleteArticle, offlineArticle } from '@/api/article'
+import { CircleCloseFilled } from '@element-plus/icons-vue'
+import type { Article, ArticleQuery, ArticleStatus, Category, PageResult } from '@/types'
+import { deleteArticle, offlineArticle } from '@/api/article'
 import { getCategoryTree } from '@/api/category'
+import { useRequestCache } from '@/composables/useRequestCache'
 import StatusTag from '@/components/StatusTag.vue'
 import AuditDialog from '@/components/AuditDialog.vue'
 
+/** 请求缓存实例 */
+const articleCache = useRequestCache<PageResult<Article>>({
+  ttl: 2 * 60 * 1000,
+  staleWhileRevalidate: true,
+  retryCount: 2,
+  retryInterval: 800,
+})
+
+const categoryCache = useRequestCache<Category[]>({
+  ttl: 5 * 60 * 1000,
+  staleWhileRevalidate: true,
+  retryCount: 1,
+})
+
 /** 加载状态 */
 const loading = ref(false)
+
+/** 是否首次加载（用于骨架屏判断） */
+const isFirstLoad = ref(true)
+
+/** 是否有错误 */
+const hasError = ref(false)
 
 /** 文章列表 */
 const articleList = ref<Article[]>([])
@@ -164,7 +207,6 @@ function handleReset() {
 
 /** 查看文章 */
 function handleView(article: Article) {
-  // 可跳转文章详情页或打开预览对话框
   ElMessage.info(`查看文章: ${article.title}`)
 }
 
@@ -184,6 +226,7 @@ async function handleOffline(article: Article) {
     })
     await offlineArticle(article.id)
     ElMessage.success('下架成功')
+    articleCache.invalidate('/articles', queryParams as unknown as Record<string, unknown>)
     loadArticles()
   } catch {
     // 用户取消或请求失败
@@ -200,6 +243,7 @@ async function handleDelete(article: Article) {
     })
     await deleteArticle(article.id)
     ElMessage.success('删除成功')
+    articleCache.invalidate('/articles', queryParams as unknown as Record<string, unknown>)
     loadArticles()
   } catch {
     // 用户取消或请求失败
@@ -207,26 +251,29 @@ async function handleDelete(article: Article) {
 }
 
 /** 加载文章列表 */
-async function loadArticles() {
+async function loadArticles(force = false) {
   loading.value = true
+  hasError.value = false
   try {
-    const res = await getArticleList(queryParams)
-    articleList.value = res.data.list
-    total.value = res.data.total
+    const result = await articleCache.request('/articles', queryParams as unknown as Record<string, unknown>, { force })
+    articleList.value = result.list
+    total.value = result.total
   } catch {
-    // 错误已在拦截器中处理
+    hasError.value = true
+    ElMessage.error('文章列表加载失败，请稍后重试')
   } finally {
     loading.value = false
+    isFirstLoad.value = false
   }
 }
 
 /** 加载分类列表 */
 async function loadCategories() {
   try {
-    const res = await getCategoryTree()
-    categoryList.value = res.data
+    const result = await categoryCache.request('/categories')
+    categoryList.value = result
   } catch {
-    // 错误已在拦截器中处理
+    ElMessage.error('分类列表加载失败')
   }
 }
 
@@ -250,6 +297,19 @@ onMounted(() => {
 
   .mr-1 {
     margin-right: 4px;
+  }
+
+  .table-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 0;
+    gap: 8px;
+
+    p {
+      color: #909399;
+      font-size: 14px;
+    }
   }
 }
 </style>

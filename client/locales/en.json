@@ -25,7 +25,11 @@
     "messages": "Messages",
     "profile": "Profile",
     "settings": "Settings",
-    "write": "Write"
+    "write": "Write",
+    "publish": "Publish",
+    "notifications": "Notifications",
+    "mine": "Me",
+    "discover": "Discover"
   },
   "article": {
     "title": "Title",

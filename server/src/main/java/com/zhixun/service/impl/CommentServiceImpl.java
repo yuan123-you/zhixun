@@ -7,6 +7,7 @@ import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.util.SensitiveWordUtil;
+import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.config.Slave;
 import com.zhixun.dto.comment.CommentCreateRequest;
 import com.zhixun.dto.comment.CommentReportRequest;
@@ -55,6 +56,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentReportMapper commentReportMapper;
     private final SensitiveWordUtil sensitiveWordUtil;
     private final NotificationService notificationService;
+    private final SecurityUtil securityUtil;
 
     /** @提及正则：匹配 @username（用户名由字母、数字、下划线、中文组成，2-20个字符） */
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([\\w\\u4e00-\\u9fa5]{2,20})");
@@ -139,19 +141,22 @@ public class CommentServiceImpl implements CommentService {
         }
 
         // 权限校验：仅评论者本人或管理员可删除
-        if (!comment.getUserId().equals(userId)) {
+        if (!securityUtil.isOwnerOrAdmin(comment.getUserId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "无权删除此评论");
         }
 
         // 软删除：更新状态为已删除
+        CommentStatusEnum originalStatus = comment.getStatus();
         comment.setStatus(CommentStatusEnum.DELETED);
         commentMapper.updateById(comment);
 
-        // 减少文章评论数（SQL 原子操作）
-        articleMapper.update(null, new LambdaUpdateWrapper<Article>()
-                .eq(Article::getId, comment.getArticleId())
-                .gt(Article::getCommentCount, 0)
-                .setSql("comment_count = comment_count - 1"));
+        // 减少文章评论数（仅当评论之前是正常状态时才减少，PENDING 状态的评论还未计入评论数）
+        if (originalStatus == CommentStatusEnum.NORMAL) {
+            articleMapper.update(null, new LambdaUpdateWrapper<Article>()
+                    .eq(Article::getId, comment.getArticleId())
+                    .gt(Article::getCommentCount, 0)
+                    .setSql("comment_count = comment_count - 1"));
+        }
     }
 
     @Override
@@ -497,6 +502,7 @@ public class CommentServiceImpl implements CommentService {
         CommentVO vo = new CommentVO();
         vo.setId(comment.getId());
         vo.setArticleId(comment.getArticleId());
+        vo.setUserId(comment.getUserId());
         vo.setContent(comment.getContent());
         vo.setStatus(comment.getStatus() != null ? comment.getStatus().getValue() : null);
         vo.setLikeCount(comment.getLikeCount());
@@ -532,6 +538,9 @@ public class CommentServiceImpl implements CommentService {
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);
         vo.setStatus(user.getStatus());
         vo.setCreatedAt(user.getCreatedAt());
+        vo.setFollowCount(user.getFollowCount());
+        vo.setFollowerCount(user.getFollowerCount());
+        vo.setArticleCount(user.getArticleCount());
         return vo;
     }
 }

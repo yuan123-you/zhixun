@@ -47,6 +47,7 @@ export interface User {
   phone: string
   gender: Gender
   birthday: string
+  role?: string
   followCount: number
   followerCount: number
   articleCount: number
@@ -93,6 +94,8 @@ export interface Tag {
   id: number
   name: string
   articleCount: number
+  /** 当前用户是否已关注 */
+  isFollowed?: boolean
 }
 
 /** 通知接口 */
@@ -208,7 +211,6 @@ export interface RegisterRequest {
   confirmPassword: string
   email: string
   code: string
-  nickname?: string
 }
 
 /** 发送验证码请求 */

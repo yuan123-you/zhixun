@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { UserInfo, LoginParams } from '@/types'
+import type { UserInfo, LoginUserInfo, LoginParams } from '@/types'
 import { loginApi, getUserInfoApi } from '@/api/auth'
 import { storage, STORAGE_KEYS } from '@/utils/storage'
 import router from '@/router'
@@ -28,14 +28,29 @@ export const useUserStore = defineStore('user', () => {
    */
   async function login(params: LoginParams) {
     const res = await loginApi(params)
-    token.value = res.data.token
-    userInfo.value = res.data.userInfo
-    permissions.value = res.data.userInfo.permissions
+    token.value = res.data.accessToken
+    const loginUserInfo: LoginUserInfo = res.data.userInfo
+    permissions.value = loginUserInfo.permissions
     isLoggedIn.value = true
 
+    // 将登录用户信息转为 UserInfo 存储
+    userInfo.value = {
+      id: loginUserInfo.id,
+      username: loginUserInfo.username,
+      nickname: loginUserInfo.nickname,
+      avatar: loginUserInfo.avatar ?? '',
+      email: '',
+      phone: '',
+      role: loginUserInfo.role,
+      permissions: loginUserInfo.permissions,
+      status: 'active' as any,
+      createdAt: '',
+      updatedAt: '',
+    }
+
     // 持久化存储
-    storage.set(STORAGE_KEYS.TOKEN, res.data.token)
-    storage.set(STORAGE_KEYS.USER_PERMISSIONS, res.data.userInfo.permissions)
+    storage.set(STORAGE_KEYS.TOKEN, res.data.accessToken)
+    storage.set(STORAGE_KEYS.USER_PERMISSIONS, loginUserInfo.permissions)
 
     // 跳转到首页或来源页
     const redirect = (router.currentRoute.value.query.redirect as string) || '/'

@@ -52,7 +52,7 @@
 
       <!-- 封面图（右侧，sm以上显示） -->
       <div v-if="article.coverImage" class="hidden sm:block w-28 md:w-32 h-24 shrink-0">
-        <img :src="article.coverImage" :alt="article.title" class="w-full h-full object-cover rounded-lg" />
+        <img :src="resolveUrl(article.coverImage) || ''" :alt="article.title" class="w-full h-full object-cover rounded-lg" />
       </div>
     </div>
   </article>
@@ -65,6 +65,8 @@ import type { Article } from '~/types'
 const props = defineProps<{
   article: Article
 }>()
+
+const { resolveUrl } = useResourceUrl()
 
 // 跳转到文章详情
 const navigateToDetail = () => {

@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,6 +33,14 @@ public class GraphCaptchaService {
     /** 图形验证码有效期（分钟） */
     private static final long EXPIRE_MINUTES = 5;
 
+    /** 本地缓存降级（Redis不可用时使用） */
+    private final ConcurrentHashMap<String, CacheEntry> localCache = new ConcurrentHashMap<>();
+
+    /** 本地缓存条目 */
+    private record CacheEntry(String value, long expireAt) {
+        boolean isExpired() { return System.currentTimeMillis() > expireAt; }
+    }
+
     /** 图片宽度 */
     private static final int WIDTH = 120;
 
@@ -49,24 +58,28 @@ public class GraphCaptchaService {
         int b = (int) (Math.random() * 20) + 1;
         String[] operators = {"+", "-", "×"};
         String operator = operators[(int) (Math.random() * operators.length)];
+        // 减法确保结果非负，避免用户输入负号时的混淆
         int answer = switch (operator) {
             case "+" -> a + b;
-            case "-" -> a - b;
+            case "-" -> Math.max(a, b) - Math.min(a, b);
             case "×" -> a * b;
             default -> 0;
         };
-        String expression = a + " " + operator + " " + b + " = ?";
+        // 减法时确保大数在前，表达式与答案一致
+        String expression = (operator.equals("-") ? Math.max(a, b) : a) + " " + operator + " " + (operator.equals("-") ? Math.min(a, b) : b) + " = ?";
 
         // 生成唯一 key
         String captchaKey = UUID.randomUUID().toString().replace("-", "");
 
-        // 存入 Redis
-        stringRedisTemplate.opsForValue().set(
-                GRAPH_CAPTCHA_PREFIX + captchaKey,
-                String.valueOf(answer),
-                EXPIRE_MINUTES,
-                TimeUnit.MINUTES
-        );
+        // 存入 Redis（降级到本地缓存）
+        String key = GRAPH_CAPTCHA_PREFIX + captchaKey;
+        try {
+            stringRedisTemplate.opsForValue().set(key, String.valueOf(answer), EXPIRE_MINUTES, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("Redis不可用，图形验证码降级到本地缓存: {}", e.getMessage());
+            localCache.put(key, new CacheEntry(String.valueOf(answer),
+                    System.currentTimeMillis() + EXPIRE_MINUTES * 60 * 1000));
+        }
 
         // 生成图片
         String imageBase64 = generateImage(expression);
@@ -83,15 +96,50 @@ public class GraphCaptchaService {
      */
     public boolean verify(String captchaKey, String captchaAnswer) {
         if (captchaKey == null || captchaKey.isBlank() || captchaAnswer == null || captchaAnswer.isBlank()) {
+            log.warn("图形验证码校验失败: 参数为空, captchaKey={}, captchaAnswer={}",
+                    captchaKey != null ? "present" : "null",
+                    captchaAnswer != null ? "present" : "null");
             return false;
         }
         String key = GRAPH_CAPTCHA_PREFIX + captchaKey;
-        String storedAnswer = stringRedisTemplate.opsForValue().get(key);
-        if (storedAnswer == null || !storedAnswer.equals(captchaAnswer.trim())) {
+        String storedAnswer = null;
+        try {
+            storedAnswer = stringRedisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            // Redis不可用，从本地缓存获取
+            log.warn("Redis不可用，从本地缓存获取图形验证码: {}", e.getMessage());
+            CacheEntry entry = localCache.get(key);
+            if (entry != null && !entry.isExpired()) {
+                storedAnswer = entry.value;
+            }
+        }
+        if (storedAnswer == null) {
+            log.warn("图形验证码校验失败: 验证码不存在或已过期, key={}", key);
+            return false;
+        }
+        // 数值比较：避免全角数字、前导零、Unicode减号等字符串匹配问题
+        try {
+            int expected = Integer.parseInt(storedAnswer.trim());
+            String normalizedAnswer = captchaAnswer.trim()
+                    .replace('−', '-')   // Unicode减号 → ASCII连字符
+                    .replace('＋', '+')  // Unicode加号 → ASCII加号
+                    .replace('×', '*')   // 中文乘号 → 星号（虽然答案不会包含）
+                    .replaceAll("[\\s\\u00A0]+", ""); // 去除空格和不换行空格
+            int actual = Integer.parseInt(normalizedAnswer);
+            if (expected != actual) {
+                log.warn("图形验证码校验失败: 答案不匹配, expected={}, actual={}", expected, actual);
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            log.warn("图形验证码校验失败: 答案格式无效, storedAnswer={}, captchaAnswer={}", storedAnswer, captchaAnswer);
             return false;
         }
         // 验证通过后删除，防止重复使用
-        stringRedisTemplate.delete(key);
+        try {
+            stringRedisTemplate.delete(key);
+        } catch (Exception e) {
+            localCache.remove(key);
+        }
         return true;
     }
 

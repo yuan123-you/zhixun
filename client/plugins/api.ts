@@ -5,7 +5,7 @@ export default defineNuxtPlugin(() => {
   const userStore = useUserStore()
   const { get, post, put, delete: del } = useApi()
 
-  // 客户端初始化：检查Token是否即将过期，如果是则主动刷新
+  // 客户端初始化：非阻塞方式检查Token状态
   if (import.meta.client) {
     const checkAndRefreshToken = async () => {
       const { token, refreshToken, tokenExpiresAt } = userStore
@@ -23,6 +23,18 @@ export default defineNuxtPlugin(() => {
           }
         }
       }
+      // Token为空但refreshToken存在（页面刷新后token过期或丢失），尝试刷新恢复登录态
+      else if (!token && refreshToken) {
+        try {
+          const { authApi } = await import('~/api/auth')
+          const response = await authApi.refreshToken(refreshToken)
+          const authData = response.data.data
+          userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
+        } catch {
+          // 刷新失败，清除无效的refreshToken
+          userStore.logout()
+        }
+      }
     }
 
     // 页面可见性变化时检查Token是否需要刷新
@@ -32,8 +44,10 @@ export default defineNuxtPlugin(() => {
       }
     })
 
-    // 插件初始化时检查一次
-    checkAndRefreshToken()
+    // 延迟执行Token检查，不阻塞首屏渲染
+    requestIdleCallback
+      ? requestIdleCallback(() => checkAndRefreshToken())
+      : setTimeout(() => checkAndRefreshToken(), 1000)
   }
 
   // 提供全局 $api 对象

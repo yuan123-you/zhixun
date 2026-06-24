@@ -139,6 +139,11 @@ public class ArticleServiceImpl implements ArticleService {
         // 创建文章记录
         articleMapper.insert(article);
 
+        // 更新用户文章数 +1
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, userId)
+                .setSql("article_count = article_count + 1"));
+
         // 处理标签关联
         handleTags(article.getId(), request.getTagIds());
 
@@ -246,9 +251,13 @@ public class ArticleServiceImpl implements ArticleService {
         vo.setTags(getArticleTags(articleId));
 
         // 获取 Redis 中的浏览量
-        String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + articleId);
-        if (viewCountStr != null) {
-            vo.setViewCount(article.getViewCount() + Long.parseLong(viewCountStr));
+        try {
+            String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + articleId);
+            if (viewCountStr != null) {
+                vo.setViewCount(article.getViewCount() + Long.parseLong(viewCountStr));
+            }
+        } catch (Exception e) {
+            log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
         }
 
         // 记录浏览历史（异步）
@@ -340,6 +349,12 @@ public class ArticleServiceImpl implements ArticleService {
         softDelete.setId(articleId);
         softDelete.setDeletedAt(LocalDateTime.now());
         articleMapper.updateById(softDelete);
+
+        // 更新用户文章数 -1
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, article.getAuthorId())
+                .gt(User::getArticleCount, 0)
+                .setSql("article_count = article_count - 1"));
 
         // 删除标签关联
         articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleId));
@@ -445,20 +460,24 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 尝试从缓存获取
         String cacheKey = RELATED_ARTICLES_PREFIX + articleId;
-        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
-        if (cachedIds != null && !cachedIds.isEmpty()) {
-            List<Long> articleIds = parseRelatedIds(cachedIds);
-            if (!articleIds.isEmpty()) {
-                List<Article> articles = articleMapper.selectBatchIds(articleIds);
-                // 保持缓存中的顺序
-                Map<Long, Article> articleMap = articles.stream()
-                        .collect(Collectors.toMap(Article::getId, a -> a));
-                List<Article> ordered = articleIds.stream()
-                        .map(articleMap::get)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                return convertToVOList(ordered);
+        try {
+            String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+            if (cachedIds != null && !cachedIds.isEmpty()) {
+                List<Long> articleIds = parseRelatedIds(cachedIds);
+                if (!articleIds.isEmpty()) {
+                    List<Article> articles = articleMapper.selectBatchIds(articleIds);
+                    // 保持缓存中的顺序
+                    Map<Long, Article> articleMap = articles.stream()
+                            .collect(Collectors.toMap(Article::getId, a -> a));
+                    List<Article> ordered = articleIds.stream()
+                            .map(articleMap::get)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList());
+                    return convertToVOList(ordered);
+                }
             }
+        } catch (Exception e) {
+            log.warn("获取相关推荐缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
         // 缓存未命中，查询数据库
@@ -526,10 +545,14 @@ public class ArticleServiceImpl implements ArticleService {
                 .map(Article::getId)
                 .collect(Collectors.toList());
         if (!resultIds.isEmpty()) {
-            String idsStr = resultIds.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
-            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, RELATED_CACHE_MINUTES, TimeUnit.MINUTES);
+            try {
+                String idsStr = resultIds.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","));
+                stringRedisTemplate.opsForValue().set(cacheKey, idsStr, RELATED_CACHE_MINUTES, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                log.warn("缓存相关推荐数据失败: {}", e.getMessage());
+            }
         }
 
         return convertToVOList(result);
@@ -734,7 +757,17 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setSummary(article.getSummary());
             vo.setCoverImage(article.getCoverImage());
             vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
-            vo.setViewCount(article.getViewCount());
+            // 浏览数 = 数据库值 + Redis增量
+            long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
+            try {
+                String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + article.getId());
+                if (viewCountStr != null) {
+                    viewCount += Long.parseLong(viewCountStr);
+                }
+            } catch (Exception e) {
+                log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
+            }
+            vo.setViewCount(viewCount);
             vo.setLikeCount(article.getLikeCount());
             vo.setCommentCount(article.getCommentCount());
             vo.setCollectCount(article.getCollectCount());

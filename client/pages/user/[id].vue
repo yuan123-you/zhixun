@@ -1,6 +1,14 @@
 <template>
   <!-- 用户主页 -->
   <div class="max-w-4xl mx-auto px-4 py-6">
+    <!-- 返回导航 -->
+    <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors mb-4" @click="goBack">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      返回
+    </button>
+
     <!-- 用户资料卡 -->
     <div class="card p-6 mb-6">
       <div class="flex items-start space-x-4">
@@ -68,6 +76,9 @@
         <div v-if="listLoading" class="flex items-center justify-center py-8">
           <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
+
+        <!-- 错误重试 -->
+        <ErrorRetry v-else-if="listError" :message="listError" :on-retry="retryList" />
 
         <!-- 空状态 -->
         <div v-else-if="currentList.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
@@ -143,7 +154,7 @@
     <!-- Ta的文章列表 -->
     <div class="mt-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ta的文章</h3>
-      <ArticleList :articles="articles" :loading="loading" :has-more="hasMore" @load-more="loadMore" />
+      <ArticleList :articles="articles" :loading="loading" :has-more="hasMore" :error="articlesError" @load-more="loadMore" @retry="retryArticles" />
     </div>
   </div>
 </template>
@@ -154,8 +165,18 @@ import type { User, Article } from '~/types'
 import type { FollowUser } from '~/api/social'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const userId = computed(() => Number(route.params.id))
+
+// 返回上一页
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    navigateTo('/')
+  }
+}
 
 // 用户信息
 const userInfo = ref<User | null>(null)
@@ -183,6 +204,13 @@ const followLoading = ref<Record<number, boolean>>({})
 // 在线状态
 const onlineStatus = ref(false)
 
+// 错误状态
+const articlesError = ref<string | null>(null)
+const listError = ref<string | null>(null)
+
+// 请求缓存
+const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
+
 // 当前显示列表
 const currentList = computed(() => activeTab.value === 'following' ? followingList.value : followersList.value)
 const listHasMore = computed(() => activeTab.value === 'following' ? followingHasMore.value : followersHasMore.value)
@@ -190,7 +218,10 @@ const listHasMore = computed(() => activeTab.value === 'following' ? followingHa
 // 获取用户信息
 const { data: userData } = await useAsyncData(`user-${userId.value}`, async () => {
   const { userApi } = await import('~/api')
-  const response = await userApi.getProfile(userId.value)
+  const response = await cachedRequest(
+    () => userApi.getProfile(userId.value),
+    `/user/profile/${userId.value}`
+  )
   return response.data.data
 })
 
@@ -198,9 +229,18 @@ userInfo.value = userData.value || null
 
 // 获取用户文章
 const { data: articleData } = await useAsyncData(`user-articles-${userId.value}`, async () => {
-  const { userApi } = await import('~/api')
-  const response = await userApi.getUserArticles(userId.value, { page: 1, pageSize: 20 })
-  return response.data.data
+  try {
+    const { userApi } = await import('~/api')
+    const response = await cachedRequest(
+      () => userApi.getUserArticles(userId.value, { page: 1, pageSize: 20 }),
+      `/user/articles/${userId.value}`,
+      { page: 1, pageSize: 20 }
+    )
+    return response.data.data
+  } catch (error: any) {
+    articlesError.value = error.message || '加载文章失败'
+    return null
+  }
 })
 
 if (articleData.value) {
@@ -222,6 +262,7 @@ const fetchOnlineStatus = async () => {
 // 获取关注列表
 const fetchFollowing = async (page: number = 1) => {
   try {
+    listError.value = null
     const { socialApi } = await import('~/api/social')
     const response = await socialApi.getFollowing(userId.value, { page, pageSize: 20 })
     const data = response.data.data
@@ -233,14 +274,15 @@ const fetchFollowing = async (page: number = 1) => {
     }
     followingHasMore.value = data?.hasMore ?? items.length >= 20
     followingPage.value = page
-  } catch {
-    // 忽略错误
+  } catch (error: any) {
+    listError.value = error.message || '加载关注列表失败'
   }
 }
 
 // 获取粉丝列表
 const fetchFollowers = async (page: number = 1) => {
   try {
+    listError.value = null
     const { socialApi } = await import('~/api/social')
     const response = await socialApi.getFollowers(userId.value, { page, pageSize: 20 })
     const data = response.data.data
@@ -252,8 +294,8 @@ const fetchFollowers = async (page: number = 1) => {
     }
     followersHasMore.value = data?.hasMore ?? items.length >= 20
     followersPage.value = page
-  } catch {
-    // 忽略错误
+  } catch (error: any) {
+    listError.value = error.message || '加载粉丝列表失败'
   }
 }
 
@@ -292,23 +334,45 @@ watch(activeTab, () => {
 // 关注/取关（顶部按钮）
 const toggleFollow = async () => {
   if (!userInfo.value) return
-  const { socialApi } = await import('~/api/social')
-  const response = await socialApi.toggleFollow(userId.value)
-  userInfo.value.isFollowing = response.data.data.isFollowing
-  userInfo.value.followerCount = response.data.data.followerCount
-  // 刷新粉丝列表
-  if (activeTab.value === 'followers') {
-    await fetchFollowers(1)
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
+  try {
+    const { socialApi } = await import('~/api/social')
+    const response = await socialApi.toggleFollow(userId.value)
+    const result = response.data.data
+    userInfo.value.isFollowing = result.followed
+    userInfo.value.followerCount = result.followerCount
+    // 同步更新当前用户的关注数
+    if (userStore.userInfo) {
+      if (result.followed) {
+        userStore.userInfo.followCount = (userStore.userInfo.followCount || 0) + 1
+      } else {
+        userStore.userInfo.followCount = Math.max(0, (userStore.userInfo.followCount || 0) - 1)
+      }
+    }
+    // 刷新粉丝列表
+    if (activeTab.value === 'followers') {
+      await fetchFollowers(1)
+    }
+  } catch (error: any) {
+    console.error('关注操作失败:', error.message)
   }
 }
 
 // 列表内关注/取关
 const toggleFollowUser = async (user: FollowUser) => {
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
   followLoading.value[user.id] = true
   try {
     const { socialApi } = await import('~/api/social')
     const response = await socialApi.toggleFollow(user.id)
-    const { isFollowing } = response.data.data
+    const result = response.data.data
+    const isFollowing = result.followed
     user.isFollowing = isFollowing
 
     // 更新互关标识
@@ -339,6 +403,8 @@ const toggleFollowUser = async (user: FollowUser) => {
         userInfo.value.followCount = Math.max(0, userInfo.value.followCount - 1)
       }
     }
+  } catch (error: any) {
+    console.error('关注操作失败:', error.message)
   } finally {
     followLoading.value[user.id] = false
   }
@@ -347,6 +413,33 @@ const toggleFollowUser = async (user: FollowUser) => {
 // 加载更多文章
 const loadMore = () => {
   // 加载更多文章
+}
+
+// 重试加载文章
+const retryArticles = async () => {
+  articlesError.value = null
+  loading.value = true
+  try {
+    const { userApi } = await import('~/api')
+    const response = await cachedRequest(
+      () => userApi.getUserArticles(userId.value, { page: 1, pageSize: 20 }),
+      `/user/articles/${userId.value}`,
+      { page: 1, pageSize: 20 }
+    )
+    const data = response.data.data
+    articles.value = data?.list || data?.items || []
+    hasMore.value = articles.value.length >= 20
+  } catch (error: any) {
+    articlesError.value = error.message || '加载文章失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+// 重试加载关注/粉丝列表
+const retryList = () => {
+  listError.value = null
+  loadListData()
 }
 
 // 初始化

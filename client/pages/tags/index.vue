@@ -26,6 +26,7 @@
           <div v-if="cloudLoading" class="flex items-center justify-center py-12">
             <LoadingSkeleton v-for="i in 12" :key="i" type="article" />
           </div>
+          <ErrorRetry v-else-if="cloudError" :message="cloudError" :on-retry="retryCloud" />
           <div v-else-if="cloudTags.length > 0" class="flex flex-wrap gap-3">
             <button
               v-for="tag in cloudTags"
@@ -46,11 +47,12 @@
           <div v-if="hotLoading" class="p-4 space-y-3">
             <LoadingSkeleton v-for="i in 8" :key="i" type="article" />
           </div>
+          <ErrorRetry v-else-if="hotError" :message="hotError" :on-retry="retryHot" />
           <div v-else-if="hotTags.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
-            <button
+            <div
               v-for="(tag, index) in hotTags"
               :key="tag.id"
-              class="flex items-center w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+              class="flex items-center w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
               @click="selectTag(tag)"
             >
               <!-- 排名 -->
@@ -73,7 +75,7 @@
               >
                 {{ tag.isFollowed ? '已关注' : '关注' }}
               </button>
-            </button>
+            </div>
           </div>
           <EmptyState v-else title="暂无热门标签" />
         </div>
@@ -83,11 +85,12 @@
           <div v-if="followedLoading" class="p-4 space-y-3">
             <LoadingSkeleton v-for="i in 5" :key="i" type="article" />
           </div>
+          <ErrorRetry v-else-if="followedError" :message="followedError" :on-retry="retryFollowed" />
           <div v-else-if="followedTags.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
-            <button
+            <div
               v-for="tag in followedTags"
               :key="tag.id"
-              class="flex items-center w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+              class="flex items-center w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
               @click="selectTag(tag)"
             >
               <div class="flex-1 min-w-0">
@@ -100,7 +103,7 @@
               >
                 取关
               </button>
-            </button>
+            </div>
           </div>
           <EmptyState v-else title="暂无关注标签" description="去热门标签中关注感兴趣的标签吧" />
         </div>
@@ -178,6 +181,9 @@ import type { Tag, Article, PageResult } from '~/types'
 
 const userStore = useUserStore()
 
+// 请求缓存
+const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
+
 const tabs = [
   { key: 'cloud', label: '标签云' },
   { key: 'hot', label: '热门标签' },
@@ -196,6 +202,9 @@ const followedLoading = ref(false)
 const articlesLoading = ref(false)
 const hasMoreArticles = ref(false)
 const articlesPage = ref(1)
+const cloudError = ref('')
+const hotError = ref('')
+const followedError = ref('')
 
 // 切换Tab
 const switchTab = (key: string) => {
@@ -209,11 +218,13 @@ const switchTab = (key: string) => {
 // 获取标签云
 const fetchCloudTags = async () => {
   cloudLoading.value = true
+  cloudError.value = ''
   try {
     const { tagApi } = await import('~/api/tag')
-    const res = await tagApi.getTagCloud()
+    const res = await cachedRequest(() => tagApi.getTagCloud(), '/tags/cloud')
     cloudTags.value = res.data?.data || []
   } catch {
+    cloudError.value = '加载标签云失败'
     cloudTags.value = []
   } finally {
     cloudLoading.value = false
@@ -223,11 +234,13 @@ const fetchCloudTags = async () => {
 // 获取热门标签
 const fetchHotTags = async () => {
   hotLoading.value = true
+  hotError.value = ''
   try {
     const { tagApi } = await import('~/api/tag')
-    const res = await tagApi.getHotTags(30)
+    const res = await cachedRequest(() => tagApi.getHotTags(30), '/tags/hot', { limit: 30 })
     hotTags.value = res.data?.data || []
   } catch {
+    hotError.value = '加载热门标签失败'
     hotTags.value = []
   } finally {
     hotLoading.value = false
@@ -241,16 +254,23 @@ const fetchFollowedTags = async () => {
     return
   }
   followedLoading.value = true
+  followedError.value = ''
   try {
     const { tagApi } = await import('~/api/tag')
-    const res = await tagApi.getFollowedTags()
+    const res = await cachedRequest(() => tagApi.getFollowedTags(), '/tags/followed')
     followedTags.value = res.data?.data || []
   } catch {
+    followedError.value = '加载关注标签失败'
     followedTags.value = []
   } finally {
     followedLoading.value = false
   }
 }
+
+// 重试加载
+const retryCloud = () => fetchCloudTags()
+const retryHot = () => fetchHotTags()
+const retryFollowed = () => fetchFollowedTags()
 
 // 选择标签
 const selectTag = (tag: Tag) => {
@@ -374,6 +394,16 @@ const { data: hotData } = await useAsyncData('tags-hot', async () => {
 
 cloudTags.value = cloudData.value
 hotTags.value = hotData.value
+
+// 客户端挂载后：如果SSR数据为空，重新获取（处理SSR时token不可用导致401的情况）
+onMounted(() => {
+  if (cloudTags.value.length === 0) {
+    fetchCloudTags()
+  }
+  if (hotTags.value.length === 0) {
+    fetchHotTags()
+  }
+})
 
 // 页面元信息
 useHead({

@@ -34,12 +34,12 @@
         <button class="hover:text-primary transition-colors" @click="$emit('reply', comment)">
           回复
         </button>
-        <!-- 删除（仅自己的评论） -->
-        <button v-if="isOwner" class="hover:text-red-500 transition-colors" @click="handleDelete">
+        <!-- 删除（评论作者或管理员） -->
+        <button v-if="canDelete" class="hover:text-red-500 transition-colors" @click="handleDelete">
           删除
         </button>
-        <!-- 举报（非自己的评论） -->
-        <button v-if="!isOwner && userStore.isLoggedIn" class="hover:text-primary transition-colors" @click="showReportModal = true">
+        <!-- 举报（非自己的评论且已登录） -->
+        <button v-if="!isOwner && !isAdmin && userStore.isLoggedIn" class="hover:text-primary transition-colors" @click="showReportModal = true">
           举报
         </button>
       </div>
@@ -87,8 +87,21 @@ const emit = defineEmits<{
 
 const userStore = useUserStore()
 
-// 是否是自己的评论
-const isOwner = computed(() => userStore.userInfo?.id === props.comment.userId)
+// 是否是自己的评论（需登录 + 用户ID匹配）
+const isOwner = computed(() => {
+  if (!userStore.isLoggedIn) return false
+  return userStore.userInfo?.id == props.comment.userId
+})
+
+// 是否是管理员
+const isAdmin = computed(() => {
+  if (!userStore.isLoggedIn) return false
+  const role = userStore.userInfo?.role
+  return role === 'ADMIN' || role === 'SUPER_ADMIN'
+})
+
+// 是否可以删除（评论作者或管理员）
+const canDelete = computed(() => isOwner.value || isAdmin.value)
 
 // 举报相关
 const showReportModal = ref(false)

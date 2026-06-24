@@ -40,6 +40,8 @@ import org.springframework.util.StringUtils;
 import java.nio.charset.StandardCharsets;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -311,10 +313,10 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED, "旧密码错误");
         }
-        // Validate new password strength (must contain uppercase, lowercase, and digit)
+        // Validate new password strength (must contain letters and digits)
         String newPassword = request.getNewPassword();
-        if (!newPassword.matches(".*[A-Z].*") || !newPassword.matches(".*[a-z].*") || !newPassword.matches(".*\\d.*")) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "密码必须包含大小写字母和数字");
+        if (!newPassword.matches(".*[a-zA-Z].*") || !newPassword.matches(".*\\d.*")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "密码必须包含字母和数字");
         }
         User updateUser = new User();
         updateUser.setId(userId);
@@ -338,8 +340,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String newPassword = request.getNewPassword();
-        if (!newPassword.matches(".*[A-Z].*") || !newPassword.matches(".*[a-z].*") || !newPassword.matches(".*\\d.*")) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "密码必须包含大小写字母和数字");
+        if (!newPassword.matches(".*[a-zA-Z].*") || !newPassword.matches(".*\\d.*")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "密码必须包含字母和数字");
         }
 
         User updateUser = new User();
@@ -369,6 +371,14 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setNickname(user.getNickname());
         userInfo.setAvatar(user.getAvatar());
         userInfo.setRole(user.getRole() != null ? user.getRole().getValue() : User.ROLE_USER);
+
+        // 构建权限列表
+        List<String> permissions = new ArrayList<>();
+        permissions.add("ROLE_USER");
+        if (RoleEnum.ADMIN.equals(user.getRole()) || RoleEnum.SUPER_ADMIN.equals(user.getRole())) {
+            permissions.add("ROLE_ADMIN");
+        }
+        userInfo.setPermissions(permissions);
 
         // 构建 Token 响应
         TokenResponse response = new TokenResponse();

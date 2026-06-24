@@ -25,7 +25,11 @@
     "messages": "消息",
     "profile": "个人中心",
     "settings": "设置",
-    "write": "写文章"
+    "write": "写文章",
+    "publish": "发布",
+    "notifications": "通知",
+    "mine": "我的",
+    "discover": "发现"
   },
   "article": {
     "title": "标题",

@@ -25,6 +25,9 @@ export default defineNuxtConfig({
     lazy: true,
     langDir: 'locales',
     strategy: 'no_prefix',
+    bundle: {
+      optimizeTranslationDirective: false,
+    },
   },
 
   // 全局CSS
@@ -43,7 +46,14 @@ export default defineNuxtConfig({
         { name: 'format-detection', content: 'telephone=no' },
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'preconnect', href: '/api' },
+      ],
+      // 内联加载画面：在JS加载/水合前显示，避免白屏
+      script: [
+        {
+          innerHTML: `document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('app-splash');if(s)s.style.display='flex'});`,
+        },
       ],
     },
   },
@@ -58,18 +68,26 @@ export default defineNuxtConfig({
     '/user/**': { ssr: false },
     '/editor/**': { ssr: false },
     '/messages/**': { ssr: false },
-    // API代理到后端
+    // API代理到后端（本地开发时使用；线上由 Nginx 代理，此规则不生效）
     '/api/**': { proxy: `${process.env.API_BASE || 'http://localhost:8080'}/api/**` },
   },
 
   // 运行时配置
+  // 注意：Nuxt 运行时通过 NUXT_ 前缀的环境变量覆盖这些值
+  // - apiBase → NUXT_API_BASE
+  // - public.apiBase → NUXT_PUBLIC_API_BASE
+  // - public.wsBase → NUXT_PUBLIC_WS_BASE
   runtimeConfig: {
-    // 服务端私有配置
+    // 服务端私有配置（运行时通过 NUXT_API_BASE 覆盖）
     apiBase: process.env.API_BASE || 'http://localhost:8080',
-    // 公共配置（客户端和服务端均可访问）
+    // 公共配置（客户端和服务端均可访问，运行时通过 NUXT_PUBLIC_* 覆盖）
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api/v1',
-      wsBase: process.env.NUXT_PUBLIC_WS_BASE || 'ws://localhost:8080/ws',
+      wsBase: process.env.NUXT_PUBLIC_WS_BASE || '',
+      // MinIO 内部地址（用于 SSR 时识别并替换为公网地址）
+      minioInternalUrl: process.env.NUXT_PUBLIC_MINIO_INTERNAL_URL || 'http://minio:9000',
+      // MinIO 公网访问路径（浏览器通过 Nginx 代理访问）
+      minioPublicUrl: process.env.NUXT_PUBLIC_MINIO_PUBLIC_URL || '/minio',
     },
   },
 
@@ -84,6 +102,14 @@ export default defineNuxtConfig({
     classSuffix: '',
     preference: 'system',
     fallback: 'light',
+  },
+
+  // 页面切换加载指示器
+  loadingIndicator: {
+    name: 'chasing-dots',
+    color: '#4f46e5',
+    height: '3px',
+    throttle: 200,
   },
 
   // 兼容性日期

@@ -1,7 +1,5 @@
 package com.zhixun.service;
 
-import com.zhixun.common.exception.BusinessException;
-import com.zhixun.common.result.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -75,8 +73,9 @@ public class EmailService {
             mailSender.send(message);
             log.info("验证码邮件发送成功: to={}, purpose={}", toEmail, purpose);
         } catch (Exception e) {
-            log.error("验证码邮件发送失败: to={}, purpose={}", toEmail, purpose, e);
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "邮件发送失败，请稍后重试");
+            log.error("验证码邮件发送失败: to={}, purpose={}, error={}", toEmail, purpose, e.getMessage());
+            // @Async 方法中抛出的异常无法被全局异常处理器捕获，仅记录日志
+            // 验证码已存入 Redis，邮件发送失败不影响接口返回，用户可重新请求发送
         }
     }
 }

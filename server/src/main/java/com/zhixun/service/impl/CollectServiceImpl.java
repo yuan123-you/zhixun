@@ -59,6 +59,8 @@ public class CollectServiceImpl implements CollectService {
 
     /** 收藏状态 Redis Key 前缀 */
     private static final String COLLECT_STATUS_PREFIX = "collect:status:";
+    /** 浏览量 Redis Key 前缀 */
+    private static final String VIEW_COUNT_PREFIX = "article:view:";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -107,8 +109,8 @@ public class CollectServiceImpl implements CollectService {
         stringRedisTemplate.opsForValue().set(statusKey, collected ? "1" : "0", 1, TimeUnit.HOURS);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("collected", collected);
-        result.put("collect_count", collectCount);
+        result.put("isCollected", collected);
+        result.put("collectCount", collectCount);
         return result;
     }
 
@@ -183,7 +185,19 @@ public class CollectServiceImpl implements CollectService {
             vo.setSummary(article.getSummary());
             vo.setCoverImage(article.getCoverImage());
             vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
-            vo.setViewCount(article.getViewCount());
+            // 浏览数 = 数据库值 + Redis增量
+            long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
+            try {
+                if (stringRedisTemplate != null) {
+                    String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + article.getId());
+                    if (viewCountStr != null) {
+                        viewCount += Long.parseLong(viewCountStr);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
+            }
+            vo.setViewCount(viewCount);
             vo.setLikeCount(article.getLikeCount());
             vo.setCommentCount(article.getCommentCount());
             vo.setCollectCount(article.getCollectCount());

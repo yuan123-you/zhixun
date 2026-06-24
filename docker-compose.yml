@@ -188,6 +188,11 @@ services:
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
       # AES 密钥
       AES_SECRET_KEY: ${AES_SECRET_KEY:-zhixun-aes-secret-32bytes-key!!}
+      # 邮件配置（QQ邮箱SSL 465端口）
+      MAIL_HOST: ${MAIL_HOST:-smtp.qq.com}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       # CORS 允许的来源
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://glint.novo.ccwu.cc,http://glint.novo.ccwu.cc,http://localhost:3000,http://localhost:3001}
       # 时区
@@ -264,6 +269,11 @@ services:
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
       # AES 密钥
       AES_SECRET_KEY: ${AES_SECRET_KEY:-zhixun-aes-secret-32bytes-key!!}
+      # 邮件配置（QQ邮箱SSL 465端口）
+      MAIL_HOST: ${MAIL_HOST:-smtp.qq.com}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       # CORS 允许的来源
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://glint.novo.ccwu.cc,http://glint.novo.ccwu.cc,http://localhost:3000,http://localhost:3001}
       # 时区
@@ -298,11 +308,17 @@ services:
     ports:
       - "${CLIENT_PORT:-3000}:3000"
     environment:
-      # 后端API地址（客户端使用相对路径，经 Nginx 代理）
+      # Nuxt 运行时环境变量（通过 NUXT_ 前缀覆盖 runtimeConfig）
+      # 服务端私有配置：后端API地址（SSR容器间通信）
+      NUXT_API_BASE: http://server:8080
+      # 公共配置：客户端API基础路径（经 Nginx 代理）
       NUXT_PUBLIC_API_BASE: /api/v1
+      # 公共配置：WebSocket路径（经 Nginx 代理）
       NUXT_PUBLIC_WS_BASE: /ws
-      # 运行时API代理目标（服务端容器间通信）
-      API_BASE: http://server:8080
+      # 公共配置：MinIO 内部地址（用于识别并替换为公网代理路径）
+      NUXT_PUBLIC_MINIO_INTERNAL_URL: http://minio:9000
+      # 公共配置：MinIO 公网访问路径（浏览器通过 Nginx 代理访问）
+      NUXT_PUBLIC_MINIO_PUBLIC_URL: /minio
       TZ: Asia/Shanghai
     depends_on:
       server:

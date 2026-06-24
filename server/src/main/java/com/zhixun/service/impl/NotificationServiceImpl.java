@@ -368,14 +368,13 @@ public class NotificationServiceImpl implements NotificationService {
      */
     private void decrementUnreadCount(Long userId) {
         String unreadKey = UNREAD_COUNT_PREFIX + userId;
-        String countStr = stringRedisTemplate.opsForValue().get(unreadKey);
-        if (countStr != null) {
-            int count = Integer.parseInt(countStr);
-            if (count > 1) {
-                stringRedisTemplate.opsForValue().decrement(unreadKey);
-            } else {
+        try {
+            Long newCount = stringRedisTemplate.opsForValue().decrement(unreadKey);
+            if (newCount != null && newCount <= 0) {
                 stringRedisTemplate.delete(unreadKey);
             }
+        } catch (Exception e) {
+            log.warn("减少未读通知计数失败: {}", e.getMessage());
         }
     }
 

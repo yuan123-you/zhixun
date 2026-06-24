@@ -55,6 +55,8 @@ public class RankServiceImpl implements RankService {
     private static final long RANK_TTL_MINUTES = 5;
     /** 实时热榜 Redis Sorted Set Key（与 HotScoreServiceImpl 保持一致） */
     private static final String HOT_RANK_KEY = "hot:rank";
+    /** 浏览量 Redis Key 前缀 */
+    private static final String VIEW_COUNT_PREFIX = "article:view:";
 
     @Override
     public List<HotArticleVO> getHotRank(String period, Long categoryId, Integer limit) {
@@ -66,12 +68,16 @@ public class RankServiceImpl implements RankService {
         String cacheKey = RANK_KEY_PREFIX + period + ":" + (categoryId != null ? categoryId : "all");
 
         // 尝试从缓存获取文章ID列表
-        if (stringRedisTemplate != null) {
-            String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
-            if (cachedIds != null && !cachedIds.isEmpty()) {
-                List<Long> articleIds = parseIds(cachedIds);
-                return buildHotArticleVOList(articleIds, limit);
+        try {
+            if (stringRedisTemplate != null) {
+                String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+                if (cachedIds != null && !cachedIds.isEmpty()) {
+                    List<Long> articleIds = parseIds(cachedIds);
+                    return buildHotArticleVOList(articleIds, limit);
+                }
             }
+        } catch (Exception e) {
+            log.warn("从Redis获取排行榜缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
         // 缓存未命中，查询数据库
@@ -114,10 +120,14 @@ public class RankServiceImpl implements RankService {
 
         // 缓存结果
         if (!articleIds.isEmpty()) {
-            String idsStr = articleIds.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
-            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, RANK_TTL_MINUTES, TimeUnit.MINUTES);
+            try {
+                String idsStr = articleIds.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","));
+                stringRedisTemplate.opsForValue().set(cacheKey, idsStr, RANK_TTL_MINUTES, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                log.warn("缓存排行榜数据到Redis失败: {}", e.getMessage());
+            }
         }
 
         return buildHotArticleVOList(articleIds, limit);
@@ -341,6 +351,9 @@ public class RankServiceImpl implements RankService {
                     vo.setRole(user.getRole() != null ? user.getRole().name() : null);
                     vo.setStatus(user.getStatus());
                     vo.setCreatedAt(user.getCreatedAt());
+                    vo.setFollowCount(user.getFollowCount());
+                    vo.setFollowerCount(user.getFollowerCount());
+                    vo.setArticleCount(user.getArticleCount());
                     return vo;
                 })
                 .filter(Objects::nonNull)
@@ -505,7 +518,19 @@ public class RankServiceImpl implements RankService {
         HotArticleVO vo = new HotArticleVO();
         vo.setId(article.getId());
         vo.setTitle(article.getTitle());
-        vo.setViewCount(article.getViewCount() != null ? article.getViewCount().intValue() : 0);
+        // 浏览数 = 数据库值 + Redis增量
+        long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
+        try {
+            if (stringRedisTemplate != null) {
+                String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + article.getId());
+                if (viewCountStr != null) {
+                    viewCount += Long.parseLong(viewCountStr);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
+        }
+        vo.setViewCount((int) viewCount);
         vo.setLikeCount(article.getLikeCount() != null ? article.getLikeCount().intValue() : 0);
         vo.setCommentCount(article.getCommentCount() != null ? article.getCommentCount().intValue() : 0);
         vo.setScore(calculateSimpleHotScore(article));

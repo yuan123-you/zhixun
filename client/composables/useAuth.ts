@@ -14,7 +14,7 @@ export const useAuth = () => {
       userStore.setUser(authData.userInfo)
       return authData
     } catch (error: any) {
-      throw new Error(error.message || '登录失败')
+      throw new Error(error.message || '账号或密码不正确')
     }
   }
 
@@ -26,14 +26,13 @@ export const useAuth = () => {
         password: data.password,
         email: data.email,
         code: data.code,
-        nickname: data.nickname || undefined,
       })
       const authData = response.data.data
       userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
       userStore.setUser(authData.userInfo)
       return authData
     } catch (error: any) {
-      throw new Error(error.message || '注册失败')
+      throw new Error(error.message || '注册失败，请稍后重试')
     }
   }
 
@@ -43,7 +42,7 @@ export const useAuth = () => {
       const response = await get<GraphCaptchaResponse>('/auth/graph-captcha')
       return response.data.data
     } catch (error: any) {
-      throw new Error(error.message || '获取图形验证码失败')
+      throw new Error(error.message || '验证码获取失败')
     }
   }
 
@@ -61,7 +60,7 @@ export const useAuth = () => {
     try {
       await put('/auth/forgot-password', data)
     } catch (error: any) {
-      throw new Error(error.message || '重置密码失败')
+      throw new Error(error.message || '重置失败，请稍后重试')
     }
   }
 

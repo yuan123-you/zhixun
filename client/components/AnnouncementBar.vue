@@ -23,18 +23,14 @@
               class="text-sm text-blue-700 dark:text-blue-300 truncate cursor-pointer hover:underline"
               @click="handleClick(item)"
             >
-              <el-tag
+              <span
                 v-if="item.type === 2"
-                type="warning"
-                size="small"
-                class="mr-1.5"
-              >活动</el-tag>
-              <el-tag
+                class="inline-flex items-center mr-1.5 px-1.5 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+              >活动</span>
+              <span
                 v-else
-                type="primary"
-                size="small"
-                class="mr-1.5"
-              >公告</el-tag>
+                class="inline-flex items-center mr-1.5 px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+              >公告</span>
               {{ item.title }}
             </span>
           </div>

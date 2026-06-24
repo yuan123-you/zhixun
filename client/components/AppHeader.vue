@@ -1,24 +1,37 @@
 <template>
   <!-- 顶部导航栏 -->
   <header class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-    <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-4 2xl:px-8 h-16 flex items-center justify-between">
-      <!-- Logo -->
-      <NuxtLink to="/" class="flex items-center space-x-2 shrink-0">
-        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-          <span class="text-white font-bold text-sm">知</span>
-        </div>
-        <span class="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">知讯</span>
-      </NuxtLink>
+    <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-6 h-12 md:h-16 flex items-center justify-between gap-2">
+      <!-- 左侧：返回按钮/汉堡菜单（移动端）+ 品牌名 -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- 返回按钮（非首页时显示） -->
+        <button v-if="showBackButton" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" @click="goBack">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-      <!-- 搜索框（桌面端） -->
-      <div class="hidden md:flex flex-1 max-w-xl mx-6">
-        <SearchBar />
+        <!-- 移动端汉堡菜单按钮（首页时显示） -->
+        <button v-if="!showBackButton" class="md:hidden p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" @click="showMobileMenu = !showMobileMenu">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path v-if="!showMobileMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <!-- 品牌名 -->
+        <NuxtLink to="/" class="flex items-center shrink-0">
+          <span class="text-lg md:text-xl font-bold text-gray-900 dark:text-white">知讯</span>
+        </NuxtLink>
       </div>
 
       <!-- 导航链接（桌面端/平板端） -->
       <nav class="hidden md:flex items-center space-x-1 2xl:space-x-4">
         <NuxtLink to="/" class="px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors no-tap-highlight">
           {{ $t('nav.home') }}
+        </NuxtLink>
+        <NuxtLink to="/discover" class="px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors no-tap-highlight">
+          {{ $t('nav.discover') }}
         </NuxtLink>
         <NuxtLink to="/rank" class="px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors no-tap-highlight">
           {{ $t('nav.hot') }}
@@ -28,37 +41,27 @@
         </NuxtLink>
       </nav>
 
-      <!-- 用户菜单/登录按钮 -->
-      <div class="flex items-center space-x-3">
-        <!-- 语言切换 -->
-        <div class="relative" ref="langDropdownRef">
-          <button
-            class="flex items-center space-x-1 px-2 py-1 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            @click="showLangMenu = !showLangMenu"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="hidden sm:inline">{{ currentLangLabel }}</span>
-          </button>
-          <div
-            v-if="showLangMenu"
-            class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
-          >
-            <button
-              v-for="lang in languages"
-              :key="lang.value"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              :class="locale === lang.value ? 'text-primary font-medium' : 'text-gray-700 dark:text-gray-300'"
-              @click="switchLanguage(lang.value)"
-            >
-              {{ lang.label }}
-            </button>
-          </div>
-        </div>
+      <!-- 右侧：搜索 + 消息 + 用户 -->
+      <div class="flex items-center space-x-1 md:space-x-3">
+        <!-- 搜索图标 -->
+        <NuxtLink to="/search" class="p-1.5 md:p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" :title="$t('common.search')">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </NuxtLink>
 
-        <!-- 通知铃铛（已登录） -->
-        <NotificationBell v-if="userStore.isLoggedIn" />
+        <!-- 消息中心图标（已登录） -->
+        <NuxtLink v-if="userStore.isLoggedIn" to="/notifications" class="relative p-1.5 md:p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span
+            v-if="notificationStore.unreadCount > 0"
+            class="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 bg-danger text-white text-2xs rounded-full flex items-center justify-center px-1"
+          >
+            {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+          </span>
+        </NuxtLink>
 
         <!-- 用户头像菜单（已登录） -->
         <div v-if="userStore.isLoggedIn" class="relative group">
@@ -88,20 +91,7 @@
         <NuxtLink v-else to="/login" class="btn-primary text-sm">
           {{ $t('common.login') }}
         </NuxtLink>
-
-        <!-- 移动端汉堡菜单按钮 -->
-        <button class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" @click="showMobileMenu = !showMobileMenu">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path v-if="!showMobileMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
       </div>
-    </div>
-
-    <!-- 移动端搜索框 -->
-    <div class="md:hidden px-4 pb-3">
-      <SearchBar />
     </div>
 
     <!-- 移动端汉堡菜单 -->
@@ -109,6 +99,9 @@
       <nav class="py-2">
         <NuxtLink to="/" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
           {{ $t('nav.home') }}
+        </NuxtLink>
+        <NuxtLink to="/discover" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
+          {{ $t('nav.discover') }}
         </NuxtLink>
         <NuxtLink to="/rank" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
           {{ $t('nav.hot') }}
@@ -133,34 +126,23 @@
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 const { logout } = useAuth()
-const { locale, setLocale } = useI18n()
+const route = useRoute()
+const router = useRouter()
 
 // 移动端菜单显示状态
 const showMobileMenu = ref(false)
 
-// 语言切换菜单
-const showLangMenu = ref(false)
-const langDropdownRef = ref<HTMLElement | null>(null)
+// 是否显示返回按钮（非首页时显示）
+const showBackButton = computed(() => route.path !== '/')
 
-const languages = [
-  { label: '中文', value: 'zh-CN' },
-  { label: 'English', value: 'en' },
-]
-
-const currentLangLabel = computed(() => {
-  return languages.find(l => l.value === locale.value)?.label || '中文'
-})
-
-// 切换语言
-const switchLanguage = async (lang: string) => {
-  await setLocale(lang)
-  showLangMenu.value = false
+// 返回上一页
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    navigateTo('/')
+  }
 }
-
-// 点击外部关闭语言菜单
-onClickOutside(langDropdownRef, () => {
-  showLangMenu.value = false
-})
 
 // 退出登录
 const handleLogout = async () => {

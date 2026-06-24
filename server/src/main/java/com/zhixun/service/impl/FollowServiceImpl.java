@@ -1,6 +1,7 @@
 package com.zhixun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
@@ -77,16 +78,39 @@ public class FollowServiceImpl implements FollowService {
             sendFollowNotification(userId, targetUser);
         }
 
-        // 获取关注数和粉丝数
-        long followCount = userFollowMapper.selectCount(
-                new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowerId, userId));
-        long followerCount = userFollowMapper.selectCount(
-                new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowingId, targetUserId));
+        // 更新 User 表中的 follow_count 和 follower_count（SQL 原子操作）
+        if (followed) {
+            // 当前用户的关注数 +1
+            userMapper.update(null, new LambdaUpdateWrapper<User>()
+                    .eq(User::getId, userId)
+                    .setSql("follow_count = follow_count + 1"));
+            // 目标用户的粉丝数 +1
+            userMapper.update(null, new LambdaUpdateWrapper<User>()
+                    .eq(User::getId, targetUserId)
+                    .setSql("follower_count = follower_count + 1"));
+        } else {
+            // 当前用户的关注数 -1
+            userMapper.update(null, new LambdaUpdateWrapper<User>()
+                    .eq(User::getId, userId)
+                    .gt(User::getFollowCount, 0)
+                    .setSql("follow_count = follow_count - 1"));
+            // 目标用户的粉丝数 -1
+            userMapper.update(null, new LambdaUpdateWrapper<User>()
+                    .eq(User::getId, targetUserId)
+                    .gt(User::getFollowerCount, 0)
+                    .setSql("follower_count = follower_count - 1"));
+        }
+
+        // 获取关注数和粉丝数（从更新后的 User 表读取）
+        User updatedUser = userMapper.selectById(userId);
+        User updatedTargetUser = userMapper.selectById(targetUserId);
+        long followCount = updatedUser != null ? updatedUser.getFollowCount() : 0;
+        long followerCount = updatedTargetUser != null ? updatedTargetUser.getFollowerCount() : 0;
 
         Map<String, Object> result = new HashMap<>();
         result.put("followed", followed);
-        result.put("follow_count", followCount);
-        result.put("follower_count", followerCount);
+        result.put("followCount", followCount);
+        result.put("followerCount", followerCount);
         return result;
     }
 
@@ -229,6 +253,9 @@ public class FollowServiceImpl implements FollowService {
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);
         vo.setStatus(user.getStatus());
         vo.setCreatedAt(user.getCreatedAt());
+        vo.setFollowCount(user.getFollowCount());
+        vo.setFollowerCount(user.getFollowerCount());
+        vo.setArticleCount(user.getArticleCount());
         return vo;
     }
 

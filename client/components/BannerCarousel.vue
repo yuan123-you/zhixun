@@ -83,7 +83,7 @@ const handleClick = (banner: BannerItem) => {
     if (banner.linkType === 2) {
       window.open(banner.linkUrl, '_blank')
     } else {
-      navigateTo(`/articles/${banner.linkUrl}`)
+      navigateTo(banner.linkUrl)
     }
   }
 }

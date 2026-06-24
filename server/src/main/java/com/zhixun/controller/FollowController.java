@@ -8,6 +8,7 @@ import com.zhixun.entity.User;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.service.FollowService;
 import com.zhixun.service.OnlineStatusService;
+import com.zhixun.service.UserService;
 import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +33,53 @@ public class FollowController {
     private final FollowService followService;
     private final OnlineStatusService onlineStatusService;
     private final UserMapper userMapper;
+    private final UserService userService;
     private final SecurityUtil securityUtil;
+
+    /**
+     * 获取当前登录用户信息
+     */
+    @GetMapping("/users/me")
+    @PreAuthorize("isAuthenticated()")
+    public R<UserVO> getCurrentUser() {
+        Long userId = securityUtil.getCurrentUserId();
+        return R.ok(userService.getProfile(userId));
+    }
+
+    /**
+     * 获取指定用户信息
+     */
+    @GetMapping("/users/{id}")
+    public R<UserVO> getUserById(@PathVariable Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            return R.fail(404, "用户不存在");
+        }
+        UserVO vo = new UserVO();
+        vo.setId(user.getId());
+        vo.setUsername(user.getUsername());
+        vo.setNickname(user.getNickname());
+        vo.setAvatar(user.getAvatar());
+        vo.setBio(user.getBio());
+        vo.setRole(user.getRole() != null ? user.getRole().name() : null);
+        vo.setStatus(user.getStatus());
+        vo.setCreatedAt(user.getCreatedAt());
+        vo.setFollowCount(user.getFollowCount());
+        vo.setFollowerCount(user.getFollowerCount());
+        vo.setArticleCount(user.getArticleCount());
+
+        // 如果当前用户已登录，查询是否关注了该用户
+        try {
+            Long currentUserId = securityUtil.getCurrentUserId();
+            if (currentUserId != null && !currentUserId.equals(id)) {
+                vo.setIsFollowing(followService.isFollowed(currentUserId, id));
+            }
+        } catch (Exception e) {
+            // 未登录用户，不设置 isFollowing
+        }
+
+        return R.ok(vo);
+    }
 
     /**
      * 关注/取消关注用户

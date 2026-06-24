@@ -71,10 +71,10 @@ spring:
           max-attempts: 3
           initial-interval: 1000ms
 
-  # 邮件配置
+  # 邮件配置（QQ邮箱使用SSL 465端口）
   mail:
     host: ${MAIL_HOST:smtp.qq.com}
-    port: ${MAIL_PORT:587}
+    port: ${MAIL_PORT:465}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     protocol: smtp
@@ -83,14 +83,11 @@ spring:
       mail:
         smtp:
           auth: true
-          starttls:
-            enable: true
-            required: true
           ssl:
-            trust: "*"
+            enable: true
           socketFactory:
             class: javax.net.ssl.SSLSocketFactory
-            port: ${MAIL_PORT:587}
+            port: ${MAIL_PORT:465}
 
   # Jackson 配置
   jackson:

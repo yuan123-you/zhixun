@@ -1,4 +1,5 @@
 import type { Router } from 'vue-router'
+import { storage, STORAGE_KEYS } from '@/utils/storage'
 
 // 白名单路由，无需登录即可访问
 const whiteList = ['/login']
@@ -15,7 +16,7 @@ export function setupGuards(router: Router) {
       document.title = `${to.meta.title} - 智讯管理后台`
     }
 
-    const token = localStorage.getItem('token')
+    const token = storage.get<string>(STORAGE_KEYS.TOKEN)
 
     if (token) {
       // 已登录状态

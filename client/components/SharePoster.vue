@@ -8,7 +8,7 @@
           <div ref="posterRef" class="p-6 bg-white">
             <!-- 封面图 -->
             <div v-if="article?.coverImage" class="mb-4 rounded-lg overflow-hidden">
-              <img :src="article.coverImage" :alt="article.title" class="w-full h-40 object-cover" crossorigin="anonymous" />
+              <img :src="resolveUrl(article?.coverImage) || ''" :alt="article?.title" class="w-full h-40 object-cover" crossorigin="anonymous" />
             </div>
 
             <!-- 文章标题 -->
@@ -83,6 +83,8 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'shared'): void
 }>()
+
+const { resolveUrl } = useResourceUrl()
 
 const posterRef = ref<HTMLElement | null>(null)
 const qrCanvasRef = ref<HTMLCanvasElement | null>(null)

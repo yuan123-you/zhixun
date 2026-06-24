@@ -1,6 +1,14 @@
 <template>
   <!-- 文章详情页 -->
   <div class="max-w-[800px] md:max-w-[900px] 2xl:max-w-[1200px] mx-auto px-4 2xl:px-8 py-6">
+    <!-- 返回导航 -->
+    <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors mb-4" @click="goBack">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      返回
+    </button>
+
     <!-- 加载状态 -->
     <LoadingSkeleton v-if="pending" type="article" />
 
@@ -38,8 +46,8 @@
       </div>
 
       <!-- 封面图 -->
-      <div v-if="article.coverImage" class="mb-6 rounded-lg overflow-hidden cursor-pointer" @click="openImageZoom(article.coverImage, article.title)">
-        <img :src="article.coverImage" :alt="article.title" class="w-full max-h-96 object-cover" />
+      <div v-if="article.coverImage" class="mb-6 rounded-lg overflow-hidden cursor-pointer" @click="openImageZoom(resolveUrl(article.coverImage) || '', article.title)">
+        <img :src="resolveUrl(article.coverImage) || ''" :alt="article.title" class="w-full max-h-96 object-cover" />
       </div>
 
       <!-- 文章内容（富文本渲染） -->
@@ -149,8 +157,22 @@
 
       <!-- 评论区 -->
       <section>
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">评论 ({{ article.commentCount }})</h2>
+        <!-- 评论懒加载触发器 -->
+        <div :ref="(el: any) => commentsLazyTrigger = el" class="h-0"></div>
+
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">评论 ({{ commentTotal }})</h2>
+
+        <!-- 评论加载中 -->
+        <div v-if="commentsLoading" class="flex items-center justify-center py-8">
+          <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span class="ml-2 text-sm text-gray-500">加载评论中...</span>
+        </div>
+
+        <!-- 评论加载失败 -->
+        <ErrorRetry v-else-if="commentsError" :message="commentsError" :on-retry="retryComments" />
+
         <CommentSection
+          v-else-if="commentsLoaded"
           :article-id="article.id"
           :comments="comments"
           :has-more="hasMoreComments"
@@ -165,11 +187,26 @@
       </section>
 
       <!-- 相关推荐 -->
-      <section v-if="relatedArticles.length" class="mt-8">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">相关推荐</h2>
-        <div class="space-y-4">
-          <ArticleCard v-for="a in relatedArticles" :key="a.id" :article="a" />
-        </div>
+      <section class="mt-8">
+        <!-- 相关推荐懒加载触发器 -->
+        <div :ref="(el: any) => relatedLazyTrigger = el" class="h-0"></div>
+
+        <template v-if="relatedLoading">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">相关推荐</h2>
+          <div class="flex items-center justify-center py-8">
+            <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span class="ml-2 text-sm text-gray-500">加载推荐中...</span>
+          </div>
+        </template>
+
+        <ErrorRetry v-else-if="relatedError" :message="relatedError" :on-retry="retryRelated" />
+
+        <template v-else-if="relatedLoaded && relatedArticles.length">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">相关推荐</h2>
+          <div class="space-y-4">
+            <ArticleCard v-for="a in relatedArticles" :key="a.id" :article="a" />
+          </div>
+        </template>
       </section>
       </div>
 
@@ -228,7 +265,18 @@
 import type { Article, Comment } from '~/types'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
+const { resolveUrl } = useResourceUrl()
+
+// 返回上一页
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    navigateTo('/')
+  }
+}
 const { recordView, updateDuration } = useViewHistory()
 const { isTablet, isLandscape } = useBreakpoints()
 const { promptOrientationLock, dismissOrientationPrompt, showOrientationPrompt } = useOrientation()
@@ -322,6 +370,10 @@ const { data: article, pending } = await useAsyncData(
 // 点赞
 const toggleLike = async () => {
   if (!article.value) return
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
   const { interactionApi } = await import('~/api')
   const response = await interactionApi.toggleLike(article.value.id)
   article.value.isLiked = response.data.data.isLiked
@@ -331,6 +383,10 @@ const toggleLike = async () => {
 // 收藏
 const toggleCollect = async () => {
   if (!article.value) return
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
   const { interactionApi } = await import('~/api')
   const response = await interactionApi.toggleCollect(article.value.id)
   article.value.isCollected = response.data.data.isCollected
@@ -340,14 +396,26 @@ const toggleCollect = async () => {
 // 关注作者
 const toggleFollowAuthor = async () => {
   if (!article.value?.author) return
-  const { socialApi } = await import('~/api')
-  await socialApi.toggleFollow(article.value.author.id)
-  article.value.author.isFollowing = !article.value.author.isFollowing
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
+  try {
+    const { socialApi } = await import('~/api')
+    await socialApi.toggleFollow(article.value.author.id)
+    article.value.author.isFollowing = !article.value.author.isFollowing
+  } catch (error: any) {
+    console.error('关注操作失败:', error.message)
+  }
 }
 
 // 提交评论
 const submitComment = async (data: { content: string; parentId?: number }) => {
   if (!article.value) return
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
   const { interactionApi } = await import('~/api')
   const response = await interactionApi.createComment(article.value.id, data)
   comments.value.unshift(response.data.data)
@@ -356,6 +424,10 @@ const submitComment = async (data: { content: string; parentId?: number }) => {
 
 // 点赞评论
 const likeComment = async (commentId: number) => {
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
   try {
     const { interactionApi } = await import('~/api')
     const response = await interactionApi.likeComment(commentId)
@@ -451,17 +523,58 @@ const loadMoreComments = async () => {
   }
 }
 
-// 加载相关推荐文章
-const loadRelatedArticles = async () => {
-  if (!articleId.value) return
-  try {
+// 评论懒加载
+const {
+  data: commentsData,
+  loading: commentsLoading,
+  error: commentsError,
+  loaded: commentsLoaded,
+  triggerRef: commentsLazyTrigger,
+  retry: retryComments,
+} = useLazyData<{
+  list: Comment[]
+  total: number
+}>({
+  fetchFn: async () => {
+    const { interactionApi } = await import('~/api')
+    const response = await interactionApi.getComments(article.value!.id, { page: 1, pageSize: 10, sort: commentSort.value })
+    return response.data.data
+  },
+  defaultData: { list: [], total: 0 },
+})
+
+// 监听评论数据变化
+watch(commentsData, (val) => {
+  if (val) {
+    comments.value = val.list
+    commentTotal.value = val.total
+    hasMoreComments.value = val.list.length < val.total
+  }
+})
+
+// 相关推荐懒加载
+const {
+  data: relatedData,
+  loading: relatedLoading,
+  error: relatedError,
+  loaded: relatedLoaded,
+  triggerRef: relatedLazyTrigger,
+  retry: retryRelated,
+} = useLazyData<Article[]>({
+  fetchFn: async () => {
     const { get } = useApi()
     const response = await get<Article[]>(`/articles/${articleId.value}/related`)
-    relatedArticles.value = response.data.data || []
-  } catch {
-    // 相关推荐加载失败，静默处理
+    return response.data.data || []
+  },
+  defaultData: [],
+})
+
+// 监听相关推荐数据变化
+watch(relatedData, (val) => {
+  if (val) {
+    relatedArticles.value = val
   }
-}
+})
 
 // 格式化日期
 const formatDate = (date: string) => {
@@ -561,25 +674,7 @@ onMounted(() => {
     }, 1000)
   }
 
-  // 加载评论
-  if (article.value) {
-    const loadInitialComments = async () => {
-      try {
-        const { interactionApi } = await import('~/api')
-        const response = await interactionApi.getComments(article.value!.id, { page: 1, pageSize: 10, sort: commentSort.value })
-        const data = response.data.data
-        comments.value = data.list
-        commentTotal.value = data.total
-        hasMoreComments.value = comments.value.length < data.total
-      } catch {
-        // 评论加载失败
-      }
-    }
-    loadInitialComments()
-  }
-
-  // 加载相关推荐
-  loadRelatedArticles()
+  // 评论和相关推荐使用 useLazyData 懒加载，由 IntersectionObserver 触发
 
   // 平板竖屏时提示横屏阅读
   if (isTablet.value && !isLandscape.value) {

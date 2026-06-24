@@ -22,6 +22,9 @@ public class UserVO {
     /** 头像 */
     private String avatar;
 
+    /** 个人简介 */
+    private String bio;
+
     /** 邮箱 */
     private String email;
 
@@ -42,4 +45,16 @@ public class UserVO {
 
     /** 是否在线 */
     private Boolean isOnline;
+
+    /** 关注数 */
+    private Integer followCount;
+
+    /** 粉丝数 */
+    private Integer followerCount;
+
+    /** 文章数 */
+    private Integer articleCount;
+
+    /** 是否已关注（当前用户是否关注了此用户） */
+    private Boolean isFollowing;
 }

@@ -3,6 +3,7 @@ package com.zhixun.vo;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 登录用户信息 VO
@@ -26,4 +27,7 @@ public class LoginUserVO implements Serializable {
 
     /** 角色 */
     private String role;
+
+    /** 权限列表 */
+    private List<String> permissions;
 }

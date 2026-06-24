@@ -11,6 +11,8 @@ import { createPinia } from 'pinia'
 // 全局样式
 import './styles/index.scss'
 
+import { storage, STORAGE_KEYS } from '@/utils/storage'
+
 const app = createApp(App)
 
 // 注册 Pinia 状态管理
@@ -33,9 +35,9 @@ app.directive('permission', {
   mounted(el: HTMLElement, binding) {
     const { value } = binding
     // 从用户状态中获取权限列表
-    const userStore = JSON.parse(localStorage.getItem('user_permissions') || '[]')
+    const permissions = storage.get<string[]>(STORAGE_KEYS.USER_PERMISSIONS) || []
     if (value && value.length > 0) {
-      const hasPermission = value.some((perm: string) => userStore.includes(perm))
+      const hasPermission = value.some((perm: string) => permissions.includes(perm))
       if (!hasPermission) {
         el.parentNode?.removeChild(el)
       }

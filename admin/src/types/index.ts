@@ -27,8 +27,21 @@ export interface LoginParams {
 
 /** 登录响应数据 */
 export interface LoginResult {
-  token: string
-  userInfo: UserInfo
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresIn: number
+  userInfo: LoginUserInfo
+}
+
+/** 登录用户信息（登录接口返回） */
+export interface LoginUserInfo {
+  id: number
+  username: string
+  nickname: string
+  avatar: string
+  role: string
+  permissions: string[]
 }
 
 /** 用户信息 */
