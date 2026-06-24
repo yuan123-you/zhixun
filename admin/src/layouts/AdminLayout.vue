@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="sidebarCollapsed ? '64px' : '220px'" class="sidebar">
       <div class="logo">
-        <img src="vite.svg" alt="Logo" class="logo-img" />
+        <img src="/vite.svg" alt="Logo" class="logo-img" />
         <span v-show="!sidebarCollapsed" class="logo-text">智讯管理后台</span>
       </div>
       <el-menu
