@@ -13,8 +13,8 @@
       </NuxtLink>
       <p v-if="user.bio" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ user.bio }}</p>
       <div class="flex items-center space-x-3 text-xs text-gray-400 dark:text-gray-500 mt-1">
-        <span>{{ user.articleCount }} {{ $t('article.articles') }}</span>
-        <span>{{ user.followerCount }} {{ $t('article.followers') }}</span>
+        <span>{{ user.articleCount }} {{ t('article.articles') }}</span>
+        <span>{{ user.followerCount }} {{ t('article.followers') }}</span>
       </div>
     </div>
 
@@ -25,7 +25,7 @@
       :class="user.isFollowing ? 'btn-secondary' : 'btn-primary'"
       @click="$emit('toggleFollow', user.id)"
     >
-      {{ user.isFollowing ? $t('article.followed') : $t('article.followBtn') }}
+      {{ user.isFollowing ? t('article.followed') : t('article.followBtn') }}
     </button>
   </div>
 </template>
@@ -38,6 +38,8 @@ defineProps<{
   user: User
   showFollowButton?: boolean
 }>()
+
+const { t } = useI18n()
 
 defineEmits<{
   toggleFollow: [userId: number]

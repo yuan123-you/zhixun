@@ -32,11 +32,11 @@
 
       <!-- 没有更多数据 -->
       <div v-if="!hasMore && !error && articles.length > 0" class="text-center text-sm text-gray-400 dark:text-gray-500 py-4">
-        {{ $t('common.noMore') }}
+        {{ t('common.noMore') }}
       </div>
 
       <!-- 空状态 -->
-      <EmptyState v-if="!loading && !error && articles.length === 0" :title="$t('article.noArticles')" :description="$t('article.noArticlesDesc')" />
+      <EmptyState v-if="!loading && !error && articles.length === 0" :title="t('article.noArticles')" :description="t('article.noArticlesDesc')" />
     </template>
 
     <!-- 无限滚动触发器 -->
@@ -47,6 +47,8 @@
 <script setup lang="ts">
 /** 文章列表组件：支持无限滚动、骨架屏、平板双列布局、错误重试 */
 import type { Article } from '~/types'
+
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
   articles: Article[]

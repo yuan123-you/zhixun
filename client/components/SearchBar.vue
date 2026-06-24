@@ -13,7 +13,7 @@
         v-model="keyword"
         type="text"
         class="flex-1 bg-transparent border-none outline-none ml-2 text-sm text-gray-900 dark:text-white placeholder-gray-400"
-        :placeholder="$t('search.placeholder')"
+        :placeholder="t('search.placeholder')"
         @input="handleInput"
         @focus="showSuggestions = true"
         @keydown.enter="handleSearch"
@@ -31,7 +31,7 @@
     <div v-if="showSuggestions && (suggestions.length > 0 || hotSearches.length > 0 || searchHistory.length > 0)" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
       <!-- 搜索建议 -->
       <div v-if="suggestions.length > 0 && keyword" class="py-2">
-        <div class="px-4 py-1.5 text-xs text-gray-400">{{ $t('search.suggestions') }}</div>
+        <div class="px-4 py-1.5 text-xs text-gray-400">{{ t('search.suggestions') }}</div>
         <button v-for="item in suggestions" :key="item" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="selectSuggestion(item)">
           {{ item }}
         </button>
@@ -40,8 +40,8 @@
       <!-- 搜索历史 -->
       <div v-if="searchHistory.length > 0 && !keyword" class="py-2">
         <div class="flex items-center justify-between px-4 py-1.5">
-          <span class="text-xs text-gray-400">{{ $t('search.history') }}</span>
-          <button class="text-xs text-gray-400 hover:text-danger" @click="clearHistory">{{ $t('common.clear') }}</button>
+          <span class="text-xs text-gray-400">{{ t('search.history') }}</span>
+          <button class="text-xs text-gray-400 hover:text-danger" @click="clearHistory">{{ t('common.clear') }}</button>
         </div>
         <button v-for="item in searchHistory" :key="item" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="selectSuggestion(item)">
           {{ item }}
@@ -50,7 +50,7 @@
 
       <!-- 热门搜索 -->
       <div v-if="hotSearches.length > 0 && !keyword" class="py-2 border-t border-gray-100 dark:border-gray-700">
-        <div class="px-4 py-1.5 text-xs text-gray-400">{{ $t('search.hotSearch') }}</div>
+        <div class="px-4 py-1.5 text-xs text-gray-400">{{ t('search.hotSearch') }}</div>
         <button v-for="(item, index) in hotSearches" :key="item" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center" @click="selectSuggestion(item)">
           <span class="w-5 text-center text-xs" :class="index < 3 ? 'text-danger font-bold' : 'text-gray-400'">{{ index + 1 }}</span>
           <span class="ml-2">{{ item }}</span>
@@ -65,6 +65,7 @@
 
 const router = useRouter()
 const { searchApi } = useApi()
+const { t } = useI18n()
 
 const keyword = ref('')
 const suggestions = ref<string[]>([])

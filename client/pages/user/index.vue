@@ -6,7 +6,7 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
-      {{ $t('common.back') }}
+      {{ t('common.back') }}
     </button>
 
     <!-- 个人资料卡 -->
@@ -18,13 +18,13 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ userStore.userInfo?.nickname }}</h2>
-            <NuxtLink to="/user/settings" class="btn-secondary text-sm">{{ $t('user.editProfile') }}</NuxtLink>
+            <NuxtLink to="/user/settings" class="btn-secondary text-sm">{{ t('user.editProfile') }}</NuxtLink>
           </div>
           <p v-if="userStore.userInfo?.bio" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ userStore.userInfo?.bio }}</p>
           <div class="flex items-center space-x-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.articleCount }}</strong> {{ $t('article.articles') }}</span>
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followCount }}</strong> {{ $t('user.following') }}</span>
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followerCount }}</strong> {{ $t('user.followers') }}</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.articleCount }}</strong> {{ t('article.articles') }}</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followCount }}</strong> {{ t('user.following') }}</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followerCount }}</strong> {{ t('user.followers') }}</span>
           </div>
         </div>
       </div>
@@ -66,10 +66,10 @@
           <p class="text-sm text-gray-700 dark:text-gray-300">{{ comment.content }}</p>
           <div class="flex items-center justify-between mt-2">
             <span class="text-xs text-gray-400">{{ formatDate(comment.createdAt) }}</span>
-            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-xs text-primary hover:text-primary-600">{{ $t('article.viewArticle') }}</NuxtLink>
+            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-xs text-primary hover:text-primary-600">{{ t('article.viewArticle') }}</NuxtLink>
           </div>
         </div>
-        <EmptyState v-if="!loading && myComments.length === 0" :title="$t('user.noComments')" />
+        <EmptyState v-if="!loading && myComments.length === 0" :title="t('user.noComments')" />
       </div>
 
       <!-- 浏览历史 -->

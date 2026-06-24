@@ -7,33 +7,33 @@
         <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
           <span class="text-white font-bold text-2xl">知</span>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('auth.registerTitle') }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ $t('auth.registerDesc') }}</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('auth.registerTitle') }}</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ t('auth.registerDesc') }}</p>
       </div>
 
       <!-- 注册表单 -->
       <form class="space-y-4" @submit.prevent="handleRegister">
         <!-- 用户名 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('user.username') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.username') }}</label>
           <input
             v-model="form.username"
             type="text"
             class="input"
-            :placeholder="$t('auth.enterUsernameHint')"
+            :placeholder="t('auth.enterUsernameHint')"
             required
           />
         </div>
 
         <!-- 邮箱 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('user.email') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.email') }}</label>
           <div class="flex items-center">
             <input
               v-model="emailPrefix"
               type="text"
               class="input flex-1 rounded-r-none"
-              :placeholder="$t('auth.enterQQEmailPrefix')"
+              :placeholder="t('auth.enterQQEmailPrefix')"
               required
             />
             <span class="inline-flex items-center px-3 h-[40px] bg-gray-100 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">@qq.com</span>
@@ -42,19 +42,19 @@
 
         <!-- 图形验证码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('auth.graphCaptcha') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('auth.graphCaptcha') }}</label>
           <div class="flex gap-2 items-center">
             <input
               v-model="form.captchaAnswer"
               type="text"
               class="input flex-1"
-              :placeholder="$t('auth.enterCaptchaResult')"
+              :placeholder="t('auth.enterCaptchaResult')"
               required
             />
-            <div class="cursor-pointer flex-shrink-0 h-[40px] rounded-md overflow-hidden border border-gray-200 dark:border-gray-700" @click="refreshGraphCaptcha" :title="$t('auth.clickToRefresh')">
-              <img v-if="graphCaptchaImage" :src="graphCaptchaImage" :alt="$t('auth.graphCaptcha')" class="h-full w-[120px] object-cover" />
+            <div class="cursor-pointer flex-shrink-0 h-[40px] rounded-md overflow-hidden border border-gray-200 dark:border-gray-700" @click="refreshGraphCaptcha" :title="t('auth.clickToRefresh')">
+              <img v-if="graphCaptchaImage" :src="graphCaptchaImage" :alt="t('auth.graphCaptcha')" class="h-full w-[120px] object-cover" />
               <div v-else class="h-full w-[120px] flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs text-gray-400">
-                {{ $t('auth.clickToGet') }}
+                {{ t('auth.clickToGet') }}
               </div>
             </div>
           </div>
@@ -62,13 +62,13 @@
 
         <!-- 邮箱验证码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('auth.emailCaptcha') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('auth.emailCaptcha') }}</label>
           <div class="flex gap-2">
             <input
               v-model="form.code"
               type="text"
               class="input flex-1"
-              :placeholder="$t('auth.enter6DigitCode')"
+              :placeholder="t('auth.enter6DigitCode')"
               required
               maxlength="6"
             />
@@ -78,20 +78,20 @@
               :disabled="codeCooldown > 0 || !emailPrefix || !form.captchaAnswer"
               @click="handleSendCode"
             >
-              {{ codeCooldown > 0 ? `${codeCooldown}s` : $t('auth.getCode') }}
+              {{ codeCooldown > 0 ? `${codeCooldown}s` : t('auth.getCode') }}
             </button>
           </div>
         </div>
 
         <!-- 密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('user.password') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.password') }}</label>
           <div class="relative">
             <input
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               class="input pr-10"
-              :placeholder="$t('auth.enterPasswordHint')"
+              :placeholder="t('auth.enterPasswordHint')"
               required
               minlength="6"
             />
@@ -109,18 +109,18 @@
               </svg>
             </button>
           </div>
-          <p class="text-xs text-gray-400 mt-1">{{ $t('auth.passwordRequirement') }}</p>
+          <p class="text-xs text-gray-400 mt-1">{{ t('auth.passwordRequirement') }}</p>
         </div>
 
         <!-- 确认密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('user.confirmPassword') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.confirmPassword') }}</label>
           <div class="relative">
             <input
               v-model="form.confirmPassword"
               :type="showConfirmPassword ? 'text' : 'password'"
               class="input pr-10"
-              :placeholder="$t('auth.enterPasswordAgain')"
+              :placeholder="t('auth.enterPasswordAgain')"
               required
             />
             <button
@@ -145,14 +145,14 @@
           class="btn-primary w-full"
           :disabled="loading"
         >
-          {{ loading ? $t('auth.registering') : $t('common.register') }}
+          {{ loading ? t('auth.registering') : t('common.register') }}
         </button>
       </form>
 
       <!-- 跳转登录 -->
       <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-        {{ $t('auth.hasAccount') }}
-        <NuxtLink to="/login" class="text-primary hover:text-primary-600 font-medium">{{ $t('auth.loginNow') }}</NuxtLink>
+        {{ t('auth.hasAccount') }}
+        <NuxtLink to="/login" class="text-primary hover:text-primary-600 font-medium">{{ t('auth.loginNow') }}</NuxtLink>
       </p>
     </div>
   </div>

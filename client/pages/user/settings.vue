@@ -7,18 +7,18 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
-        {{ $t('common.back') }}
+        {{ t('common.back') }}
       </button>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('nav.settings') }}</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('nav.settings') }}</h1>
     </div>
 
     <!-- 推荐偏好 -->
     <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ $t('settings.recommendPrefs') }}</h2>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.recommendPrefs') }}</h2>
 
       <!-- 感兴趣的分类 -->
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('settings.interestedCategories') }}</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.interestedCategories') }}</label>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="category in availableCategories"
@@ -36,7 +36,7 @@
 
       <!-- 屏蔽的分类 -->
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('settings.blockedCategories') }}</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.blockedCategories') }}</label>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="category in availableCategories"
@@ -54,7 +54,7 @@
 
       <!-- 感兴趣的标签 -->
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('settings.interestedTags') }}</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.interestedTags') }}</label>
         <div class="flex flex-wrap gap-2">
           <span v-for="tagId in serverSettings.interestedTags" :key="tagId" class="badge-primary flex items-center space-x-1">
             <span>标签{{ tagId }}</span>
@@ -64,7 +64,7 @@
             v-model="tagInput"
             type="text"
             class="input py-1 text-sm w-auto"
-            :placeholder="$t('settings.addTag')"
+            :placeholder="t('settings.addTag')"
             @keydown.enter.prevent="addTag('interested')"
           />
         </div>
@@ -73,22 +73,22 @@
 
     <!-- 通知设置 -->
     <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ $t('settings.notification') }}</h2>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.notification') }}</h2>
       <div class="space-y-3">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('settings.likeNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.likeNotification') }}</span>
           <input v-model="serverSettings.enableLikeNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('settings.commentNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.commentNotification') }}</span>
           <input v-model="serverSettings.enableCommentNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('settings.followNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.followNotification') }}</span>
           <input v-model="serverSettings.enableFollowNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('settings.systemNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.systemNotification') }}</span>
           <input v-model="serverSettings.enableSystemNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
@@ -96,18 +96,18 @@
 
     <!-- 隐私设置 -->
     <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ $t('settings.privacy') }}</h2>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.privacy') }}</h2>
       <div class="space-y-3">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('settings.showOnlineStatus') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.showOnlineStatus') }}</span>
           <input v-model="serverSettings.showOnlineStatus" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('settings.allowStrangerMessage') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.allowStrangerMessage') }}</span>
           <input v-model="serverSettings.allowStrangerMessage" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('settings.showViewHistory') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.showViewHistory') }}</span>
           <input v-model="serverSettings.showViewHistory" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
@@ -115,11 +115,11 @@
 
     <!-- 显示设置 -->
     <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ $t('settings.display') }}</h2>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.display') }}</h2>
       <div class="space-y-4">
         <!-- 主题 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('settings.theme') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.theme') }}</label>
           <div class="flex space-x-2">
             <button
               v-for="theme in themes"
@@ -137,7 +137,7 @@
 
         <!-- 字体大小 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('settings.fontSize') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.fontSize') }}</label>
           <div class="flex space-x-2">
             <button
               v-for="size in fontSizes"
@@ -155,7 +155,7 @@
 
         <!-- 语言 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('settings.language') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.language') }}</label>
           <div class="flex space-x-2">
             <button
               v-for="lang in languages"
@@ -176,7 +176,7 @@
     <!-- 保存按钮 -->
     <div class="flex justify-end">
       <button class="btn-primary" :disabled="saving" @click="saveSettings">
-        {{ saving ? $t('settings.saving') : $t('settings.saveSettings') }}
+        {{ saving ? t('settings.saving') : t('settings.saveSettings') }}
       </button>
     </div>
   </div>

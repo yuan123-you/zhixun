@@ -7,33 +7,33 @@
         <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
           <span class="text-white font-bold text-2xl">知</span>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('auth.loginTitle') }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ $t('auth.loginDesc') }}</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('auth.loginTitle') }}</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ t('auth.loginDesc') }}</p>
       </div>
 
       <!-- 登录表单 -->
       <form class="space-y-4" @submit.prevent="handleLogin">
         <!-- 用户名 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('user.username') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.username') }}</label>
           <input
             v-model="form.username"
             type="text"
             class="input"
-            :placeholder="$t('auth.enterUsername')"
+            :placeholder="t('auth.enterUsername')"
             required
           />
         </div>
 
         <!-- 密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('user.password') }}</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.password') }}</label>
           <div class="relative">
             <input
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               class="input pr-10"
-              :placeholder="$t('auth.enterPassword')"
+              :placeholder="t('auth.enterPassword')"
               required
             />
             <button
@@ -54,7 +54,7 @@
 
         <!-- 忘记密码 -->
         <div class="text-right">
-          <NuxtLink to="/forgot-password" class="text-sm text-primary hover:text-primary-600">{{ $t('auth.forgotPassword') }}</NuxtLink>
+          <NuxtLink to="/forgot-password" class="text-sm text-primary hover:text-primary-600">{{ t('auth.forgotPassword') }}</NuxtLink>
         </div>
 
         <!-- 登录按钮 -->
@@ -63,14 +63,14 @@
           class="btn-primary w-full"
           :disabled="loading"
         >
-          {{ loading ? $t('auth.logining') : $t('common.login') }}
+          {{ loading ? t('auth.logining') : t('common.login') }}
         </button>
       </form>
 
       <!-- 跳转注册 -->
       <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-        {{ $t('auth.noAccount') }}
-        <NuxtLink to="/register" class="text-primary hover:text-primary-600 font-medium">{{ $t('auth.registerNow') }}</NuxtLink>
+        {{ t('auth.noAccount') }}
+        <NuxtLink to="/register" class="text-primary hover:text-primary-600 font-medium">{{ t('auth.registerNow') }}</NuxtLink>
       </p>
     </div>
   </div>

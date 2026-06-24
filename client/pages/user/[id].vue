@@ -6,7 +6,7 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
-      {{ $t('common.back') }}
+      {{ t('common.back') }}
     </button>
 
     <!-- 用户资料卡 -->
@@ -32,18 +32,18 @@
               :class="userInfo?.isFollowing ? 'btn-secondary' : 'btn-primary'"
               @click="toggleFollow"
             >
-              {{ userInfo?.isFollowing ? $t('article.followed') : $t('article.followBtn') }}
+              {{ userInfo?.isFollowing ? t('article.followed') : t('article.followBtn') }}
             </button>
           </div>
           <p v-if="userInfo?.bio" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ userInfo?.bio }}</p>
           <div class="flex items-center space-x-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
             <button class="hover:text-primary transition-colors" @click="activeTab = 'following'">
-              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followCount }}</strong> {{ $t('user.following') }}
+              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followCount }}</strong> {{ t('user.following') }}
             </button>
             <button class="hover:text-primary transition-colors" @click="activeTab = 'followers'">
-              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followerCount }}</strong> {{ $t('user.followers') }}
+              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followerCount }}</strong> {{ t('user.followers') }}
             </button>
-            <span><strong class="text-gray-900 dark:text-white">{{ userInfo?.articleCount }}</strong> {{ $t('article.articles') }}</span>
+            <span><strong class="text-gray-900 dark:text-white">{{ userInfo?.articleCount }}</strong> {{ t('article.articles') }}</span>
           </div>
         </div>
       </div>
@@ -57,7 +57,7 @@
           :class="activeTab === 'following' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
           @click="activeTab = 'following'"
         >
-          {{ $t('user.following') }}
+          {{ t('user.following') }}
           <span v-if="activeTab === 'following'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full"></span>
         </button>
         <button
@@ -65,7 +65,7 @@
           :class="activeTab === 'followers' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
           @click="activeTab = 'followers'"
         >
-          {{ $t('user.followers') }}
+          {{ t('user.followers') }}
           <span v-if="activeTab === 'followers'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full"></span>
         </button>
       </div>
@@ -85,7 +85,7 @@
           <svg class="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <p class="text-sm">{{ activeTab === 'following' ? $t('user.noFollowing') : $t('user.noFollowers') }}</p>
+          <p class="text-sm">{{ activeTab === 'following' ? t('user.noFollowing') : t('user.noFollowers') }}</p>
         </div>
 
         <!-- 用户列表 -->
@@ -134,7 +134,7 @@
               @click="toggleFollowUser(user)"
             >
               <span v-if="followLoading[user.id]" class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin inline-block mr-1"></span>
-              {{ user.isFollowing ? $t('article.followed') : $t('article.followBtn') }}
+              {{ user.isFollowing ? t('article.followed') : t('article.followBtn') }}
             </button>
           </div>
         </div>
@@ -145,7 +145,7 @@
             class="text-sm text-primary hover:text-primary-600 transition-colors"
             @click="loadMoreList"
           >
-            {{ $t('common.loadMore') }}
+            {{ t('common.loadMore') }}
           </button>
         </div>
       </div>
@@ -153,7 +153,7 @@
 
     <!-- Ta的文章列表 -->
     <div class="mt-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ $t('article.articles') }}</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('article.articles') }}</h3>
       <ArticleList :articles="articles" :loading="loading" :has-more="hasMore" :error="articlesError" @load-more="loadMore" @retry="retryArticles" />
     </div>
   </div>

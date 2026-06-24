@@ -7,9 +7,9 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
-        {{ $t('common.back') }}
+        {{ t('common.back') }}
       </button>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('nav.write') }}</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('nav.write') }}</h1>
     </div>
 
     <!-- 标题输入 -->
@@ -17,17 +17,17 @@
       v-model="form.title"
       type="text"
       class="input text-2xl font-bold mb-6"
-      :placeholder="$t('article.enterTitle')"
+      :placeholder="t('article.enterTitle')"
     />
 
     <!-- 摘要输入 -->
     <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('article.summary') }}</label>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.summary') }}</label>
       <textarea
         v-model="form.summary"
         class="input resize-none"
         rows="2"
-        :placeholder="$t('article.enterSummary')"
+        :placeholder="t('article.enterSummary')"
         maxlength="200"
       ></textarea>
       <p class="text-xs text-gray-400 mt-1 text-right">{{ form.summary.length }}/200</p>
@@ -41,7 +41,7 @@
           :class="activeTab === 'edit' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'"
           @click="activeTab = 'edit'"
         >
-          {{ $t('common.edit') }}
+          {{ t('common.edit') }}
         </button>
         <button
           class="flex-1 py-2 text-sm font-medium text-center transition-colors"
@@ -83,13 +83,13 @@
           <!-- 左侧编辑区 -->
           <div class="w-1/2 border-r border-gray-300 dark:border-gray-600">
             <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 font-medium">
-              {{ $t('common.edit') }}
+              {{ t('common.edit') }}
             </div>
             <textarea
               ref="editorRef"
               v-model="form.content"
               class="w-full min-h-[400px] p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none outline-none font-mono text-sm"
-              :placeholder="$t('article.enterContent')"
+              :placeholder="t('article.enterContent')"
             ></textarea>
           </div>
           <!-- 右侧预览区 -->
@@ -111,7 +111,7 @@
               ref="editorRef"
               v-model="form.content"
               class="w-full min-h-[400px] p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none outline-none font-mono text-sm"
-              :placeholder="$t('article.enterContent')"
+              :placeholder="t('article.enterContent')"
             ></textarea>
           </div>
           <div v-show="activeTab === 'preview'">
@@ -128,9 +128,9 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <!-- 分类选择 -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('article.category') }}</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.category') }}</label>
         <select v-model="form.categoryId" class="input">
-          <option value="">{{ $t('article.noCategory') }}</option>
+          <option value="">{{ t('article.noCategory') }}</option>
           <option v-for="category in categories" :key="category.id" :value="category.id">
             {{ category.name }}
           </option>
@@ -139,12 +139,12 @@
 
       <!-- 标签选择 -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('article.tags') }}</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.tags') }}</label>
         <input
           v-model="tagInput"
           type="text"
           class="input"
-          :placeholder="$t('settings.addTag')"
+          :placeholder="t('settings.addTag')"
           @keydown.enter.prevent="addTag"
         />
         <div v-if="form.tags.length" class="flex flex-wrap gap-2 mt-2">
@@ -158,14 +158,14 @@
 
     <!-- 封面图上传 -->
     <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('article.coverImage') }}</label>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.coverImage') }}</label>
       <div class="flex items-center space-x-4">
         <div v-if="form.coverImage" class="relative w-40 h-28 rounded-lg overflow-hidden">
           <img :src="resolveUrl(form.coverImage) || ''" alt="封面" class="w-full h-full object-cover" />
           <button class="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center text-xs" @click="form.coverImage = ''">×</button>
         </div>
         <label class="btn-secondary cursor-pointer">
-          <span>{{ $t('article.selectImage') }}</span>
+          <span>{{ t('article.selectImage') }}</span>
           <input type="file" accept="image/*" class="hidden" @change="handleCoverUpload" />
         </label>
       </div>
@@ -173,8 +173,8 @@
 
     <!-- 操作按钮 -->
     <div class="flex items-center justify-end space-x-4">
-      <button class="btn-ghost" @click="saveDraft">{{ $t('article.saveDraft') }}</button>
-      <button class="btn-primary" :disabled="!canPublish" @click="publishArticle">{{ $t('article.publishArticle') }}</button>
+      <button class="btn-ghost" @click="saveDraft">{{ t('article.saveDraft') }}</button>
+      <button class="btn-primary" :disabled="!canPublish" @click="publishArticle">{{ t('article.publishArticle') }}</button>
     </div>
 
     <!-- 定时发布选项 -->
@@ -184,17 +184,17 @@
           <input type="checkbox" v-model="scheduledPublish" class="sr-only peer" />
           <div class="w-9 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
         </label>
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('article.scheduledPublishLabel') }}</span>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('article.scheduledPublishLabel') }}</span>
       </div>
       <div v-if="scheduledPublish" class="mt-3">
-        <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{ $t('article.selectPublishTime') }}</label>
+        <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{ t('article.selectPublishTime') }}</label>
         <input
           type="datetime-local"
           v-model="publishAt"
           class="input"
           :min="minPublishAt"
         />
-        <p class="text-xs text-gray-400 mt-1">{{ $t('article.scheduledPublishHint') }}</p>
+        <p class="text-xs text-gray-400 mt-1">{{ t('article.scheduledPublishHint') }}</p>
       </div>
     </div>
   </div>

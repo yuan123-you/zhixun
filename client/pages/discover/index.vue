@@ -2,7 +2,7 @@
   <!-- 发现页 -->
   <div class="max-w-4xl mx-auto px-4 py-6">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('nav.discover') }}</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('nav.discover') }}</h1>
       <button
         class="flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors px-3 py-2 rounded-full hover:bg-primary/5 no-tap-highlight"
         :disabled="refreshing"
@@ -17,7 +17,7 @@
         >
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
-        <span>{{ refreshing ? $t('common.refreshing') : $t('common.refresh') }}</span>
+        <span>{{ refreshing ? t('common.refreshing') : t('common.refresh') }}</span>
       </button>
     </div>
 
@@ -26,7 +26,7 @@
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $t('hotRank.title') }}</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('hotRank.title') }}</h2>
             <span v-if="rankUpdateTime" class="text-xs text-gray-400">{{ rankUpdateTime }}</span>
           </div>
           <NuxtLink to="/rank" class="text-sm text-primary hover:text-primary-600 transition-colors">查看全部</NuxtLink>
@@ -53,23 +53,23 @@
               <div class="flex items-center space-x-2 mt-0.5 text-xs text-gray-400">
                 <span v-if="item.authorNickname">{{ item.authorNickname }}</span>
                 <span v-if="item.authorNickname && item.score != null">·</span>
-                <span v-if="item.score != null">{{ formatHeat(item.score) }} {{ $t('article.heat') }}</span>
+                <span v-if="item.score != null">{{ formatHeat(item.score) }} {{ t('article.heat') }}</span>
               </div>
             </div>
             <span class="text-xs text-accent font-bold shrink-0">{{ formatHeat(item.score ?? 0) }}</span>
           </div>
         </div>
-        <EmptyState v-else :title="$t('hotRank.empty')" />
+        <EmptyState v-else :title="t('hotRank.empty')" />
       </section>
 
       <!-- 热门标签 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $t('hotTags.title') }}</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('hotTags.title') }}</h2>
             <span v-if="tagsUpdateTime" class="text-xs text-gray-400">{{ tagsUpdateTime }}</span>
           </div>
-          <NuxtLink to="/tags" class="text-sm text-primary hover:text-primary-600 transition-colors">{{ $t('hotTags.viewAll') }}</NuxtLink>
+          <NuxtLink to="/tags" class="text-sm text-primary hover:text-primary-600 transition-colors">{{ t('hotTags.viewAll') }}</NuxtLink>
         </div>
         <div v-if="tagsLoading" class="flex flex-wrap gap-2">
           <div v-for="i in 8" :key="i" class="px-3 py-1.5 text-sm rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse w-16 h-7"></div>
@@ -91,7 +91,7 @@
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $t('recommendUsers.title') }}</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('recommendUsers.title') }}</h2>
             <span v-if="usersUpdateTime" class="text-xs text-gray-400">{{ usersUpdateTime }}</span>
           </div>
           <button
@@ -126,6 +126,7 @@ import type { RankItem, User, Tag, ApiResponse } from '~/types'
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()
+const { t } = useI18n()
 
 const hotRankItems = ref<RankItem[]>([])
 const hotTags = ref<Tag[]>([])
