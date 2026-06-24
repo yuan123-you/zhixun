@@ -18,16 +18,8 @@ CREATE INDEX idx_sys_notification_user_read_time ON sys_notification(user_id, is
 -- 2. 表结构迁移（配合数据存储策略调整）
 -- ============================================================
 
--- 2.1 user_settings 表：移除 theme, font_size, language 列（改为客户端本地存储）
-ALTER TABLE user_settings
-  DROP COLUMN IF EXISTS theme,
-  DROP COLUMN IF EXISTS font_size,
-  DROP COLUMN IF EXISTS language;
-
--- 2.2 cms_view_history 表：移除 ip, user_agent 列（改为客户端本地存储）
-ALTER TABLE cms_view_history
-  DROP COLUMN IF EXISTS ip,
-  DROP COLUMN IF EXISTS user_agent;
+-- 2.1 user_settings 表：theme, font_size, language 列已在 schema 中移除（改为客户端本地存储）
+-- 2.2 cms_view_history 表：ip, user_agent 列已在 schema 中移除（改为客户端本地存储）
 
 -- ============================================================
 -- 3. 浏览历史表分区策略（按月分区，便于清理旧数据）
