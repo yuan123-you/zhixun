@@ -43,7 +43,7 @@
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>{{ refreshing ? '刷新中' : '换一批' }}</span>
+            <span>{{ refreshing ? $t('common.refreshing') : $t('common.refresh') }}</span>
           </button>
         </div>
 
@@ -64,8 +64,8 @@
         <!-- 热门标签 -->
         <div class="card">
           <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h3 class="font-semibold text-gray-900 dark:text-white">热门标签</h3>
-            <NuxtLink to="/tags" class="text-xs text-primary hover:text-primary-dark transition-colors">查看全部</NuxtLink>
+            <h3 class="font-semibold text-gray-900 dark:text-white">{{ $t('hotTags.title') }}</h3>
+            <NuxtLink to="/tags" class="text-xs text-primary hover:text-primary-dark transition-colors">{{ $t('hotTags.viewAll') }}</NuxtLink>
           </div>
           <div class="p-4 flex flex-wrap gap-2">
             <NuxtLink
@@ -82,7 +82,7 @@
         <!-- 推荐用户 -->
         <div class="card">
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="font-semibold text-gray-900 dark:text-white">推荐关注</h3>
+            <h3 class="font-semibold text-gray-900 dark:text-white">{{ $t('recommendUsers.title') }}</h3>
           </div>
           <div class="p-4 space-y-4">
             <UserCard v-for="user in recommendUsers" :key="user.id" :user="user" :show-follow-button="true" @toggle-follow="toggleFollow" />
@@ -132,18 +132,19 @@
 /** 首页：推荐/热门/最新/关注四个Tab，文章卡片列表，右侧热榜/推荐栏 */
 
 import type { Article, User, RankItem, PageResult, ApiResponse, Tag } from '~/types'
-import type { RecommendParams } from '~/api/feed'
 import type { BannerItem, AnnouncementItem } from '~/api/banner'
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()
 
+const { t } = useI18n()
+
 // Tab配置
 const tabs = [
-  { key: 'recommend', label: '推荐' },
-  { key: 'hot', label: '热门' },
-  { key: 'latest', label: '最新' },
-  { key: 'following', label: '关注' },
+  { key: 'recommend', label: computed(() => t('nav.recommend')) },
+  { key: 'hot', label: computed(() => t('nav.hot')) },
+  { key: 'latest', label: computed(() => t('nav.latest')) },
+  { key: 'following', label: computed(() => t('nav.follow')) },
 ]
 
 const activeTab = ref('recommend')
@@ -200,23 +201,24 @@ const handleRefresh = async () => {
   hasMore.value = true
 
   try {
-    const params: RecommendParams = {
+    const base = getApiBase()
+    const params: Record<string, any> = {
       page: 1,
       pageSize: 20,
       refresh: 1,
     }
-    // 如果有旧的refresh_key，传给后端用于追踪
     if (refreshKey.value) {
       params.refresh_key = refreshKey.value
     }
 
-    const { feedApi } = await import('~/api/feed')
-    const res = await feedApi.getRecommendFeed(params)
-    const data = res.data?.data
+    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
+      params,
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    const data = res?.data
     const items = data?.list || []
 
     articles.value = items
-    // 保存新的refresh_key用于后续翻页
     refreshKey.value = (data as any)?.refresh_key || ''
     hasMore.value = items.length >= 20
   } catch {
@@ -288,8 +290,22 @@ const loadMore = () => {
 
 // 关注/取关
 const toggleFollow = async (userId: number) => {
-  const { socialApi } = await import('~/api')
-  await socialApi.toggleFollow(userId)
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
+    return
+  }
+  try {
+    const { socialApi } = await import('~/api')
+    await socialApi.toggleFollow(userId)
+    // 更新本地用户关注状态
+    const user = recommendUsers.value.find(u => u.id === userId)
+    if (user) {
+      user.isFollowing = !user.isFollowing
+      user.followerCount += user.isFollowing ? 1 : -1
+    }
+  } catch (error: any) {
+    console.error('关注操作失败:', error.message)
+  }
 }
 
 // 加载推荐用户
@@ -329,7 +345,7 @@ const { data: rankData } = await useAsyncData('rank-hot', async () => {
   try {
     const base = getApiBase()
     const res = await $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, {
-      params: { period: 'daily' },
+      params: { period: 'weekly' },
       headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
     })
     return res?.data || []

@@ -18,13 +18,13 @@
       <!-- 导航链接（桌面端/平板端） -->
       <nav class="hidden md:flex items-center space-x-1 2xl:space-x-4">
         <NuxtLink to="/" class="px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors no-tap-highlight">
-          首页
+          {{ $t('nav.home') }}
         </NuxtLink>
         <NuxtLink to="/rank" class="px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors no-tap-highlight">
-          排行
+          {{ $t('nav.hot') }}
         </NuxtLink>
         <NuxtLink v-if="userStore.isLoggedIn" to="/editor" class="px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors no-tap-highlight">
-          写文章
+          {{ $t('nav.write') }}
         </NuxtLink>
       </nav>
 
@@ -72,21 +72,21 @@
           <!-- 下拉菜单 -->
           <div class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
             <NuxtLink to="/user" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-              个人中心
+              {{ $t('nav.profile') }}
             </NuxtLink>
             <NuxtLink to="/user/settings" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-              设置
+              {{ $t('nav.settings') }}
             </NuxtLink>
             <hr class="border-gray-200 dark:border-gray-700" />
             <button class="w-full text-left px-4 py-2 text-sm text-danger hover:bg-gray-100 dark:hover:bg-gray-700" @click="handleLogout">
-              退出登录
+              {{ $t('common.logout') }}
             </button>
           </div>
         </div>
 
         <!-- 登录按钮（未登录） -->
         <NuxtLink v-else to="/login" class="btn-primary text-sm">
-          登录
+          {{ $t('common.login') }}
         </NuxtLink>
 
         <!-- 移动端汉堡菜单按钮 -->
@@ -108,19 +108,19 @@
     <div v-if="showMobileMenu" class="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-slide-down">
       <nav class="py-2">
         <NuxtLink to="/" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
-          首页
+          {{ $t('nav.home') }}
         </NuxtLink>
         <NuxtLink to="/rank" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
-          排行
+          {{ $t('nav.hot') }}
         </NuxtLink>
         <NuxtLink v-if="userStore.isLoggedIn" to="/editor" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
-          写文章
+          {{ $t('nav.write') }}
         </NuxtLink>
         <NuxtLink v-if="userStore.isLoggedIn" to="/user" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
-          个人中心
+          {{ $t('nav.profile') }}
         </NuxtLink>
         <NuxtLink v-if="userStore.isLoggedIn" to="/user/settings" class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" @click="showMobileMenu = false">
-          设置
+          {{ $t('nav.settings') }}
         </NuxtLink>
       </nav>
     </div>

@@ -3,7 +3,7 @@
     "search": "搜索",
     "login": "登录",
     "register": "注册",
-    "logout": "退出",
+    "logout": "退出登录",
     "save": "保存",
     "cancel": "取消",
     "confirm": "确认",
@@ -12,17 +12,20 @@
     "publish": "发布",
     "back": "返回",
     "loadMore": "加载更多",
-    "noMore": "没有更多了"
+    "noMore": "没有更多了",
+    "refreshing": "刷新中",
+    "refresh": "换一批"
   },
   "nav": {
     "home": "首页",
-    "hot": "热门",
+    "hot": "排行",
     "recommend": "推荐",
     "latest": "最新",
     "follow": "关注",
     "messages": "消息",
-    "profile": "我的",
-    "settings": "设置"
+    "profile": "个人中心",
+    "settings": "设置",
+    "write": "写文章"
   },
   "article": {
     "title": "标题",
@@ -35,7 +38,27 @@
     "favorites": "收藏",
     "comments": "评论",
     "share": "分享",
-    "publishTime": "发布时间"
+    "publishTime": "发布时间",
+    "justNow": "刚刚",
+    "minutesAgo": "{n}分钟前",
+    "hoursAgo": "{n}小时前",
+    "daysAgo": "{n}天前",
+    "articles": "文章",
+    "followers": "粉丝",
+    "followed": "已关注",
+    "followBtn": "关注",
+    "heat": "热度"
+  },
+  "hotRank": {
+    "title": "热榜",
+    "empty": "暂无热榜数据"
+  },
+  "hotTags": {
+    "title": "热门标签",
+    "viewAll": "查看全部"
+  },
+  "recommendUsers": {
+    "title": "推荐关注"
   },
   "user": {
     "username": "用户名",
