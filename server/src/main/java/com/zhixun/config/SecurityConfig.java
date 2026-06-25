@@ -40,29 +40,29 @@ public class SecurityConfig implements WebMvcConfigurer {
 
     /**
      * 放行的公开接口
-     * 注意：server.servlet.context-path=/api，所以路径需包含 /api 前缀
+     * 注意：Spring Security requestMatchers 匹配的是 servletPath（不含 context-path）
      */
     private static final String[] PUBLIC_URLS = {
             // 认证相关
-            "/api/v1/auth/login",
-            "/api/v1/auth/register",
-            "/api/v1/auth/refresh",
-            "/api/v1/auth/send-code",
-            "/api/v1/auth/graph-captcha",
-            "/api/v1/auth/forgot-password",
+            "/v1/auth/login",
+            "/v1/auth/register",
+            "/v1/auth/refresh",
+            "/v1/auth/send-code",
+            "/v1/auth/graph-captcha",
+            "/v1/auth/forgot-password",
             // Swagger / Knife4j
-            "/api/doc.html",
-            "/api/swagger-ui/**",
-            "/api/swagger-resources/**",
-            "/api/v3/api-docs/**",
-            "/api/webjars/**",
+            "/doc.html",
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/v3/api-docs/**",
+            "/webjars/**",
             // WebSocket
-            "/api/ws/**",
+            "/ws/**",
             // 静态资源
-            "/api/static/**",
-            "/api/favicon.ico",
+            "/static/**",
+            "/favicon.ico",
             // 健康检查
-            "/api/actuator/**"
+            "/actuator/**"
     };
 
     @Bean
@@ -87,41 +87,41 @@ public class SecurityConfig implements WebMvcConfigurer {
                         // 公开接口放行
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         // 文章列表和详情（公开）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles", "/api/v1/articles/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/articles", "/v1/articles/**").permitAll()
                         // 分类列表和分类树（公开）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/categories/tree").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/categories", "/v1/categories/tree").permitAll()
                         // 标签列表、热门标签、标签云、搜索标签（公开）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/tags", "/api/v1/tags/hot", "/api/v1/tags/cloud", "/api/v1/tags/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/tags", "/v1/tags/hot", "/v1/tags/cloud", "/v1/tags/search").permitAll()
                         // 信息流（推荐、最新、热门公开，关注需认证）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/feed/recommend", "/api/v1/feed/latest", "/api/v1/feed/hot").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/feed/recommend", "/v1/feed/latest", "/v1/feed/hot").permitAll()
                         // 排行榜（公开）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/rank/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/rank/**").permitAll()
                         // 搜索（公开）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/search", "/api/v1/search/suggest", "/api/v1/search/hot").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/search", "/v1/search/suggest", "/v1/search/hot").permitAll()
                         // 轮播图（公开）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/banners").permitAll()
                         // 公告（公开）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/announcements").permitAll()
-                        // 推荐用户（公开，需在 /api/v1/users/** ADMIN规则之前）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/recommend").permitAll()
-                        // 用户关注/在线状态（需认证，需在 /api/v1/users/** ADMIN规则之前）
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users/{id}/follow").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/{id}/following", "/api/v1/users/{id}/followers").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/{id}/online-status").authenticated()
-                        // 用户信息查看（公开，需在 /api/v1/users/** ADMIN规则之前）
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/announcements").permitAll()
+                        // 推荐用户（公开，需在 /v1/users/** ADMIN规则之前）
+                        .requestMatchers(HttpMethod.GET, "/v1/users/recommend").permitAll()
+                        // 用户关注/在线状态（需认证，需在 /v1/users/** ADMIN规则之前）
+                        .requestMatchers(HttpMethod.POST, "/v1/users/{id}/follow").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/v1/users/{id}/following", "/v1/users/{id}/followers").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/users/{id}/online-status").authenticated()
+                        // 用户信息查看（公开，需在 /v1/users/** ADMIN规则之前）
+                        .requestMatchers(HttpMethod.GET, "/v1/users/{id}").permitAll()
                         // 管理端接口 - 仅 ADMIN 角色可访问
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/admin/**").hasRole("ADMIN")
                         // 用户管理 - 仅 ADMIN 角色可访问
-                        .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/users/**").hasRole("ADMIN")
                         // 操作日志 - 仅 ADMIN 角色可访问
-                        .requestMatchers("/api/v1/operation-logs/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/operation-logs/**").hasRole("ADMIN")
                         // 登录日志 - 仅 ADMIN 角色可访问
-                        .requestMatchers("/api/v1/login-logs/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/login-logs/**").hasRole("ADMIN")
                         // 敏感词管理 - 仅 ADMIN 角色可访问
-                        .requestMatchers("/api/v1/sensitive-words/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/sensitive-words/**").hasRole("ADMIN")
                         // 浏览历史 - 仅允许用户访问自己的数据
-                        .requestMatchers("/api/v1/view-history/**").authenticated()
+                        .requestMatchers("/v1/view-history/**").authenticated()
                         // 其他接口需要认证
                         .anyRequest().authenticated());
 
@@ -159,7 +159,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(dataPermissionInterceptor)
-                .addPathPatterns("/api/v1/articles/**", "/api/v1/comments/**", "/api/v1/messages/**",
-                        "/api/v1/collects/**", "/api/v1/users/**", "/api/v1/user/**");
+                .addPathPatterns("/v1/articles/**", "/v1/comments/**", "/v1/messages/**",
+                        "/v1/collects/**", "/v1/users/**", "/v1/user/**");
     }
 }
