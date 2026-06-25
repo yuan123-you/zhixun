@@ -326,7 +326,9 @@ const { data: homeData } = await useAsyncData('home-init', async () => {
 // 记录缓存时间戳，供 getCachedData 判断过期
 if (import.meta.client) {
   const nuxtApp = useNuxtApp()
-  ;(nuxtApp.payload as any)._homeInitTimestamp = Date.now()
+  if (!(nuxtApp.payload as any)._homeInitTimestamp) {
+    ;(nuxtApp.payload as any)._homeInitTimestamp = Date.now()
+  }
 }
 
 articles.value = homeData.value.feed
