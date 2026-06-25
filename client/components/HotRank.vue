@@ -38,13 +38,12 @@ defineProps<{
 
 const { t } = useI18n()
 
-// 格式化数量
+// 格式化热度值：>=1，最多1位小数
 const formatCount = (count: number | undefined) => {
-  if (count == null) return '0'
-  if (count >= 10000) return `${(count / 10000).toFixed(1)}万`
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`
-  if (count >= 100) return Math.round(count).toString()
-  if (count >= 1) return count.toFixed(1)
-  return count.toFixed(2)
+  if (count == null || count < 1) return '1'
+  const rounded = Math.round(count * 10) / 10
+  if (rounded >= 10000) return `${(rounded / 10000).toFixed(1)}万`
+  if (rounded >= 1000) return `${(rounded / 1000).toFixed(1)}k`
+  return rounded.toString()
 }
 </script>

@@ -634,7 +634,9 @@ public class RankServiceImpl implements RankService {
     }
 
     /**
-     * 简单热度分计算（用于排序）
+     * 综合热度分计算（用于排序和展示）
+     * 公式: (view*0.3 + like*3 + comment*2 + collect*5) / max(1, days)^0.5
+     * 结果 >= 1，最多保留1位小数
      */
     private double calculateSimpleHotScore(Article article) {
         long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
@@ -642,14 +644,19 @@ public class RankServiceImpl implements RankService {
         long commentCount = article.getCommentCount() != null ? article.getCommentCount() : 0L;
         long collectCount = article.getCollectCount() != null ? article.getCollectCount() : 0L;
 
-        double interactionScore = viewCount * 1.0 + likeCount * 5.0 + commentCount * 3.0 + collectCount * 8.0;
+        double interactionScore = viewCount * 0.3 + likeCount * 3.0 + commentCount * 2.0 + collectCount * 5.0;
 
         LocalDateTime publishTime = article.getPublishAt() != null ? article.getPublishAt() : article.getCreatedAt();
+        double daysSincePublish = 1.0;
         if (publishTime != null) {
             long hours = Math.max(1, java.time.Duration.between(publishTime, LocalDateTime.now()).toHours());
-            return interactionScore / Math.pow(hours, 1.5);
+            daysSincePublish = Math.max(1.0, hours / 24.0);
         }
-        return interactionScore;
+
+        double timeDecay = Math.pow(daysSincePublish, 0.5);
+        double rawScore = interactionScore / timeDecay;
+        double score = Math.max(1.0, rawScore);
+        return Math.round(score * 10.0) / 10.0;
     }
 
     /**

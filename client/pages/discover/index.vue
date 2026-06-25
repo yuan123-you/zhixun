@@ -24,18 +24,18 @@
           <div
             v-for="(item, index) in hotRankItems"
             :key="item.id"
-            class="card p-3 flex items-center space-x-3 hover:shadow-md transition-shadow cursor-pointer"
+            class="card p-3 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer"
             @click="navigateTo(`/articles/${item.id}`)"
           >
             <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-xs" :class="getRankClass(index)">
               {{ index + 1 }}
             </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{{ item.title }}</h3>
+            <div class="flex-1 min-w-0 overflow-hidden">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.title }}</h3>
               <div class="flex items-center space-x-2 mt-0.5 text-xs text-gray-400">
-                <span v-if="item.authorNickname">{{ item.authorNickname }}</span>
+                <span v-if="item.authorNickname" class="truncate max-w-[100px]">{{ item.authorNickname }}</span>
                 <span v-if="item.authorNickname && item.score != null">·</span>
-                <span v-if="item.score != null">{{ formatHeat(item.score) }} {{ t('article.heat') }}</span>
+                <span v-if="item.score != null" class="shrink-0">{{ formatHeat(item.score) }} {{ t('article.heat') }}</span>
               </div>
             </div>
             <span class="text-xs text-accent font-bold shrink-0">{{ formatHeat(item.score ?? 0) }}</span>
@@ -244,10 +244,12 @@ const getRankClass = (index: number) => {
   return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
 }
 
-// 格式化热度值
+// 格式化热度值：>=1，最多1位小数
 const formatHeat = (score: number) => {
-  if (score >= 10000) return `${(score / 10000).toFixed(1)}万`
-  return score.toString()
+  if (score == null || score < 1) return '1'
+  const rounded = Math.round(score * 10) / 10
+  if (rounded >= 10000) return `${(rounded / 10000).toFixed(1)}万`
+  return rounded.toString()
 }
 
 // 格式化更新时间

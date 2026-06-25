@@ -18,7 +18,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 热度分计算服务实现
- * 公式: hot_score = (view*1 + like*5 + comment*3 + collect*8) / max(1, hours_since_publish)^1.5
+ * 综合热度 = (view*0.3 + like*3 + comment*2 + collect*5) / max(1, days_since_publish)^0.5
+ * 结果 >= 1，最多保留1位小数
  */
 @Slf4j
 @Service
@@ -36,24 +37,29 @@ public class HotScoreServiceImpl implements HotScoreService {
 
     @Override
     public double calculateHotScore(Article article) {
-        // 计算互动分
         long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
         long likeCount = article.getLikeCount() != null ? article.getLikeCount() : 0L;
         long commentCount = article.getCommentCount() != null ? article.getCommentCount() : 0L;
         long collectCount = article.getCollectCount() != null ? article.getCollectCount() : 0L;
 
-        double interactionScore = viewCount * 1.0 + likeCount * 5.0 + commentCount * 3.0 + collectCount * 8.0;
+        // 多维度加权：浏览0.3 + 点赞3 + 评论2 + 收藏5
+        double interactionScore = viewCount * 0.3 + likeCount * 3.0 + commentCount * 2.0 + collectCount * 5.0;
 
-        // 计算时间衰减因子
+        // 时间衰减：以天为单位，指数0.5（比之前的1.5更温和，避免老文章分数过低）
         LocalDateTime publishTime = article.getPublishAt() != null ? article.getPublishAt() : article.getCreatedAt();
-        long hoursSincePublish = 1;
+        double daysSincePublish = 1.0;
         if (publishTime != null) {
-            hoursSincePublish = Math.max(1, Duration.between(publishTime, LocalDateTime.now()).toHours());
+            long hours = Math.max(1, Duration.between(publishTime, LocalDateTime.now()).toHours());
+            daysSincePublish = Math.max(1.0, hours / 24.0);
         }
 
-        // 热度分 = 互动分 / 时间衰减^1.5
-        double timeDecay = Math.pow(hoursSincePublish, 1.5);
-        return interactionScore / Math.max(1.0, timeDecay);
+        double timeDecay = Math.pow(daysSincePublish, 0.5);
+        double rawScore = interactionScore / timeDecay;
+
+        // 确保结果 >= 1，最多保留1位小数
+        double score = Math.max(1.0, rawScore);
+        score = Math.round(score * 10.0) / 10.0;
+        return score;
     }
 
     @Override
