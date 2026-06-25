@@ -201,7 +201,12 @@ public class AuthServiceImpl implements AuthService {
 
         // 检查登录失败次数（5次锁定30分钟）
         String failKey = LOGIN_FAIL_PREFIX + request.getUsername();
-        String failCountStr = stringRedisTemplate.opsForValue().get(failKey);
+        String failCountStr = null;
+        try {
+            failCountStr = stringRedisTemplate.opsForValue().get(failKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过登录失败次数检查: {}", e.getMessage());
+        }
         if (failCountStr != null) {
             int failCount = Integer.parseInt(failCountStr);
             if (failCount >= MAX_LOGIN_FAIL_COUNT) {
@@ -216,10 +221,14 @@ public class AuthServiceImpl implements AuthService {
         // 校验密码
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             // 登录失败次数 +1
-            Long failCount = stringRedisTemplate.opsForValue().increment(failKey);
-            if (failCount != null && failCount == 1) {
-                // 第一次失败，设置过期时间
-                stringRedisTemplate.expire(failKey, LOCK_MINUTES, TimeUnit.MINUTES);
+            try {
+                Long failCount = stringRedisTemplate.opsForValue().increment(failKey);
+                if (failCount != null && failCount == 1) {
+                    // 第一次失败，设置过期时间
+                    stringRedisTemplate.expire(failKey, LOCK_MINUTES, TimeUnit.MINUTES);
+                }
+            } catch (Exception e) {
+                log.warn("Redis 不可用，跳过登录失败计数: {}", e.getMessage());
             }
             loginLog.setUserId(user.getId());
             loginLog.setStatus(0);
@@ -229,7 +238,11 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 登录成功，清除失败次数
-        stringRedisTemplate.delete(failKey);
+        try {
+            stringRedisTemplate.delete(failKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过清除登录失败计数: {}", e.getMessage());
+        }
 
         // 更新最后登录时间
         User updateUser = new User();
@@ -258,11 +271,15 @@ public class AuthServiceImpl implements AuthService {
         if (claims != null) {
             long remainingMillis = claims.getExpiration().getTime() - System.currentTimeMillis();
             if (remainingMillis > 0) {
-                stringRedisTemplate.opsForValue().set(
-                        TOKEN_BLACKLIST_PREFIX + token,
-                        "1",
-                        remainingMillis,
-                        TimeUnit.MILLISECONDS);
+                try {
+                    stringRedisTemplate.opsForValue().set(
+                            TOKEN_BLACKLIST_PREFIX + token,
+                            "1",
+                            remainingMillis,
+                            TimeUnit.MILLISECONDS);
+                } catch (Exception e) {
+                    log.warn("Redis 不可用，无法将令牌加入黑名单: {}", e.getMessage());
+                }
             }
         }
     }
@@ -276,7 +293,12 @@ public class AuthServiceImpl implements AuthService {
 
         // 检查 RefreshToken 是否在 Redis 中（轮转机制）
         String refreshKey = REFRESH_TOKEN_PREFIX + refreshToken;
-        String userIdStr = stringRedisTemplate.opsForValue().get(refreshKey);
+        String userIdStr = null;
+        try {
+            userIdStr = stringRedisTemplate.opsForValue().get(refreshKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，无法验证刷新令牌: {}", e.getMessage());
+        }
         if (userIdStr == null) {
             throw new BusinessException(ErrorCode.AUTH_TOKEN_INVALID, "刷新令牌已失效");
         }
@@ -307,7 +329,11 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 旧 RefreshToken 失效（轮转机制）
-        stringRedisTemplate.delete(refreshKey);
+        try {
+            stringRedisTemplate.delete(refreshKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，无法使旧刷新令牌失效: {}", e.getMessage());
+        }
 
         // 生成新的 AccessToken 和 RefreshToken
         return buildTokenResponse(user);
@@ -368,11 +394,15 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getRole() != null ? user.getRole().getValue() : User.ROLE_USER);
 
         // 将 RefreshToken 存入 Redis（用于轮转机制）
-        stringRedisTemplate.opsForValue().set(
-                REFRESH_TOKEN_PREFIX + refreshToken,
-                String.valueOf(user.getId()),
-                accessExpiration * 7,
-                TimeUnit.SECONDS);
+        try {
+            stringRedisTemplate.opsForValue().set(
+                    REFRESH_TOKEN_PREFIX + refreshToken,
+                    String.valueOf(user.getId()),
+                    accessExpiration * 7,
+                    TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，刷新令牌将无法轮转: {}", e.getMessage());
+        }
 
         // 构建用户信息
         LoginUserVO userInfo = new LoginUserVO();

@@ -148,8 +148,8 @@ const saving = ref(false)
 
 /** 基本设置表单 */
 const basicForm = reactive({
-  siteName: '智讯',
-  siteDescription: '智讯内容管理系统',
+  siteName: '知讯',
+  siteDescription: '知讯内容管理系统',
   logo: '',
 })
 

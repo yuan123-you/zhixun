@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1 class="login-title">智讯管理后台</h1>
+        <h1 class="login-title">知讯管理后台</h1>
         <p class="login-subtitle">内容管理系统</p>
       </div>
 

@@ -24,8 +24,9 @@ import java.util.UUID;
  * <p>
  * SSR 兼容：
  * - Nuxt 服务端渲染时无法携带浏览器 Cookie，因此对 SSR 发起的请求跳过 CSRF 校验
- * - 通过请求头 X-SSR-Request 或 User-Agent 中包含 nuxt/axios 识别 SSR 请求
+ * - 通过请求头 X-SSR-Request: true 识别 SSR 请求
  * - 内网请求（SSR 服务器）通过 X-Forwarded-For 或 RemoteAddr 识别，同样跳过校验
+ * - 注意：已移除 User-Agent 检查（nuxt/axios 匹配），防止攻击者伪造 UA 绕过 CSRF 校验
  * <p>
  * SSR POST 请求支持：
  * - 当 SSR 服务端需要发起 POST 等状态变更请求时，可通过 X-SSR-Secret 请求头携带预配置的密钥
@@ -135,25 +136,12 @@ public class CsrfFilter extends OncePerRequestFilter {
 
     /**
      * 判断是否为 SSR（服务端渲染）发起的请求
-     * 通过 X-SSR-Request 请求头或 User-Agent 中包含 nuxt/axios 来识别
+     * 仅通过 X-SSR-Request: true 请求头识别，不检查 User-Agent
+     * 原因：攻击者可伪造 User-Agent（如设置 nuxt/axios）绕过 CSRF 校验
      */
     private boolean isSsrRequest(HttpServletRequest request) {
-        // 检查 X-SSR-Request 请求头
         String ssrHeader = request.getHeader(SSR_REQUEST_HEADER);
-        if ("true".equalsIgnoreCase(ssrHeader)) {
-            return true;
-        }
-
-        // 检查 User-Agent 是否包含 nuxt 或 axios（Nuxt SSR 使用 axios 发起请求）
-        String userAgent = request.getHeader("User-Agent");
-        if (userAgent != null) {
-            String lowerUA = userAgent.toLowerCase();
-            if (lowerUA.contains("nuxt") || lowerUA.contains("axios")) {
-                return true;
-            }
-        }
-
-        return false;
+        return "true".equalsIgnoreCase(ssrHeader);
     }
 
     /**

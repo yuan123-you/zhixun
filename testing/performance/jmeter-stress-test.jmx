@@ -2,11 +2,11 @@
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <!-- 测试计划 -->
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="智讯工单系统 - 性能压测计划" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="知讯 - 性能压测计划" enabled="true">
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
-      <stringProp name="TestPlan.comments">智讯 - 互联网小单售后工单系统 JMeter 压测计划</stringProp>
+      <stringProp name="TestPlan.comments">知讯 - 内容资讯发布与管理系统 JMeter 压测计划</stringProp>
     </TestPlan>
     <hashTree>
       <!-- 用户定义的变量 -->

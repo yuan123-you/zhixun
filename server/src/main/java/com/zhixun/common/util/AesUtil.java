@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
@@ -40,6 +41,30 @@ public class AesUtil {
     /** 密钥 */
     @Value("${aes.secret-key:zhixun-aes-secret-key-2024-must-be-32b}")
     private String secretKey;
+
+    /** 默认密钥（用于检测是否使用了不安全的默认配置） */
+    private static final String DEFAULT_SECRET_KEY = "zhixun-aes-secret-key-2024-must-be-32b";
+
+    /**
+     * 初始化时验证 AES 密钥配置
+     * 警告如果使用默认密钥或密钥强度不足
+     */
+    @PostConstruct
+    public void validateSecretKey() {
+        // 检查是否使用了默认密钥
+        if (DEFAULT_SECRET_KEY.equals(secretKey)) {
+            log.warn("⚠️  ⚠️  ⚠️  安全警告：当前使用默认 AES 密钥！请通过环境变量 AES_SECRET_KEY 配置强随机密钥！");
+            log.warn("⚠️  生成强密钥命令：java -cp . KeyGenerator.java 或在 application.yml 中配置 Base64 编码的 32 字节随机密钥");
+        }
+
+        // 验证密钥长度（在 SHA-256 哈希之前）
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 16) {
+            log.warn("AES 密钥长度不足 16 字节（当前：{} 字节），加密强度可能不足。建议使用至少 32 字节的随机密钥。", keyBytes.length);
+        } else {
+            log.info("AES 密钥配置验证通过，密钥字符串长度：{} 字节，哈希后长度：{} 字节（256 位）", keyBytes.length, KEY_LENGTH);
+        }
+    }
 
     /**
      * 加密明文

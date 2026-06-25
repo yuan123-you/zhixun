@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title 智讯系统 - Docker 一键启动
+title 知讯系统 - Docker 一键启动
 
 echo ============================================
-echo    智讯系统 - Docker Compose 一键启动
+echo    知讯系统 - Docker Compose 一键启动
 echo ============================================
 echo.
 

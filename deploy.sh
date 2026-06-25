@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# 智讯系统 - 全面自动化部署脚本
+# 知讯系统 - 全面自动化部署脚本
 # ==============================================================================
 # 使用方式：
 #   一键部署：    bash deploy.sh
@@ -433,7 +433,7 @@ do_stop() {
         log_info "停止服务: $TARGET_SERVICE"
         $COMPOSE_CMD --env-file .env -f "$COMPOSE_FILE" stop "$TARGET_SERVICE"
     else
-        if confirm_action "确认停止所有智讯服务？"; then
+        if confirm_action "确认停止所有知讯服务？"; then
             $COMPOSE_CMD --env-file .env -f "$COMPOSE_FILE" down --remove-orphans
         else
             log_info "已取消"
@@ -534,7 +534,7 @@ do_nginx_config() {
 
         mkdir -p nginx
         cat > "$NGINX_SITE_CONF" << NGINXEOF
-# 智讯系统 - 宿主机 Nginx 站点配置
+# 知讯系统 - 宿主机 Nginx 站点配置
 # 自动生成于 $(date '+%Y-%m-%d %H:%M:%S')
 
 server {
@@ -1043,7 +1043,7 @@ do_clean() {
 do_deploy() {
     echo ""
     echo -e "${BLUE}${BOLD}=========================================${NC}"
-    echo -e "${BLUE}${BOLD}  智讯系统 - 自动化部署 v${SCRIPT_VERSION}${NC}"
+    echo -e "${BLUE}${BOLD}  知讯系统 - 自动化部署 v${SCRIPT_VERSION}${NC}"
     echo -e "${BLUE}${BOLD}=========================================${NC}"
     echo ""
 
@@ -1118,7 +1118,7 @@ do_deploy() {
 # ==================== 帮助信息 ====================
 show_help() {
     echo ""
-    echo -e "${BOLD}智讯系统 - 自动化部署脚本 v${SCRIPT_VERSION}${NC}"
+    echo -e "${BOLD}知讯系统 - 自动化部署脚本 v${SCRIPT_VERSION}${NC}"
     echo ""
     echo "用法: bash deploy.sh [命令] [选项]"
     echo ""

@@ -1,8 +1,11 @@
 package com.zhixun.config;
 
+import com.zhixun.common.util.JwtUtil;
 import com.zhixun.websocket.ChatWebSocketHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -18,6 +21,7 @@ import java.util.Map;
  * 基于 STOMP 协议的 WebSocket 消息代理
  * 同时注册原始 WebSocket 端点用于私信功能
  */
+@Slf4j
 @Configuration
 @EnableWebSocket
 @EnableWebSocketMessageBroker
@@ -25,6 +29,7 @@ import java.util.Map;
 public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBrokerConfigurer {
 
     private final ChatWebSocketHandler chatWebSocketHandler;
+    private final JwtUtil jwtUtil;
 
     // ========== WebSocketConfigurer（原始 WebSocket） ==========
 
@@ -52,8 +57,26 @@ public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBro
                                                    org.springframework.http.server.ServerHttpResponse response,
                                                    org.springframework.web.socket.WebSocketHandler wsHandler,
                                                    Map<String, Object> attributes) {
-                        // 握手前可在此处进行鉴权
-                        return true;
+                        // 握手前进行 Token 鉴权（应用层二次验证）
+                        if (request instanceof ServletServerHttpRequest servletRequest) {
+                            String token = servletRequest.getServletRequest().getParameter("token");
+                            if (token == null || token.isEmpty()) {
+                                log.warn("WebSocket 握手拒绝：缺少 token，来源 IP: {}", request.getRemoteAddress());
+                                return false;
+                            }
+                            if (!jwtUtil.validateAccessToken(token)) {
+                                log.warn("WebSocket 握手拒绝：token 无效或已过期");
+                                return false;
+                            }
+                            // 将用户信息存入 attributes 供后续 WebSocket 会话使用
+                            Long userId = jwtUtil.getUserIdFromAccessToken(token);
+                            if (userId != null) {
+                                attributes.put("userId", userId);
+                            }
+                            return true;
+                        }
+                        log.warn("WebSocket 握手拒绝：无法获取 ServletRequest");
+                        return false;
                     }
                 })
                 .withSockJS();

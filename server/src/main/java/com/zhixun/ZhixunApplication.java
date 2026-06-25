@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * 智讯 - 互联网小单售后工单系统 启动类
+ * 知讯 - 内容资讯发布与管理系统 启动类
  */
 @EnableAsync
 @EnableScheduling

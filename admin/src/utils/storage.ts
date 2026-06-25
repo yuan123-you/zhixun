@@ -176,6 +176,10 @@ export const TTL = {
 export const STORAGE_KEYS = {
   /** 访问令牌 */
   TOKEN: 'token',
+  /** 刷新令牌，用于自动续期 accessToken */
+  REFRESH_TOKEN: 'refresh_token',
+  /** Token 过期时间戳（毫秒），用于判断是否需要提前刷新 */
+  TOKEN_EXPIRES_AT: 'token_expires_at',
   /** 用户权限 */
   USER_PERMISSIONS: 'user_permissions',
   /** 侧边栏折叠状态 */

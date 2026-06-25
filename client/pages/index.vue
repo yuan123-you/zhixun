@@ -113,14 +113,11 @@ const getApiBase = () => {
     : (config.public.apiBase as string)
 }
 
-// 通用分页数据获取
+// 通用分页数据获取 — 使用 useApi 以支持 Token 自动刷新和 CSRF 防护
 const fetchPage = async (url: string, params: Record<string, any> = {}) => {
-  const base = getApiBase()
-  const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}${url}`, {
-    params: { page: params.page || 1, pageSize: params.pageSize || 10, ...params },
-    headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-  })
-  return res.data
+  const api = useApi()
+  const res = await api.get<PageResult<Article>>(url, { page: params.page || 1, pageSize: params.pageSize || 10, ...params })
+  return res.data.data
 }
 
 // 切换Tab
@@ -151,13 +148,13 @@ const switchTab = (key: string) => {
 }
 
 // 推荐刷新：换一批 - 使用 useRefresh 统一管理加载状态和错误处理
+// 注意：handleRefresh 内使用 useApi 替代 $fetch，确保 Token 自动刷新和 CSRF 防护生效
 const { loading: refreshing, refresh: handleRefresh } = useRefresh({
   onRefresh: async () => {
     error.value = null
     page.value = 1
     hasMore.value = true
 
-    const base = getApiBase()
     const params: Record<string, any> = {
       page: 1,
       pageSize: 10,
@@ -167,11 +164,9 @@ const { loading: refreshing, refresh: handleRefresh } = useRefresh({
       params.refresh_key = refreshKey.value
     }
 
-    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
-      params,
-      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
-    })
-    const data = res?.data
+    const api = useApi()
+    const res = await api.get<PageResult<Article>>('/feed/recommend', params)
+    const data = res.data.data
     const items = data?.list || []
 
     articles.value = items
@@ -260,23 +255,27 @@ const handleRetry = () => {
   fetchArticles()
 }
 
-// 客户端刷新banner和公告数据（使用请求缓存）
+// 客户端刷新banner和公告数据（使用请求缓存 + useApi 替代 $fetch）
 const refreshBannerAndAnnouncements = async () => {
   if (!import.meta.client) return
-  const base = getApiBase()
-  const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
 
   try {
     const [banners, announcements] = await Promise.all([
       cachedRequest(
-        () => $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }),
-        `${base}/banners`,
+        async () => {
+          const res = await useApi().get<BannerItem[]>('/banners')
+          return res.data
+        },
+        '/banners',
         undefined,
         { ttl: 10 * 60 * 1000 }
       ),
       cachedRequest(
-        () => $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, { headers }),
-        `${base}/announcements`,
+        async () => {
+          const res = await useApi().get<AnnouncementItem[]>('/announcements')
+          return res.data
+        },
+        '/announcements',
         undefined,
         { ttl: 10 * 60 * 1000 }
       ),

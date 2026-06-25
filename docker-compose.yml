@@ -1,4 +1,4 @@
-# 智讯 - 互联网小单售后工单系统 Docker Compose 部署配置
+# 知讯 - 内容资讯发布与管理系统 Docker Compose 部署配置
 # 使用方式：docker compose up -d
 
 services:
@@ -186,13 +186,13 @@ services:
       OPENSEARCH_HOSTS: http://opensearch:9200
       OPENSEARCH_USERNAME: admin
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-zhixun321!}
-      # JWT 密钥
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-zhixun-access-secret-key-2024-must-be-at-least-256-bits-long}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-zhixun-refresh-secret-key-2024-must-be-at-least-256-bits-long}
+      # JWT 密钥（至少32字节，Base64编码）
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-sdOJgjRUoN/+6k2rJMlZOilv1uTKJfQJ9uoG/8fmPok=}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-STApEN/Ne/o9C+g7A8CnMM31+ChzquUR8GFXH97l7v4=}
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-7200}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
-      # AES 密钥
-      AES_SECRET_KEY: ${AES_SECRET_KEY:-zhixun-aes-secret-32bytes-key!!}
+      # AES 密钥（精确32字节，Base64编码）
+      AES_SECRET_KEY: ${AES_SECRET_KEY:-AMF+MWnL9m0KZLx8b5rV778ntzrsQ7pnBzf4kF94py0=}
       # 邮件配置（QQ邮箱SSL 465端口）
       MAIL_HOST: ${MAIL_HOST:-smtp.qq.com}
       MAIL_PORT: ${MAIL_PORT:-465}
@@ -267,13 +267,13 @@ services:
       OPENSEARCH_HOSTS: http://opensearch:9200
       OPENSEARCH_USERNAME: admin
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-zhixun321!}
-      # JWT 密钥
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-zhixun-access-secret-key-2024-must-be-at-least-256-bits-long}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-zhixun-refresh-secret-key-2024-must-be-at-least-256-bits-long}
+      # JWT 密钥（至少32字节，Base64编码）
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-sdOJgjRUoN/+6k2rJMlZOilv1uTKJfQJ9uoG/8fmPok=}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-STApEN/Ne/o9C+g7A8CnMM31+ChzquUR8GFXH97l7v4=}
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-7200}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
-      # AES 密钥
-      AES_SECRET_KEY: ${AES_SECRET_KEY:-zhixun-aes-secret-32bytes-key!!}
+      # AES 密钥（精确32字节，Base64编码）
+      AES_SECRET_KEY: ${AES_SECRET_KEY:-AMF+MWnL9m0KZLx8b5rV778ntzrsQ7pnBzf4kF94py0=}
       # 邮件配置（QQ邮箱SSL 465端口）
       MAIL_HOST: ${MAIL_HOST:-smtp.qq.com}
       MAIL_PORT: ${MAIL_PORT:-465}

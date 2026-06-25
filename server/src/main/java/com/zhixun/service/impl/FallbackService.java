@@ -1,6 +1,7 @@
 package com.zhixun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.config.Slave;
 import com.zhixun.entity.Article;
@@ -127,8 +128,9 @@ public class FallbackService {
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
 
         long total = articleMapper.selectCount(wrapper);
-        wrapper.last("LIMIT " + (page - 1) * pageSize + ", " + pageSize);
-        List<Article> articles = articleMapper.selectList(wrapper);
+        // 使用 MyBatis-Plus 分页替代 SQL 拼接，避免 .last() 注入隐患
+        Page<Article> articlePage = new Page<>(page, pageSize);
+        List<Article> articles = articleMapper.selectPage(articlePage, wrapper).getRecords();
 
         List<ArticleVO> voList = articles.stream().map(a -> {
             ArticleVO vo = new ArticleVO();

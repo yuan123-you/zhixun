@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +56,47 @@ public class JwtUtil {
 
     /** 自定义声明 - 用户角色 */
     public static final String CLAIM_ROLE = "role";
+
+    /**
+     * 初始化时验证 JWT 密钥长度
+     * 确保密钥至少 32 字节（256 位），符合 HS256 算法要求
+     */
+    @javax.annotation.PostConstruct
+    public void validateSecrets() {
+        validateSecretLength("JWT Access Secret", accessSecret, 32);
+        validateSecretLength("JWT Refresh Secret", refreshSecret, 32);
+    }
+
+    /**
+     * 验证密钥长度
+     *
+     * @param name        密钥名称（用于日志）
+     * @param secret     密钥字符串
+     * @param minBytes   最小字节数
+     */
+    private void validateSecretLength(String name, String secret, int minBytes) {
+        if (secret == null || secret.isEmpty()) {
+            throw new IllegalStateException(name + " 未配置，请在环境变量或配置文件中设置");
+        }
+
+        // 尝试 Base64 解码（如果配置的是 Base64 编码的密钥）
+        byte[] keyBytes;
+        try {
+            keyBytes = Base64.getDecoder().decode(secret);
+        } catch (IllegalArgumentException e) {
+            // 不是 Base64，使用原始字节
+            keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        }
+
+        if (keyBytes.length < minBytes) {
+            throw new IllegalStateException(
+                    String.format("%s 长度不足！当前：%d 字节，要求至少：%d 字节（%d 位）。请使用环境变量 JWT_ACCESS_SECRET 和 JWT_REFRESH_SECRET 配置强随机密钥。",
+                            name, keyBytes.length, minBytes, minBytes * 8)
+            );
+        }
+
+        log.info("{} 验证通过，密钥长度：{} 字节（{} 位）", name, keyBytes.length, keyBytes.length * 8);
+    }
 
     /**
      * 生成访问令牌

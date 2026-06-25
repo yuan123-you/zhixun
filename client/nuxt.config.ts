@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vueuse/nuxt',
     '@nuxtjs/color-mode',
+    '@nuxt/image',
   ],
 
   // 全局CSS
@@ -84,11 +85,12 @@ export default defineNuxtConfig({
     shim: false,
   },
 
-  // 暗色模式配置 - 强制浅色主题
+  // 暗色模式配置 - 支持浅色/深色/跟随系统切换
   colorMode: {
     classSuffix: '',
-    preference: 'light',
+    preference: 'system',
     fallback: 'light',
+    hid: 'nuxt-color-mode-script',
   },
 
   // 页面切换加载指示器
@@ -122,18 +124,17 @@ export default defineNuxtConfig({
     compressPublicAssets: true,
   },
 
-  // 图片优化模块（建议安装 @nuxt/image 以获得自动图片优化、懒加载等能力）
-  // 安装方式：npx nuxi module add image
-  // modules 中添加 '@nuxt/image' 后可启用以下配置：
-  // image: {
-  //   quality: 80,
-  //   format: ['webp', 'avif'],
-  //   screens: {
-  //     xs: 320,
-  //     sm: 640,
-  //     md: 768,
-  //     lg: 1024,
-  //     xl: 1280,
-  //   },
-  // },
+  // 图片优化模块
+  image: {
+    quality: 80,
+    format: ['webp', 'avif'],
+    screens: {
+      xs: 375,
+      sm: 480,
+      md: 768,
+      lg: 1024,
+      xl: 1200,
+      '2xl': 1920,
+    },
+  },
 })

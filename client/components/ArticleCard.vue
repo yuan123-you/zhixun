@@ -43,7 +43,7 @@
 
       <!-- 封面图（右侧，sm以上显示） -->
       <div v-if="article.coverImage" class="hidden sm:block w-24 md:w-28 h-20 md:h-24 shrink-0">
-        <img :src="resolveUrl(article.coverImage) || ''" :alt="typeof article.title === 'string' ? article.title : ''" class="w-full h-full object-cover rounded-lg" />
+        <img :src="resolveUrl(article.coverImage) || ''" :alt="typeof article.title === 'string' ? article.title : ''" class="w-full h-full object-cover rounded-lg" loading="lazy" />
       </div>
     </div>
 

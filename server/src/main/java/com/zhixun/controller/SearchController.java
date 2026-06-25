@@ -8,6 +8,7 @@ import com.zhixun.vo.SearchSuggestResultVO;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,8 +66,10 @@ public class SearchController {
 
     /**
      * 清空搜索历史
+     * 防御性编程：显式添加 @PreAuthorize 确保只有已认证用户可调用
      */
     @DeleteMapping("/history")
+    @PreAuthorize("isAuthenticated()")
     public R<Void> clearHistory() {
         Long userId = securityUtil.getCurrentUserId();
         searchService.clearSearchHistory(userId);

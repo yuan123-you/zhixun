@@ -53,6 +53,23 @@ export const useNotificationStore = defineStore('notification', () => {
     unreadCount.value = 0
   }
 
+  // 处理实时更新（WebSocket）
+  const handleRealtimeUpdate = (data: any) => {
+    if (data.type === 'new_notification') {
+      // 添加新通知
+      addNotification(data.notification)
+    } else if (data.type === 'mark_read') {
+      // 标记已读
+      markAsRead(data.notificationId)
+    } else if (data.type === 'mark_all_read') {
+      // 全部标记已读
+      markAllAsRead()
+    } else if (data.type === 'unread_count') {
+      // 更新未读数量
+      setUnreadCount(data.count)
+    }
+  }
+
   return {
     unreadCount,
     notifications,
@@ -63,5 +80,6 @@ export const useNotificationStore = defineStore('notification', () => {
     addNotification,
     markAsRead,
     markAllAsRead,
+    handleRealtimeUpdate,
   }
 })

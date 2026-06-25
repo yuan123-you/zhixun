@@ -74,24 +74,25 @@ const showSuggestions = ref(false)
 const searchRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
 
-// 防抖定时器
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-// 输入处理（防抖300ms）
-const handleInput = () => {
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(async () => {
-    if (keyword.value.trim()) {
-      try {
-        const response = await searchApi.getSuggestions(keyword.value.trim())
-        suggestions.value = response.data.data
-      } catch {
-        suggestions.value = []
-      }
-    } else {
+// 获取搜索建议
+const fetchSuggestions = async (query: string) => {
+  if (query.trim()) {
+    try {
+      const response = await searchApi.getSuggestions(query.trim())
+      suggestions.value = response.data.data
+    } catch {
       suggestions.value = []
     }
-  }, 300)
+  } else {
+    suggestions.value = []
+  }
+}
+
+// 输入处理（防抖300ms，使用VueUse标准化工具）
+const debouncedFetchSuggestions = useDebounceFn(fetchSuggestions, 300)
+
+const handleInput = () => {
+  debouncedFetchSuggestions(keyword.value)
 }
 
 // 执行搜索
@@ -172,6 +173,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-  if (debounceTimer) clearTimeout(debounceTimer)
+  debouncedFetchSuggestions.cancel()
 })
 </script>

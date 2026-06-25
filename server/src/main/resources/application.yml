@@ -137,10 +137,10 @@ mybatis-plus:
 
 # JWT 配置
 jwt:
-  # 访问令牌密钥
-  access-secret: ${JWT_ACCESS_SECRET:zhixun-access-secret-key-2024-must-be-at-least-256-bits-long}
-  # 刷新令牌密钥
-  refresh-secret: ${JWT_REFRESH_SECRET:zhixun-refresh-secret-key-2024-must-be-at-least-256-bits-long}
+  # 访问令牌密钥（至少32字节，Base64编码）
+  access-secret: ${JWT_ACCESS_SECRET:sdOJgjRUoN/+6k2rJMlZOilv1uTKJfQJ9uoG/8fmPok=}
+  # 刷新令牌密钥（至少32字节，Base64编码）
+  refresh-secret: ${JWT_REFRESH_SECRET:STApEN/Ne/o9C+g7A8CnMM31+ChzquUR8GFXH97l7v4=}
   # 访问令牌过期时间（秒）- 2小时
   access-expiration: ${JWT_ACCESS_EXPIRATION:7200}
   # 刷新令牌过期时间（秒）- 7天
@@ -150,9 +150,9 @@ jwt:
   # 令牌请求头
   header-string: Authorization
 
-# AES 加密配置
+# AES 加密配置（密钥必须精确 32 字节，Base64 编码）
 aes:
-  secret-key: ${AES_SECRET_KEY:zhixun-aes-secret-key-2024-must-be-32b}
+  secret-key: ${AES_SECRET_KEY:AMF+MWnL9m0KZLx8b5rV778ntzrsQ7pnBzf4kF94py0=}
 
 # SSR 服务端通信配置
 ssr:
@@ -204,7 +204,9 @@ sentinel:
   # Dashboard 地址（如部署了 Sentinel Dashboard）
   dashboard: ${SENTINEL_DASHBOARD:localhost:8080}
 
-# 日志配置
+# 应用配置
+app:
+  data-version: ${APP_DATA_VERSION:20250625}
 logging:
   level:
     root: INFO

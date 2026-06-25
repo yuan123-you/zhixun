@@ -11,6 +11,7 @@ import com.zhixun.mapper.UserFollowMapper;
 import com.zhixun.mapper.UserPreferredCategoryMapper;
 import com.zhixun.service.SearchHistoryService;
 import com.zhixun.service.SearchService;
+import com.zhixun.service.impl.FallbackService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.SearchResultVO;
 import com.zhixun.vo.SearchSuggestResultVO;
@@ -58,6 +59,7 @@ public class SearchServiceImpl implements SearchService {
     private final UserFollowMapper userFollowMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+    private final FallbackService fallbackService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String SUGGEST_CACHE_PREFIX = "search:suggest:";
@@ -358,9 +360,18 @@ public class SearchServiceImpl implements SearchService {
                                     )
                             );
 
-                            // time_decay: 简化实现，使用固定权重
+                            // time_decay: 基于文章发布时间与当前时间差的动态衰减
+                            // score = 1 / (1 + (now - createdAt) / 604800000)
+                            // 发布时间越近分值越高，7天后衰减到原来的50%
                             fs.functions(f -> f
-                                    .weight(0.8)
+                                    .scriptScore(ss -> ss
+                                            .script(s -> s
+                                                    .inline(i -> i
+                                                            .source("1 / (1 + (params.now - doc['createdAt'].value) / 604800000.0)")
+                                                            .params("now", JsonData.of(System.currentTimeMillis()))
+                                                    )
+                                            )
+                                    )
                             );
 
                             // personal_boost: 用户偏好分类的文章提升1.5倍
@@ -454,9 +465,16 @@ public class SearchServiceImpl implements SearchService {
             result.setArticles(voList);
             return response.hits().total().value();
         } catch (Exception e) {
-            log.error("OpenSearch 搜索文章失败: {}", e.getMessage());
-            result.setArticles(Collections.emptyList());
-            return 0L;
+            log.warn("OpenSearch 不可用，降级到 MySQL 搜索: {}", e.getMessage());
+            try {
+                SearchResultVO fallbackResult = fallbackService.getSearchFallback(keyword, page, pageSize);
+                result.setArticles(fallbackResult.getArticles());
+                return fallbackResult.getTotal();
+            } catch (Exception ex) {
+                log.error("MySQL 降级搜索也失败: {}", ex.getMessage());
+                result.setArticles(Collections.emptyList());
+                return 0L;
+            }
         }
     }
 

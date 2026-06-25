@@ -119,22 +119,40 @@ public class FeedServiceImpl implements FeedService {
         if (refresh != null && refresh == 1) {
             // 生成新的 refresh_key
             refreshKey = UUID.randomUUID().toString().replace("-", "");
-            stringRedisTemplate.opsForValue().set(RECOMMEND_KEY_PREFIX + "key:" + userId, refreshKey, RECOMMEND_TTL_MINUTES, TimeUnit.MINUTES);
+            try {
+                stringRedisTemplate.opsForValue().set(RECOMMEND_KEY_PREFIX + "key:" + userId, refreshKey, RECOMMEND_TTL_MINUTES, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，跳过缓存推荐刷新批次: {}", e.getMessage());
+            }
         } else {
             // 尝试获取已有的 refresh_key
-            String existingKey = stringRedisTemplate.opsForValue().get(RECOMMEND_KEY_PREFIX + "key:" + userId);
+            String existingKey = null;
+            try {
+                existingKey = stringRedisTemplate.opsForValue().get(RECOMMEND_KEY_PREFIX + "key:" + userId);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，跳过读取推荐批次: {}", e.getMessage());
+            }
             if (existingKey != null) {
                 refreshKey = existingKey;
             } else {
                 // 没有已有批次，生成新的
                 refreshKey = UUID.randomUUID().toString().replace("-", "");
-                stringRedisTemplate.opsForValue().set(RECOMMEND_KEY_PREFIX + "key:" + userId, refreshKey, RECOMMEND_TTL_MINUTES, TimeUnit.MINUTES);
+                try {
+                    stringRedisTemplate.opsForValue().set(RECOMMEND_KEY_PREFIX + "key:" + userId, refreshKey, RECOMMEND_TTL_MINUTES, TimeUnit.MINUTES);
+                } catch (Exception e) {
+                    log.warn("Redis 不可用，跳过缓存推荐刷新批次: {}", e.getMessage());
+                }
             }
         }
 
         // 尝试从缓存获取
         String cacheKey = RECOMMEND_KEY_PREFIX + refreshKey;
-        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        String cachedIds = null;
+        try {
+            cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过推荐缓存读取: {}", e.getMessage());
+        }
         if (cachedIds != null) {
             // 从缓存中分页
             return getPagedFromCache(cacheKey, page, pageSize);
@@ -150,7 +168,11 @@ public class FeedServiceImpl implements FeedService {
                     .map(String::valueOf)
                     .collect(Collectors.joining(","));
             long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(RECOMMEND_TTL_MINUTES);
-            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+            try {
+                stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，跳过推荐缓存写入: {}", e.getMessage());
+            }
         }
 
         return getPagedFromCache(cacheKey, page, pageSize);
@@ -161,7 +183,12 @@ public class FeedServiceImpl implements FeedService {
     public PageResult<ArticleVO> getLatestFeed(Integer page, Integer pageSize) {
         // 尝试从 Redis 缓存获取
         String cacheKey = LATEST_FEED_KEY_PREFIX + page + ":" + pageSize;
-        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        String cachedIds = null;
+        try {
+            cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过最新动态缓存读取: {}", e.getMessage());
+        }
         if (cachedIds != null) {
             return getPagedFromCache(cacheKey, page, pageSize);
         }
@@ -183,7 +210,11 @@ public class FeedServiceImpl implements FeedService {
                     .map(vo -> String.valueOf(vo.getId()))
                     .collect(Collectors.joining(","));
             long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(LATEST_FEED_TTL_MINUTES);
-            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+            try {
+                stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，跳过最新动态缓存写入: {}", e.getMessage());
+            }
         }
 
         return new PageResult<>(voList, result.getTotal(), page, pageSize);
@@ -194,14 +225,24 @@ public class FeedServiceImpl implements FeedService {
     public PageResult<ArticleVO> getFollowingFeed(Long userId, Integer page, Integer pageSize) {
         // 尝试从 Redis 缓存获取
         String cacheKey = FOLLOWING_FEED_KEY_PREFIX + userId;
-        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        String cachedIds = null;
+        try {
+            cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过关注动态缓存读取: {}", e.getMessage());
+        }
         if (cachedIds != null) {
             return getPagedFromCache(cacheKey, page, pageSize);
         }
 
         // 缓存未命中，优先从 Redis Sorted Set 时间线获取
         String timelineKey = TIMELINE_KEY_PREFIX + userId;
-        Long timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
+        Long timelineSize = null;
+        try {
+            timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过时间线大小查询: {}", e.getMessage());
+        }
         if (timelineSize != null && timelineSize > 0) {
             return getFollowingFeedFromTimeline(userId, timelineKey, page, pageSize);
         }
@@ -221,7 +262,12 @@ public class FeedServiceImpl implements FeedService {
     public PageResult<ArticleVO> getFollowingFeedByCursor(Long userId, LocalDateTime cursor, Integer pageSize) {
         // 优先从 Redis Sorted Set 时间线获取
         String timelineKey = TIMELINE_KEY_PREFIX + userId;
-        Long timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
+        Long timelineSize = null;
+        try {
+            timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过时间线大小查询: {}", e.getMessage());
+        }
 
         if (timelineSize != null && timelineSize > 0) {
             return getFollowingFeedByCursorFromTimeline(userId, timelineKey, cursor, pageSize);
@@ -264,7 +310,12 @@ public class FeedServiceImpl implements FeedService {
     public PageResult<ArticleVO> getHotFeed(Integer page, Integer pageSize) {
         // 尝试从 Redis 缓存获取
         String cacheKey = HOT_FEED_KEY_PREFIX + page + ":" + pageSize;
-        String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        String cachedIds = null;
+        try {
+            cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过热门动态缓存读取: {}", e.getMessage());
+        }
         if (cachedIds != null) {
             return getPagedFromCache(cacheKey, page, pageSize);
         }
@@ -287,7 +338,11 @@ public class FeedServiceImpl implements FeedService {
                     .map(vo -> String.valueOf(vo.getId()))
                     .collect(Collectors.joining(","));
             long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(HOT_FEED_TTL_MINUTES);
-            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+            try {
+                stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，跳过热门动态缓存写入: {}", e.getMessage());
+            }
         }
 
         return new PageResult<>(voList, result.getTotal(), page, pageSize);
@@ -363,7 +418,13 @@ public class FeedServiceImpl implements FeedService {
      * 从 Redis Sorted Set 时间线获取关注动态（页码分页）
      */
     private PageResult<ArticleVO> getFollowingFeedFromTimeline(Long userId, String timelineKey, Integer page, Integer pageSize) {
-        Long total = stringRedisTemplate.opsForZSet().size(timelineKey);
+        Long total = null;
+        try {
+            total = stringRedisTemplate.opsForZSet().size(timelineKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，降级到数据库查询关注动态: {}", e.getMessage());
+            return getFollowingFeedFromDB(userId, page, pageSize);
+        }
         if (total == null || total == 0) {
             return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
         }
@@ -371,7 +432,13 @@ public class FeedServiceImpl implements FeedService {
         // Sorted Set 按分数降序（最新在前）
         long start = (long) (page - 1) * pageSize;
         long end = start + pageSize - 1;
-        Set<String> articleIdStrs = stringRedisTemplate.opsForZSet().reverseRange(timelineKey, start, end);
+        Set<String> articleIdStrs = null;
+        try {
+            articleIdStrs = stringRedisTemplate.opsForZSet().reverseRange(timelineKey, start, end);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，降级到数据库查询关注动态: {}", e.getMessage());
+            return getFollowingFeedFromDB(userId, page, pageSize);
+        }
 
         if (CollectionUtils.isEmpty(articleIdStrs)) {
             return new PageResult<>(Collections.emptyList(), total, page, pageSize);
@@ -407,12 +474,21 @@ public class FeedServiceImpl implements FeedService {
         Set<String> articleIdStrs;
         if (cursor == null) {
             // 首次加载，获取最新的 pageSize 条
-            articleIdStrs = stringRedisTemplate.opsForZSet().reverseRange(timelineKey, 0, pageSize - 1);
+            try {
+                articleIdStrs = stringRedisTemplate.opsForZSet().reverseRange(timelineKey, 0, pageSize - 1);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，降级到数据库查询: {}", e.getMessage());
+                return getFollowingFeedFromDB(userId, 1, pageSize);
+            }
         } else {
             // 游标分页：获取分数小于 cursor 的 pageSize 条
             double maxScore = cursor.toEpochSecond(ZoneOffset.of("+8"));
-            // 使用 reverseRangeByScore 获取分数小于 maxScore 的元素
-            articleIdStrs = stringRedisTemplate.opsForZSet().reverseRangeByScore(timelineKey, 0, maxScore - 1, 0, pageSize);
+            try {
+                articleIdStrs = stringRedisTemplate.opsForZSet().reverseRangeByScore(timelineKey, 0, maxScore - 1, 0, pageSize);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，降级到数据库查询: {}", e.getMessage());
+                return getFollowingFeedFromDB(userId, 1, pageSize);
+            }
         }
 
         if (CollectionUtils.isEmpty(articleIdStrs)) {
@@ -839,7 +915,12 @@ public class FeedServiceImpl implements FeedService {
      * 从缓存分页获取推荐结果
      */
     private PageResult<ArticleVO> getPagedFromCache(String cacheKey, Integer page, Integer pageSize) {
-        String idsStr = stringRedisTemplate.opsForValue().get(cacheKey);
+        String idsStr = null;
+        try {
+            idsStr = stringRedisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis 不可用，跳过缓存分页读取: {}", e.getMessage());
+        }
         if (idsStr == null || idsStr.isEmpty()) {
             return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
         }

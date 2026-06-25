@@ -39,7 +39,7 @@ export const useBreakpoints = () => {
   // 是否为平板端（768px - 1023px）
   const isTablet = computed(() => {
     if (!isMounted.value) return false
-    const current = breakpoints.current()
+    const current = breakpoints.current().value
     if (!current) return false
     const arr = Array.isArray(current) ? current : [current]
     return arr.includes('md') && !arr.includes('lg')

@@ -16,13 +16,15 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@nuxt/image": "^1.8.0",
     "@nuxtjs/color-mode": "^3.4.0",
     "@pinia/nuxt": "^0.9.0",
     "@vueuse/nuxt": "^11.0.0",
     "axios": "^1.7.0",
     "html2canvas": "^1.4.1",
     "nuxt": "^3.14.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "web-vitals": "^4.2.0"
   },
   "devDependencies": {
     "@nuxt/test-utils": "^4.0.3",

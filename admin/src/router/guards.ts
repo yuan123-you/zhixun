@@ -13,7 +13,7 @@ export function setupGuards(router: Router) {
   router.beforeEach((to, _from, next) => {
     // 页面标题
     if (to.meta.title) {
-      document.title = `${to.meta.title} - 智讯管理后台`
+      document.title = `${to.meta.title} - 知讯管理后台`
     }
 
     const token = storage.get<string>(STORAGE_KEYS.TOKEN)
