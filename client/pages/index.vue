@@ -1,6 +1,6 @@
 <template>
   <!-- 首页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-4 2xl:px-8 py-6">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <PullToRefresh :on-refresh="() => handleRefresh()" :error="error || undefined">
     <div class="flex gap-6">
       <!-- 左侧主内容区 -->
@@ -29,7 +29,7 @@
               activeTab === tab.key
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-              isMobile ? 'flex-1 px-1 py-3 text-center' : 'px-4 py-3'
+              isMobile ? 'flex-1 px-1 py-2 text-center' : 'px-2 py-2'
             ]"
             @click="switchTab(tab.key)"
           >
@@ -40,7 +40,7 @@
           <button
             v-if="activeTab === 'recommend'"
             class="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors rounded-full hover:bg-primary/5 no-tap-highlight shrink-0"
-            :class="isMobile ? 'px-2 py-2' : 'px-3 py-2'"
+            :class="isMobile ? 'px-1.5 py-1' : 'px-2 py-1'"
             :disabled="refreshing"
             @click="handleRefresh"
           >

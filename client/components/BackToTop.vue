@@ -7,8 +7,8 @@
       @click="scrollToTop"
     >
       <svg
-        width="24"
-        height="24"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -79,11 +79,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .back-to-top {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  right: 12px;
+  bottom: 12px;
   z-index: 50;
-  width: 56px;
-  height: 56px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background-color: var(--color-primary);
   color: #ffffff;
@@ -92,10 +92,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   -webkit-tap-highlight-color: transparent;
   tap-highlight-color: transparent;
   transition: transform 0.1s ease, opacity 0.1s ease;
+  opacity: 0.6;
 }
 
 .back-to-top:hover {
@@ -128,39 +129,39 @@ onBeforeUnmount(() => {
 /* 移动端适配：考虑底部导航栏 */
 @media (max-width: 767px) {
   .back-to-top {
-    bottom: calc(24px + var(--mobile-nav-height, 3.5rem));
+    bottom: calc(12px + var(--mobile-nav-height, 3.5rem));
   }
 }
 
 /* 平板端适配 */
 @media (min-width: 768px) and (max-width: 1024px) {
   .back-to-top {
-    bottom: 24px;
+    bottom: 12px;
   }
 }
 
 /* 触摸设备优化 */
 @media (pointer: coarse) {
   .back-to-top {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 36px;
+    min-width: 36px;
   }
 
   .back-to-top:hover {
     filter: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   }
 }
 
 /* 安全区域适配（刘海屏等） */
 @supports (padding: env(safe-area-inset-bottom)) {
   .back-to-top {
-    bottom: calc(24px + env(safe-area-inset-bottom));
+    bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
   @media (max-width: 767px) {
     .back-to-top {
-      bottom: calc(24px + var(--mobile-nav-height, 3.5rem) + env(safe-area-inset-bottom));
+      bottom: calc(12px + var(--mobile-nav-height, 3.5rem) + env(safe-area-inset-bottom));
     }
   }
 }

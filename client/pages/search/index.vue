@@ -21,6 +21,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+        <!-- 搜索按钮 -->
+        <button class="ml-2 px-4 py-1.5 bg-primary text-white text-sm rounded-full hover:bg-primary-600 transition-colors shrink-0" @click="doSearch">
+          {{ t('common.search') }}
+        </button>
       </div>
 
     </div>

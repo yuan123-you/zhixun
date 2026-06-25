@@ -1,6 +1,6 @@
 <template>
   <!-- 标签聚合页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-4 2xl:px-8 py-6">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">标签</h1>
 
     <!-- Tab切换：标签云 / 热门标签 / 已关注 -->

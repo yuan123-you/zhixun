@@ -62,9 +62,9 @@
         <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
           <h3 class="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{{ t('hotTags.title') }}</h3>
           <div class="flex flex-wrap gap-2 px-3">
-            <span class="badge-primary cursor-pointer">前端</span>
-            <span class="badge-secondary cursor-pointer">Vue</span>
-            <span class="badge-accent cursor-pointer">AI</span>
+            <NuxtLink to="/tags" class="badge-primary cursor-pointer no-tap-highlight">{{ t('nav.tech') }}</NuxtLink>
+            <NuxtLink to="/tags" class="badge-secondary cursor-pointer no-tap-highlight">Vue</NuxtLink>
+            <NuxtLink to="/tags" class="badge-accent cursor-pointer no-tap-highlight">AI</NuxtLink>
           </div>
         </div>
       </div>
