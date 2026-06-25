@@ -1,3 +1,16 @@
+// 共享类型（来自 @zhixun/shared-types 统一类型包）
+// 注：ApiResponse / PageResult / UserInfo 与本地定义有差异，本地版本保留现有字段名，不在此处重导出
+export {
+  ErrorCode,
+  ErrorMessage,
+  type ArticleVO,
+  type CategoryVO,
+  type TagVO,
+  type UserBrief,
+  type ArticleCreateParams,
+  type ArticleQueryParams,
+} from '@zhixun/shared-types'
+
 /** 通用分页请求参数 */
 export interface PageParams {
   page: number

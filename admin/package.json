@@ -21,6 +21,7 @@
     "vue-echarts": "^7.0.3"
   },
   "devDependencies": {
+    "@zhixun/shared-types": "file:../packages/shared-types",
     "@vitejs/plugin-vue": "^5.2.1",
     "vite": "^6.0.5",
     "typescript": "^5.7.2",

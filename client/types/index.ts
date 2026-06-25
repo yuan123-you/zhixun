@@ -1,3 +1,17 @@
+// 共享类型（来自 @zhixun/shared-types 统一类型包）
+// 注：ApiResponse / PageResult 与本地定义冲突，本地版本保持现有字段名（如 list/page_size），不在此处重导出
+export {
+  ErrorCode,
+  ErrorMessage,
+  type ArticleVO,
+  type CategoryVO,
+  type TagVO,
+  type UserBrief,
+  type UserInfo,
+  type ArticleCreateParams,
+  type ArticleQueryParams,
+} from '@zhixun/shared-types'
+
 // TypeScript 类型定义
 
 /** 文章接口 */

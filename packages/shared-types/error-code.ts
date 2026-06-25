@@ -1,0 +1,86 @@
+/**
+ * 错误码枚举 — 前后端统一
+ *
+ * 分类规则：
+ * - 通用：HTTP 标准状态码
+ * - 1xxx：认证相关
+ * - 2xxx：文章相关
+ * - 3xxx：用户相关
+ * - 4xxx：文件相关
+ * - 5xxx：搜索相关
+ */
+export enum ErrorCode {
+  // 通用
+  SUCCESS = 0,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
+  NOT_FOUND = 404,
+  RATE_LIMIT = 429,
+  INTERNAL_ERROR = 500,
+  SERVICE_UNAVAILABLE = 503,
+
+  // 认证 (1xxx)
+  AUTH_USERNAME_OR_PASSWORD_ERROR = 1001,
+  AUTH_TOKEN_EXPIRED = 1002,
+  AUTH_TOKEN_INVALID = 1003,
+  AUTH_REFRESH_TOKEN_INVALID = 1004,
+  AUTH_ACCOUNT_BANNED = 1005,
+  AUTH_ACCOUNT_NOT_FOUND = 1006,
+  AUTH_VERIFICATION_CODE_ERROR = 1007,
+
+  // 文章 (2xxx)
+  ARTICLE_NOT_FOUND = 2001,
+  ARTICLE_DELETED = 2002,
+  ARTICLE_UNDER_REVIEW = 2003,
+  ARTICLE_REJECTED = 2004,
+  ARTICLE_FORBIDDEN_WORD = 2005,
+
+  // 用户 (3xxx)
+  USER_NOT_FOUND = 3001,
+  USER_ALREADY_EXISTS = 3002,
+  USER_BANNED = 3003,
+  USER_FOLLOW_SELF = 3004,
+
+  // 文件 (4xxx)
+  FILE_TOO_LARGE = 4001,
+  FILE_TYPE_NOT_ALLOWED = 4002,
+  FILE_UPLOAD_FAILED = 4003,
+
+  // 搜索 (5xxx)
+  SEARCH_SERVICE_UNAVAILABLE = 5001,
+  SEARCH_TOO_MANY_REQUESTS = 5002,
+}
+
+/** 错误码对应的中文提示信息 */
+export const ErrorMessage: Record<number, string> = {
+  [ErrorCode.SUCCESS]: '操作成功',
+  [ErrorCode.BAD_REQUEST]: '请求参数错误',
+  [ErrorCode.UNAUTHORIZED]: '请先登录',
+  [ErrorCode.FORBIDDEN]: '没有权限',
+  [ErrorCode.NOT_FOUND]: '内容不存在',
+  [ErrorCode.RATE_LIMIT]: '操作太频繁，稍后再试',
+  [ErrorCode.INTERNAL_ERROR]: '服务器开小差了',
+  [ErrorCode.SERVICE_UNAVAILABLE]: '服务暂时不可用',
+  [ErrorCode.AUTH_USERNAME_OR_PASSWORD_ERROR]: '用户名或密码错误',
+  [ErrorCode.AUTH_TOKEN_EXPIRED]: '登录已过期，请重新登录',
+  [ErrorCode.AUTH_TOKEN_INVALID]: '无效的登录凭证',
+  [ErrorCode.AUTH_REFRESH_TOKEN_INVALID]: '刷新令牌无效',
+  [ErrorCode.AUTH_ACCOUNT_BANNED]: '账号已被封禁',
+  [ErrorCode.AUTH_ACCOUNT_NOT_FOUND]: '账号不存在',
+  [ErrorCode.AUTH_VERIFICATION_CODE_ERROR]: '验证码错误',
+  [ErrorCode.ARTICLE_NOT_FOUND]: '文章不存在',
+  [ErrorCode.ARTICLE_DELETED]: '文章已被删除',
+  [ErrorCode.ARTICLE_UNDER_REVIEW]: '文章正在审核中',
+  [ErrorCode.ARTICLE_REJECTED]: '文章已被驳回',
+  [ErrorCode.ARTICLE_FORBIDDEN_WORD]: '文章包含违规内容',
+  [ErrorCode.USER_NOT_FOUND]: '用户不存在',
+  [ErrorCode.USER_ALREADY_EXISTS]: '用户已存在',
+  [ErrorCode.USER_BANNED]: '用户已被封禁',
+  [ErrorCode.USER_FOLLOW_SELF]: '不能关注自己',
+  [ErrorCode.FILE_TOO_LARGE]: '文件过大',
+  [ErrorCode.FILE_TYPE_NOT_ALLOWED]: '文件类型不支持',
+  [ErrorCode.FILE_UPLOAD_FAILED]: '文件上传失败',
+  [ErrorCode.SEARCH_SERVICE_UNAVAILABLE]: '搜索服务暂时不可用',
+  [ErrorCode.SEARCH_TOO_MANY_REQUESTS]: '搜索请求过于频繁',
+}
