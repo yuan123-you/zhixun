@@ -395,41 +395,55 @@ const loadTabData = async () => {
   tabError.value = null
   try {
     const params = { page: currentPage.value, pageSize }
+    let list: any[] = []
+    let total = 0
     switch (activeTab.value) {
       case 'published': {
-        const { data } = await cachedRequest(userApi.getMyArticles, '/user/articles', params)
-        publishedArticles.value = data.data.list || []
-        hasMore.value = publishedArticles.value.length < data.data.total
+        const { data } = await userApi.getMyArticles(params)
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        publishedArticles.value = list
+        hasMore.value = list.length < total
         break
       }
       case 'drafts': {
-        const { data } = await cachedRequest(userApi.getMyDrafts, '/user/drafts', params)
-        draftArticles.value = data.data.list || []
-        hasMore.value = draftArticles.value.length < data.data.total
+        const { data } = await userApi.getMyDrafts(params)
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        draftArticles.value = list
+        hasMore.value = list.length < total
         break
       }
       case 'collected': {
-        const { data } = await cachedRequest(userApi.getMyCollections, '/user/collections', params)
-        collectedArticles.value = data.data.list || []
-        hasMore.value = collectedArticles.value.length < data.data.total
+        const { data } = await userApi.getMyCollections(params)
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        collectedArticles.value = list
+        hasMore.value = list.length < total
         break
       }
       case 'liked': {
-        const { data } = await cachedRequest(userApi.getMyLikes, '/user/likes', params)
-        likedArticles.value = data.data.list || []
-        hasMore.value = likedArticles.value.length < data.data.total
+        const { data } = await userApi.getMyLikes(params)
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        likedArticles.value = list
+        hasMore.value = list.length < total
         break
       }
       case 'comments': {
-        const { data } = await cachedRequest(userApi.getMyComments, '/user/comments', params)
-        myComments.value = data.data.list || []
-        hasMore.value = myComments.value.length < data.data.total
+        const { data } = await userApi.getMyComments(params)
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        myComments.value = list
+        hasMore.value = list.length < total
         break
       }
       case 'history': {
-        const { data } = await cachedRequest(userApi.getViewHistory, '/user/history', params)
-        historyArticles.value = data.data.list || []
-        hasMore.value = historyArticles.value.length < data.data.total
+        const { data } = await userApi.getViewHistory(params)
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        historyArticles.value = list
+        hasMore.value = list.length < total
         break
       }
     }
@@ -447,41 +461,55 @@ const loadMore = async () => {
   loading.value = true
   try {
     const params = { page: currentPage.value, pageSize }
+    let list: any[] = []
+    let total = 0
     switch (activeTab.value) {
       case 'published': {
         const { data } = await userApi.getMyArticles(params)
-        publishedArticles.value.push(...(data.data.list || []))
-        hasMore.value = publishedArticles.value.length < data.data.total
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        publishedArticles.value.push(...list)
+        hasMore.value = publishedArticles.value.length < total
         break
       }
       case 'drafts': {
         const { data } = await userApi.getMyDrafts(params)
-        draftArticles.value.push(...(data.data.list || []))
-        hasMore.value = draftArticles.value.length < data.data.total
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        draftArticles.value.push(...list)
+        hasMore.value = draftArticles.value.length < total
         break
       }
       case 'collected': {
         const { data } = await userApi.getMyCollections(params)
-        collectedArticles.value.push(...(data.data.list || []))
-        hasMore.value = collectedArticles.value.length < data.data.total
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        collectedArticles.value.push(...list)
+        hasMore.value = collectedArticles.value.length < total
         break
       }
       case 'liked': {
         const { data } = await userApi.getMyLikes(params)
-        likedArticles.value.push(...(data.data.list || []))
-        hasMore.value = likedArticles.value.length < data.data.total
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        likedArticles.value.push(...list)
+        hasMore.value = likedArticles.value.length < total
         break
       }
       case 'comments': {
         const { data } = await userApi.getMyComments(params)
-        myComments.value.push(...(data.data.list || []))
-        hasMore.value = myComments.value.length < data.data.total
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        myComments.value.push(...list)
+        hasMore.value = myComments.value.length < total
         break
       }
       case 'history': {
         const { data } = await userApi.getViewHistory(params)
-        historyArticles.value.push(...(data.data.list || []))
-        hasMore.value = historyArticles.value.length < data.data.total
+        list = data?.data?.list || data?.data?.items || []
+        total = data?.data?.total || list.length
+        historyArticles.value.push(...list)
+        hasMore.value = historyArticles.value.length < total
         break
       }
     }

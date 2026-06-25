@@ -1,13 +1,17 @@
 <template>
   <!-- 单条评论项组件（供 CommentSection 内部使用） -->
   <div class="flex space-x-2">
-    <!-- 用户头像 -->
-    <UserAvatar :src="comment.user?.avatar" :alt="comment.user?.nickname" size="sm" />
+    <!-- 用户头像（可点击跳转） -->
+    <NuxtLink v-if="comment.userId" :to="`/user/${comment.userId}`" class="shrink-0 cursor-pointer">
+      <UserAvatar :src="comment.user?.avatar" :alt="comment.user?.nickname" size="sm" />
+    </NuxtLink>
+    <UserAvatar v-else :src="comment.user?.avatar" :alt="comment.user?.nickname" size="sm" />
 
     <div class="flex-1 min-w-0">
       <!-- 用户名和内容 -->
       <div>
-        <span class="text-sm font-medium text-slate-900">{{ comment.user?.nickname }}</span>
+        <NuxtLink v-if="comment.userId" :to="`/user/${comment.userId}`" class="text-sm font-medium text-slate-900 hover:text-primary transition-colors">{{ comment.user?.nickname }}</NuxtLink>
+        <span v-else class="text-sm font-medium text-slate-900">{{ comment.user?.nickname }}</span>
         <!-- 待审核标签 -->
         <span v-if="comment.status === 0" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
           待审核

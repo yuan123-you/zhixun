@@ -86,6 +86,14 @@
           <span class="text-sm">{{ article.likeCount }}</span>
         </button>
 
+        <!-- 收藏 -->
+        <button class="flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors touch-target" :class="article.isCollected ? 'text-yellow-500 bg-yellow-50' : 'text-slate-500 hover:text-yellow-500 hover:bg-yellow-50'" @click="toggleCollect">
+          <svg class="w-5 h-5" :class="article.isCollected ? 'fill-yellow-500' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+          <span class="text-sm">{{ article.collectCount }}</span>
+        </button>
+
         <!-- 评论 -->
         <button class="flex items-center gap-1.5 px-4 py-2 rounded-full text-slate-500 hover:text-primary hover:bg-primary-50/50 transition-colors touch-target" @click="scrollToComments">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +108,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            <span class="text-sm">{{ article.shareCount || '分享' }}</span>
+            <span class="text-sm">{{ article.shareCount ?? '分享' }}</span>
           </button>
 
           <!-- 分享面板 -->

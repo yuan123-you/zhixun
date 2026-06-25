@@ -266,6 +266,11 @@ const router = useRouter()
 const userStore = useUserStore()
 const userId = computed(() => Number(route.params.id))
 
+/** 无效用户ID保护 */
+if (isNaN(userId.value)) {
+  throw createError({ statusCode: 404, statusMessage: '用户不存在' })
+}
+
 /** 是否为自己的主页 */
 const isOwnProfile = computed(() => {
   if (!import.meta.client) return false

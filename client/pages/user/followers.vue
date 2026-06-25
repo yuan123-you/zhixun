@@ -80,11 +80,16 @@ const totalCount = ref(0)
 const pageSize = 20
 
 const fetchFollowers = async () => {
+  const userId = userStore.userInfo?.id
+  if (!userId) {
+    error.value = '请先登录'
+    return
+  }
   if (loading.value) return
   loading.value = true
   error.value = null
   try {
-    const { data } = await useApi().get<any>(`/users/${userStore.userInfo?.id}/followers`, {
+    const { data } = await useApi().get<any>(`/users/${userStore.userInfo!.id}/followers`, {
       page: page.value,
       pageSize,
     })

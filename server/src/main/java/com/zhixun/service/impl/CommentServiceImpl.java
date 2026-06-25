@@ -101,7 +101,8 @@ public class CommentServiceImpl implements CommentService {
         comment.setParentId(request.getParentId() != null ? request.getParentId() : 0L);
         comment.setReplyToId(request.getReplyUserId());
         comment.setContent(HtmlWhitelistFilter.escapePlainText(request.getContent()));
-        comment.setStatus(CommentStatusEnum.PENDING);
+        // 自动审核：无敏感词直接通过，状态设为 NORMAL，文章评论数+1
+        comment.setStatus(CommentStatusEnum.NORMAL);
         comment.setLikeCount(0);
 
         commentMapper.insert(comment);
@@ -121,7 +122,11 @@ public class CommentServiceImpl implements CommentService {
         }
         CommentVO commentVO = buildCommentVO(comment, userMap);
 
-        // 评论默认待审核，审核通过后再增加文章评论数
+        // 自动审核通过：更新文章评论数
+        articleMapper.updateById(new Article() {{
+            setId(request.getArticleId());
+            setCommentCount((article.getCommentCount() != null ? article.getCommentCount() : 0) + 1);
+        }});
 
         // 发送回复通知：如果是回复评论，通知被回复的评论作者（非关键操作，失败不影响评论创建）
         try {
