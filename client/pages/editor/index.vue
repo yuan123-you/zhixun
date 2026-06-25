@@ -172,7 +172,7 @@
             v-model="form.location"
             type="text"
             class="input pl-9"
-            placeholder="输入位置，如"北京·朝阳区""
+            placeholder='输入位置，如"北京·朝阳区"'
           />
         </div>
         <button
