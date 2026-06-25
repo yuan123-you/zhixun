@@ -139,24 +139,6 @@
               </NuxtLink>
             </div>
 
-            <!-- 分类 -->
-            <div class="border-t border-slate-100 mx-3 my-1"></div>
-            <div class="px-3 py-2">
-              <h3 class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">分类</h3>
-              <NuxtLink to="/category/tech" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all duration-200 min-h-[44px]" :class="isMenuActive('/category/tech') ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50 active:scale-[0.98]'" @click="showMobileMenu = false">
-                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
-                <span>技术</span>
-              </NuxtLink>
-              <NuxtLink to="/category/design" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all duration-200 min-h-[44px]" :class="isMenuActive('/category/design') ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50 active:scale-[0.98]'" @click="showMobileMenu = false">
-                <span class="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                <span>设计</span>
-              </NuxtLink>
-              <NuxtLink to="/category/product" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all duration-200 min-h-[44px]" :class="isMenuActive('/category/product') ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50 active:scale-[0.98]'" @click="showMobileMenu = false">
-                <span class="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0"></span>
-                <span>产品</span>
-              </NuxtLink>
-            </div>
-
             <!-- 个人功能（已登录） -->
             <ClientOnly>
               <template v-if="userStore.isLoggedIn">

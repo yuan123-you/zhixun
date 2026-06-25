@@ -5,22 +5,23 @@
     <div class="flex gap-6">
       <!-- 左侧主内容区 -->
       <div class="flex-1 min-w-0">
-        <!-- 轮播图 - 仅桌面端显示 -->
+        <!-- 轮播图 + 公告栏 - 仅桌面端显示 -->
         <ClientOnly>
-          <template v-if="!isMobile">
+          <div>
             <LazyBannerCarousel v-if="bannerList.length > 0" :banners="bannerList" />
             <!-- 轮播图骨架屏 -->
             <div v-else class="animate-pulse rounded-xl overflow-hidden">
               <div class="w-full bg-slate-200" style="padding-bottom: 40%"></div>
             </div>
-          </template>
-        </ClientOnly>
-
-        <!-- 公告栏 - 仅桌面端显示 -->
-        <ClientOnly>
-          <div v-if="!isMobile && announcementList.length > 0" class="mt-2">
-            <LazyAnnouncementBar :announcements="announcementList" />
+            <div v-if="announcementList.length > 0" class="mt-2">
+              <LazyAnnouncementBar :announcements="announcementList" />
+            </div>
           </div>
+          <template #fallback>
+            <div class="animate-pulse rounded-xl overflow-hidden">
+              <div class="w-full bg-slate-200" style="padding-bottom: 40%"></div>
+            </div>
+          </template>
         </ClientOnly>
 
         <!-- Tab切换 - 移动端紧凑布局确保单行显示 -->
@@ -310,9 +311,11 @@ const { data: homeData } = await useAsyncData('home-init', async () => {
 }, {
   default: () => ({ feed: [] as Article[], refreshKey: '', banners: [] as BannerItem[], announcements: [] as AnnouncementItem[] }),
   // 客户端缓存：60秒内使用缓存，避免导航回首页时重复请求
+  // 如果缓存的feed为空（SSR失败场景），跳过缓存让客户端重新请求
   getCachedData(key, nuxtApp) {
     const cached = nuxtApp.payload.data[key] || nuxtApp.static.data[key]
     if (!cached) return undefined
+    if (!cached.feed || cached.feed.length === 0) return undefined
     const cacheTimestamp = (nuxtApp.payload as any)._homeInitTimestamp || 0
     const now = Date.now()
     if (now - cacheTimestamp > 60 * 1000) return undefined

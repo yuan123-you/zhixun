@@ -365,7 +365,7 @@ public class SearchServiceImpl implements SearchService {
                             // 发布时间越近分值越高，7天后衰减到原来的50%
                             fs.functions(f -> f
                                     .scriptScore(ss -> ss
-                                            .script(s -> s
+                                            .script(sc -> sc
                                                     .inline(i -> i
                                                             .source("1 / (1 + (params.now - doc['createdAt'].value) / 604800000.0)")
                                                             .params("now", JsonData.of(System.currentTimeMillis()))

@@ -1,19 +1,20 @@
 <template>
   <!-- 个人中心 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 返回导航 -->
-    <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors mb-2" @click="goBack">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-      {{ '返回' }}
-    </button>
-
     <!-- 个人资料卡 -->
     <div class="card p-3 mb-3">
       <div class="flex items-start space-x-3">
-        <!-- 头像 -->
-        <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="xl" />
+        <!-- 头像（可点击编辑） -->
+        <div class="relative group cursor-pointer shrink-0" @click="triggerAvatarUpload">
+          <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="xl" />
+          <div class="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+        </div>
+        <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
@@ -22,9 +23,15 @@
           </div>
           <p v-if="userStore.userInfo?.bio" class="text-sm text-slate-500 mt-1">{{ userStore.userInfo?.bio }}</p>
           <div class="flex items-center space-x-4 mt-2 text-sm text-slate-500">
-            <span><strong class="text-slate-900">{{ userStore.userInfo?.articleCount }}</strong> {{ '文章' }}</span>
-            <span><strong class="text-slate-900">{{ userStore.userInfo?.followCount }}</strong> {{ '关注' }}</span>
-            <span><strong class="text-slate-900">{{ userStore.userInfo?.followerCount }}</strong> {{ '粉丝' }}</span>
+            <NuxtLink to="/user/articles" class="cursor-pointer hover:text-primary transition-colors">
+              <strong class="text-slate-900">{{ userStore.userInfo?.articleCount }}</strong> {{ '文章' }}
+            </NuxtLink>
+            <NuxtLink to="/user/following" class="cursor-pointer hover:text-primary transition-colors">
+              <strong class="text-slate-900">{{ userStore.userInfo?.followCount }}</strong> {{ '关注' }}
+            </NuxtLink>
+            <NuxtLink to="/user/followers" class="cursor-pointer hover:text-primary transition-colors">
+              <strong class="text-slate-900">{{ userStore.userInfo?.followerCount }}</strong> {{ '粉丝' }}
+            </NuxtLink>
           </div>
         </div>
       </div>
@@ -47,19 +54,19 @@
 
     <!-- Tab内容 -->
     <div>
-      <!-- 我发布的 -->
+      <!-- 文章 -->
       <ErrorRetry v-if="activeTab === 'published' && tabError && !publishedArticles.length" :message="tabError" :on-retry="retryTabData" />
       <ArticleList v-if="activeTab === 'published'" :articles="publishedArticles" :loading="loading" :has-more="hasMore" :error="tabError" @load-more="loadMore" @retry="retryTabData" />
 
-      <!-- 我的收藏 -->
+      <!-- 收藏 -->
       <ErrorRetry v-if="activeTab === 'collected' && tabError && !collectedArticles.length" :message="tabError" :on-retry="retryTabData" />
       <ArticleList v-if="activeTab === 'collected'" :articles="collectedArticles" :loading="loading" :has-more="hasMore" :error="tabError" @load-more="loadMore" @retry="retryTabData" />
 
-      <!-- 我的点赞 -->
+      <!-- 点赞 -->
       <ErrorRetry v-if="activeTab === 'liked' && tabError && !likedArticles.length" :message="tabError" :on-retry="retryTabData" />
       <ArticleList v-if="activeTab === 'liked'" :articles="likedArticles" :loading="loading" :has-more="hasMore" :error="tabError" @load-more="loadMore" @retry="retryTabData" />
 
-      <!-- 我的评论 -->
+      <!-- 评论 -->
       <ErrorRetry v-if="activeTab === 'comments' && tabError && !myComments.length" :message="tabError" :on-retry="retryTabData" />
       <div v-if="activeTab === 'comments' && !tabError" class="space-y-4">
         <div v-for="comment in myComments" :key="comment.id" class="card p-2">
@@ -72,7 +79,7 @@
         <EmptyState v-if="!loading && myComments.length === 0" title="暂无评论" />
       </div>
 
-      <!-- 浏览历史 -->
+      <!-- 历史 -->
       <ErrorRetry v-if="activeTab === 'history' && tabError && !historyArticles.length" :message="tabError" :on-retry="retryTabData" />
       <ArticleList v-if="activeTab === 'history'" :articles="historyArticles" :loading="loading" :has-more="hasMore" :error="tabError" @load-more="loadMore" @retry="retryTabData" />
     </div>
@@ -89,23 +96,65 @@ definePageMeta({
 })
 
 const userStore = useUserStore()
-const router = useRouter()
+const { put: apiPut } = useApi()
 
-// 返回上一页
-const goBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    navigateTo('/')
+const avatarInput = ref<HTMLInputElement | null>(null)
+const avatarUploading = ref(false)
+
+// 触发头像上传
+const triggerAvatarUpload = () => {
+  avatarInput.value?.click()
+}
+
+// 处理头像变更
+const handleAvatarChange = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  // 校验文件类型和大小
+  if (!file.type.startsWith('image/')) {
+    alert('请选择图片文件')
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    alert('图片大小不能超过 5MB')
+    return
+  }
+
+  avatarUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // 上传头像图片
+    const { post: apiPost } = useApi()
+    const uploadRes = await apiPost<any>('/upload/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const avatarUrl = uploadRes.data?.data
+
+    if (avatarUrl) {
+      // 更新用户资料
+      await apiPut<any>('/user/profile', { avatar: avatarUrl })
+      userStore.updateProfile({ avatar: avatarUrl })
+    }
+  } catch (err: any) {
+    alert(err?.response?.data?.message || '头像上传失败，请稍后重试')
+  } finally {
+    avatarUploading.value = false
+    // 重置 input 以允许重复选择同一文件
+    if (avatarInput.value) {
+      avatarInput.value.value = ''
+    }
   }
 }
 
 const tabs = [
-  { key: 'published', label: computed(() => '我发布的') },
-  { key: 'collected', label: computed(() => '我的收藏') },
-  { key: 'liked', label: computed(() => '我的点赞') },
-  { key: 'comments', label: computed(() => '我的评论') },
-  { key: 'history', label: computed(() => '浏览历史') },
+  { key: 'published', label: computed(() => '文章') },
+  { key: 'collected', label: computed(() => '收藏') },
+  { key: 'liked', label: computed(() => '点赞') },
+  { key: 'comments', label: computed(() => '评论') },
+  { key: 'history', label: computed(() => '历史') },
 ]
 
 const activeTab = ref('published')

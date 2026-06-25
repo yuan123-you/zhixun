@@ -20,6 +20,9 @@ public class ArticleVO {
     /** 摘要 */
     private String summary;
 
+    /** 正文内容 */
+    private String content;
+
     /** 封面图 */
     private String coverImage;
 

@@ -8,7 +8,7 @@
           <div class="flex-1 space-y-3">
             <!-- 标题 -->
             <div class="h-5 bg-slate-200 rounded w-3/4"></div>
-            <!-- 摘要 -->
+            <!-- 正文 -->
             <div class="space-y-2">
               <div class="h-4 bg-slate-200 rounded w-full"></div>
               <div class="h-4 bg-slate-200 rounded w-2/3"></div>

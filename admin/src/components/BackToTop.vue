@@ -103,8 +103,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/variables.scss';
-
 .back-to-top {
   position: fixed;
   right: 24px;

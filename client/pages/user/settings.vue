@@ -7,7 +7,6 @@
     </div>
 
     <template v-else>
-    <!-- 返回导航 -->
     <div class="flex items-center gap-3 mb-3">
       <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,21 +21,21 @@
     <section class="card p-3 mb-3">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '通知设置' }}</h2>
       <div class="space-y-2">
-        <label class="flex items-center justify-between">
-          <span class="text-sm text-slate-700">{{ '点赞通知' }}</span>
-          <input v-model="serverSettings.enableLikeNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
-        </label>
-        <label class="flex items-center justify-between">
-          <span class="text-sm text-slate-700">{{ '评论通知' }}</span>
-          <input v-model="serverSettings.enableCommentNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
-        </label>
-        <label class="flex items-center justify-between">
-          <span class="text-sm text-slate-700">{{ '关注通知' }}</span>
-          <input v-model="serverSettings.enableFollowNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
-        </label>
-        <label class="flex items-center justify-between">
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
           <span class="text-sm text-slate-700">{{ '系统通知' }}</span>
-          <input v-model="serverSettings.enableSystemNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
+          <input v-model="serverSettings.notification.notifySystem" :true-value="1" :false-value="0" type="checkbox" class="w-5 h-5 text-primary rounded" />
+        </label>
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
+          <span class="text-sm text-slate-700">{{ '互动通知（点赞/评论）' }}</span>
+          <input v-model="serverSettings.notification.notifyInteract" :true-value="1" :false-value="0" type="checkbox" class="w-5 h-5 text-primary rounded" />
+        </label>
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
+          <span class="text-sm text-slate-700">{{ '关注通知' }}</span>
+          <input v-model="serverSettings.notification.notifyFollow" :true-value="1" :false-value="0" type="checkbox" class="w-5 h-5 text-primary rounded" />
+        </label>
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
+          <span class="text-sm text-slate-700">{{ '私信通知' }}</span>
+          <input v-model="serverSettings.notification.notifyMessage" :true-value="1" :false-value="0" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
     </section>
@@ -45,18 +44,57 @@
     <section class="card p-3 mb-3">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '隐私设置' }}</h2>
       <div class="space-y-2">
-        <label class="flex items-center justify-between">
-          <span class="text-sm text-slate-700">{{ '显示在线状态' }}</span>
-          <input v-model="serverSettings.showOnlineStatus" type="checkbox" class="w-5 h-5 text-primary rounded" />
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
+          <div>
+            <span class="text-sm text-slate-700">{{ '显示在线状态' }}</span>
+            <p class="text-xs text-slate-400">其他用户可以看到你是否在线</p>
+          </div>
+          <input v-model="serverSettings.privacy.showOnlineStatus" :true-value="1" :false-value="0" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
-        <label class="flex items-center justify-between">
-          <span class="text-sm text-slate-700">{{ '允许陌生人私信' }}</span>
-          <input v-model="serverSettings.allowStrangerMessage" type="checkbox" class="w-5 h-5 text-primary rounded" />
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
+          <div>
+            <span class="text-sm text-slate-700">{{ '仅关注者可以私信' }}</span>
+            <p class="text-xs text-slate-400">开启后只有你关注的人能给你发私信</p>
+          </div>
+          <input v-model="serverSettings.privacy.messagePermission" :true-value="1" :false-value="0" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
-        <label class="flex items-center justify-between">
-          <span class="text-sm text-slate-700">{{ '显示浏览历史' }}</span>
-          <input v-model="serverSettings.showViewHistory" type="checkbox" class="w-5 h-5 text-primary rounded" />
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
+          <div>
+            <span class="text-sm text-slate-700">{{ '保存浏览历史' }}</span>
+            <p class="text-xs text-slate-400">关闭后不再记录你的浏览历史</p>
+          </div>
+          <input v-model="serverSettings.privacy.saveViewHistory" :true-value="1" :false-value="0" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
+      </div>
+    </section>
+
+    <!-- 阅读设置 -->
+    <section class="card p-3 mb-3">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '阅读设置' }}</h2>
+      <div class="space-y-2">
+        <label class="flex items-center justify-between min-h-[44px] cursor-pointer">
+          <div>
+            <span class="text-sm text-slate-700">{{ '自动加载图片' }}</span>
+            <p class="text-xs text-slate-400">关闭后仅显示占位图，节省流量</p>
+          </div>
+          <input v-model="localSettings.autoLoadImages" type="checkbox" class="w-5 h-5 text-primary rounded" />
+        </label>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1.5">{{ '默认排序' }}</label>
+          <div class="flex space-x-1.5">
+            <button
+              v-for="sort in sortOptions"
+              :key="sort.value"
+              class="px-3 py-1.5 text-sm rounded-lg border transition-colors"
+              :class="localSettings.defaultSort === sort.value
+                ? 'bg-primary text-white border-primary'
+                : 'bg-white text-slate-700 border-slate-300'"
+              @click="localSettings.defaultSort = sort.value"
+            >
+              {{ sort.label }}
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -113,9 +151,9 @@
 </template>
 
 <script setup lang="ts">
-/** 全局设置页 */
-import type { UserSettingsServer, UserSettingsLocal } from '~/types'
-import { storage, STORAGE_KEYS } from '~/utils/storage'
+/** 全局设置页 - 支持服务端同步 + 本地存储 */
+import type { UserSettingsServer, UserSettingsLocal, UserSettingsNotification, UserSettingsPrivacy, UserSettingsDisplay, UserSettingsRecommend } from '~/types'
+import { storage } from '~/utils/storage'
 import { userApi } from '~/api'
 
 definePageMeta({
@@ -123,6 +161,9 @@ definePageMeta({
 })
 
 const router = useRouter()
+const colorMode = useColorMode()
+
+const STORAGE_KEY = 'settings_local'
 
 // Toast 提示
 const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -149,54 +190,60 @@ const goBack = () => {
   }
 }
 
-const colorMode = useColorMode()
-
-// 页面加载状态
 const pageLoading = ref(true)
-
-// 服务器端设置（通知/隐私）
-const serverSettings = reactive<UserSettingsServer>({
-  interestedCategories: [],
-  interestedTags: [],
-  blockedCategories: [],
-  blockedTags: [],
-  enableLikeNotification: true,
-  enableCommentNotification: true,
-  enableFollowNotification: true,
-  enableSystemNotification: true,
-  showOnlineStatus: true,
-  allowStrangerMessage: true,
-  showViewHistory: true,
-})
-
-// 本地设置（主题/字体，仅存 localStorage）
-const localSettings = reactive<UserSettingsLocal>(
-  storage.get<UserSettingsLocal>(STORAGE_KEYS.SETTINGS_LOCAL) || {
-    theme: 'system',
-    fontSize: 'medium',
-    language: 'zh-CN',
-  }
-)
-
 const saving = ref(false)
 
+// 服务器端设置（嵌套结构，匹配后端 UserSettingsVO）
+const defaultNotification = (): UserSettingsNotification => ({
+  notifySystem: 1, notifyInteract: 1, notifyMessage: 1, notifyFollow: 1,
+})
+const defaultPrivacy = (): UserSettingsPrivacy => ({
+  showOnlineStatus: 1, messagePermission: 0, saveViewHistory: 1,
+})
+const defaultDisplay = (): UserSettingsDisplay => ({
+  fontSize: 1, theme: 'light', language: 'zh-CN',
+})
+const defaultRecommend = (): UserSettingsRecommend => ({
+  interestedCategories: [], interestedTags: [], blockedCategories: [], blockedTags: [],
+})
+
+const serverSettings = reactive<UserSettingsServer>({
+  notification: defaultNotification(),
+  privacy: defaultPrivacy(),
+  display: defaultDisplay(),
+  recommend: defaultRecommend(),
+})
+
+// 本地设置（仅存 localStorage）
+const defaultLocal = (): UserSettingsLocal => ({
+  theme: 'system', fontSize: 'medium', language: 'zh-CN',
+  autoLoadImages: true, defaultSort: 'latest' as const,
+})
+
+const localSettings = reactive<UserSettingsLocal>(
+  storage.get<UserSettingsLocal>(STORAGE_KEY) || defaultLocal()
+)
+
 const themes = [
-  { label: '浅色', value: 'light' },
-  { label: '深色', value: 'dark' },
-  { label: '跟随系统', value: 'system' },
+  { label: '浅色', value: 'light' as const },
+  { label: '深色', value: 'dark' as const },
+  { label: '跟随系统', value: 'system' as const },
 ]
 
 const fontSizes = [
-  { label: '小', value: 'small' },
-  { label: '中', value: 'medium' },
-  { label: '大', value: 'large' },
+  { label: '小', value: 'small' as const },
+  { label: '中', value: 'medium' as const },
+  { label: '大', value: 'large' as const },
+]
+
+const sortOptions = [
+  { label: '最新', value: 'latest' as const },
+  { label: '热门', value: 'hot' as const },
 ]
 
 // 字体大小映射
 const fontSizeMap: Record<string, string> = {
-  small: '14px',
-  medium: '16px',
-  large: '18px',
+  small: '14px', medium: '16px', large: '18px',
 }
 
 // 应用字体大小
@@ -210,45 +257,58 @@ const applyFontSize = () => {
 const loadServerSettings = async () => {
   try {
     const { data } = await userApi.getSettings()
-    const settings = data.data
-    if (settings) {
-      Object.assign(serverSettings, {
-        interestedCategories: settings.interestedCategories || [],
-        interestedTags: settings.interestedTags || [],
-        blockedCategories: settings.blockedCategories || [],
-        blockedTags: settings.blockedTags || [],
-        enableLikeNotification: settings.enableLikeNotification ?? true,
-        enableCommentNotification: settings.enableCommentNotification ?? true,
-        enableFollowNotification: settings.enableFollowNotification ?? true,
-        enableSystemNotification: settings.enableSystemNotification ?? true,
-        showOnlineStatus: settings.showOnlineStatus ?? true,
-        allowStrangerMessage: settings.allowStrangerMessage ?? true,
-        showViewHistory: settings.showViewHistory ?? true,
-      })
+    const s = data.data as any
+    if (s) {
+      if (s.notification) {
+        Object.assign(serverSettings.notification, {
+          notifySystem: s.notification.notifySystem ?? 1,
+          notifyInteract: s.notification.notifyInteract ?? 1,
+          notifyMessage: s.notification.notifyMessage ?? 1,
+          notifyFollow: s.notification.notifyFollow ?? 1,
+        })
+      }
+      if (s.privacy) {
+        Object.assign(serverSettings.privacy, {
+          showOnlineStatus: s.privacy.showOnlineStatus ?? 1,
+          messagePermission: s.privacy.messagePermission ?? 0,
+          saveViewHistory: s.privacy.saveViewHistory ?? 1,
+        })
+      }
+      if (s.display) {
+        Object.assign(serverSettings.display, {
+          fontSize: s.display.fontSize ?? 1,
+          theme: s.display.theme ?? 'light',
+          language: s.display.language ?? 'zh-CN',
+        })
+      }
+      if (s.recommend) {
+        Object.assign(serverSettings.recommend, {
+          interestedCategories: s.recommend.interestedCategories || [],
+          interestedTags: s.recommend.interestedTags || [],
+          blockedCategories: s.recommend.blockedCategories || [],
+          blockedTags: s.recommend.blockedTags || [],
+        })
+      }
     }
   } catch {
     // 加载失败使用默认值
   }
 }
 
-// 保存本地设置（主题/字体）
+// 保存本地设置（主题/字体/阅读偏好）
 const saveLocalSettings = () => {
-  storage.set(STORAGE_KEYS.SETTINGS_LOCAL, { ...localSettings })
+  storage.set(STORAGE_KEY, { ...localSettings })
   // 应用主题
-  if (localSettings.theme === 'system') {
-    colorMode.preference = 'system'
-  } else {
-    colorMode.preference = localSettings.theme
-  }
+  colorMode.preference = localSettings.theme === 'system' ? 'system' : localSettings.theme
   // 应用字体大小
   applyFontSize()
 }
 
-// 保存服务器设置（通知/隐私）
+// 保存服务器设置（通知/隐私/显示/偏好）
 const saveServerSettings = async () => {
   saving.value = true
   try {
-    await userApi.updateSettings(serverSettings)
+    await userApi.updateSettings({ ...serverSettings } as any)
     showToast('设置保存成功')
   } catch {
     showToast('设置保存失败，请稍后重试', 'error')

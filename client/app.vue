@@ -1,6 +1,7 @@
 <template>
   <!-- 根组件：使用 NuxtLayout + NuxtPage 实现布局和页面路由 -->
-  <div :class="{ 'pre-hydration': !isHydrated }">
+  <!-- pre-hydration 直接写在 class 中，避免 ref 导致 SSR/客户端不一致 -->
+  <div ref="rootEl" class="pre-hydration">
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
@@ -17,16 +18,12 @@ nuxtApp.hook('page:finish', () => {
 })
 
 // 水合完成后移除 pre-hydration 类，恢复正常过渡效果
-const isHydrated = ref(true)
-if (import.meta.client) {
-  isHydrated.value = false
-  onMounted(() => {
-    // 等待一帧确保布局计算完成后再启用过渡
+const rootEl = ref<HTMLElement | null>(null)
+onMounted(() => {
+  nextTick(() => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        isHydrated.value = true
-      })
+      rootEl.value?.classList.remove('pre-hydration')
     })
   })
-}
+})
 </script>

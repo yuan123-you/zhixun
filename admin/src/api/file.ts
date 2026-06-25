@@ -15,5 +15,7 @@ export function uploadImage(file: File) {
 export function uploadEditorImage(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return post<UploadResult>('/files/upload/editor', formData as unknown as Record<string, unknown>)
+  return service.post('/files/upload/editor', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }) as Promise<{ code: number; message: string; data: UploadResult }>
 }

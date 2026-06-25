@@ -979,6 +979,7 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setId(article.getId());
             vo.setTitle(article.getTitle());
             vo.setSummary(article.getSummary());
+            vo.setContent(article.getContent());
             vo.setCoverImage(article.getCoverImage());
             vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
             // 浏览数 = 数据库值 + Redis增量

@@ -1,126 +1,116 @@
 <template>
-  <!-- 消息与通知页面 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 页面头部 -->
-    <div class="flex items-center justify-between mb-3">
-      <h1 class="text-2xl font-bold text-slate-900">{{ '消息中心' }}</h1>
-      <div class="flex items-center gap-3">
-        <!-- 通知tab下的批量操作按钮 -->
-        <template v-if="activeMainTab === 'notifications' && batchMode">
-          <button
-            class="btn btn-sm btn-ghost text-slate-600"
-            @click="exitBatchMode"
-          >
-            {{ '取消' }}
-          </button>
-          <button
-            class="btn btn-sm btn-ghost text-primary"
-            :disabled="selectedIds.length === 0"
-            @click="batchRead"
-          >
-            {{ '标记已读' }}({{ selectedIds.length }})
-          </button>
-          <button
-            class="btn btn-sm btn-ghost text-danger"
-            :disabled="selectedIds.length === 0"
-            @click="batchDelete"
-          >
-            {{ '删除' }}({{ selectedIds.length }})
-          </button>
-        </template>
-        <template v-if="activeMainTab === 'notifications' && !batchMode">
-          <button
-            v-if="notifications.length > 0"
-            class="btn btn-sm btn-ghost text-slate-600"
-            @click="enterBatchMode"
-          >
-            {{ '批量管理' }}
-          </button>
-          <button
-            v-if="notificationStore.unreadCount > 0"
-            class="btn btn-sm btn-primary"
-            @click="markAllRead"
-          >
-            {{ '全部已读' }}
-          </button>
-        </template>
-      </div>
-    </div>
-
-    <!-- 主Tab：私信 / 通知 -->
-    <div class="flex items-center gap-1 mb-3 overflow-x-auto pb-2 border-b border-slate-200">
+  <!-- 消息与通知页面 - QQ风格 -->
+  <div class="h-[calc(100vh-3rem)] flex flex-col">
+    <!-- 顶部Tab栏 -->
+    <div class="flex items-center border-b border-slate-200 bg-white shrink-0">
       <button
         v-for="tab in mainTabs"
         :key="tab.key"
-        class="shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap"
-        :class="[
-          activeMainTab === tab.key
-            ? 'text-primary border-b-2 border-primary bg-primary-50/50'
-            : 'text-slate-500 hover:text-slate-700'
-        ]"
+        class="flex-1 py-3 text-sm font-medium text-center transition-colors relative"
+        :class="activeMainTab === tab.key ? 'text-primary' : 'text-slate-500 hover:text-slate-700'"
         @click="switchMainTab(tab.key)"
       >
-        {{ tab.label }}
-        <span v-if="tab.unread > 0" class="ml-1 inline-flex items-center justify-center min-w-[1rem] h-4 bg-danger text-white text-2xs rounded-full px-1">{{ tab.unread > 99 ? '99+' : tab.unread }}</span>
+        <span>{{ tab.label }}</span>
+        <span v-if="tab.unread > 0" class="ml-1 inline-flex items-center justify-center min-w-[1.125rem] h-4.5 bg-danger text-white text-2xs rounded-full px-1.5">{{ tab.unread > 99 ? '99+' : tab.unread }}</span>
+        <div v-if="activeMainTab === tab.key" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
       </button>
     </div>
 
     <!-- ===== 私信Tab ===== -->
     <template v-if="activeMainTab === 'messages'">
-      <div class="card overflow-hidden" style="height: calc(100vh - 12rem)">
-        <div class="flex h-full">
-          <!-- 左侧会话列表 -->
-          <div class="w-full md:w-80 border-r border-slate-200 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
-            <!-- 搜索会话 -->
-            <div class="p-2 border-b border-slate-200">
-              <input v-model="conversationSearch" type="text" class="input text-sm" placeholder="搜索会话..." />
+      <div class="flex-1 flex overflow-hidden">
+        <!-- 左侧会话列表 -->
+        <div class="w-full md:w-80 border-r border-slate-200 flex flex-col shrink-0" :class="{ 'hidden md:flex': activeConversation }">
+          <div class="p-3 border-b border-slate-200">
+            <input v-model="conversationSearch" type="text" class="input text-sm bg-slate-50" placeholder="搜索会话..." />
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <div v-if="loadingConv" class="flex items-center justify-center py-16">
+              <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
-
-            <!-- 会话列表 -->
-            <div class="flex-1 overflow-y-auto">
+            <ErrorRetry v-else-if="conversationsError" :message="conversationsError" :on-retry="loadConversations" />
+            <template v-else>
               <button
                 v-for="conv in filteredConversations"
                 :key="conv.id"
-                class="w-full flex items-center space-x-3 p-2 hover:bg-slate-50 transition-colors"
-                :class="{ 'bg-slate-50': activeConversation?.id === conv.id }"
+                class="w-full flex items-center gap-3 px-3 py-3 hover:bg-slate-50 transition-colors text-left"
+                :class="{ 'bg-primary-50/50': activeConversation?.id === conv.id }"
                 @click="selectConversation(conv)"
               >
-                <UserAvatar :src="conv.user?.avatar" alt="头像" size="lg" />
+                <div class="relative shrink-0">
+                  <UserAvatar :src="conv.user?.avatar" alt="" size="lg" />
+                  <span v-if="conv.user?.isOnline" class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" />
+                </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-slate-900">{{ conv.user?.nickname }}</span>
-                    <span class="text-2xs text-gray-400">{{ formatTime(conv.updatedAt) }}</span>
+                    <span class="text-sm font-medium text-slate-900 truncate">{{ conv.user?.nickname }}</span>
+                    <span class="text-2xs text-gray-400 shrink-0 ml-1">{{ formatConvTime(conv.updatedAt) }}</span>
                   </div>
-                  <p class="text-xs text-slate-500 line-clamp-1 mt-0.5">{{ conv.lastMessage?.content }}</p>
+                  <p class="text-xs text-slate-500 truncate mt-0.5">{{ conv.lastMessage?.content || '暂无消息' }}</p>
                 </div>
                 <span v-if="conv.unreadCount > 0" class="w-5 h-5 bg-danger text-white text-2xs rounded-full flex items-center justify-center shrink-0">
                   {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
                 </span>
               </button>
-
-              <!-- 空状态 -->
-              <EmptyState v-if="conversations.length === 0" title="暂无会话" description="开始一段新的对话吧" />
-            </div>
+              <EmptyState v-if="!loadingConv && conversations.length === 0" title="暂无会话" description="开始一段新的对话吧" />
+            </template>
           </div>
+        </div>
 
-          <!-- 右侧聊天窗口 -->
-          <div class="flex-1 flex flex-col" :class="{ 'hidden md:flex': !activeConversation }">
-            <ChatWindow
-              v-if="activeConversation"
-              :conversation="activeConversation"
-              :messages="messages"
-              @send="sendMessage"
-              @back="activeConversation = null"
-            />
-
-            <!-- 未选择会话时的提示 -->
-            <div v-else class="flex-1 flex items-center justify-center">
-              <div class="text-center">
-                <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <p class="text-slate-500">{{ '选择一个会话开始聊天' }}</p>
+        <!-- 右侧聊天区域 -->
+        <div class="flex-1 flex flex-col min-w-0" :class="{ 'hidden md:flex': !activeConversation }">
+          <template v-if="activeConversation">
+            <!-- 聊天头部 -->
+            <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-white shrink-0">
+              <button class="md:hidden p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg" @click="activeConversation = null">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <UserAvatar :src="activeConversation.user?.avatar" alt="" size="md" />
+              <div class="min-w-0">
+                <p class="font-medium text-slate-900 text-sm truncate">{{ activeConversation.user?.nickname }}</p>
+                <p class="text-xs" :class="activeConversation.user?.isOnline ? 'text-green-500' : 'text-gray-400'">{{ activeConversation.user?.isOnline ? '在线' : '离线' }}</p>
               </div>
+            </div>
+            <!-- 消息列表 -->
+            <div ref="msgListRef" class="flex-1 overflow-y-auto px-3 py-4 space-y-3 bg-slate-50">
+              <div class="text-center text-xs text-slate-400 mb-3" v-if="messages.length > 0">以下为私信内容</div>
+              <div v-for="msg in messages" :key="msg.id" class="flex" :class="isMyMsg(msg) ? 'justify-end' : 'justify-start'">
+                <div v-if="!isMyMsg(msg)" class="flex items-end gap-2 max-w-[75%]">
+                  <UserAvatar :src="msg.sender?.avatar" alt="" size="sm" class="shrink-0" />
+                  <div>
+                    <div class="bg-white rounded-2xl rounded-bl-sm px-3 py-2 shadow-sm">
+                      <p class="text-sm text-slate-900 leading-relaxed">{{ msg.content }}</p>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="max-w-[75%]">
+                  <div class="bg-primary text-white rounded-2xl rounded-br-sm px-3 py-2">
+                    <p class="text-sm leading-relaxed">{{ msg.content }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- 输入框 -->
+            <div class="p-3 border-t border-slate-200 bg-white shrink-0">
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="inputContent"
+                  type="text"
+                  class="flex-1 input text-sm bg-slate-50"
+                  placeholder="输入消息..."
+                  @keydown.enter="sendMessage"
+                />
+                <button class="btn-primary text-sm px-4" :disabled="!inputContent.trim()" @click="sendMessage">发送</button>
+              </div>
+            </div>
+          </template>
+          <!-- 空状态 -->
+          <div v-else class="flex-1 flex items-center justify-center bg-slate-50">
+            <div class="text-center">
+              <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p class="text-slate-500 text-sm">选择一个会话开始聊天</p>
             </div>
           </div>
         </div>
@@ -129,157 +119,67 @@
 
     <!-- ===== 通知Tab ===== -->
     <template v-if="activeMainTab === 'notifications'">
-      <!-- 类型筛选 Tab -->
-      <div class="flex items-center gap-1 mb-3 overflow-x-auto pb-2 border-b border-slate-200">
-        <button
-          v-for="tab in tabs"
-          :key="tab.value"
-          class="shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap"
-          :class="[
-            activeTab === tab.value
-              ? 'text-primary border-b-2 border-primary bg-primary-50/50'
-              : 'text-slate-500 hover:text-slate-700'
-          ]"
-          @click="switchTab(tab.value)"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
-
-      <!-- 通知列表 -->
-      <div class="card">
-        <!-- 加载状态 -->
-        <div v-if="loading && notifications.length === 0" class="flex items-center justify-center py-16">
-          <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-
-        <!-- 错误重试 -->
-        <ErrorRetry v-else-if="notificationError" :message="notificationError" :on-retry="fetchNotifications" />
-
-        <!-- 空状态 -->
-        <EmptyState
-          v-else-if="notifications.length === 0"
-          title="暂无通知"
-          description="还没有收到任何通知"
-        />
-
-        <!-- 通知列表 -->
-        <div v-else>
-          <div
-            v-for="notification in notifications"
-            :key="notification.id"
-            class="flex items-start px-2 sm:px-3 py-2 hover:bg-slate-50 transition-colors group border-b border-slate-100 last:border-b-0"
-            :class="{ 'bg-primary-50/60': !notification.isRead }"
-          >
-            <!-- 批量选择复选框 -->
-            <div v-if="batchMode" class="shrink-0 mr-3 mt-1">
-              <input
-                type="checkbox"
-                :checked="selectedIds.includes(notification.id)"
-                class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
-                @change="toggleSelect(notification.id)"
-              />
-            </div>
-
-            <!-- 通知类型图标 -->
-            <div class="shrink-0 mr-3 mt-0.5">
-              <!-- 系统通知 -->
-              <div v-if="notification.type === NotificationType.System" class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <!-- 审核通知 -->
-              <div v-else-if="notification.type === NotificationType.Audit" class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <!-- 互动通知 -->
-              <div v-else-if="notification.type === NotificationType.Interact" class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <!-- 关注 -->
-              <div v-else-if="notification.type === NotificationType.Follow" class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              </div>
-              <!-- 私信 -->
-              <div v-else-if="notification.type === NotificationType.Message" class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <!-- 评论回复 -->
-              <div v-else-if="notification.type === NotificationType.CommentReply" class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                </svg>
-              </div>
-              <!-- @提及 -->
-              <div v-else-if="notification.type === NotificationType.Mention" class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                </svg>
-              </div>
-            </div>
-
-            <!-- 通知内容 -->
-            <div
-              class="flex-1 min-w-0 cursor-pointer"
-              @click="handleClick(notification)"
-            >
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0 flex-1">
-                  <p
-                    class="text-sm leading-snug"
-                    :class="notification.isRead ? 'text-slate-700' : 'text-slate-900 font-medium'"
-                  >
-                    {{ notification.title || notification.content }}
-                  </p>
-                  <p v-if="notification.title && notification.content" class="text-sm text-slate-500 mt-1 line-clamp-2">
-                    {{ notification.content }}
-                  </p>
-                </div>
-                <!-- 未读标记 -->
-                <span v-if="!notification.isRead" class="shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></span>
-              </div>
-              <div class="flex items-center gap-3 mt-2">
-                <span class="text-xs text-slate-400">{{ formatTime(notification.createdAt) }}</span>
-                <span class="text-xs text-slate-400">{{ getTypeLabel(notification.type) }}</span>
-              </div>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div v-if="!batchMode" class="shrink-0 ml-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                v-if="!notification.isRead"
-                class="p-1.5 text-gray-400 hover:text-primary rounded-md hover:bg-slate-50 transition-colors"
-                title="标记已读"
-                @click.stop="markAsRead(notification)"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-              </button>
-              <button
-                class="p-1.5 text-gray-400 hover:text-danger rounded-md hover:bg-slate-50 transition-colors"
-                title="删除"
-                @click.stop="deleteNotification(notification)"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- 通知操作栏 -->
+        <div class="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-white shrink-0">
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <button
+              v-for="tab in notiTabs"
+              :key="tab.value"
+              class="shrink-0 px-3 py-1.5 text-xs rounded-full transition-colors"
+              :class="activeNotiTab === tab.value ? 'bg-primary text-white' : 'text-slate-500 hover:text-slate-700 bg-slate-50'"
+              @click="switchNotiTab(tab.value)"
+            >{{ tab.label }}</button>
           </div>
-
-          <!-- 无限滚动哨兵 -->
-          <div v-if="hasMore" ref="loadMoreSentinel" class="flex items-center justify-center py-2 border-t border-slate-100">
-            <div v-if="loadingMore" class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <div class="flex items-center gap-1 shrink-0 ml-2">
+            <button v-if="notiBatchMode" class="text-xs px-2 py-1 text-slate-500 hover:text-slate-700" @click="exitNotiBatch">取消</button>
+            <button v-if="notiBatchMode" class="text-xs px-2 py-1 text-danger" :disabled="notiSelectedIds.length === 0" @click="batchDeleteNoti">删除({{ notiSelectedIds.length }})</button>
+            <button v-if="!notiBatchMode && notifications.length > 0" class="text-xs px-2 py-1 text-slate-500 hover:text-slate-700" @click="enterNotiBatch">批量管理</button>
+            <button v-if="!notiBatchMode && notiUnreadTotal > 0" class="text-xs px-2 py-1 text-primary hover:text-primary-600" @click="markAllNotiRead">全部已读</button>
+          </div>
+        </div>
+        <!-- 通知列表 -->
+        <div class="flex-1 overflow-y-auto">
+          <div v-if="notiLoading && notifications.length === 0" class="flex justify-center py-16">
+            <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+          <ErrorRetry v-else-if="notiError" :message="notiError" :on-retry="fetchNotis" />
+          <EmptyState v-else-if="notifications.length === 0" title="暂无通知" />
+          <div v-else>
+            <div
+              v-for="item in notifications"
+              :key="item.id"
+              class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50"
+              :class="{ 'bg-primary-50/30': !item.isRead }"
+              @click="handleNotiClick(item)"
+            >
+              <input v-if="notiBatchMode" type="checkbox" :checked="notiSelectedIds.includes(item.id)" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary" @click.stop="toggleNotiSelect(item.id)" />
+              <!-- 图标 -->
+              <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                :class="{
+                  'bg-blue-50': item.type === 1, 'bg-amber-50': item.type === 2,
+                  'bg-red-50': item.type === 3, 'bg-purple-50': item.type === 4,
+                  'bg-emerald-50': item.type === 5,
+                }"
+              >
+                <svg v-if="item.type === 1" class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg v-else-if="item.type === 2" class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg v-else-if="item.type === 3" class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                <svg v-else-if="item.type === 4" class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                <svg v-else-if="item.type === 5" class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-sm leading-snug" :class="item.isRead ? 'text-slate-600' : 'text-slate-900 font-medium'">{{ item.title }}</p>
+                  <span v-if="!item.isRead" class="shrink-0 w-2 h-2 bg-primary rounded-full mt-1.5" />
+                </div>
+                <p v-if="item.content" class="text-xs text-slate-400 mt-1 line-clamp-2">{{ item.content }}</p>
+                <span class="text-2xs text-slate-400 mt-1">{{ formatNotiTime(item.createdAt) }}</span>
+              </div>
+            </div>
+            <div v-if="notiHasMore" ref="notiSentinelRef" class="flex justify-center py-3">
+              <div v-if="notiLoadingMore" class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
           </div>
         </div>
       </div>
@@ -288,366 +188,183 @@
 </template>
 
 <script setup lang="ts">
-/** 消息中心页面：私信 + 通知整合 */
-import type { Notification } from '~/types'
-import type { Conversation, Message } from '~/types'
-import { NotificationType } from '~/types'
+/** 消息中心 - QQ风格：私信 + 通知 */
+import type { Conversation, Message, Notification } from '~/types'
 import { notificationApi } from '~/api/notification'
 import { socialApi } from '~/api'
 
-definePageMeta({
-  middleware: 'auth',
-})
+definePageMeta({ middleware: 'auth' })
 
+const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
 
 // ===== 主Tab =====
 const activeMainTab = ref<'messages' | 'notifications'>('messages')
-const messageUnreadCount = ref(0)
+const msgUnread = ref(0)
 
 const mainTabs = computed(() => [
-  { key: 'messages', label: '私信', unread: messageUnreadCount.value },
-  { key: 'notifications', label: '通知', unread: notificationStore.unreadCount },
+  { key: 'messages' as const, label: '私信', unread: msgUnread.value },
+  { key: 'notifications' as const, label: '通知', unread: notiUnreadTotal.value },
 ])
 
 const switchMainTab = (key: string) => {
   activeMainTab.value = key as 'messages' | 'notifications'
 }
 
-// ===== 私信相关 =====
+// ===== 私信模块 =====
 const conversations = ref<Conversation[]>([])
 const activeConversation = ref<Conversation | null>(null)
 const messages = ref<Message[]>([])
 const conversationSearch = ref('')
+const loadingConv = ref(false)
+const conversationsError = ref('')
+const inputContent = ref('')
+const msgListRef = ref<HTMLElement | null>(null)
 
-// 搜索过滤会话列表
 const filteredConversations = computed(() => {
-  const keyword = conversationSearch.value.trim().toLowerCase()
-  if (!keyword) return conversations.value
-  return conversations.value.filter(conv =>
-    conv.user?.nickname?.toLowerCase().includes(keyword)
-  )
+  const kw = conversationSearch.value.trim().toLowerCase()
+  return kw ? conversations.value.filter(c => c.user?.nickname?.toLowerCase().includes(kw)) : conversations.value
 })
 
-// 加载会话列表
 const loadConversations = async () => {
+  loadingConv.value = true
+  conversationsError.value = ''
   try {
     const { data } = await socialApi.getConversations()
     conversations.value = data.data.list || []
-  } catch {
-    conversations.value = []
-  }
+  } catch { conversationsError.value = '加载失败' } finally { loadingConv.value = false }
 }
 
-// 加载未读消息总数
-const loadUnreadCount = async () => {
-  try {
-    const { data } = await socialApi.getUnreadCount()
-    messageUnreadCount.value = data.data.count || 0
-  } catch {
-    messageUnreadCount.value = 0
-  }
+const loadMsgUnread = async () => {
+  try { const { data } = await socialApi.getUnreadCount(); msgUnread.value = data.data.count || 0 } catch { msgUnread.value = 0 }
 }
 
-// 选择会话
 const selectConversation = async (conv: Conversation) => {
   activeConversation.value = conv
+  const targetUserId = conv.user?.id
+  if (!targetUserId) return
   try {
-    const { data } = await socialApi.getMessages(conv.id)
+    const { data } = await socialApi.getMessages(targetUserId)
     messages.value = data.data.list || data.data.items || []
-  } catch {
-    messages.value = []
-  }
+  } catch { messages.value = [] }
   if (conv.unreadCount > 0) {
-    try {
-      await socialApi.markConversationRead(conv.id)
-      conv.unreadCount = 0
-      loadUnreadCount()
-    } catch {
-      // 标记已读失败
-    }
+    try { await socialApi.markConversationRead(targetUserId); conv.unreadCount = 0; loadMsgUnread() } catch {}
   }
 }
 
-// 发送消息
-const sendMessage = async (content: string) => {
-  if (!activeConversation.value) return
+const sendMessage = async () => {
+  if (!inputContent.value.trim() || !activeConversation.value) return
+  const targetUserId = activeConversation.value.user?.id
+  if (!targetUserId) return
+  const content = inputContent.value.trim()
+  inputContent.value = ''
   try {
-    const { data } = await socialApi.sendMessage(activeConversation.value.id, { content })
+    const { data } = await socialApi.sendMessage(targetUserId, { content })
     messages.value.push(data.data)
-    const conv = conversations.value.find((c) => c.id === activeConversation.value!.id)
-    if (conv) {
-      conv.lastMessage = data.data
-      conv.updatedAt = data.data.createdAt
-    }
-    // 重新加载未读消息总数
-    loadUnreadCount()
-  } catch {
-    // 发送失败处理
-  }
+    nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+  } catch {}
 }
 
-// WebSocket集成
-if (import.meta.client) {
-  watch(
-    () => conversations.value,
-    () => {
-      const total = conversations.value.reduce((sum, c) => sum + c.unreadCount, 0)
-      messageUnreadCount.value = total
-    },
-    { deep: true }
-  )
+const isMyMsg = (msg: Message) => msg.senderId === userStore.userInfo?.id
+
+const formatConvTime = (t: string) => {
+  const d = new Date(t), n = new Date(), diff = n.getTime() - d.getTime()
+  if (diff < 86400000) return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
-// ===== 通知相关 =====
-const tabs = [
-  { label: '搜索', value: 0 },
-  { label: '系统通知', value: NotificationType.System },
-  { label: '审核通知', value: NotificationType.Audit },
-  { label: '互动通知', value: NotificationType.Interact },
-  { label: '关注通知', value: NotificationType.Follow },
-  { label: '私信通知', value: NotificationType.Message },
+// ===== 通知模块 =====
+const notiTabs = [
+  { label: '全部', value: 0 }, { label: '系统', value: 1 }, { label: '审核', value: 2 },
+  { label: '互动', value: 3 }, { label: '关注', value: 4 }, { label: '私信', value: 5 },
 ]
-
-const activeTab = ref(0)
+const activeNotiTab = ref(0)
 const notifications = ref<Notification[]>([])
-const loading = ref(false)
-const loadingMore = ref(false)
-const notificationError = ref('')
-const page = ref(1)
-const pageSize = 20
-const total = ref(0)
-const batchMode = ref(false)
-const selectedIds = ref<number[]>([])
+const notiLoading = ref(false)
+const notiLoadingMore = ref(false)
+const notiError = ref('')
+const notiPage = ref(1)
+const notiTotal = ref(0)
+const notiBatchMode = ref(false)
+const notiSelectedIds = ref<number[]>([])
+const notiSentinelRef = ref<HTMLElement | null>(null)
+const notiUnreadTotal = computed(() => notificationStore.unreadCount)
+const notiHasMore = computed(() => notifications.value.length < notiTotal.value)
 
-const hasMore = computed(() => notifications.value.length < total.value)
-
-const switchTab = (type: number) => {
-  activeTab.value = type
-  page.value = 1
-  notifications.value = []
-  selectedIds.value = []
-  fetchNotifications()
+const switchNotiTab = (type: number) => {
+  activeNotiTab.value = type; notiPage.value = 1; notifications.value = []; notiSelectedIds.value = []; fetchNotis()
 }
 
-const fetchNotifications = async () => {
-  loading.value = true
-  notificationError.value = ''
+const fetchNotis = async () => {
+  notiLoading.value = true; notiError.value = ''
   try {
-    const params: Record<string, any> = { page: page.value, pageSize }
-    if (activeTab.value) params.type = activeTab.value
-    const response = await cachedRequest(
-      () => notificationApi.getNotifications(params),
-      '/notifications',
-      params
-    )
-    const data = response.data.data
-    notifications.value = data?.list || []
-    total.value = data?.total || 0
-  } catch {
-    notificationError.value = '加载通知失败，请稍后重试'
-    notifications.value = []
-    total.value = 0
-  } finally {
-    loading.value = false
-  }
+    const params: any = { page: notiPage.value, pageSize: 20 }
+    if (activeNotiTab.value) params.type = activeNotiTab.value
+    const { data } = await notificationApi.getNotifications(params)
+    const d = data.data; notifications.value = d?.list || []; notiTotal.value = d?.total || 0
+  } catch { notiError.value = '加载失败' } finally { notiLoading.value = false }
 }
 
-const loadMore = async () => {
-  loadingMore.value = true
-  notificationError.value = ''
-  page.value++
+const loadMoreNoti = async () => {
+  notiLoadingMore.value = true; notiPage.value++
   try {
-    const params: Record<string, any> = { page: page.value, pageSize }
-    if (activeTab.value) params.type = activeTab.value
-    const response = await cachedRequest(
-      () => notificationApi.getNotifications(params),
-      '/notifications',
-      params
-    )
-    const data = response.data.data
-    const newItems = data?.list || []
-    notifications.value.push(...newItems)
-    total.value = data?.total || 0
-  } catch {
-    notificationError.value = '加载更多通知失败，请稍后重试'
-    page.value--
-  } finally {
-    loadingMore.value = false
+    const params: any = { page: notiPage.value, pageSize: 20 }
+    if (activeNotiTab.value) params.type = activeNotiTab.value
+    const { data } = await notificationApi.getNotifications(params)
+    notifications.value.push(...(data.data?.list || [])); notiTotal.value = data.data?.total || 0
+  } catch { notiPage.value-- } finally { notiLoadingMore.value = false }
+}
+
+const handleNotiClick = async (n: Notification) => {
+  if (notiBatchMode.value) { toggleNotiSelect(n.id); return }
+  if (!n.isRead) {
+    try { await notificationApi.markAsRead(n.id); notificationStore.markAsRead(n.id); n.isRead = true } catch {}
   }
 }
 
-// IntersectionObserver 无限滚动
-const loadMoreSentinel = ref<HTMLElement | null>(null)
-let loadMoreObserver: IntersectionObserver | null = null
-
-const setupInfiniteScroll = () => {
-  if (!import.meta.client) return
-  if (loadMoreObserver) loadMoreObserver.disconnect()
-  loadMoreObserver = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value && !loading.value) {
-        loadMore()
-      }
-    },
-    { rootMargin: '200px' }
-  )
-  watch(loadMoreSentinel, (el) => {
-    if (loadMoreObserver) {
-      loadMoreObserver.disconnect()
-      if (el) loadMoreObserver.observe(el)
-    }
-  }, { immediate: true })
+const markAllNotiRead = async () => {
+  try { await notificationApi.markAllAsRead(); notificationStore.markAllAsRead(); notifications.value.forEach(n => n.isRead = true) } catch {}
 }
 
-const handleClick = async (notification: Notification) => {
-  if (batchMode.value) {
-    toggleSelect(notification.id)
-    return
-  }
-  if (!notification.isRead) {
-    try {
-      await notificationApi.markAsRead(notification.id)
-      notificationStore.markAsRead(notification.id)
-      notification.isRead = true
-    } catch {
-      // 忽略错误
-    }
-  }
+const enterNotiBatch = () => { notiBatchMode.value = true; notiSelectedIds.value = [] }
+const exitNotiBatch = () => { notiBatchMode.value = false; notiSelectedIds.value = [] }
+const toggleNotiSelect = (id: number) => {
+  const i = notiSelectedIds.value.indexOf(id)
+  i > -1 ? notiSelectedIds.value.splice(i, 1) : notiSelectedIds.value.push(id)
 }
 
-const markAsRead = async (notification: Notification) => {
-  if (notification.isRead) return
+const batchDeleteNoti = async () => {
+  if (!notiSelectedIds.value.length) return
   try {
-    await notificationApi.markAsRead(notification.id)
-    notificationStore.markAsRead(notification.id)
-    notification.isRead = true
-  } catch {
-    // 忽略错误
+    await notificationApi.batchDeleteNotifications(notiSelectedIds.value)
+    const set = new Set(notiSelectedIds.value)
+    notifications.value = notifications.value.filter(n => !set.has(n.id))
+    notiTotal.value -= set.size
+    notiSelectedIds.value = []
+  } catch {}
+}
+
+const formatNotiTime = (s: string) => {
+  if (!s) return ''
+  const d = new Date(s), n = new Date(), m = Math.floor((n.getTime() - d.getTime()) / 60000)
+  if (m < 1) return '刚刚'; if (m < 60) return `${m}分钟前`
+  const h = Math.floor(m / 60); if (h < 24) return `${h}小时前`
+  const days = Math.floor(h / 24); if (days < 7) return `${days}天前`
+  return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+}
+
+// 无限滚动
+let io: IntersectionObserver | null = null
+onMounted(() => {
+  loadConversations(); loadMsgUnread()
+  fetchNotis()
+  if (import.meta.client) {
+    io = new IntersectionObserver(([e]) => { if (e?.isIntersecting && notiHasMore.value && !notiLoadingMore.value) loadMoreNoti() }, { rootMargin: '200px' })
+    watch(notiSentinelRef, el => { io?.disconnect(); if (el) io?.observe(el) }, { immediate: true })
   }
-}
-
-const markAllRead = async () => {
-  try {
-    await notificationApi.markAllAsRead()
-    notificationStore.markAllAsRead()
-    notifications.value.forEach(n => { n.isRead = true })
-  } catch {
-    // 忽略错误
-  }
-}
-
-const deleteNotification = async (notification: Notification) => {
-  try {
-    await notificationApi.deleteNotification(notification.id)
-    notifications.value = notifications.value.filter(n => n.id !== notification.id)
-    total.value--
-    if (!notification.isRead) {
-      notificationStore.decrementUnread()
-    }
-  } catch {
-    // 忽略错误
-  }
-}
-
-const enterBatchMode = () => {
-  batchMode.value = true
-  selectedIds.value = []
-}
-
-const exitBatchMode = () => {
-  batchMode.value = false
-  selectedIds.value = []
-}
-
-const toggleSelect = (id: number) => {
-  const index = selectedIds.value.indexOf(id)
-  if (index > -1) {
-    selectedIds.value.splice(index, 1)
-  } else {
-    selectedIds.value.push(id)
-  }
-}
-
-const batchRead = async () => {
-  if (selectedIds.value.length === 0) return
-  try {
-    await notificationApi.batchMarkAsRead(selectedIds.value)
-    selectedIds.value.forEach(id => {
-      const n = notifications.value.find(item => item.id === id)
-      if (n && !n.isRead) {
-        n.isRead = true
-        notificationStore.markAsRead(id)
-      }
-    })
-    selectedIds.value = []
-  } catch {
-    // 忽略错误
-  }
-}
-
-const batchDelete = async () => {
-  if (selectedIds.value.length === 0) return
-  try {
-    await notificationApi.batchDeleteNotifications(selectedIds.value)
-    const deleteSet = new Set(selectedIds.value)
-    const removed = notifications.value.filter(n => deleteSet.has(n.id))
-    notifications.value = notifications.value.filter(n => !deleteSet.has(n.id))
-    total.value -= deleteSet.size
-    removed.forEach(n => {
-      if (!n.isRead) notificationStore.decrementUnread()
-    })
-    selectedIds.value = []
-    if (notifications.value.length === 0 && page.value > 1) {
-      page.value--
-      fetchNotifications()
-    }
-  } catch {
-    // 忽略错误
-  }
-}
-
-const getTypeLabel = (type: NotificationType) => {
-  const map: Record<number, string> = {
-    [NotificationType.System]: '系统通知',
-    [NotificationType.Audit]: '审核通知',
-    [NotificationType.Interact]: '互动通知',
-    [NotificationType.Follow]: '关注通知',
-    [NotificationType.Message]: '私信通知',
-    [NotificationType.CommentReply]: '评论回复',
-    [NotificationType.Mention]: '@提及',
-  }
-  return map[type] || '通知'
-}
-
-// 格式化时间
-const formatTime = (dateStr: string) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 7) return `${days}天前`
-  if (days < 30) return `${Math.floor(days / 7)}周前`
-  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
-}
-
-// 页面加载
-onMounted(async () => {
-  await loadConversations()
-  await loadUnreadCount()
-  fetchNotifications()
-  setupInfiniteScroll()
 })
+onUnmounted(() => io?.disconnect())
 
-useHead({
-  title: () => '消息中心' + ' - 知讯',
-})
+useHead({ title: () => '消息' + ' - 知讯' })
 </script>

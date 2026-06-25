@@ -289,22 +289,42 @@ export interface PaginationParams {
   pageSize?: number
 }
 
-/** 用户设置接口（服务器端存储，需多设备同步） */
-export interface UserSettingsServer {
-  // 推荐偏好
+/** 用户设置 - 服务器端通知设置 */
+export interface UserSettingsNotification {
+  notifySystem: number      // 系统通知：0-关闭，1-开启
+  notifyInteract: number    // 互动通知（点赞+评论）：0-关闭，1-开启
+  notifyMessage: number     // 私信通知：0-关闭，1-开启
+  notifyFollow: number      // 关注通知：0-关闭，1-开启
+}
+
+/** 用户设置 - 服务器端隐私设置 */
+export interface UserSettingsPrivacy {
+  showOnlineStatus: number  // 显示在线状态：0-关闭，1-开启
+  messagePermission: number // 私信权限：0-所有人，1-仅关注的人
+  saveViewHistory: number   // 保存浏览历史：0-关闭，1-开启
+}
+
+/** 用户设置 - 服务器端显示设置 */
+export interface UserSettingsDisplay {
+  fontSize: number          // 字体大小：0-小，1-标准，2-大
+  theme: string             // 主题：light/dark/auto
+  language: string          // 语言
+}
+
+/** 用户设置 - 服务器端推荐偏好 */
+export interface UserSettingsRecommend {
   interestedCategories: number[]
   interestedTags: number[]
   blockedCategories: number[]
   blockedTags: number[]
-  // 通知设置
-  enableLikeNotification: boolean
-  enableCommentNotification: boolean
-  enableFollowNotification: boolean
-  enableSystemNotification: boolean
-  // 隐私设置
-  showOnlineStatus: boolean
-  allowStrangerMessage: boolean
-  showViewHistory: boolean
+}
+
+/** 用户设置接口 - 服务器端存储（嵌套结构，匹配后端 UserSettingsVO） */
+export interface UserSettingsServer {
+  recommend: UserSettingsRecommend
+  notification: UserSettingsNotification
+  privacy: UserSettingsPrivacy
+  display: UserSettingsDisplay
 }
 
 /** 用户本地设置接口（仅本地存储，无需同步） */
@@ -312,6 +332,8 @@ export interface UserSettingsLocal {
   theme: 'light' | 'dark' | 'system'
   fontSize: 'small' | 'medium' | 'large'
   language: string
+  autoLoadImages: boolean
+  defaultSort: 'latest' | 'hot'
 }
 
 /** 用户设置接口（合并服务器和本地设置） */

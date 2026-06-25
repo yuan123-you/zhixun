@@ -31,14 +31,27 @@
           {{ article.title }}
         </h3>
 
-        <!-- 摘要/正文（溢出省略+全文链接） -->
-        <div v-if="article.matchType === 'summary' && article.summary" class="article-text text-xs md:text-sm text-slate-500 mb-0.5" v-html="article.summary" />
-        <div v-else-if="article.summary" class="article-text text-xs md:text-sm text-slate-500 mb-0.5">
-          {{ article.summary }}
+        <!-- 正文内容（溢出省略+全文按钮） -->
+        <div
+          v-if="article.matchType === 'content' && article.contentSnippet"
+          class="article-text text-xs md:text-sm text-slate-500 mb-0.5 search-snippet"
+          v-html="article.contentSnippet"
+        />
+        <div
+          v-else-if="displayContent"
+          class="article-text text-xs md:text-sm text-slate-500 mb-0.5"
+        >
+          {{ displayContent }}
         </div>
 
-        <!-- 正文内容片段（搜索结果中显示，支持高亮HTML） -->
-        <div v-if="article.contentSnippet" class="article-text text-xs md:text-sm text-slate-500 mb-0.5 search-snippet" v-html="article.contentSnippet" />
+        <!-- 全文按钮 -->
+        <button
+          v-if="hasContent"
+          class="text-xs text-primary hover:text-primary-600 font-medium mt-0.5 transition-colors"
+          @click.stop="navigateToDetail"
+        >
+          全文
+        </button>
       </div>
 
       <!-- 封面图（右侧，sm以上显示） -->
@@ -140,6 +153,27 @@ const { invalidateArticle } = useCacheInvalidation()
 
 // 分享菜单状态
 const showShareMenu = ref(false)
+
+// 去除 HTML 标签，获取纯文本
+const stripHtml = (html: string): string => {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, '')
+}
+
+// 显示的正文内容（纯文本）
+const displayContent = computed(() => {
+  const content = props.article.content
+  if (!content) {
+    // 降级到摘要
+    return props.article.summary || ''
+  }
+  return stripHtml(content)
+})
+
+// 是否有内容可展示
+const hasContent = computed(() => {
+  return !!displayContent.value || !!props.article.contentSnippet
+})
 
 // 点击外部关闭分享菜单
 onMounted(() => {
@@ -275,27 +309,12 @@ const shareToQQ = async () => {
 </script>
 
 <style scoped>
-/* 文章正文/摘要 - 溢出省略 + 全文链接 */
+/* 文章正文 - 溢出省略 */
 .article-text {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 6;
   overflow: hidden;
-  position: relative;
-}
-
-/* 全文链接 - 使用伪元素追加在省略号后 */
-.article-text::after {
-  content: '全文';
-  color: var(--color-primary, #6366f1);
-  font-weight: 500;
-  margin-left: 2px;
-  cursor: pointer;
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  padding-left: 20px;
-  background: linear-gradient(to right, transparent, var(--card-bg, #fff) 30%);
 }
 
 /* 搜索结果高亮样式 */
@@ -318,7 +337,7 @@ h3 :deep(em) {
   text-underline-offset: 2px;
 }
 
-/* 摘要高亮样式 */
+/* 正文高亮样式 */
 .article-text :deep(em) {
   font-style: normal;
   font-weight: 600;

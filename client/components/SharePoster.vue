@@ -16,9 +16,9 @@
               {{ article?.title }}
             </h3>
 
-            <!-- 文章摘要 -->
+            <!-- 文章正文 -->
             <p class="text-sm text-gray-500 line-clamp-3 mb-4">
-              {{ article?.summary }}
+              {{ posterContent }}
             </p>
 
             <!-- 作者信息 -->
@@ -85,6 +85,19 @@ const emit = defineEmits<{
 }>()
 
 const { resolveUrl } = useResourceUrl()
+
+// 去除 HTML 标签，获取纯文本
+const stripHtml = (html: string): string => {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, '')
+}
+
+// 海报显示的正文内容
+const posterContent = computed(() => {
+  const content = props.article?.content
+  if (!content) return props.article?.summary || ''
+  return stripHtml(content)
+})
 
 const posterRef = ref<HTMLElement | null>(null)
 const qrCanvasRef = ref<HTMLCanvasElement | null>(null)
