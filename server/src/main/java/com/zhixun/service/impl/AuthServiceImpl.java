@@ -34,6 +34,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 
@@ -142,22 +144,30 @@ public class AuthServiceImpl implements AuthService {
         // 创建用户记录
         userMapper.insert(user);
 
-        // 同步到 OpenSearch（非关键操作，失败不影响注册事务）
-        try {
-            openSearchSyncService.syncUser(user.getId());
-        } catch (Exception e) {
-            log.error("注册用户同步到OpenSearch失败, userId={}: {}", user.getId(), e.getMessage());
-        }
-
-        // 创建默认用户设置记录
+        // 创建默认用户设置记录（关键操作，失败应回滚整个注册事务）
         UserSettings userSettings = new UserSettings();
         userSettings.setUserId(user.getId());
         userSettings.setNotifySystem(1);
         userSettings.setNotifyInteract(1);
+        userSettingsMapper.insert(userSettings);
+
+        // 同步到 OpenSearch（事务提交后异步执行，失败不影响注册结果）
+        Long userId = user.getId();
         try {
-            userSettingsMapper.insert(userSettings);
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            openSearchSyncService.syncUser(userId);
+                        } catch (Exception e) {
+                            log.error("注册用户同步到OpenSearch失败, userId={}: {}", userId, e.getMessage());
+                        }
+                    }
+                });
+            }
         } catch (Exception e) {
-            log.error("创建用户默认设置失败, userId={}: {}", user.getId(), e.getMessage());
+            log.warn("注册OpenSearch事务同步回调注册失败, userId={}: {}", userId, e.getMessage());
         }
 
         // 生成双 Token

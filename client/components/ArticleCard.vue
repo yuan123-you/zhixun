@@ -287,7 +287,7 @@ const shareToQQ = async () => {
 /* 全文链接 - 使用伪元素追加在省略号后 */
 .article-text::after {
   content: '全文';
-  color: var(--color-primary, #3b82f6);
+  color: var(--color-primary, #6366f1);
   font-weight: 500;
   margin-left: 2px;
   cursor: pointer;
@@ -303,7 +303,7 @@ const shareToQQ = async () => {
   font-style: normal;
   font-weight: 600;
   color: var(--color-primary);
-  background-color: rgba(var(--color-primary-rgb, 59, 130, 246), 0.1);
+  background-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
   border-radius: 2px;
   padding: 0 2px;
 }
@@ -314,7 +314,7 @@ h3 :deep(em) {
   font-weight: 700;
   color: var(--color-primary);
   text-decoration: underline;
-  text-decoration-color: rgba(var(--color-primary-rgb, 59, 130, 246), 0.3);
+  text-decoration-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.3);
   text-underline-offset: 2px;
 }
 
@@ -323,7 +323,7 @@ h3 :deep(em) {
   font-style: normal;
   font-weight: 600;
   color: var(--color-primary);
-  background-color: rgba(var(--color-primary-rgb, 59, 130, 246), 0.1);
+  background-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
   border-radius: 2px;
   padding: 0 2px;
 }

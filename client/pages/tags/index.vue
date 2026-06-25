@@ -1,7 +1,7 @@
 <template>
   <!-- 标签聚合页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">标签</h1>
+    <h1 class="text-2xl font-bold text-slate-900 mb-3">标签</h1>
 
     <!-- Tab切换：标签云 / 热门标签 / 已关注 -->
     <div class="flex items-center space-x-2 mb-3">
@@ -11,7 +11,7 @@
         class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
         :class="activeTab === tab.key
           ? 'bg-primary text-white'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+          : 'bg-slate-50 text-slate-700 hover:bg-slate-200'"
         @click="switchTab(tab.key)"
       >
         {{ tab.label }}
@@ -31,7 +31,7 @@
             <button
               v-for="tag in cloudTags"
               :key="tag.id"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all hover:shadow-md cursor-pointer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all hover:shadow-[var(--shadow-md)] cursor-pointer"
               :style="getTagStyle(tag)"
               @click="selectTag(tag)"
             >
@@ -48,11 +48,11 @@
             <LoadingSkeleton v-for="i in 8" :key="i" type="article" />
           </div>
           <ErrorRetry v-else-if="hotError" :message="hotError" :on-retry="retryHot" />
-          <div v-else-if="hotTags.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div v-else-if="hotTags.length > 0" class="divide-y divide-slate-100">
             <div
               v-for="(tag, index) in hotTags"
               :key="tag.id"
-              class="flex items-center w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
+              class="flex items-center w-full p-2 hover:bg-slate-50 transition-colors text-left cursor-pointer"
               @click="selectTag(tag)"
             >
               <!-- 排名 -->
@@ -61,16 +61,16 @@
               </span>
               <!-- 标签名 -->
               <div class="flex-1 min-w-0">
-                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ tag.name }}</span>
+                <span class="text-sm font-medium text-slate-900">{{ tag.name }}</span>
               </div>
               <!-- 文章数 -->
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ tag.articleCount }} 篇文章</span>
+              <span class="text-sm text-slate-500">{{ tag.articleCount }} 篇文章</span>
               <!-- 关注按钮 -->
               <button
                 class="ml-3 px-3 py-1 text-xs font-medium rounded-full transition-colors"
                 :class="tag.isFollowed
-                  ? 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-                  : 'bg-primary/10 text-primary hover:bg-primary/20'"
+                  ? 'bg-slate-50 text-slate-600'
+                  : 'bg-primary-50 text-primary-700 hover:bg-primary/20'"
                 @click.stop="toggleFollowTag(tag)"
               >
                 {{ tag.isFollowed ? '已关注' : '关注' }}
@@ -86,19 +86,19 @@
             <LoadingSkeleton v-for="i in 5" :key="i" type="article" />
           </div>
           <ErrorRetry v-else-if="followedError" :message="followedError" :on-retry="retryFollowed" />
-          <div v-else-if="followedTags.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div v-else-if="followedTags.length > 0" class="divide-y divide-slate-100">
             <div
               v-for="tag in followedTags"
               :key="tag.id"
-              class="flex items-center w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
+              class="flex items-center w-full p-2 hover:bg-slate-50 transition-colors text-left cursor-pointer"
               @click="selectTag(tag)"
             >
               <div class="flex-1 min-w-0">
-                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ tag.name }}</span>
+                <span class="text-sm font-medium text-slate-900">{{ tag.name }}</span>
               </div>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ tag.articleCount }} 篇文章</span>
+              <span class="text-sm text-slate-500">{{ tag.articleCount }} 篇文章</span>
               <button
-                class="ml-3 px-3 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
+                class="ml-3 px-3 py-1 text-xs font-medium rounded-full bg-slate-50 text-slate-600 transition-colors"
                 @click.stop="toggleFollowTag(tag)"
               >
                 取关
@@ -111,10 +111,10 @@
         <!-- 选中标签后的文章列表 -->
         <div v-if="selectedTag" class="mt-3">
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-lg font-semibold text-slate-900">
               「{{ selectedTag.name }}」相关文章
             </h2>
-            <button class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" @click="clearSelection">
+            <button class="text-sm text-slate-500 hover:text-slate-700" @click="clearSelection">
               清除筛选
             </button>
           </div>
@@ -131,18 +131,18 @@
       <aside class="hidden lg:block w-80 2xl:w-96 shrink-0 space-y-3">
         <!-- 当前选中标签信息 -->
         <div v-if="selectedTag" class="card">
-          <div class="p-2 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="font-semibold text-gray-900 dark:text-white">{{ selectedTag.name }}</h3>
+          <div class="p-2 border-b border-slate-200">
+            <h3 class="font-semibold text-slate-900">{{ selectedTag.name }}</h3>
           </div>
           <div class="p-2 space-y-2">
             <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-500 dark:text-gray-400">文章数</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ selectedTag.articleCount }}</span>
+              <span class="text-slate-500">文章数</span>
+              <span class="font-medium text-slate-900">{{ selectedTag.articleCount }}</span>
             </div>
             <button
               class="w-full px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
               :class="selectedTag.isFollowed
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-slate-50 text-slate-700 hover:bg-slate-200'
                 : 'bg-primary text-white hover:bg-primary-dark'"
               @click="toggleFollowTag(selectedTag)"
             >
@@ -153,8 +153,8 @@
 
         <!-- 热门标签快捷入口 -->
         <div class="card">
-          <div class="p-2 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="font-semibold text-gray-900 dark:text-white">热门标签</h3>
+          <div class="p-2 border-b border-slate-200">
+            <h3 class="font-semibold text-slate-900">热门标签</h3>
           </div>
           <div class="p-2 flex flex-wrap gap-1.5">
             <button
@@ -163,7 +163,7 @@
               class="px-2 py-0.5 text-sm rounded-full transition-colors"
               :class="selectedTag?.id === tag.id
                 ? 'bg-primary text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                : 'bg-slate-50 text-slate-700 hover:bg-slate-200'"
               @click="selectTag(tag)"
             >
               {{ tag.name }}
@@ -368,7 +368,7 @@ const getRankClass = (index: number) => {
   if (index === 0) return 'bg-yellow-400 text-white'
   if (index === 1) return 'bg-gray-300 text-white'
   if (index === 2) return 'bg-orange-400 text-white'
-  return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+  return 'bg-slate-50 text-slate-500'
 }
 
 // SSR数据获取

@@ -64,4 +64,10 @@ public class ArticleVO {
 
     /** 创建时间 */
     private LocalDateTime createdAt;
+
+    /** 当前用户是否已点赞 */
+    private Boolean isLiked;
+
+    /** 当前用户是否已收藏 */
+    private Boolean isCollected;
 }

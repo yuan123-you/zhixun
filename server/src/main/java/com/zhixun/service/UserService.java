@@ -7,6 +7,9 @@ import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.UserSettingsVO;
 import com.zhixun.vo.UserVO;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * 用户服务接口
  */
@@ -60,6 +63,14 @@ public interface UserService {
      * @return 文章分页列表
      */
     PageResult<ArticleVO> getViewHistory(Long userId, String startDate, String endDate, Integer page, Integer pageSize);
+
+    /**
+     * 批量同步浏览历史
+     *
+     * @param userId  用户ID
+     * @param records 浏览记录列表（articleId + viewDuration）
+     */
+    void batchSyncViewHistory(Long userId, List<Map<String, Object>> records);
 
     /**
      * 获取全局设置

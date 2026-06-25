@@ -2,13 +2,13 @@
   <!-- 分类页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <div class="flex items-center gap-3 mb-6">
-      <button class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" @click="navigateTo('/')">
+      <button class="p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg" @click="navigateTo('/')">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
       <span class="w-3 h-3 rounded-full shrink-0" :class="categoryColor"></span>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ categoryLabel }}</h1>
+      <h1 class="text-2xl font-bold text-slate-900">{{ categoryLabel }}</h1>
     </div>
 
     <!-- 分类Tab -->
@@ -19,7 +19,7 @@
         class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
         :class="activeTab === tab.key
           ? 'bg-primary text-white'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+          : 'bg-slate-50 text-slate-700 hover:bg-slate-200'"
         @click="switchTab(tab.key)"
       >
         {{ tab.label }}

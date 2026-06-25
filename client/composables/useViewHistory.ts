@@ -107,7 +107,7 @@ export const useViewHistory = () => {
     if (toSync.length === 0) return
 
     try {
-      await post('/view-history/batch', { records: toSync })
+      await post('/user/view-history/batch', { records: toSync })
       // 同步成功后，清除已同步的浏览时长标记（避免重复同步）
       const updated = entries.map((e) => ({
         ...e,

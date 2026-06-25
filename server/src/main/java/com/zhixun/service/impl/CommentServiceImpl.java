@@ -12,11 +12,14 @@ import com.zhixun.config.Slave;
 import com.zhixun.dto.comment.CommentCreateRequest;
 import com.zhixun.dto.comment.CommentReportRequest;
 import com.zhixun.entity.Article;
+import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.Comment;
 import com.zhixun.entity.CommentReport;
 import com.zhixun.entity.User;
 import com.zhixun.enums.CommentStatusEnum;
+import com.zhixun.enums.LikeTargetTypeEnum;
 import com.zhixun.enums.NotificationTypeEnum;
+import com.zhixun.mapper.ArticleLikeMapper;
 import com.zhixun.mapper.ArticleMapper;
 import com.zhixun.mapper.CommentMapper;
 import com.zhixun.mapper.CommentReportMapper;
@@ -55,6 +58,7 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentMapper commentMapper;
     private final ArticleMapper articleMapper;
+    private final ArticleLikeMapper articleLikeMapper;
     private final UserMapper userMapper;
     private final CommentReportMapper commentReportMapper;
     private final SensitiveWordUtil sensitiveWordUtil;
@@ -490,6 +494,31 @@ public class CommentServiceImpl implements CommentService {
                 : userMapper.selectBatchIds(userIds.stream().distinct().collect(Collectors.toList())).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // 批量查询当前用户点赞状态
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception ignored) {}
+
+        final java.util.Set<Long> likedCommentIds;
+        if (currentUserId != null) {
+            List<Long> allCommentIds = allComments.stream().map(Comment::getId).collect(Collectors.toList());
+            java.util.Set<Long> liked = java.util.Collections.emptySet();
+            try {
+                List<ArticleLike> likes = articleLikeMapper.selectList(
+                        new LambdaQueryWrapper<ArticleLike>()
+                                .eq(ArticleLike::getUserId, currentUserId)
+                                .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.COMMENT)
+                                .in(ArticleLike::getTargetId, allCommentIds));
+                liked = likes.stream().map(ArticleLike::getTargetId).collect(Collectors.toSet());
+            } catch (Exception e) {
+                log.warn("批量查询评论点赞状态失败: {}", e.getMessage());
+            }
+            likedCommentIds = liked;
+        } else {
+            likedCommentIds = java.util.Collections.emptySet();
+        }
+
         // 按父评论ID分组子评论
         Map<Long, List<Comment>> childrenMap = allChildren.stream()
                 .collect(Collectors.groupingBy(Comment::getParentId));
@@ -497,13 +526,18 @@ public class CommentServiceImpl implements CommentService {
         // 转换顶级评论
         return comments.stream().map(comment -> {
             CommentVO vo = buildCommentVO(comment, userMap);
+            vo.setIsLiked(likedCommentIds.contains(comment.getId()));
 
             // 设置子评论
             List<Comment> children = childrenMap.getOrDefault(comment.getId(), Collections.emptyList());
             List<CommentVO> childVOs = children.stream()
-                    .map(child -> buildCommentVO(child, userMap))
+                    .map(child -> {
+                        CommentVO childVo = buildCommentVO(child, userMap);
+                        childVo.setIsLiked(likedCommentIds.contains(child.getId()));
+                        return childVo;
+                    })
                     .collect(Collectors.toList());
-            vo.setChildren(childVOs);
+            vo.setReplies(childVOs);
 
             return vo;
         }).collect(Collectors.toList());

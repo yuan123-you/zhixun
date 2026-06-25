@@ -39,9 +39,9 @@ dependency-reduced-pom.xml
 # Spring Boot
 spring-shell.log
 application-local.yml
-application-prod.yml
 application-secret.yml
 application-dev.yml
+server/logs/
 
 # ==================== 前端构建输出 ====================
 admin/dist/
@@ -54,6 +54,7 @@ admin/src/auto-imports.d.ts
 admin/src/components.d.ts
 
 # ==================== 本地开发工具 ====================
+testing/
 .redis/
 .ssh_key
 dump.rdb

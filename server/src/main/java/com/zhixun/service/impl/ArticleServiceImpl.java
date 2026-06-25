@@ -15,17 +15,24 @@ import com.zhixun.dto.article.ArticleQueryRequest;
 import com.zhixun.dto.article.ArticleStatusRequest;
 import com.zhixun.dto.article.ArticleUpdateRequest;
 import com.zhixun.entity.Article;
+import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.ArticleOperateLog;
 import com.zhixun.entity.ArticleTag;
 import com.zhixun.entity.ArticleViewHistory;
+import com.zhixun.entity.Collect;
+import com.zhixun.entity.UserFollow;
 import com.zhixun.entity.Category;
 import com.zhixun.entity.Tag;
 import com.zhixun.entity.User;
 import com.zhixun.enums.ArticleStatusEnum;
+import com.zhixun.enums.LikeTargetTypeEnum;
+import com.zhixun.mapper.ArticleLikeMapper;
 import com.zhixun.mapper.ArticleMapper;
 import com.zhixun.mapper.ArticleOperateLogMapper;
 import com.zhixun.mapper.ArticleTagMapper;
 import com.zhixun.mapper.ArticleViewHistoryMapper;
+import com.zhixun.mapper.CollectMapper;
+import com.zhixun.mapper.UserFollowMapper;
 import com.zhixun.mapper.CategoryMapper;
 import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
@@ -55,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -72,7 +80,10 @@ public class ArticleServiceImpl implements ArticleService {
 
     private final ArticleMapper articleMapper;
     private final ArticleTagMapper articleTagMapper;
+    private final ArticleLikeMapper articleLikeMapper;
     private final ArticleViewHistoryMapper articleViewHistoryMapper;
+    private final CollectMapper collectMapper;
+    private final UserFollowMapper userFollowMapper;
     private final ArticleOperateLogMapper articleOperateLogMapper;
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
@@ -272,6 +283,7 @@ public class ArticleServiceImpl implements ArticleService {
         vo.setCommentCount(article.getCommentCount());
         vo.setCollectCount(article.getCollectCount());
         vo.setShareCount(article.getShareCount());
+        vo.setIsTop(article.getIsTop());
         vo.setRejectReason(article.getRejectReason());
         vo.setCategoryId(article.getCategoryId());
         vo.setCreatedAt(article.getCreatedAt());
@@ -281,8 +293,53 @@ public class ArticleServiceImpl implements ArticleService {
         // 查询作者信息
         User author = userMapper.selectById(article.getAuthorId());
         if (author != null) {
-            vo.setAuthorName(author.getNickname());
-            vo.setAuthorAvatar(author.getAvatar());
+            ArticleDetailVO.AuthorVO authorVO = new ArticleDetailVO.AuthorVO();
+            authorVO.setId(author.getId());
+            authorVO.setNickname(author.getNickname());
+            authorVO.setAvatar(author.getAvatar());
+            // 查询当前用户是否关注了该作者
+            if (currentUserId != null && !currentUserId.equals(author.getId())) {
+                try {
+                    UserFollow follow = userFollowMapper.selectOne(
+                            new LambdaQueryWrapper<UserFollow>()
+                                    .eq(UserFollow::getFollowerId, currentUserId)
+                                    .eq(UserFollow::getFollowingId, author.getId()));
+                    authorVO.setIsFollowing(follow != null);
+                } catch (Exception e) {
+                    authorVO.setIsFollowing(false);
+                }
+            } else {
+                authorVO.setIsFollowing(false);
+            }
+            vo.setAuthor(authorVO);
+        }
+
+        // 查询当前用户的点赞和收藏状态
+        if (currentUserId != null) {
+            try {
+                // 点赞状态
+                ArticleLike like = articleLikeMapper.selectOne(
+                        new LambdaQueryWrapper<ArticleLike>()
+                                .eq(ArticleLike::getUserId, currentUserId)
+                                .eq(ArticleLike::getTargetId, articleId)
+                                .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE));
+                vo.setIsLiked(like != null);
+            } catch (Exception e) {
+                vo.setIsLiked(false);
+            }
+            try {
+                // 收藏状态
+                Collect collect = collectMapper.selectOne(
+                        new LambdaQueryWrapper<Collect>()
+                                .eq(Collect::getUserId, currentUserId)
+                                .eq(Collect::getArticleId, articleId));
+                vo.setIsCollected(collect != null);
+            } catch (Exception e) {
+                vo.setIsCollected(false);
+            }
+        } else {
+            vo.setIsLiked(false);
+            vo.setIsCollected(false);
         }
 
         // 查询分类信息
@@ -392,7 +449,11 @@ public class ArticleServiceImpl implements ArticleService {
         Page<Article> result = articleMapper.selectPage(page, wrapper);
 
         // 批量查询关联数据
-        List<ArticleVO> voList = convertToVOList(result.getRecords());
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception ignored) {}
+        List<ArticleVO> voList = convertToVOList(result.getRecords(), currentUserId);
 
         PageResult<ArticleVO> pageResult = new PageResult<>(voList, result.getTotal(), request.getPageNum(), request.getPageSize());
 
@@ -834,6 +895,13 @@ public class ArticleServiceImpl implements ArticleService {
      * 批量将文章实体列表转换为 VO 列表
      */
     private List<ArticleVO> convertToVOList(List<Article> articles) {
+        return convertToVOList(articles, null);
+    }
+
+    /**
+     * 批量将文章实体列表转换为 VO 列表（含当前用户点赞/收藏状态）
+     */
+    private List<ArticleVO> convertToVOList(List<Article> articles, Long currentUserId) {
         if (CollectionUtils.isEmpty(articles)) {
             return Collections.emptyList();
         }
@@ -872,6 +940,38 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 批量查询 Redis 浏览量（multiGet 替代 N 次单独查询）
         Map<Long, Long> viewCountMap = batchGetViewCounts(articleIds);
+
+        // 批量查询当前用户点赞状态
+        final Set<Long> likedArticleIds;
+        final Set<Long> collectedArticleIds;
+        if (currentUserId != null) {
+            Set<Long> liked = new HashSet<>();
+            Set<Long> collected = new HashSet<>();
+            try {
+                List<ArticleLike> likes = articleLikeMapper.selectList(
+                        new LambdaQueryWrapper<ArticleLike>()
+                                .eq(ArticleLike::getUserId, currentUserId)
+                                .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
+                                .in(ArticleLike::getTargetId, articleIds));
+                liked = likes.stream().map(ArticleLike::getTargetId).collect(Collectors.toSet());
+            } catch (Exception e) {
+                log.warn("批量查询点赞状态失败: {}", e.getMessage());
+            }
+            try {
+                List<Collect> collects = collectMapper.selectList(
+                        new LambdaQueryWrapper<Collect>()
+                                .eq(Collect::getUserId, currentUserId)
+                                .in(Collect::getArticleId, articleIds));
+                collected = collects.stream().map(Collect::getArticleId).collect(Collectors.toSet());
+            } catch (Exception e) {
+                log.warn("批量查询收藏状态失败: {}", e.getMessage());
+            }
+            likedArticleIds = liked;
+            collectedArticleIds = collected;
+        } else {
+            likedArticleIds = Collections.emptySet();
+            collectedArticleIds = Collections.emptySet();
+        }
 
         // 构建 VO 列表
         return articles.stream().map(article -> {
@@ -929,6 +1029,10 @@ public class ArticleServiceImpl implements ArticleService {
             } else {
                 vo.setTags(Collections.emptyList());
             }
+
+            // 设置当前用户点赞/收藏状态
+            vo.setIsLiked(likedArticleIds.contains(article.getId()));
+            vo.setIsCollected(collectedArticleIds.contains(article.getId()));
 
             return vo;
         }).collect(Collectors.toList());

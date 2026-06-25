@@ -158,7 +158,7 @@ export const useApi = () => {
     const overlay = document.createElement('div')
     overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/30'
     overlay.innerHTML = `
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl px-5 py-3 mx-4 text-center text-sm text-gray-700 dark:text-gray-200">
+      <div class="bg-white rounded-xl shadow-[var(--shadow-lg)] px-5 py-3 mx-4 text-center text-sm text-slate-700">
         ${message || '暂无权限访问'}
       </div>
     `

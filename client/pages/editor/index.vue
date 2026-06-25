@@ -3,13 +3,13 @@
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 返回导航 -->
     <div class="flex items-center gap-3 mb-3">
-      <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors" @click="goBack">
+      <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
         {{ '返回' }}
       </button>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ '写文章' }}</h1>
+      <h1 class="text-2xl font-bold text-slate-900">{{ '写文章' }}</h1>
     </div>
 
     <!-- 标题输入 -->
@@ -22,7 +22,7 @@
 
     <!-- 摘要输入 -->
     <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '摘要' }}</label>
+      <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '摘要' }}</label>
       <textarea
         v-model="form.summary"
         class="input resize-none"
@@ -35,17 +35,17 @@
 
     <!-- 移动端/平板端：编辑/预览切换Tab -->
     <div class="md:hidden mb-4">
-      <div class="flex border-b border-gray-200 dark:border-gray-700">
+      <div class="flex border-b border-slate-200">
         <button
           class="flex-1 py-2 text-sm font-medium text-center transition-colors"
-          :class="activeTab === 'edit' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'"
+          :class="activeTab === 'edit' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'"
           @click="activeTab = 'edit'"
         >
           {{ '编辑' }}
         </button>
         <button
           class="flex-1 py-2 text-sm font-medium text-center transition-colors"
-          :class="activeTab === 'preview' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'"
+          :class="activeTab === 'preview' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'"
           @click="activeTab = 'preview'"
         >
           预览
@@ -55,25 +55,25 @@
 
     <!-- 编辑器区域：桌面端双栏，移动端Tab切换 -->
     <div class="mb-3">
-      <div class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+      <div class="border border-slate-300 rounded-lg overflow-hidden">
         <!-- 工具栏 -->
-        <div class="flex items-center space-x-1 p-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600">
-          <button class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" title="加粗" @click="insertMarkdown('**', '**')">
+        <div class="flex items-center space-x-1 p-2 bg-slate-50 border-b border-slate-300">
+          <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="加粗" @click="insertMarkdown('**', '**')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" /></svg>
           </button>
-          <button class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" title="斜体" @click="insertMarkdown('*', '*')">
+          <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="斜体" @click="insertMarkdown('*', '*')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 4h4m-2 0v16m-4 0h8" /></svg>
           </button>
-          <button class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" title="标题" @click="insertMarkdown('## ', '')">
+          <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="标题" @click="insertMarkdown('## ', '')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
           </button>
-          <button class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" title="链接" @click="insertMarkdown('[', '](url)')">
+          <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="链接" @click="insertMarkdown('[', '](url)')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
           </button>
-          <button class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" title="图片" @click="insertMarkdown('![alt](', ')')">
+          <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="图片" @click="insertMarkdown('![alt](', ')')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           </button>
-          <button class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" title="代码" @click="insertMarkdown('`', '`')">
+          <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="代码" @click="insertMarkdown('`', '`')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
           </button>
         </div>
@@ -81,24 +81,24 @@
         <!-- 桌面端：双栏布局 -->
         <div class="hidden md:flex">
           <!-- 左侧编辑区 -->
-          <div class="w-1/2 border-r border-gray-300 dark:border-gray-600">
-            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 font-medium">
+          <div class="w-1/2 border-r border-slate-300">
+            <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-medium">
               {{ '编辑' }}
             </div>
             <textarea
               ref="editorRef"
               v-model="form.content"
-              class="w-full min-h-[400px] p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none outline-none font-mono text-sm"
+              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
               placeholder="开始写作..."
             ></textarea>
           </div>
           <!-- 右侧预览区 -->
           <div class="w-1/2">
-            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 font-medium">
+            <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-medium">
               预览
             </div>
             <div
-              class="min-h-[400px] p-4 bg-white dark:bg-gray-800 prose dark:prose-invert max-w-none overflow-auto text-sm"
+              class="min-h-[400px] p-4 bg-white prose max-w-none overflow-auto text-sm"
               v-html="renderedContent"
             ></div>
           </div>
@@ -110,13 +110,13 @@
             <textarea
               ref="editorRef"
               v-model="form.content"
-              class="w-full min-h-[400px] p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none outline-none font-mono text-sm"
+              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
               placeholder="开始写作..."
             ></textarea>
           </div>
           <div v-show="activeTab === 'preview'">
             <div
-              class="min-h-[400px] p-4 bg-white dark:bg-gray-800 prose dark:prose-invert max-w-none overflow-auto text-sm"
+              class="min-h-[400px] p-4 bg-white prose max-w-none overflow-auto text-sm"
               v-html="renderedContent"
             ></div>
           </div>
@@ -128,7 +128,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
       <!-- 分类选择 -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '分类' }}</label>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '分类' }}</label>
         <select v-model="form.categoryId" class="input">
           <option value="">{{ '请选择分类' }}</option>
           <option v-for="category in categories" :key="category.id" :value="category.id">
@@ -139,7 +139,7 @@
 
       <!-- 标签选择 -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '标签' }}</label>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '标签' }}</label>
         <input
           v-model="tagInput"
           type="text"
@@ -158,7 +158,7 @@
 
     <!-- 封面图上传 -->
     <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '封面图' }}</label>
+      <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '封面图' }}</label>
       <div class="flex items-center space-x-3">
         <div v-if="form.coverImage" class="relative w-40 h-28 rounded-lg overflow-hidden">
           <img :src="resolveUrl(form.coverImage) || ''" alt="封面" class="w-full h-full object-cover" />
@@ -178,16 +178,16 @@
     </div>
 
     <!-- 定时发布选项 -->
-    <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <div class="mt-3 p-3 bg-slate-50 rounded-lg">
       <div class="flex items-center space-x-2">
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" v-model="scheduledPublish" class="sr-only peer" />
-          <div class="w-9 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+          <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
         </label>
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ '定时发布' }}</span>
+        <span class="text-sm font-medium text-slate-700">{{ '定时发布' }}</span>
       </div>
       <div v-if="scheduledPublish" class="mt-3">
-        <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{ '选择发布时间' }}</label>
+        <label class="block text-sm text-slate-600 mb-1">{{ '选择发布时间' }}</label>
         <input
           type="datetime-local"
           v-model="publishAt"
@@ -270,11 +270,11 @@ function renderMarkdown(text: string): string {
 
   // 代码块（需先处理，避免内部被其他规则替换）
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_match, lang, code) => {
-    return `<pre class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto"><code class="language-${lang}">${code.trim()}</code></pre>`
+    return `<pre class="bg-slate-100 rounded-lg p-4 overflow-x-auto"><code class="language-${lang}">${code.trim()}</code></pre>`
   })
 
   // 行内代码
-  html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded text-sm text-primary">$1</code>')
+  html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-100 px-1.5 py-0.5 rounded text-sm text-primary">$1</code>')
 
   // 标题
   html = html.replace(/^######\s+(.+)$/gm, '<h6 class="text-base font-semibold mt-4 mb-2">$1</h6>')
@@ -285,10 +285,10 @@ function renderMarkdown(text: string): string {
   html = html.replace(/^#\s+(.+)$/gm, '<h1 class="text-4xl font-bold mt-6 mb-4">$1</h1>')
 
   // 引用
-  html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote class="border-l-4 border-primary pl-4 py-1 my-2 text-gray-600 dark:text-gray-400 italic">$1</blockquote>')
+  html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote class="border-l-4 border-primary pl-4 py-1 my-2 text-slate-600 italic">$1</blockquote>')
 
   // 分割线
-  html = html.replace(/^---+$/gm, '<hr class="my-6 border-gray-300 dark:border-gray-600" />')
+  html = html.replace(/^---+$/gm, '<hr class="my-6 border-slate-300" />')
 
   // 加粗
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')

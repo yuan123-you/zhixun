@@ -62,11 +62,11 @@
       <!-- 搜索历史 -->
       <div v-if="searchHistory.length > 0" class="mb-6">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ '搜索历史' }}</h3>
+          <h3 class="text-sm font-medium text-slate-500">{{ '搜索历史' }}</h3>
           <button class="text-xs text-gray-400 hover:text-danger" @click="clearHistory">{{ '清除' }}</button>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button v-for="item in searchHistory" :key="item" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600" @click="keyword = item; doSearch()">
+          <button v-for="item in searchHistory" :key="item" class="px-3 py-1.5 bg-slate-50 text-sm text-slate-700 rounded-full hover:bg-slate-200" @click="keyword = item; doSearch()">
             {{ item }}
           </button>
         </div>
@@ -74,9 +74,9 @@
 
       <!-- 热门搜索 -->
       <div v-if="hotSearches.length > 0">
-        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{{ '热门搜索' }}</h3>
+        <h3 class="text-sm font-medium text-slate-500 mb-2">{{ '热门搜索' }}</h3>
         <div class="space-y-1">
-          <button v-for="(item, index) in hotSearches" :key="item" class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" @click="keyword = item; doSearch()">
+          <button v-for="(item, index) in hotSearches" :key="item" class="w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg" @click="keyword = item; doSearch()">
             <span class="w-5 text-center text-xs font-bold" :class="index < 3 ? 'text-danger' : 'text-gray-400'">{{ index + 1 }}</span>
             <span class="ml-3">{{ item }}</span>
           </button>
@@ -87,14 +87,14 @@
     <!-- 搜索结果（已搜索时） -->
     <div v-else>
       <!-- Tab切换 -->
-      <div class="flex items-center border-b border-gray-200 dark:border-gray-700 mb-4">
+      <div class="flex items-center border-b border-slate-200 mb-4">
         <button
           v-for="tab in searchTabs"
           :key="tab.key"
           class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
           :class="activeTab === tab.key
             ? 'border-primary text-primary'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+            : 'border-transparent text-slate-500 hover:text-slate-700'"
           @click="switchTab(tab.key)"
         >
           {{ tab.label }}
@@ -131,21 +131,21 @@
         <!-- 综合Tab骨架屏 -->
         <template v-if="activeTab === 'all'">
           <div class="mb-3">
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-3 animate-pulse"></div>
+            <div class="h-4 bg-slate-200 rounded w-20 mb-3 animate-pulse"></div>
             <div class="space-y-2">
               <LoadingSkeleton v-for="i in 2" :key="'a'+i" type="article" />
             </div>
           </div>
           <div class="mb-3">
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-3 animate-pulse"></div>
+            <div class="h-4 bg-slate-200 rounded w-20 mb-3 animate-pulse"></div>
             <div class="space-y-2">
               <LoadingSkeleton v-for="i in 2" :key="'u'+i" type="user" />
             </div>
           </div>
           <div>
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-3 animate-pulse"></div>
+            <div class="h-4 bg-slate-200 rounded w-20 mb-3 animate-pulse"></div>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div v-for="i in 6" :key="'img'+i" class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+              <div v-for="i in 6" :key="'img'+i" class="aspect-square bg-slate-200 rounded-lg animate-pulse"></div>
             </div>
           </div>
         </template>
@@ -164,7 +164,7 @@
         <!-- 图片Tab骨架屏 -->
         <template v-else-if="activeTab === 'images'">
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div v-for="i in 9" :key="i" class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            <div v-for="i in 9" :key="i" class="aspect-square bg-slate-200 rounded-lg animate-pulse"></div>
           </div>
         </template>
       </div>
@@ -179,7 +179,7 @@
           <!-- 用户区块 -->
           <div v-if="allUserResults.length > 0" class="mb-3">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ '相关用户' }}</h3>
+              <h3 class="text-sm font-medium text-slate-500">{{ '相关用户' }}</h3>
               <button v-if="tabCounts.users > 3" class="text-xs text-primary hover:underline" @click="switchTab('users')">{{ '查看全部' }} ({{ tabCounts.users }})</button>
             </div>
             <div class="space-y-2">
@@ -190,7 +190,7 @@
           <!-- 文章区块 -->
           <div v-if="allArticleResults.length > 0" class="mb-3">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ '相关文章' }}</h3>
+              <h3 class="text-sm font-medium text-slate-500">{{ '相关文章' }}</h3>
               <button v-if="tabCounts.articles > 5" class="text-xs text-primary hover:underline" @click="switchTab('articles')">{{ '查看全部' }} ({{ tabCounts.articles }})</button>
             </div>
             <div class="space-y-2">
@@ -201,7 +201,7 @@
           <!-- 图片区块 -->
           <div v-if="allImageResults.length > 0" class="mb-3">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ '相关图片' }}</h3>
+              <h3 class="text-sm font-medium text-slate-500">{{ '相关图片' }}</h3>
               <button v-if="tabCounts.images > 6" class="text-xs text-primary hover:underline" @click="switchTab('images')">{{ '查看全部' }} ({{ tabCounts.images }})</button>
             </div>
             <ImageGrid :images="allImageResults" @click="handleImageClick" />

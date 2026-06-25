@@ -7,7 +7,7 @@ export function showAlert(message: string, duration = 1500) {
   alertVisible = true
 
   const el = document.createElement('div')
-  el.className = 'fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 rounded-lg shadow-lg text-sm text-white bg-red-500 dark:bg-red-600 transition-opacity duration-150'
+  el.className = 'fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 rounded-lg shadow-lg text-sm text-white bg-red-500 transition-opacity duration-150'
   el.textContent = message
   document.body.appendChild(el)
 

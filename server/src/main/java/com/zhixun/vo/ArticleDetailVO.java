@@ -44,14 +44,14 @@ public class ArticleDetailVO {
     /** 分享数 */
     private Long shareCount;
 
+    /** 是否置顶 */
+    private Integer isTop;
+
     /** 拒绝原因 */
     private String rejectReason;
 
-    /** 作者昵称 */
-    private String authorName;
-
-    /** 作者头像 */
-    private String authorAvatar;
+    /** 作者信息 */
+    private AuthorVO author;
 
     /** 分类ID */
     private Long categoryId;
@@ -62,6 +62,12 @@ public class ArticleDetailVO {
     /** 标签列表 */
     private List<TagVO> tags;
 
+    /** 当前用户是否已点赞 */
+    private Boolean isLiked;
+
+    /** 当前用户是否已收藏 */
+    private Boolean isCollected;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 
@@ -70,4 +76,15 @@ public class ArticleDetailVO {
 
     /** 发布设备信息 */
     private String deviceInfo;
+
+    /**
+     * 作者信息嵌套视图
+     */
+    @Data
+    public static class AuthorVO {
+        private Long id;
+        private String nickname;
+        private String avatar;
+        private Boolean isFollowing;
+    }
 }

@@ -45,3 +45,26 @@ CREATE INDEX idx_sys_notification_user_read_time ON sys_notification(user_id, is
 
 -- 登录日志按时间范围清理
 -- 已有 idx_sys_login_log_created，无需额外索引
+
+-- ============================================================
+-- 5. 评论系统索引优化
+-- ============================================================
+
+-- 评论列表查询：按文章+状态+时间排序（最频繁的评论查询场景）
+CREATE INDEX idx_cms_comment_article_status ON cms_comment(article_id, status, created_at);
+
+-- 评论审核查询：按状态+时间排序（管理员审核场景）
+CREATE INDEX idx_cms_comment_status_created ON cms_comment(status, created_at);
+
+-- 用户评论查询：按用户+状态+时间排序
+CREATE INDEX idx_cms_comment_user_status ON cms_comment(user_id, status, created_at);
+
+-- ============================================================
+-- 6. 点赞和收藏查询优化
+-- ============================================================
+
+-- 用户点赞列表查询：按用户+类型+时间排序
+CREATE INDEX idx_cms_like_user_type_created ON cms_like(user_id, target_type, created_at);
+
+-- 用户收藏列表查询：按用户+时间排序
+CREATE INDEX idx_cms_collect_user_created ON cms_collect(user_id, created_at);

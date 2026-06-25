@@ -39,10 +39,10 @@ public class CommentVO {
     private UserVO replyUser;
 
     /** 子评论列表 */
-    private List<CommentVO> children;
+    private List<CommentVO> replies;
 
     /** 当前用户是否已点赞 */
-    private Boolean liked;
+    private Boolean isLiked;
 
     /** 创建时间 */
     private LocalDateTime createdAt;

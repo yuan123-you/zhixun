@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -110,6 +111,18 @@ public class UserController {
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = securityUtil.getCurrentUserId();
         return R.ok(userService.getViewHistory(userId, startDate, endDate, page, pageSize));
+    }
+
+    /**
+     * 批量同步浏览历史（客户端定期同步本地浏览记录到服务器）
+     */
+    @PostMapping("/view-history/batch")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> batchSyncViewHistory(@RequestBody Map<String, List<Map<String, Object>>> body) {
+        Long userId = securityUtil.getCurrentUserId();
+        List<Map<String, Object>> records = body.get("records");
+        userService.batchSyncViewHistory(userId, records);
+        return R.ok();
     }
 
     /**

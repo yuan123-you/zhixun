@@ -40,7 +40,7 @@
             <button
               type="button"
               tabindex="-1"
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
               @mousedown.prevent="showPassword = !showPassword"
               @touchstart.prevent="showPassword = !showPassword"
             >

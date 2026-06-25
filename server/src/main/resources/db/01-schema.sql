@@ -384,3 +384,18 @@ CREATE TABLE IF NOT EXISTS sys_announcement (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE INDEX idx_sys_announcement_status ON sys_announcement(status);
 CREATE INDEX idx_sys_announcement_time ON sys_announcement(start_time, end_time);
+
+-- 24. article_view_history 文章浏览历史表（用于推荐算法和数据分析）
+CREATE TABLE IF NOT EXISTS article_view_history (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  article_id BIGINT NOT NULL,
+  user_id BIGINT,
+  ip VARCHAR(50),
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_article_view_history_article ON article_view_history(article_id);
+CREATE INDEX idx_article_view_history_user ON article_view_history(user_id);
+CREATE INDEX idx_article_view_history_user_time ON article_view_history(user_id, create_time);
+CREATE INDEX idx_article_view_history_create_time ON article_view_history(create_time);

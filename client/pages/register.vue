@@ -99,7 +99,7 @@
             <button
               type="button"
               tabindex="-1"
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
               @mousedown.prevent="showPassword = !showPassword"
               @touchstart.prevent="showPassword = !showPassword"
             >
@@ -130,7 +130,7 @@
             <button
               type="button"
               tabindex="-1"
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
               @mousedown.prevent="showConfirmPassword = !showConfirmPassword"
               @touchstart.prevent="showConfirmPassword = !showConfirmPassword"
             >
@@ -244,11 +244,18 @@ const handleSendCode = async () => {
         cooldownTimer = null
       }
     }, 1000)
-  } catch (err: any) {
-    showAlert(err.message || '验证码发送失败')
-    // 失败后也刷新图形验证码
+    // 发送成功后刷新图形验证码（验证码key已被后端消费），但不清空用户输入
     refreshGraphCaptcha()
-    form.captchaAnswer = ''
+  } catch (err: any) {
+    const errMsg = err.message || '验证码发送失败'
+    showAlert(errMsg)
+    // 判断是否为图形验证码错误，仅此时清空图形验证码输入
+    const isCaptchaError = errMsg.includes('图形验证码') || errMsg.includes('验证码错误') || errMsg.includes('验证码过期')
+    if (isCaptchaError) {
+      form.captchaAnswer = ''
+    }
+    // 失败后刷新图形验证码
+    refreshGraphCaptcha()
   }
 }
 

@@ -4,9 +4,9 @@
     <div class="card overflow-hidden" style="height: calc(100vh - 8rem)">
       <div class="flex h-full">
         <!-- 左侧会话列表 -->
-        <div class="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
+        <div class="w-full md:w-80 border-r border-slate-200 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
           <!-- 搜索会话 -->
-          <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+          <div class="p-2 border-b border-slate-200">
             <input v-model="conversationSearch" type="text" class="input text-sm" placeholder="搜索会话..." />
           </div>
 
@@ -24,17 +24,17 @@
               <button
                 v-for="conv in filteredConversations"
                 :key="conv.id"
-                class="w-full flex items-center space-x-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                :class="{ 'bg-gray-50 dark:bg-gray-700/50': activeConversation?.id === conv.id }"
+                class="w-full flex items-center space-x-3 p-4 hover:bg-slate-50 transition-colors"
+                :class="{ 'bg-slate-50': activeConversation?.id === conv.id }"
                 @click="selectConversation(conv)"
               >
                 <UserAvatar :src="conv.user?.avatar" alt="头像" size="lg" />
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ conv.user?.nickname }}</span>
+                    <span class="text-sm font-medium text-slate-900">{{ conv.user?.nickname }}</span>
                     <span class="text-2xs text-gray-400">{{ formatTime(conv.updatedAt) }}</span>
                   </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ conv.lastMessage?.content }}</p>
+                  <p class="text-xs text-slate-500 line-clamp-1 mt-0.5">{{ conv.lastMessage?.content }}</p>
                 </div>
                 <span v-if="conv.unreadCount > 0" class="w-5 h-5 bg-danger text-white text-2xs rounded-full flex items-center justify-center shrink-0">
                   {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
@@ -60,10 +60,10 @@
           <!-- 未选择会话时的提示 -->
           <div v-else class="flex-1 flex items-center justify-center">
             <div class="text-center">
-              <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <p class="text-gray-500 dark:text-gray-400">{{ '选择一个会话开始聊天' }}</p>
+              <p class="text-slate-500">{{ '选择一个会话开始聊天' }}</p>
             </div>
           </div>
         </div>

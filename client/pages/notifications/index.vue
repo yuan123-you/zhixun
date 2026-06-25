@@ -3,12 +3,12 @@
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 页面头部 -->
     <div class="flex items-center justify-between mb-3">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ '消息中心' }}</h1>
+      <h1 class="text-2xl font-bold text-slate-900">{{ '消息中心' }}</h1>
       <div class="flex items-center gap-3">
         <!-- 通知tab下的批量操作按钮 -->
         <template v-if="activeMainTab === 'notifications' && batchMode">
           <button
-            class="btn btn-sm btn-ghost text-gray-600 dark:text-gray-300"
+            class="btn btn-sm btn-ghost text-slate-600"
             @click="exitBatchMode"
           >
             {{ '取消' }}
@@ -31,7 +31,7 @@
         <template v-if="activeMainTab === 'notifications' && !batchMode">
           <button
             v-if="notifications.length > 0"
-            class="btn btn-sm btn-ghost text-gray-600 dark:text-gray-300"
+            class="btn btn-sm btn-ghost text-slate-600"
             @click="enterBatchMode"
           >
             {{ '批量管理' }}
@@ -48,15 +48,15 @@
     </div>
 
     <!-- 主Tab：私信 / 通知 -->
-    <div class="flex items-center gap-1 mb-3 overflow-x-auto pb-2 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-1 mb-3 overflow-x-auto pb-2 border-b border-slate-200">
       <button
         v-for="tab in mainTabs"
         :key="tab.key"
         class="shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap"
         :class="[
           activeMainTab === tab.key
-            ? 'text-primary border-b-2 border-primary bg-primary-50/50 dark:bg-primary-900/10'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            ? 'text-primary border-b-2 border-primary bg-primary-50/50'
+            : 'text-slate-500 hover:text-slate-700'
         ]"
         @click="switchMainTab(tab.key)"
       >
@@ -70,9 +70,9 @@
       <div class="card overflow-hidden" style="height: calc(100vh - 12rem)">
         <div class="flex h-full">
           <!-- 左侧会话列表 -->
-          <div class="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
+          <div class="w-full md:w-80 border-r border-slate-200 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
             <!-- 搜索会话 -->
-            <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+            <div class="p-2 border-b border-slate-200">
               <input v-model="conversationSearch" type="text" class="input text-sm" placeholder="搜索会话..." />
             </div>
 
@@ -81,17 +81,17 @@
               <button
                 v-for="conv in filteredConversations"
                 :key="conv.id"
-                class="w-full flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                :class="{ 'bg-gray-50 dark:bg-gray-700/50': activeConversation?.id === conv.id }"
+                class="w-full flex items-center space-x-3 p-2 hover:bg-slate-50 transition-colors"
+                :class="{ 'bg-slate-50': activeConversation?.id === conv.id }"
                 @click="selectConversation(conv)"
               >
                 <UserAvatar :src="conv.user?.avatar" alt="头像" size="lg" />
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ conv.user?.nickname }}</span>
+                    <span class="text-sm font-medium text-slate-900">{{ conv.user?.nickname }}</span>
                     <span class="text-2xs text-gray-400">{{ formatTime(conv.updatedAt) }}</span>
                   </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ conv.lastMessage?.content }}</p>
+                  <p class="text-xs text-slate-500 line-clamp-1 mt-0.5">{{ conv.lastMessage?.content }}</p>
                 </div>
                 <span v-if="conv.unreadCount > 0" class="w-5 h-5 bg-danger text-white text-2xs rounded-full flex items-center justify-center shrink-0">
                   {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
@@ -116,10 +116,10 @@
             <!-- 未选择会话时的提示 -->
             <div v-else class="flex-1 flex items-center justify-center">
               <div class="text-center">
-                <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <p class="text-gray-500 dark:text-gray-400">{{ '选择一个会话开始聊天' }}</p>
+                <p class="text-slate-500">{{ '选择一个会话开始聊天' }}</p>
               </div>
             </div>
           </div>
@@ -130,15 +130,15 @@
     <!-- ===== 通知Tab ===== -->
     <template v-if="activeMainTab === 'notifications'">
       <!-- 类型筛选 Tab -->
-      <div class="flex items-center gap-1 mb-3 overflow-x-auto pb-2 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-1 mb-3 overflow-x-auto pb-2 border-b border-slate-200">
         <button
           v-for="tab in tabs"
           :key="tab.value"
           class="shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap"
           :class="[
             activeTab === tab.value
-              ? 'text-primary border-b-2 border-primary bg-primary-50/50 dark:bg-primary-900/10'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              ? 'text-primary border-b-2 border-primary bg-primary-50/50'
+              : 'text-slate-500 hover:text-slate-700'
           ]"
           @click="switchTab(tab.value)"
         >
@@ -168,15 +168,15 @@
           <div
             v-for="notification in notifications"
             :key="notification.id"
-            class="flex items-start px-2 sm:px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
-            :class="{ 'bg-primary-50/40 dark:bg-primary-900/5': !notification.isRead }"
+            class="flex items-start px-2 sm:px-3 py-2 hover:bg-slate-50 transition-colors group border-b border-slate-100 last:border-b-0"
+            :class="{ 'bg-primary-50/60': !notification.isRead }"
           >
             <!-- 批量选择复选框 -->
             <div v-if="batchMode" class="shrink-0 mr-3 mt-1">
               <input
                 type="checkbox"
                 :checked="selectedIds.includes(notification.id)"
-                class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+                class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                 @change="toggleSelect(notification.id)"
               />
             </div>
@@ -184,44 +184,44 @@
             <!-- 通知类型图标 -->
             <div class="shrink-0 mr-3 mt-0.5">
               <!-- 系统通知 -->
-              <div v-if="notification.type === NotificationType.System" class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-if="notification.type === NotificationType.System" class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <!-- 审核通知 -->
-              <div v-else-if="notification.type === NotificationType.Audit" class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/40 flex items-center justify-center">
-                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-else-if="notification.type === NotificationType.Audit" class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <!-- 互动通知 -->
-              <div v-else-if="notification.type === NotificationType.Interact" class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-                <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-else-if="notification.type === NotificationType.Interact" class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </div>
               <!-- 关注 -->
-              <div v-else-if="notification.type === NotificationType.Follow" class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-                <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-else-if="notification.type === NotificationType.Follow" class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
               </div>
               <!-- 私信 -->
-              <div v-else-if="notification.type === NotificationType.Message" class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-else-if="notification.type === NotificationType.Message" class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
               <!-- 评论回复 -->
-              <div v-else-if="notification.type === NotificationType.CommentReply" class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-else-if="notification.type === NotificationType.CommentReply" class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                 </svg>
               </div>
               <!-- @提及 -->
-              <div v-else-if="notification.type === NotificationType.Mention" class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
-                <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-else-if="notification.type === NotificationType.Mention" class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                 </svg>
               </div>
@@ -236,11 +236,11 @@
                 <div class="min-w-0 flex-1">
                   <p
                     class="text-sm leading-snug"
-                    :class="notification.isRead ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white font-medium'"
+                    :class="notification.isRead ? 'text-slate-700' : 'text-slate-900 font-medium'"
                   >
                     {{ notification.title || notification.content }}
                   </p>
-                  <p v-if="notification.title && notification.content" class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                  <p v-if="notification.title && notification.content" class="text-sm text-slate-500 mt-1 line-clamp-2">
                     {{ notification.content }}
                   </p>
                 </div>
@@ -248,8 +248,8 @@
                 <span v-if="!notification.isRead" class="shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></span>
               </div>
               <div class="flex items-center gap-3 mt-2">
-                <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatTime(notification.createdAt) }}</span>
-                <span class="text-xs text-gray-400 dark:text-gray-500">{{ getTypeLabel(notification.type) }}</span>
+                <span class="text-xs text-slate-400">{{ formatTime(notification.createdAt) }}</span>
+                <span class="text-xs text-slate-400">{{ getTypeLabel(notification.type) }}</span>
               </div>
             </div>
 
@@ -257,7 +257,7 @@
             <div v-if="!batchMode" class="shrink-0 ml-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 v-if="!notification.isRead"
-                class="p-1.5 text-gray-400 hover:text-primary rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                class="p-1.5 text-gray-400 hover:text-primary rounded-md hover:bg-slate-50 transition-colors"
                 title="标记已读"
                 @click.stop="markAsRead(notification)"
               >
@@ -266,7 +266,7 @@
                 </svg>
               </button>
               <button
-                class="p-1.5 text-gray-400 hover:text-danger rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                class="p-1.5 text-gray-400 hover:text-danger rounded-md hover:bg-slate-50 transition-colors"
                 title="删除"
                 @click.stop="deleteNotification(notification)"
               >
@@ -278,7 +278,7 @@
           </div>
 
           <!-- 无限滚动哨兵 -->
-          <div v-if="hasMore" ref="loadMoreSentinel" class="flex items-center justify-center py-2 border-t border-gray-100 dark:border-gray-700/50">
+          <div v-if="hasMore" ref="loadMoreSentinel" class="flex items-center justify-center py-2 border-t border-slate-100">
             <div v-if="loadingMore" class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>

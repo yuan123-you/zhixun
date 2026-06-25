@@ -95,8 +95,9 @@
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-600"
-              @click="showPassword = !showPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
+              @mousedown.prevent="showPassword = !showPassword"
+              @touchstart.prevent="showPassword = !showPassword"
             >
               <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -123,8 +124,9 @@
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-600"
-              @click="showConfirmPassword = !showConfirmPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
+              @mousedown.prevent="showConfirmPassword = !showConfirmPassword"
+              @touchstart.prevent="showConfirmPassword = !showConfirmPassword"
             >
               <svg v-if="!showConfirmPassword" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -229,11 +231,18 @@ const handleSendCode = async () => {
         cooldownTimer = null
       }
     }, 1000)
-  } catch (err: any) {
-    showAlert(err.message || '验证码发送失败')
-    // 失败后也刷新图形验证码
+    // 发送成功后刷新图形验证码（验证码key已被后端消费），但不清空用户输入
     refreshGraphCaptcha()
-    form.captchaAnswer = ''
+  } catch (err: any) {
+    const errMsg = err.message || '验证码发送失败'
+    showAlert(errMsg)
+    // 判断是否为图形验证码错误，仅此时清空图形验证码输入
+    const isCaptchaError = errMsg.includes('图形验证码') || errMsg.includes('验证码错误') || errMsg.includes('验证码过期')
+    if (isCaptchaError) {
+      form.captchaAnswer = ''
+    }
+    // 失败后刷新图形验证码
+    refreshGraphCaptcha()
   }
 }
 

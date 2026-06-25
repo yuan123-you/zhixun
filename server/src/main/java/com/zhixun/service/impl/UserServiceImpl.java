@@ -222,6 +222,32 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchSyncViewHistory(Long userId, List<Map<String, Object>> records) {
+        if (CollectionUtils.isEmpty(records)) {
+            return;
+        }
+        for (Map<String, Object> record : records) {
+            try {
+                Object articleIdObj = record.get("articleId");
+                Object viewDurationObj = record.get("viewDuration");
+                if (articleIdObj == null) continue;
+
+                Long articleId = Long.valueOf(articleIdObj.toString());
+                Integer viewDuration = viewDurationObj != null ? Integer.valueOf(viewDurationObj.toString()) : null;
+
+                ViewHistory history = new ViewHistory();
+                history.setUserId(userId);
+                history.setArticleId(articleId);
+                history.setViewDuration(viewDuration);
+                viewHistoryMapper.insert(history);
+            } catch (Exception e) {
+                log.warn("批量同步浏览历史单条失败: {}", e.getMessage());
+            }
+        }
+    }
+
+    @Override
     @Slave
     public UserSettingsVO getSettings(Long userId) {
         UserSettingsVO vo = new UserSettingsVO();
