@@ -15,7 +15,7 @@
       <form class="space-y-3" @submit.prevent="handleReset">
         <!-- 用户名 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ '用户名' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '用户名' }}</label>
           <input
             v-model="form.username"
             type="text"
@@ -27,7 +27,7 @@
 
         <!-- 邮箱 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ '邮箱' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '邮箱' }}</label>
           <input
             v-model="form.email"
             type="email"
@@ -39,7 +39,7 @@
 
         <!-- 图形验证码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ '图形验证码' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '图形验证码' }}</label>
           <div class="flex gap-2 items-center">
             <input
               v-model="form.captchaAnswer"
@@ -50,7 +50,7 @@
             />
             <div class="cursor-pointer flex-shrink-0 h-[40px] rounded-md overflow-hidden border border-slate-200" @click="refreshGraphCaptcha" title="点击刷新">
               <img v-if="graphCaptchaImage" :src="graphCaptchaImage" alt="图形验证码" class="h-full w-[120px] object-cover" />
-              <div v-else class="h-full w-[120px] flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs text-gray-400">
+              <div v-else class="h-full w-[120px] flex items-center justify-center bg-slate-50 text-xs text-gray-400">
                 {{ '点击获取' }}
               </div>
             </div>
@@ -59,7 +59,7 @@
 
         <!-- 邮箱验证码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ '邮箱验证码' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '邮箱验证码' }}</label>
           <div class="flex gap-2">
             <input
               v-model="form.code"
@@ -82,7 +82,7 @@
 
         <!-- 新密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ '新密码' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '新密码' }}</label>
           <div class="relative">
             <input
               v-model="form.newPassword"
@@ -112,7 +112,7 @@
 
         <!-- 确认密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ '确认密码' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '确认密码' }}</label>
           <div class="relative">
             <input
               v-model="form.confirmPassword"

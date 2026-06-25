@@ -17,14 +17,14 @@
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ userStore.userInfo?.nickname }}</h2>
+            <h2 class="text-xl font-bold text-slate-900">{{ userStore.userInfo?.nickname }}</h2>
             <NuxtLink to="/user/settings" class="btn-secondary text-sm">{{ '编辑资料' }}</NuxtLink>
           </div>
-          <p v-if="userStore.userInfo?.bio" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ userStore.userInfo?.bio }}</p>
-          <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.articleCount }}</strong> {{ '文章' }}</span>
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followCount }}</strong> {{ '关注' }}</span>
-            <span><strong class="text-gray-900 dark:text-white">{{ userStore.userInfo?.followerCount }}</strong> {{ '粉丝' }}</span>
+          <p v-if="userStore.userInfo?.bio" class="text-sm text-slate-500 mt-1">{{ userStore.userInfo?.bio }}</p>
+          <div class="flex items-center space-x-4 mt-2 text-sm text-slate-500">
+            <span><strong class="text-slate-900">{{ userStore.userInfo?.articleCount }}</strong> {{ '文章' }}</span>
+            <span><strong class="text-slate-900">{{ userStore.userInfo?.followCount }}</strong> {{ '关注' }}</span>
+            <span><strong class="text-slate-900">{{ userStore.userInfo?.followerCount }}</strong> {{ '粉丝' }}</span>
           </div>
         </div>
       </div>

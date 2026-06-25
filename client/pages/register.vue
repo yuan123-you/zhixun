@@ -156,7 +156,7 @@
       </form>
 
       <!-- 跳转登录 -->
-      <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+      <p class="text-center text-sm text-slate-500 mt-4">
         {{ '已有账号？' }}
         <NuxtLink to="/login" class="text-primary hover:text-primary-600 font-medium">{{ '立即登录' }}</NuxtLink>
       </p>

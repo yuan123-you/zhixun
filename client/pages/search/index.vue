@@ -3,7 +3,7 @@
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 搜索框（自动聚焦） -->
     <div class="mb-3">
-      <div class="flex items-center bg-white dark:bg-gray-800 rounded-full px-3 py-2 shadow-sm border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
+      <div class="flex items-center bg-white rounded-full px-3 py-2 shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
         <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -11,7 +11,7 @@
           ref="searchInputRef"
           v-model="keyword"
           type="text"
-          class="flex-1 bg-transparent border-none outline-none ml-2 text-gray-900 dark:text-white placeholder-gray-400"
+          class="flex-1 bg-transparent border-none outline-none ml-2 text-slate-900 placeholder-gray-400"
           placeholder="搜索文章、用户..."
           @input="handleInput"
           @keydown.enter="doSearch"
@@ -33,12 +33,12 @@
     <div v-if="!hasSearched">
       <!-- 搜索建议 -->
       <div v-if="suggestions.length > 0" class="mb-6">
-        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{{ '搜索建议' }}</h3>
+        <h3 class="text-sm font-medium text-slate-500 mb-3">{{ '搜索建议' }}</h3>
         <div class="space-y-1">
           <button
             v-for="item in suggestions"
             :key="`${item.type}-${item.id}`"
-            class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            class="w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
             @click="selectSuggestion(item)"
           >
             <!-- 类型图标 -->

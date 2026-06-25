@@ -9,7 +9,7 @@
     <template v-else>
     <!-- 返回导航 -->
     <div class="flex items-center gap-3 mb-3">
-      <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors" @click="goBack">
+      <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
@@ -24,7 +24,7 @@
 
       <!-- 感兴趣的分类 -->
       <div class="mb-3">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '感兴趣的分类' }}</label>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '感兴趣的分类' }}</label>
         <div class="flex flex-wrap gap-1.5">
           <button
             v-for="category in availableCategories"
@@ -42,7 +42,7 @@
 
       <!-- 屏蔽的分类 -->
       <div class="mb-3">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '屏蔽的分类' }}</label>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '屏蔽的分类' }}</label>
         <div class="flex flex-wrap gap-1.5">
           <button
             v-for="category in availableCategories"
@@ -60,7 +60,7 @@
 
       <!-- 感兴趣的标签 -->
       <div class="mb-3">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '感兴趣的标签' }}</label>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '感兴趣的标签' }}</label>
         <div class="flex flex-wrap gap-1.5">
           <span v-for="tagId in serverSettings.interestedTags" :key="tagId" class="badge-primary flex items-center space-x-1">
             <span>标签{{ tagId }}</span>
@@ -82,19 +82,19 @@
       <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '通知设置' }}</h2>
       <div class="space-y-2">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '点赞通知' }}</span>
+          <span class="text-sm text-slate-700">{{ '点赞通知' }}</span>
           <input v-model="serverSettings.enableLikeNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '评论通知' }}</span>
+          <span class="text-sm text-slate-700">{{ '评论通知' }}</span>
           <input v-model="serverSettings.enableCommentNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '关注通知' }}</span>
+          <span class="text-sm text-slate-700">{{ '关注通知' }}</span>
           <input v-model="serverSettings.enableFollowNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '系统通知' }}</span>
+          <span class="text-sm text-slate-700">{{ '系统通知' }}</span>
           <input v-model="serverSettings.enableSystemNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
@@ -105,15 +105,15 @@
       <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '隐私设置' }}</h2>
       <div class="space-y-2">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '显示在线状态' }}</span>
+          <span class="text-sm text-slate-700">{{ '显示在线状态' }}</span>
           <input v-model="serverSettings.showOnlineStatus" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '允许陌生人私信' }}</span>
+          <span class="text-sm text-slate-700">{{ '允许陌生人私信' }}</span>
           <input v-model="serverSettings.allowStrangerMessage" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '显示浏览历史' }}</span>
+          <span class="text-sm text-slate-700">{{ '显示浏览历史' }}</span>
           <input v-model="serverSettings.showViewHistory" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
@@ -125,7 +125,7 @@
       <div class="space-y-3">
         <!-- 主题 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '主题' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '主题' }}</label>
           <div class="flex space-x-1.5">
             <button
               v-for="theme in themes"
@@ -143,7 +143,7 @@
 
         <!-- 字体大小 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '字体大小' }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '字体大小' }}</label>
           <div class="flex space-x-1.5">
             <button
               v-for="size in fontSizes"
