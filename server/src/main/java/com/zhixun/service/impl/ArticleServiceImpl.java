@@ -118,6 +118,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setContent(HtmlWhitelistFilter.filterRichText(filteredContent));
         article.setSummary(sanitize(request.getSummary()));
         article.setCoverImage(request.getCoverImage());
+        article.setDeviceInfo(request.getDeviceInfo());
         article.setViewCount(0L);
         article.setLikeCount(0L);
         article.setCommentCount(0L);
@@ -275,6 +276,7 @@ public class ArticleServiceImpl implements ArticleService {
         vo.setCategoryId(article.getCategoryId());
         vo.setCreatedAt(article.getCreatedAt());
         vo.setUpdatedAt(article.getUpdatedAt());
+        vo.setDeviceInfo(article.getDeviceInfo());
 
         // 查询作者信息
         User author = userMapper.selectById(article.getAuthorId());
@@ -890,6 +892,7 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setCommentCount(article.getCommentCount());
             vo.setCollectCount(article.getCollectCount());
             vo.setIsTop(article.getIsTop());
+            vo.setDeviceInfo(article.getDeviceInfo());
             vo.setCreatedAt(article.getCreatedAt());
 
             // 设置作者信息

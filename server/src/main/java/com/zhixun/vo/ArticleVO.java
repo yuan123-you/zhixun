@@ -41,6 +41,9 @@ public class ArticleVO {
     /** 是否置顶 */
     private Integer isTop;
 
+    /** 发布设备信息 */
+    private String deviceInfo;
+
     /** 作者昵称 */
     private String authorName;
 
@@ -52,6 +55,12 @@ public class ArticleVO {
 
     /** 标签列表 */
     private List<TagVO> tags;
+
+    /** 搜索结果中的正文内容片段（含高亮标记） */
+    private String contentSnippet;
+
+    /** 搜索匹配类型：title=标题匹配, content=正文匹配, summary=摘要匹配 */
+    private String matchType;
 
     /** 创建时间 */
     private LocalDateTime createdAt;

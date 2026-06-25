@@ -67,4 +67,7 @@ public class ArticleDetailVO {
 
     /** 更新时间 */
     private LocalDateTime updatedAt;
+
+    /** 发布设备信息 */
+    private String deviceInfo;
 }

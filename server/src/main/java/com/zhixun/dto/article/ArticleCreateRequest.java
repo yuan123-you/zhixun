@@ -40,4 +40,7 @@ public class ArticleCreateRequest {
 
     /** 定时发布时间 */
     private LocalDateTime publishAt;
+
+    /** 发布设备信息 */
+    private String deviceInfo;
 }

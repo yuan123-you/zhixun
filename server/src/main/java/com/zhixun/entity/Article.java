@@ -76,6 +76,9 @@ public class Article implements Serializable {
     /** 拒绝原因，对应 reject_reason */
     private String rejectReason;
 
+    /** 发布设备信息，对应 device_info */
+    private String deviceInfo;
+
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

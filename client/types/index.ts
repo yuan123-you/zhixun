@@ -16,6 +16,8 @@ export interface Article {
   authorName?: string
   /** 作者头像（后端ArticleVO扁平字段） */
   authorAvatar?: string
+  /** 发布设备信息（后端ArticleVO扁平字段） */
+  deviceInfo?: string
   likeCount: number
   collectCount: number
   commentCount: number
@@ -25,6 +27,10 @@ export interface Article {
   isCollected: boolean
   status: ArticleStatus
   isTop?: number
+  /** 搜索结果中的正文内容片段（含高亮标记<em>） */
+  contentSnippet?: string
+  /** 搜索匹配类型：title=标题匹配, content=正文匹配, summary=摘要匹配 */
+  matchType?: string
   createdAt: string
   updatedAt: string
 }
@@ -190,10 +196,16 @@ export interface SearchResultVO<T = any> {
   type: string
   /** 文章列表（type=article 或 type=all 时有值） */
   articles: T[]
+  /** 文章总数 */
+  articleTotal?: number
   /** 用户列表（type=user 或 type=all 时有值） */
   users: T[]
+  /** 用户总数 */
+  userTotal?: number
   /** 图片列表（type=image 或 type=all 时有值） */
   images: T[]
+  /** 图片总数 */
+  imageTotal?: number
   /** 搜索耗时（毫秒） */
   took: number
 }

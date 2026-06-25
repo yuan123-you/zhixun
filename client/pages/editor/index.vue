@@ -413,12 +413,34 @@ const saveDraft = async () => {
   }
 }
 
+// 检测设备信息
+const getDeviceInfo = (): string | undefined => {
+  if (!import.meta.client) return undefined
+  const ua = navigator.userAgent
+  // 提取设备型号
+  const mobileMatch = ua.match(/\b(Android|iPhone|iPad|iPod)\b[^;]*/i)
+  if (mobileMatch) {
+    // 尝试提取更详细的Android设备型号
+    const androidBuild = ua.match(/;\s*([^;)]+)\s+Build\//)
+    if (androidBuild) return androidBuild[1].trim()
+    // iPhone/iPad
+    const iosMatch = ua.match(/(iPhone|iPad|iPod)(?:\s*OS\s*[\d_]+)?/i)
+    if (iosMatch) return iosMatch[0].replace(/_/g, '.')
+    return mobileMatch[0]
+  }
+  // 桌面端
+  if (ua.includes('Windows')) return 'Windows'
+  if (ua.includes('Mac OS')) return 'macOS'
+  if (ua.includes('Linux')) return 'Linux'
+  return undefined
+}
+
 // 发布文章
 const publishArticle = async () => {
   if (!canPublish.value) return
   try {
     const { articleApi } = await import('~/api')
-    const data: any = { ...form, status: 1 }
+    const data: any = { ...form, status: 1, deviceInfo: getDeviceInfo() }
     // 定时发布：传递 publishAt 字段
     if (scheduledPublish.value && publishAt.value) {
       data.publishAt = new Date(publishAt.value).toISOString()

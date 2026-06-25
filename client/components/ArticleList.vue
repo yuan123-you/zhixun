@@ -3,7 +3,7 @@
   <div>
     <!-- 骨架屏加载状态 -->
     <template v-if="loading && articles.length === 0">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         <LoadingSkeleton v-for="i in 6" :key="i" type="article" />
       </div>
     </template>
@@ -16,17 +16,17 @@
     <!-- 文章列表 -->
     <template v-else>
       <!-- 平板端双列网格，移动端单列 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         <ArticleCard v-for="article in articles" :key="article.id" :article="article" />
       </div>
 
       <!-- 加载更多骨架屏 -->
-      <div v-if="loading && articles.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div v-if="loading && articles.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2.5">
         <LoadingSkeleton v-for="i in 2" :key="'more-' + i" type="article" />
       </div>
 
       <!-- 加载更多失败 -->
-      <div v-if="error && articles.length > 0" class="mt-4">
+      <div v-if="error && articles.length > 0" class="mt-2.5">
         <ErrorRetry :message="error" :on-retry="handleRetry" />
       </div>
 

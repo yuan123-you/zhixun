@@ -22,17 +22,18 @@
         {{ article.title }}
       </h1>
 
-      <!-- 作者信息 -->
-      <div class="flex items-center space-x-3 mb-6">
-        <NuxtLink :to="`/user/${article.author?.id}`">
+      <!-- 作者信息栏（微博风格） -->
+      <div class="flex items-center gap-2.5 mb-4">
+        <NuxtLink :to="`/user/${article.author?.id}`" class="shrink-0">
           <UserAvatar :src="article.author?.avatar" :alt="article.author?.nickname" size="md" />
         </NuxtLink>
-        <div>
-          <NuxtLink :to="`/user/${article.author?.id}`" class="text-sm font-medium text-gray-900 dark:text-white hover:text-primary transition-colors">
+        <div class="flex-1 min-w-0">
+          <NuxtLink :to="`/user/${article.author?.id}`" class="text-sm font-medium text-gray-900 dark:text-white hover:text-primary transition-colors block">
             {{ article.author?.nickname }}
           </NuxtLink>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            {{ formatDate(article.createdAt) }} · 阅读 {{ article.viewCount }}
+          <p class="text-xs text-gray-400 dark:text-gray-500">
+            <time>{{ formatTimestamp(article.createdAt) }}</time>
+            <span v-if="article.deviceInfo" class="ml-1">来自{{ article.deviceInfo }}</span>
           </p>
         </div>
         <button
@@ -60,39 +61,31 @@
         </span>
       </div>
 
-      <!-- 互动按钮栏 -->
-      <div class="flex items-center justify-center space-x-8 py-6 border-y border-gray-200 dark:border-gray-700 mb-8">
+      <!-- 互动按钮栏（微博风格） -->
+      <div class="flex items-center justify-around py-4 border-y border-gray-200 dark:border-gray-700 mb-6">
         <!-- 点赞 -->
-        <button class="flex flex-col items-center space-y-1 transition-colors" :class="article.isLiked ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-primary'" @click="toggleLike">
-          <svg class="w-6 h-6" :class="article.isLiked ? 'fill-primary' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button class="flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors touch-target" :class="article.isLiked ? 'text-primary bg-primary/5' : 'text-gray-500 dark:text-gray-400 hover:text-primary hover:bg-primary/5'" @click="toggleLike">
+          <svg class="w-5 h-5" :class="article.isLiked ? 'fill-primary' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
-          <span class="text-xs">{{ article.likeCount }}</span>
-        </button>
-
-        <!-- 收藏 -->
-        <button class="flex flex-col items-center space-y-1 transition-colors" :class="article.isCollected ? 'text-accent' : 'text-gray-500 dark:text-gray-400 hover:text-accent'" @click="toggleCollect">
-          <svg class="w-6 h-6" :class="article.isCollected ? 'fill-accent' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-          </svg>
-          <span class="text-xs">{{ article.collectCount }}</span>
+          <span class="text-sm">{{ article.likeCount }}</span>
         </button>
 
         <!-- 评论 -->
-        <button class="flex flex-col items-center space-y-1 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button class="flex items-center gap-1.5 px-4 py-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors touch-target" @click="scrollToComments">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <span class="text-xs">{{ article.commentCount }}</span>
+          <span class="text-sm">{{ article.commentCount }}</span>
         </button>
 
-        <!-- 分享 -->
+        <!-- 分享/转发 -->
         <div class="relative">
-          <button class="flex flex-col items-center space-y-1 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors" @click="showSharePanel = !showSharePanel">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button class="flex items-center gap-1.5 px-4 py-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors touch-target" @click="showSharePanel = !showSharePanel">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            <span class="text-xs">{{ t('article.share') }}</span>
+            <span class="text-sm">{{ article.shareCount || t('article.share') }}</span>
           </button>
 
           <!-- 分享面板 -->
@@ -585,6 +578,26 @@ watch(relatedData, (val) => {
     relatedArticles.value = val
   }
 })
+
+// 格式化标准时间戳
+const formatTimestamp = (date: string) => {
+  if (!date) return ''
+  const d = new Date(date)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${day} ${h}:${min}`
+}
+
+// 滚动到评论区
+const scrollToComments = () => {
+  const commentSection = document.querySelector('section')
+  if (commentSection) {
+    commentSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
 
 // 格式化日期
 const formatDate = (date: string) => {
