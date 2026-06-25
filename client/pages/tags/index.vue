@@ -177,9 +177,17 @@
 
 <script setup lang="ts">
 /** 标签聚合页：标签云、热门标签、已关注标签、标签下文章列表 */
-import type { Tag, Article, PageResult } from '~/types'
+import type { Tag, Article, PageResult, ApiResponse } from '~/types'
 
 const userStore = useUserStore()
+const config = useRuntimeConfig()
+
+// 构建API基础URL：SSR时使用内部地址，客户端时走Nginx代理
+const getApiBase = () => {
+  return import.meta.server
+    ? `${config.apiBase}/api/v1`
+    : (config.public.apiBase as string)
+}
 
 // 请求缓存
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
@@ -220,9 +228,11 @@ const fetchCloudTags = async () => {
   cloudLoading.value = true
   cloudError.value = ''
   try {
-    const { tagApi } = await import('~/api/tag')
-    const res = await cachedRequest(() => tagApi.getTagCloud(), '/tags/cloud')
-    cloudTags.value = res.data?.data || []
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<Tag[]>>(`${base}/tags/cloud`, {
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    cloudTags.value = res?.data || []
   } catch {
     cloudError.value = '加载标签云失败'
     cloudTags.value = []
@@ -236,9 +246,12 @@ const fetchHotTags = async () => {
   hotLoading.value = true
   hotError.value = ''
   try {
-    const { tagApi } = await import('~/api/tag')
-    const res = await cachedRequest(() => tagApi.getHotTags(30), '/tags/hot', { limit: 30 })
-    hotTags.value = res.data?.data || []
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<Tag[]>>(`${base}/tags/hot`, {
+      params: { limit: 30 },
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    hotTags.value = res?.data || []
   } catch {
     hotError.value = '加载热门标签失败'
     hotTags.value = []
@@ -257,7 +270,7 @@ const fetchFollowedTags = async () => {
   followedError.value = ''
   try {
     const { tagApi } = await import('~/api/tag')
-    const res = await cachedRequest(() => tagApi.getFollowedTags(), '/tags/followed')
+    const res = await tagApi.getFollowedTags()
     followedTags.value = res.data?.data || []
   } catch {
     followedError.value = '加载关注标签失败'
@@ -291,9 +304,12 @@ const fetchTagArticles = async () => {
   if (!selectedTag.value) return
   articlesLoading.value = true
   try {
-    const { tagApi } = await import('~/api/tag')
-    const res = await tagApi.getTagArticles(selectedTag.value.id, articlesPage.value, 20)
-    const data = res.data?.data
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/articles`, {
+      params: { tag_id: selectedTag.value.id, page: articlesPage.value, pageSize: 20 },
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    const data = res?.data
     const items = data?.list || []
     if (articlesPage.value === 1) {
       tagArticles.value = items
@@ -374,9 +390,11 @@ const getRankClass = (index: number) => {
 // SSR数据获取
 const { data: cloudData } = await useAsyncData('tags-cloud', async () => {
   try {
-    const { tagApi } = await import('~/api/tag')
-    const res = await tagApi.getTagCloud()
-    return res.data?.data || []
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<Tag[]>>(`${base}/tags/cloud`, {
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    return res?.data || []
   } catch {
     return []
   }
@@ -384,9 +402,12 @@ const { data: cloudData } = await useAsyncData('tags-cloud', async () => {
 
 const { data: hotData } = await useAsyncData('tags-hot', async () => {
   try {
-    const { tagApi } = await import('~/api/tag')
-    const res = await tagApi.getHotTags(30)
-    return res.data?.data || []
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<Tag[]>>(`${base}/tags/hot`, {
+      params: { limit: 30 },
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    return res?.data || []
   } catch {
     return []
   }

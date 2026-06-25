@@ -74,7 +74,7 @@
 
 <script setup lang="ts">
 /** 排行榜页：日榜/周榜/月榜 */
-import type { RankItem } from '~/types'
+import type { RankItem, ApiResponse } from '~/types'
 
 const tabs = [
   { key: 'daily', label: computed(() => '日榜') },
@@ -87,7 +87,14 @@ const rankItems = ref<RankItem[]>([])
 const loading = ref(false)
 const error = ref('')
 
-const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
+const config = useRuntimeConfig()
+
+// 构建API基础URL：SSR时使用内部地址，客户端时走Nginx代理
+const getApiBase = () => {
+  return import.meta.server
+    ? `${config.apiBase}/api/v1`
+    : (config.public.apiBase as string)
+}
 
 // 切换Tab
 const switchTab = (key: string) => {
@@ -101,13 +108,12 @@ const fetchRank = async () => {
   loading.value = true
   error.value = ''
   try {
-    const { rankApi } = await import('~/api')
-    const data = await cachedRequest(
-      () => rankApi.getHotRank(activeTab.value).then(res => res.data?.data || []),
-      '/rank/hot',
-      { period: activeTab.value },
-    )
-    rankItems.value = data || []
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, {
+      params: { period: activeTab.value },
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    rankItems.value = res?.data || []
   } catch {
     error.value = '加载排行榜失败，请稍后重试'
     rankItems.value = []
@@ -140,9 +146,12 @@ const formatHeat = (score: number) => {
 // SSR数据获取
 const { data: initialData } = await useAsyncData('rank-init', async () => {
   try {
-    const { rankApi } = await import('~/api')
-    const response = await rankApi.getHotRank('daily')
-    return response.data?.data || []
+    const base = getApiBase()
+    const res = await $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, {
+      params: { period: 'daily' },
+      headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
+    })
+    return res?.data || []
   } catch {
     return []
   }
