@@ -61,7 +61,7 @@ public class JwtUtil {
      * 初始化时验证 JWT 密钥长度
      * 确保密钥至少 32 字节（256 位），符合 HS256 算法要求
      */
-    @javax.annotation.PostConstruct
+    @jakarta.annotation.PostConstruct
     public void validateSecrets() {
         validateSecretLength("JWT Access Secret", accessSecret, 32);
         validateSecretLength("JWT Refresh Secret", refreshSecret, 32);
