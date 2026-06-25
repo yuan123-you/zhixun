@@ -1,23 +1,15 @@
 <template>
   <!-- 用户主页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 返回导航 -->
-    <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors mb-2" @click="goBack">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-      {{ '返回' }}
-    </button>
-
     <!-- 用户资料卡 -->
     <div class="card p-3 mb-3">
       <div class="flex items-start space-x-3">
         <!-- 头像 -->
         <div class="relative shrink-0">
-          <UserAvatar :src="userInfo?.avatar" alt="头像" size="xl" />
+          <UserAvatar :src="userInfo?.avatar" alt="头像" size="lg" />
           <!-- 在线状态指示灯 -->
           <span
-            class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white"
+            class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
             :class="onlineStatus ? 'bg-green-500' : 'bg-gray-400'"
           ></span>
         </div>
@@ -25,8 +17,8 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-xl font-bold text-slate-900">{{ userInfo?.nickname }}</h2>
-              <div class="flex items-center gap-2 mt-1">
+              <h2 class="text-lg font-bold text-slate-900">{{ userInfo?.nickname }}</h2>
+              <div class="flex flex-wrap items-center gap-1.5 mt-1">
                 <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
                   ID: {{ userInfo?.uid }}
                 </span>
@@ -59,7 +51,7 @@
             <button class="hover:text-primary transition-colors" @click="activeTab = 'followers'">
               <strong class="text-slate-900">{{ userInfo?.followerCount }}</strong> {{ '粉丝' }}
             </button>
-            <span><strong class="text-slate-900">{{ userInfo?.articleCount }}</strong> {{ '文章' }}</span>
+            <span><strong class="text-slate-900">{{ userInfo?.articleCount }}</strong> {{ '作品' }}</span>
             <!-- 互关标识：仅自己查看自己主页时显示，点击跳转互相关注列表 -->
             <span
               v-if="isOwnProfile"
@@ -137,7 +129,7 @@
           <div
             v-for="user in currentList"
             :key="user.id"
-            class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors"
+            class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-slate-50 transition-colors"
           >
             <div class="flex items-center space-x-2 min-w-0 flex-1">
               <!-- 头像 + 在线状态 -->
@@ -195,9 +187,8 @@
       </div>
     </div>
 
-    <!-- Ta的文章列表 -->
-    <div class="mt-3">
-      <h3 class="text-lg font-semibold text-slate-900 mb-2">{{ '文章' }}</h3>
+    <!-- Ta的作品列表 -->
+    <div>
       <!-- 骨架屏 -->
       <div v-if="loading && articles.length === 0" class="grid grid-cols-3">
         <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
@@ -206,7 +197,7 @@
       <ErrorRetry v-else-if="articlesError && !articles.length" :message="articlesError" :on-retry="retryArticles" />
       <!-- 空状态 -->
       <div v-else-if="!loading && articles.length === 0" class="text-center py-10 text-slate-400">
-        <p class="text-lg">暂无文章</p>
+        <p class="text-lg">暂无作品</p>
       </div>
       <!-- 三列网格 -->
       <div v-else class="grid grid-cols-3">
@@ -257,7 +248,7 @@
 </template>
 
 <script setup lang="ts">
-/** 用户主页 */
+/** 他人用户主页（信息 + 作品列表） */
 import type { User, Article } from '~/types'
 import type { FollowUser } from '~/api/social'
 
@@ -268,7 +259,7 @@ const userId = computed(() => Number(route.params.id))
 
 /** 无效用户ID保护 */
 if (isNaN(userId.value)) {
-  throw createError({ statusCode: 404, statusMessage: '用户不存在' })
+  throw createError({ statusCode: 404, message: '用户不存在' })
 }
 
 /** 是否为自己的主页 */
@@ -353,7 +344,7 @@ const currentList = computed(() => {
 const listHasMore = computed(() => activeTab.value === 'following' ? followingHasMore.value : followersHasMore.value)
 
 // 获取用户信息
-const { data: userData } = await useAsyncData(`user-${userId.value}`, async () => {
+const { data: userData, error: userError } = await useAsyncData(`user-${userId.value}`, async () => {
   const { userApi } = await import('~/api')
   const response = await cachedRequest(
     () => userApi.getProfile(userId.value),
@@ -362,7 +353,12 @@ const { data: userData } = await useAsyncData(`user-${userId.value}`, async () =
   return response.data.data
 })
 
-userInfo.value = userData.value || null
+// 如果用户不存在，抛出 Nuxt 错误页面（404）
+if (userError.value || !userData.value) {
+  throw createError({ statusCode: 404, message: '用户不存在' })
+}
+
+userInfo.value = userData.value
 
 // 获取用户文章
 const { data: articleData } = await useAsyncData(`user-articles-${userId.value}`, async () => {
@@ -375,7 +371,7 @@ const { data: articleData } = await useAsyncData(`user-articles-${userId.value}`
     )
     return response.data.data
   } catch (error: any) {
-    articlesError.value = error.message || '文章加载失败，请稍后重试'
+    articlesError.value = error.message || '作品加载失败，请稍后重试'
     return null
   }
 })
@@ -632,7 +628,7 @@ const retryArticles = async () => {
     articles.value = data?.list || data?.items || []
     hasMore.value = articles.value.length >= 20
   } catch (error: any) {
-    articlesError.value = error.message || '文章加载失败，请稍后重试'
+    articlesError.value = error.message || '作品加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -654,7 +650,7 @@ onMounted(async () => {
 
 // 页面元信息
 useHead({
-  title: () => userInfo.value ? `${userInfo.value.nickname} - 知讯` : '个人中心' + ' - 知讯',
+  title: () => userInfo.value ? `${userInfo.value.nickname}的主页 - 知讯` : '个人中心' + ' - 知讯',
 })
 </script>
 

@@ -50,8 +50,12 @@ export default defineNuxtPlugin(() => {
           if (response.data?.data) {
             userStore.setUser(response.data.data)
           }
-        } catch {
-          // 获取失败不影响当前缓存的用户信息
+        } catch (e: any) {
+          // 如果用户不再存在（被删除/数据库重置），清除本地缓存
+          if (e?.message?.includes('用户不存在')) {
+            userStore.logout()
+          }
+          // 其他获取失败不影响当前缓存的用户信息
         }
       }
     }
