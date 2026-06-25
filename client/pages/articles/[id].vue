@@ -1,6 +1,6 @@
 <template>
   <!-- 文章详情页 -->
-  <div class="max-w-[800px] md:max-w-[900px] 2xl:max-w-[1200px] mx-auto px-4 2xl:px-8 py-6">
+  <div class="max-w-[800px] md:max-w-[900px] 2xl:max-w-[1200px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 返回导航 -->
     <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors mb-4" @click="goBack">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
