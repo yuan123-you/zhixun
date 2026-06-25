@@ -139,7 +139,10 @@
     "typeUser": "用户",
     "typeArticle": "文章",
     "typeTag": "标签",
-    "searchFailed": "搜索失败，请稍后重试"
+    "searchFailed": "搜索失败，请稍后重试",
+    "matchTitle": "标题匹配",
+    "matchSummary": "摘要匹配",
+    "matchContent": "正文匹配"
   },
   "settings": {
     "recommendPrefs": "推荐偏好",

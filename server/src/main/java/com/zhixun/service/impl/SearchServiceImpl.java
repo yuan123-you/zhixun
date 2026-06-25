@@ -96,12 +96,15 @@ public class SearchServiceImpl implements SearchService {
         switch (type != null ? type : "all") {
             case "article":
                 total = searchArticles(keyword, categoryId, tagId, timeRange, startDate, endDate, sort, page, pageSize, result);
+                result.setArticleTotal(total);
                 break;
             case "user":
                 total = searchUsers(keyword, page, pageSize, result);
+                result.setUserTotal(total);
                 break;
             case "image":
                 total = searchImages(keyword, page, pageSize, result);
+                result.setImageTotal(total);
                 break;
             case "all":
             default:
@@ -116,9 +119,13 @@ public class SearchServiceImpl implements SearchService {
                 } catch (Exception e) {
                     log.error("并行搜索部分失败: {}", e.getMessage());
                 }
-                total = (result.getArticles() != null ? result.getArticles().size() : 0)
-                        + (result.getUsers() != null ? result.getUsers().size() : 0)
-                        + (result.getImages() != null ? result.getImages().size() : 0);
+                long articleTotal = articleFuture.join();
+                long userTotal = userFuture.join();
+                long imageTotal = imageFuture.join();
+                result.setArticleTotal(articleTotal);
+                result.setUserTotal(userTotal);
+                result.setImageTotal(imageTotal);
+                total = articleTotal + userTotal + imageTotal;
                 break;
         }
 
@@ -270,12 +277,17 @@ public class SearchServiceImpl implements SearchService {
     // ========== 内部方法 ==========
 
     /**
-     * 使用 OpenSearch 搜索文章（带相关性评分公式）
+     * 使用 OpenSearch 搜索文章（带相关性评分公式 + 正文内容高亮 + 模糊匹配）
      * 评分公式：
      * - field_weight: 标题匹配×3, 摘要×2, 正文×1
      * - hot_score_boost: log(1 + hot_score / 100) 加权
      * - time_decay: 1 / (1 + hours_since_publish / 168) 时间衰减
      * - personal_boost: 用户偏好分类的文章提升1.5倍
+     * 增强功能：
+     * - 正文内容高亮：content字段高亮并截取匹配片段
+     * - 模糊匹配：对短关键词添加fuzzy查询支持部分匹配
+     * - 同义词识别：通过synonym分析器自动扩展同义词
+     * - 匹配类型标识：标记命中的字段类型（title/content/summary）
      */
     private long searchArticles(String keyword, Long categoryId, Long tagId,
                                 String timeRange, String startDate, String endDate,
@@ -290,17 +302,23 @@ public class SearchServiceImpl implements SearchService {
             SearchResponse<Map> response = openSearchClient.search(s -> {
                 s.index(openSearchConfig.getArticleIndex())
                         .from(from)
-                        .size(pageSize);
+                        .size(pageSize)
+                        // 设置超时保证响应时间 < 500ms
+                        .timeout("500ms");
 
                 // 使用 function_score 查询实现相关性评分公式
                 s.query(q -> q
                         .functionScore(fs -> {
-                            // 基础查询：关键词搜索（标题×3, 摘要×2, 正文×1）+ 拼音 + 同义词
+                            // 基础查询：多字段匹配 + 拼音 + 同义词 + 模糊匹配
                             fs.query(bq -> bq.bool(b -> {
+                                // 主查询：multiMatch 跨字段搜索（标题×3, 摘要×2, 正文×1）+ 拼音 + 同义词
                                 b.must(m -> m
                                         .multiMatch(mm -> mm
-                                                .fields("title^3", "summary^2", "content", "title.pinyin^2", "title.synonym^2", "content.synonym", "authorName", "categoryName")
+                                                .fields("title^3", "summary^2", "content", "title.pinyin^2", "title.synonym^2", "summary.synonym", "content.synonym", "authorName", "categoryName")
                                                 .query(keyword)
+                                                .type(org.opensearch.client.opensearch._types.query_dsl.TextQueryType.BestFields)
+                                                .fuzziness("AUTO")
+                                                .prefixLength(2)
                                         )
                                 );
                                 // 分类筛选
@@ -364,10 +382,19 @@ public class SearchServiceImpl implements SearchService {
                 // 排序
                 applyArticleSort(s, sort);
 
-                // 关键词高亮
+                // 关键词高亮：标题、摘要、正文内容
                 s.highlight(h -> h
-                        .fields("title", HighlightField.of(hf -> hf.preTags("<em>").postTags("</em>")))
-                        .fields("summary", HighlightField.of(hf -> hf.preTags("<em>").postTags("</em>")))
+                        .preTags("<em>").postTags("</em>")
+                        .fields("title", HighlightField.of(hf -> hf
+                                .fragmentSize(200).numberOfFragments(1)
+                        ))
+                        .fields("summary", HighlightField.of(hf -> hf
+                                .fragmentSize(200).numberOfFragments(1)
+                        ))
+                        .fields("content", HighlightField.of(hf -> hf
+                                .fragmentSize(150).numberOfFragments(3)
+                                .noMatchSize(0)
+                        ))
                 );
 
                 return s;
@@ -379,13 +406,45 @@ public class SearchServiceImpl implements SearchService {
                 if (source == null) continue;
                 ArticleVO vo = mapToArticleVO(source);
 
-                // 使用高亮结果替换原始值
+                // 处理高亮结果
                 if (hit.highlight() != null) {
+                    boolean titleMatched = false;
+                    boolean summaryMatched = false;
+                    boolean contentMatched = false;
+
+                    // 标题高亮
                     if (hit.highlight().containsKey("title") && !hit.highlight().get("title").isEmpty()) {
                         vo.setTitle(hit.highlight().get("title").get(0));
+                        titleMatched = true;
                     }
+                    // 摘要高亮
                     if (hit.highlight().containsKey("summary") && !hit.highlight().get("summary").isEmpty()) {
                         vo.setSummary(hit.highlight().get("summary").get(0));
+                        summaryMatched = true;
+                    }
+                    // 正文内容高亮 - 拼接多个片段
+                    if (hit.highlight().containsKey("content") && !hit.highlight().get("content").isEmpty()) {
+                        List<String> fragments = hit.highlight().get("content");
+                        vo.setContentSnippet(String.join(" ... ", fragments));
+                        contentMatched = true;
+                    }
+
+                    // 设置匹配类型标识（优先级：title > summary > content）
+                    if (titleMatched) {
+                        vo.setMatchType("title");
+                    } else if (summaryMatched) {
+                        vo.setMatchType("summary");
+                    } else if (contentMatched) {
+                        vo.setMatchType("content");
+                    }
+                }
+
+                // 如果正文没有高亮但匹配了，从原文截取片段
+                if (vo.getContentSnippet() == null && vo.getMatchType() == null) {
+                    vo.setMatchType("content");
+                    String content = toString(source.get("content"));
+                    if (content != null && content.length() > 150) {
+                        vo.setContentSnippet(content.substring(0, 150) + "...");
                     }
                 }
 
@@ -505,6 +564,7 @@ public class SearchServiceImpl implements SearchService {
 
     /**
      * 使用 OpenSearch 搜索图片
+     * 支持按文章标题、文章标题拼音搜索，按时间倒序排列
      */
     private long searchImages(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
         try {
@@ -520,6 +580,7 @@ public class SearchServiceImpl implements SearchService {
                                             .query(keyword)
                                     )
                             )
+                            .sort(so -> so.field(f -> f.field("articleCreatedAt").order(org.opensearch.client.opensearch._types.SortOrder.Desc)))
                             .highlight(h -> h
                                     .fields("articleTitle", HighlightField.of(hf -> hf.preTags("<em>").postTags("</em>")))
                             ),

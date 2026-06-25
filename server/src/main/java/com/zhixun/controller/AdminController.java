@@ -16,6 +16,7 @@ import com.zhixun.service.ArticleService;
 import com.zhixun.service.CommentService;
 import com.zhixun.service.OperationLogService;
 import com.zhixun.service.OpenSearchSyncService;
+import com.zhixun.service.OpenSearchStatusService;
 import com.zhixun.service.impl.SynonymService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.CommentVO;
@@ -58,6 +59,9 @@ public class AdminController {
     private final OpenSearchSyncService openSearchSyncService;
     private final CommentService commentService;
     private final ArticleService articleService;
+
+    @Autowired(required = false)
+    private OpenSearchStatusService openSearchStatusService;
 
     @Autowired(required = false)
     private SynonymService synonymService;
@@ -165,6 +169,17 @@ public class AdminController {
     public R<Void> syncOpenSearch() {
         openSearchSyncService.fullSync();
         return R.ok();
+    }
+
+    /**
+     * OpenSearch 状态检查
+     */
+    @GetMapping("/search/status")
+    public R<Map<String, Object>> openSearchStatus() {
+        if (openSearchStatusService == null) {
+            return R.ok(Map.of("available", false, "reason", "OpenSearch client not configured"));
+        }
+        return R.ok(openSearchStatusService.getStatus());
     }
 
     /**

@@ -139,7 +139,10 @@
     "typeUser": "User",
     "typeArticle": "Article",
     "typeTag": "Tag",
-    "searchFailed": "Search failed, please try again later"
+    "searchFailed": "Search failed, please try again later",
+    "matchTitle": "Title match",
+    "matchSummary": "Summary match",
+    "matchContent": "Content match"
   },
   "settings": {
     "recommendPrefs": "Recommendation Preferences",

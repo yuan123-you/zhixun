@@ -51,7 +51,10 @@
     "category": "分类",
     "tech": "技术",
     "design": "设计",
-    "product": "产品"
+    "product": "产品",
+    "search": "搜索",
+    "tags": "标签",
+    "personal": "个人"
   },
   "article": {
     "title": "标题",

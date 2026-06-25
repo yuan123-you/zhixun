@@ -57,7 +57,14 @@
       "summary": {
         "type": "text",
         "analyzer": "ik_max_word",
-        "search_analyzer": "ik_smart"
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "synonym": {
+            "type": "text",
+            "analyzer": "ik_smart_synonym",
+            "search_analyzer": "ik_smart_synonym"
+          }
+        }
       },
       "content": {
         "type": "text",

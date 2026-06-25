@@ -103,9 +103,12 @@ services:
     networks:
       - zhixun-network
 
-  # OpenSearch 搜索引擎
+  # OpenSearch 搜索引擎（含 IK 分词 + 拼音插件）
   opensearch:
-    image: opensearchproject/opensearch:2.11.0
+    build:
+      context: ./opensearch
+      dockerfile: Dockerfile
+    image: zhixun-opensearch:2.11.0
     container_name: zhixun-opensearch
     restart: unless-stopped
     ports:
@@ -119,6 +122,7 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - opensearch_data:/usr/share/opensearch/data
+      - ./server/src/main/resources/opensearch/synonyms.txt:/usr/share/opensearch/config/opensearch/synonyms.txt:ro
     ulimits:
       memlock:
         soft: -1

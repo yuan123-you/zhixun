@@ -427,7 +427,7 @@ const doSearch = async (loadMore = false) => {
 
     // 更新计数 & 填充结果
     if (activeTab.value === 'all') {
-      // 综合搜索：所有结果一次性返回，用实际数组长度作为各分类计数
+      // 综合搜索：所有结果一次性返回，使用后端返回的各分类总数
       articleResults.value = (result.articles || []) as Article[]
       userResults.value = (result.users || []) as User[]
       imageResults.value = (result.images || []).map((img: any) => ({
@@ -436,9 +436,9 @@ const doSearch = async (loadMore = false) => {
         articleTitle: img.title || '',
         author: img.authorName || img.author?.nickname || '',
       }))
-      tabCounts.value.articles = articleResults.value.length
-      tabCounts.value.users = userResults.value.length
-      tabCounts.value.images = imageResults.value.length
+      tabCounts.value.articles = result.articleTotal ?? articleResults.value.length
+      tabCounts.value.users = result.userTotal ?? userResults.value.length
+      tabCounts.value.images = result.imageTotal ?? imageResults.value.length
       tabCounts.value.all = tabCounts.value.articles + tabCounts.value.users + tabCounts.value.images
     } else if (activeTab.value === 'articles') {
       const newArticles = (result.articles || []) as Article[]

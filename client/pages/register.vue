@@ -239,9 +239,6 @@ const handleSendCode = async () => {
         cooldownTimer = null
       }
     }, 1000)
-    // 发送成功后刷新图形验证码
-    refreshGraphCaptcha()
-    form.captchaAnswer = ''
   } catch (err: any) {
     showAlert(err.message || t('auth.sendCodeFailed'))
     // 失败后也刷新图形验证码

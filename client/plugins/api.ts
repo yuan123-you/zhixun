@@ -5,8 +5,11 @@ export default defineNuxtPlugin(() => {
   const userStore = useUserStore()
   const { get, post, put, delete: del } = useApi()
 
-  // 客户端初始化：非阻塞方式检查Token状态
+  // 客户端初始化：先从 localStorage 恢复登录状态，再非阻塞检查Token
   if (import.meta.client) {
+    // 从 localStorage 恢复用户状态（store 初始化时不再直接读取 localStorage，避免 hydration mismatch）
+    userStore.init()
+
     const checkAndRefreshToken = async () => {
       const { token, refreshToken, tokenExpiresAt } = userStore
       // 有Token和refreshToken，且Token即将在5分钟内过期时，主动刷新

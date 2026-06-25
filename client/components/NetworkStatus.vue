@@ -24,6 +24,7 @@
 
 const isOnline = ref(true)
 const showOfflineBar = ref(false)
+const isMounted = ref(false)
 let wasOffline = false
 
 const updateOnlineStatus = () => {
@@ -62,7 +63,13 @@ const showRestoreToast = () => {
 
 onMounted(() => {
   if (!import.meta.client) return
+  isMounted.value = true
   isOnline.value = navigator.onLine
+  // 如果客户端离网，立即显示提示条
+  if (!isOnline.value) {
+    showOfflineBar.value = true
+    wasOffline = true
+  }
   window.addEventListener('online', updateOnlineStatus)
   window.addEventListener('offline', updateOnlineStatus)
 })

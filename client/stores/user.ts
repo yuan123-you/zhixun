@@ -4,14 +4,14 @@ import { storage, STORAGE_KEYS } from '~/utils/storage'
 
 /** 用户状态管理 Store */
 export const useUserStore = defineStore('user', () => {
-  // 用户Token
-  const token = ref<string>(storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN) || '')
+  // 用户Token - 初始为空，客户端挂载后从 localStorage 恢复，避免 hydration mismatch
+  const token = ref('')
   // 刷新Token
-  const refreshToken = ref<string>(storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN) || '')
+  const refreshToken = ref('')
   // Token过期时间戳（毫秒）
-  const tokenExpiresAt = ref<number>(storage.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT) || 0)
-  // 用户信息（从 localStorage 恢复，确保刷新后仍可用）
-  const userInfo = ref<User | null>(storage.get<User>(STORAGE_KEYS.USER_SUMMARY) || null)
+  const tokenExpiresAt = ref(0)
+  // 用户信息 - 初始为空，客户端挂载后从 localStorage 恢复
+  const userInfo = ref<User | null>(null)
 
   // 是否已登录
   const isLoggedIn = computed(() => !!token.value && !!userInfo.value)

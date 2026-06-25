@@ -5,36 +5,42 @@
     <div class="flex gap-6">
       <!-- 左侧主内容区 -->
       <div class="flex-1 min-w-0">
-        <!-- 轮播图 -->
-        <LazyBannerCarousel v-if="bannerList.length > 0" :banners="bannerList" />
-        <!-- 轮播图骨架屏 -->
-        <div v-else class="animate-pulse rounded-xl overflow-hidden">
-          <div class="w-full bg-gray-200 dark:bg-gray-700" style="padding-bottom: 40%"></div>
-        </div>
+        <!-- 轮播图 - 仅桌面端显示 -->
+        <template v-if="!isMobile">
+          <LazyBannerCarousel v-if="bannerList.length > 0" :banners="bannerList" />
+          <!-- 轮播图骨架屏 -->
+          <div v-else class="animate-pulse rounded-xl overflow-hidden">
+            <div class="w-full bg-gray-200 dark:bg-gray-700" style="padding-bottom: 40%"></div>
+          </div>
+        </template>
 
-        <!-- 公告栏 -->
-        <div v-if="announcementList.length > 0" class="mt-4">
+        <!-- 公告栏 - 仅桌面端显示 -->
+        <div v-if="!isMobile && announcementList.length > 0" class="mt-4">
           <LazyAnnouncementBar :announcements="announcementList" />
         </div>
 
-        <!-- Tab切换 - 平板端增大触摸区域 -->
-        <div class="flex items-center border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto no-scrollbar">
+        <!-- Tab切换 - 移动端紧凑布局确保单行显示 -->
+        <div class="flex items-center border-b border-gray-200 dark:border-gray-700 mb-6" :class="isMobile ? 'gap-0' : 'overflow-x-auto no-scrollbar'">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap no-tap-highlight touch-target"
-            :class="activeTab === tab.key
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+            class="text-sm font-medium border-b-2 transition-colors whitespace-nowrap no-tap-highlight touch-target"
+            :class="[
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
+              isMobile ? 'flex-1 px-1 py-3 text-center' : 'px-4 py-3'
+            ]"
             @click="switchTab(tab.key)"
           >
             {{ tab.label }}
           </button>
 
-          <!-- 推荐Tab的"换一批"刷新按钮 -->
+          <!-- 推荐Tab的"换一批"刷新按钮 - 移动端仅显示图标 -->
           <button
             v-if="activeTab === 'recommend'"
-            class="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors px-3 py-2 rounded-full hover:bg-primary/5 no-tap-highlight"
+            class="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors rounded-full hover:bg-primary/5 no-tap-highlight shrink-0"
+            :class="isMobile ? 'px-2 py-2' : 'px-3 py-2'"
             :disabled="refreshing"
             @click="handleRefresh"
           >
@@ -47,7 +53,7 @@
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>{{ refreshing ? t('common.refreshing') : t('common.refresh') }}</span>
+            <span v-if="!isMobile">{{ refreshing ? t('common.refreshing') : t('common.refresh') }}</span>
           </button>
         </div>
 
@@ -61,11 +67,6 @@
           @retry="handleRetry"
         />
       </div>
-
-      <!-- 右侧边栏 -->
-      <div class="hidden lg:block w-80 shrink-0 space-y-6">
-        <LazyHotRank :items="hotRankItems" />
-      </div>
     </div>
     </PullToRefresh>
   </div>
@@ -74,12 +75,13 @@
 <script setup lang="ts">
 /** 首页：推荐/热门/最新/关注四个Tab，文章卡片列表 */
 
-import type { Article, PageResult, ApiResponse, RankItem } from '~/types'
+import type { Article, PageResult, ApiResponse } from '~/types'
 import type { BannerItem, AnnouncementItem } from '~/api/banner'
 import { storage } from '~/utils/storage'
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()
+const { isMobile } = useBreakpoints()
 
 const { t } = useI18n()
 
@@ -99,7 +101,6 @@ const error = ref<string | null>(null)
 const page = ref(1)
 const bannerList = ref<BannerItem[]>([])
 const announcementList = ref<AnnouncementItem[]>([])
-const hotRankItems = ref<RankItem[]>([])
 
 // 请求缓存
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
@@ -118,7 +119,7 @@ const getApiBase = () => {
 const fetchPage = async (url: string, params: Record<string, any> = {}) => {
   const base = getApiBase()
   const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}${url}`, {
-    params: { page: params.page || 1, pageSize: params.pageSize || 20, ...params },
+    params: { page: params.page || 1, pageSize: params.pageSize || 10, ...params },
     headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
   })
   return res.data
@@ -161,7 +162,7 @@ const { loading: refreshing, refresh: handleRefresh } = useRefresh({
     const base = getApiBase()
     const params: Record<string, any> = {
       page: 1,
-      pageSize: 20,
+      pageSize: 10,
       refresh: 1,
     }
     if (refreshKey.value) {
@@ -177,7 +178,7 @@ const { loading: refreshing, refresh: handleRefresh } = useRefresh({
 
     articles.value = items
     refreshKey.value = (data as any)?.refresh_key || ''
-    hasMore.value = items.length >= 20
+    hasMore.value = items.length >= 10
   },
   debounceMs: 300,
   showError: true,
@@ -202,7 +203,7 @@ const fetchArticles = async () => {
   error.value = null
 
   try {
-    const pageSize = 20
+    const pageSize = 10
     let url: string
     let extraParams: Record<string, any> = {}
     switch (activeTab.value) {
@@ -290,14 +291,13 @@ const refreshBannerAndAnnouncements = async () => {
 }
 
 // SSR数据获取 - 使用单个 useAsyncData + Promise.all 并行请求，避免串行等待
-// 热门排行榜已移至客户端懒加载，减少 SSR 请求数
 const { data: homeData } = await useAsyncData('home-init', async () => {
   const base = getApiBase()
   const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
 
   const [feedRes, bannerRes, announcementRes] = await Promise.all([
     $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
-      params: { page: 1, pageSize: 20 },
+      params: { page: 1, pageSize: 10 },
       headers,
     }).catch(() => null),
     $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }).catch(() => null),
@@ -335,26 +335,6 @@ articles.value = homeData.value.feed
 refreshKey.value = homeData.value.refreshKey
 bannerList.value = homeData.value.banners
 announcementList.value = homeData.value.announcements
-
-// 热门排行榜：客户端懒加载，减少 SSR 请求压力
-const { data: lazyHotRank } = useLazyData<RankItem[]>({
-  fetchFn: async () => {
-    const base = getApiBase()
-    const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
-    const res = await $fetch<ApiResponse<RankItem[]>>(`${base}/rank/hot`, {
-      params: { period: 'all', limit: 10 },
-      headers,
-    }).catch(() => null)
-    return res?.data || []
-  },
-  immediate: true,
-  defaultData: [],
-})
-watch(lazyHotRank, (val) => {
-  if (val && val.length > 0) {
-    hotRankItems.value = val
-  }
-})
 
 // 客户端挂载后：将 SSR 数据持久化到 localStorage，供后续页面导航使用
 onMounted(() => {

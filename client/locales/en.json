@@ -51,7 +51,10 @@
     "category": "Category",
     "tech": "Tech",
     "design": "Design",
-    "product": "Product"
+    "product": "Product",
+    "search": "Search",
+    "tags": "Tags",
+    "personal": "Personal"
   },
   "article": {
     "title": "Title",
