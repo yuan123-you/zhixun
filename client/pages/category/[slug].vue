@@ -89,7 +89,7 @@ const switchTab = (key: string) => {
   fetchArticles()
 }
 
-// 获取文章列表
+// 获取文章列表 - 使用 /articles?categoryId= 接口
 const fetchArticles = async () => {
   if (loading.value || !categoryId.value) return
   loading.value = true
@@ -97,9 +97,16 @@ const fetchArticles = async () => {
 
   try {
     const base = getApiBase()
-    const sort = activeTab.value === 'hot' ? 'hot' : 'latest'
-    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/category/${categoryId.value}`, {
-      params: { page: page.value, pageSize: 10, sort },
+    const sort = activeTab.value === 'hot' ? 'view_count' : 'created_at'
+    const order = 'desc'
+    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/articles`, {
+      params: {
+        categoryId: categoryId.value,
+        pageNum: page.value,
+        pageSize: 10,
+        sortBy: sort,
+        sortOrder: order,
+      },
       headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
     })
     const data = res.data
@@ -148,8 +155,14 @@ const { data: initialData } = await useAsyncData(`category-${slug.value}`, async
   if (!categoryId.value) return []
   try {
     const base = getApiBase()
-    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/category/${categoryId.value}`, {
-      params: { page: 1, pageSize: 10, sort: 'latest' },
+    const res = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/articles`, {
+      params: {
+        categoryId: categoryId.value,
+        pageNum: 1,
+        pageSize: 10,
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+      },
       headers: import.meta.server ? { 'X-SSR-Request': 'true' } : {},
     })
     return res.data?.list || []

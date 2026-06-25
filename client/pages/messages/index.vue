@@ -132,9 +132,11 @@ const loadUnreadCount = async () => {
 // 选择会话
 const selectConversation = async (conv: Conversation) => {
   activeConversation.value = conv
-  // 加载会话消息
+  // 加载会话消息（后端使用对方用户ID，不是会话ID）
+  const targetUserId = conv.user?.id
+  if (!targetUserId) return
   try {
-    const { data } = await socialApi.getMessages(conv.id)
+    const { data } = await socialApi.getMessages(targetUserId)
     messages.value = data.data.list || data.data.items || []
   } catch {
     messages.value = []
@@ -142,7 +144,7 @@ const selectConversation = async (conv: Conversation) => {
   // 标记该会话已读
   if (conv.unreadCount > 0) {
     try {
-      await socialApi.markConversationRead(conv.id)
+      await socialApi.markConversationRead(targetUserId)
       conv.unreadCount = 0
       loadUnreadCount()
     } catch {
@@ -154,11 +156,13 @@ const selectConversation = async (conv: Conversation) => {
 // 发送消息
 const sendMessage = async (content: string) => {
   if (!activeConversation.value) return
+  const targetUserId = activeConversation.value.user?.id
+  if (!targetUserId) return
   try {
-    const { data } = await socialApi.sendMessage(activeConversation.value.id, { content })
+    const { data } = await socialApi.sendMessage(targetUserId, { content })
     messages.value.push(data.data)
     // 更新会话列表中最后一条消息
-    const conv = conversations.value.find((c) => c.id === activeConversation.value!.id)
+    const conv = conversations.value.find((c) => c.user?.id === targetUserId)
     if (conv) {
       conv.lastMessage = data.data
       conv.updatedAt = data.data.createdAt

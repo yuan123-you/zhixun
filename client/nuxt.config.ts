@@ -25,6 +25,8 @@ export default defineNuxtConfig({
     lazy: true,
     langDir: 'locales',
     strategy: 'no_prefix',
+    fallbackLocale: 'zh-CN',
+    detectBrowserLanguage: false,
     bundle: {
       optimizeTranslationDirective: false,
     },
