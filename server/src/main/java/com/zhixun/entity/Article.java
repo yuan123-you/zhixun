@@ -99,6 +99,18 @@ public class Article implements Serializable {
     /** 删除时间，DATETIME类型，NULL=未删除，非NULL=已删除 */
     private LocalDateTime deletedAt;
 
+    /** 作者名称（非表字段，通过JOIN获取） */
+    @TableField(exist = false)
+    private String authorName;
+
+    /** 作者头像（非表字段，通过JOIN获取） */
+    @TableField(exist = false)
+    private String authorAvatar;
+
+    /** 分类名称（非表字段，通过JOIN获取） */
+    @TableField(exist = false)
+    private String categoryName;
+
     /** 状态常量 - 草稿 */
     public static final int STATUS_DRAFT = 0;
 
