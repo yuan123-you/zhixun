@@ -2,7 +2,7 @@
   <!-- 文章编辑器 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 返回导航 -->
-    <div class="flex items-center gap-3 mb-3">
+    <div>
       <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -156,6 +156,39 @@
       </div>
     </div>
 
+    <!-- 发布位置 -->
+    <div class="mb-3">
+      <label class="block text-sm font-medium text-slate-700 mb-1.5">
+        <span>{{ '发布位置' }}</span>
+        <span class="text-xs text-slate-400 font-normal ml-1">(选填)</span>
+      </label>
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <input
+            v-model="form.location"
+            type="text"
+            class="input pl-9"
+            placeholder="输入位置，如"北京·朝阳区""
+          />
+        </div>
+        <button
+          class="flex items-center gap-1 px-3 py-2 text-sm text-primary border border-primary rounded-lg hover:bg-primary-50 transition-colors shrink-0"
+          :disabled="locating"
+          title="自动获取位置"
+          @click="autoLocate"
+        >
+          <svg class="w-4 h-4" :class="{ 'animate-spin': locating }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ locating ? '获取中...' : '自动定位' }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- 封面图上传 -->
     <div class="mb-3">
       <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '封面图' }}</label>
@@ -231,13 +264,15 @@ const form = reactive({
   categoryId: '',
   tags: [] as string[],
   coverImage: '',
+  location: '',
 })
 
 const tagInput = ref('')
 const categories = ref<Category[]>([])
 const editorRef = ref<HTMLTextAreaElement | null>(null)
+const locating = ref(false)
 
-// 定时发布相关
+// 自动定位
 const scheduledPublish = ref(false)
 const publishAt = ref('')
 
@@ -386,6 +421,60 @@ const insertMarkdown = (prefix: string, suffix: string) => {
     textarea.focus()
     textarea.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length)
   })
+}
+
+// 自动获取位置
+const autoLocate = async () => {
+  if (!import.meta.client) return
+  locating.value = true
+  try {
+    // 优先使用浏览器 Geolocation API
+    if ('geolocation' in navigator) {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 300000,
+        })
+      })
+      const { latitude, longitude } = position.coords
+      // 使用反向地理编码获取地名，这里用免费API
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&accept-language=zh`,
+          { headers: { 'User-Agent': 'ZhixunEditor/1.0' } }
+        )
+        const data = await res.json()
+        if (data && data.display_name) {
+          // 取城市+区级信息
+          const addr = data.address || {}
+          const city = addr.city || addr.town || addr.county || ''
+          const district = addr.suburb || addr.city_district || addr.district || ''
+          if (city) {
+            form.location = district ? `${city}·${district}` : city
+          } else if (addr.state) {
+            form.location = addr.state
+          }
+        }
+      } catch {
+        // 反向地理编码失败，使用坐标
+        form.location = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
+      }
+    }
+  } catch (geoErr: any) {
+    // 浏览器定位失败，尝试IP定位
+    try {
+      const res = await fetch('https://ipapi.co/json/')
+      const data = await res.json()
+      if (data && data.city) {
+        form.location = data.region ? `${data.city}·${data.region}` : data.city
+      }
+    } catch {
+      // 定位失败，静默处理
+    }
+  } finally {
+    locating.value = false
+  }
 }
 
 // 封面图上传

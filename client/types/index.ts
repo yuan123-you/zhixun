@@ -32,6 +32,10 @@ export interface Article {
   authorAvatar?: string
   /** 发布设备信息（后端ArticleVO扁平字段） */
   deviceInfo?: string
+  /** 发布位置 */
+  location?: string
+  /** 发布IP属地 */
+  ipAddress?: string
   likeCount: number
   collectCount: number
   commentCount: number
@@ -41,6 +45,8 @@ export interface Article {
   isCollected: boolean
   status: ArticleStatus
   isTop?: number
+  /** 可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己 */
+  visibility?: number
   /** 搜索结果中的正文内容片段（含高亮标记<em>） */
   contentSnippet?: string
   /** 搜索匹配类型：title=标题匹配, content=正文匹配, summary=摘要匹配 */
@@ -56,9 +62,19 @@ export enum ArticleStatus {
   Deleted = 2,
 }
 
+/** 文章可见性 */
+export enum ArticleVisibility {
+  Public = 0,
+  Followers = 1,
+  Mutual = 2,
+  Private = 3,
+}
+
 /** 用户接口 */
 export interface User {
   id: number
+  uid: string
+  uidUpdatedAt?: string
   username: string
   nickname: string
   avatar: string
@@ -68,6 +84,7 @@ export interface User {
   gender: Gender
   birthday: string
   role?: string
+  province?: string
   followCount: number
   followerCount: number
   articleCount: number
@@ -269,6 +286,7 @@ export interface AuthResponse {
   expiresIn: number
   userInfo: {
     id: number
+    uid: string
     username: string
     nickname: string
     avatar: string

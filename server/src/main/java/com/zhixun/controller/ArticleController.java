@@ -5,14 +5,17 @@ import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.dto.article.ArticleCreateRequest;
+import com.zhixun.dto.article.ArticlePublishRequest;
 import com.zhixun.dto.article.ArticleQueryRequest;
 import com.zhixun.dto.article.ArticleStatusRequest;
 import com.zhixun.dto.article.ArticleUpdateRequest;
+import com.zhixun.dto.article.ArticleVisibilityRequest;
 import com.zhixun.service.ArticleService;
 import com.zhixun.vo.ArticleDetailVO;
 import com.zhixun.vo.ArticleVO;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +51,12 @@ public class ArticleController {
     @PreAuthorize("isAuthenticated()")
     @OperationLog(module = "文章", action = "发布")
     @SentinelResource(value = "article-create", blockHandler = "createBlockHandler", blockHandlerClass = ArticleController.BlockHandlers.class)
-    public R<Long> create(@Valid @RequestBody ArticleCreateRequest request) {
+    public R<Long> create(@Valid @RequestBody ArticleCreateRequest request,
+                          HttpServletRequest httpRequest) {
         Long userId = securityUtil.getCurrentUserId();
-        return R.ok(articleService.createArticle(userId, request));
+        // 获取客户端真实IP
+        String clientIp = getClientIp(httpRequest);
+        return R.ok(articleService.createArticle(userId, request, clientIp));
     }
 
     /**
@@ -131,6 +137,30 @@ public class ArticleController {
     }
 
     /**
+     * 修改文章可见性（需认证，仅作者）
+     */
+    @PutMapping("/{id}/visibility")
+    @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "文章", action = "修改可见性")
+    public R<Void> updateVisibility(@PathVariable Long id, @Valid @RequestBody ArticleVisibilityRequest request) {
+        Long userId = securityUtil.getCurrentUserId();
+        articleService.updateArticleVisibility(userId, id, request);
+        return R.ok();
+    }
+
+    /**
+     * 发布草稿（需认证，仅作者）
+     */
+    @PutMapping("/{id}/publish")
+    @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "文章", action = "发布草稿")
+    public R<Void> publishDraft(@PathVariable Long id, @RequestBody ArticlePublishRequest request) {
+        Long userId = securityUtil.getCurrentUserId();
+        articleService.publishDraft(userId, id, request != null ? request : new ArticlePublishRequest());
+        return R.ok();
+    }
+
+    /**
      * 记录分享（公开，未登录也可分享）
      */
     @PostMapping("/{id}/share")
@@ -146,5 +176,25 @@ public class ArticleController {
         public static R<Long> createBlockHandler(ArticleCreateRequest request, BlockException e) {
             return R.fail(429, "发布请求过于频繁，请稍后重试");
         }
+    }
+
+    /**
+     * 获取客户端真实IP，优先取 X-Forwarded-For / X-Real-IP
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            // X-Forwarded-For 可能包含多个IP，取第一个
+            int idx = ip.indexOf(',');
+            if (idx > 0) {
+                ip = ip.substring(0, idx);
+            }
+            return ip.trim();
+        }
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

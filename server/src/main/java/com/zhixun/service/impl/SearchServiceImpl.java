@@ -161,13 +161,13 @@ public class SearchServiceImpl implements SearchService {
         }
 
         try {
-            // 匹配用户名/昵称（2条）
+            // 匹配用户名/昵称/UID（3条）
             SearchResponse<Map> userResponse = openSearchClient.search(s -> s
                             .index(openSearchConfig.getUserIndex())
-                            .size(2)
+                            .size(3)
                             .query(q -> q
                                     .multiMatch(mm -> mm
-                                            .fields("username", "nickname", "username.pinyin", "nickname.pinyin", "username.synonym", "nickname.synonym")
+                                            .fields("uid^4", "username", "nickname", "username.pinyin", "nickname.pinyin", "username.synonym", "nickname.synonym")
                                             .query(keyword)
                                     )
                             ),
@@ -504,10 +504,16 @@ public class SearchServiceImpl implements SearchService {
                             // nickname^3 提升精确匹配权重，username^2 前缀匹配
                             fs.query(bq -> bq.bool(b -> {
                                 b.should(sh -> sh
+                                        .term(t -> t.field("uid.keyword").value(FieldValue.of(keyword)).boost(15.0f))
+                                );
+                                b.should(sh -> sh
                                         .term(t -> t.field("nickname.keyword").value(FieldValue.of(keyword)).boost(10.0f))
                                 );
                                 b.should(sh -> sh
                                         .term(t -> t.field("username.keyword").value(FieldValue.of(keyword)).boost(8.0f))
+                                );
+                                b.should(sh -> sh
+                                        .prefix(p -> p.field("uid").value(keyword).boost(6.0f))
                                 );
                                 b.should(sh -> sh
                                         .prefix(p -> p.field("nickname").value(keyword).boost(5.0f))
@@ -517,7 +523,7 @@ public class SearchServiceImpl implements SearchService {
                                 );
                                 b.should(sh -> sh
                                         .multiMatch(mm -> mm
-                                                .fields("username^2", "nickname^3", "bio", "username.pinyin^2", "nickname.pinyin^2", "username.synonym^2", "nickname.synonym^2", "bio.synonym")
+                                                .fields("uid^4", "username^2", "nickname^3", "bio", "username.pinyin^2", "nickname.pinyin^2", "username.synonym^2", "nickname.synonym^2", "bio.synonym")
                                                 .query(keyword)
                                         )
                                 );
@@ -717,9 +723,12 @@ public class SearchServiceImpl implements SearchService {
     private UserVO mapToUserVO(Map<String, Object> source) {
         UserVO vo = new UserVO();
         vo.setId(toLong(source.get("id")));
+        vo.setUid(toString(source.get("uid")));
         vo.setUsername(toString(source.get("username")));
         vo.setNickname(toString(source.get("nickname")));
         vo.setAvatar(toString(source.get("avatar")));
+        vo.setBio(toString(source.get("bio")));
+        vo.setProvince(toString(source.get("province")));
         vo.setRole(toString(source.get("role")));
         vo.setStatus(toInteger(source.get("status")));
         vo.setCreatedAt(toLocalDateTime(source.get("createdAt")));

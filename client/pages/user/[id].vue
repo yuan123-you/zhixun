@@ -24,7 +24,17 @@
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-slate-900">{{ userInfo?.nickname }}</h2>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">{{ userInfo?.nickname }}</h2>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                  ID: {{ userInfo?.uid }}
+                </span>
+                <span v-if="userInfo?.province" class="text-xs text-slate-400 bg-blue-50 px-2 py-0.5 rounded">
+                  {{ userInfo?.province }}
+                </span>
+              </div>
+            </div>
             <!-- 关注按钮 -->
             <button
               v-if="userStore.userInfo?.id !== userId"
@@ -154,7 +164,26 @@
     <!-- Ta的文章列表 -->
     <div class="mt-3">
       <h3 class="text-lg font-semibold text-slate-900 mb-2">{{ '文章' }}</h3>
-      <ArticleList :articles="articles" :loading="loading" :has-more="hasMore" :error="articlesError" @load-more="loadMore" @retry="retryArticles" />
+      <!-- 骨架屏 -->
+      <div v-if="loading && articles.length === 0" class="grid grid-cols-3">
+        <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
+      </div>
+      <!-- 错误状态 -->
+      <ErrorRetry v-else-if="articlesError && !articles.length" :message="articlesError" :on-retry="retryArticles" />
+      <!-- 空状态 -->
+      <div v-else-if="!loading && articles.length === 0" class="text-center py-10 text-slate-400">
+        <p class="text-lg">暂无文章</p>
+      </div>
+      <!-- 三列网格 -->
+      <div v-else class="grid grid-cols-3">
+        <ArticleGridCard v-for="article in articles" :key="article.id" :article="article" />
+      </div>
+      <!-- 加载更多 -->
+      <div v-if="hasMore" class="text-center py-4">
+        <button class="text-sm text-primary hover:underline" :disabled="loading" @click="loadMore">
+          {{ loading ? '加载中...' : '加载更多' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>

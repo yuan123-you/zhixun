@@ -16,9 +16,9 @@ public interface CommentService {
      *
      * @param userId  用户ID
      * @param request 评论创建请求
-     * @return 评论ID
+     * @return 评论VO（含用户信息和时间）
      */
-    Long createComment(Long userId, CommentCreateRequest request);
+    CommentVO createComment(Long userId, CommentCreateRequest request);
 
     /**
      * 获取评论列表（树形结构）

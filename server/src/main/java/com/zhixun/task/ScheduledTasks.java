@@ -163,6 +163,20 @@ public class ScheduledTasks {
     }
 
     /**
+     * 每日凌晨4点：清理30天未更新的草稿
+     */
+    @Scheduled(cron = "0 0 4 * * ?")
+    public void cleanExpiredDrafts() {
+        log.info("===== 定时任务：清理过期草稿 =====");
+        try {
+            int count = articleService.cleanExpiredDrafts();
+            log.info("清理过期草稿：{} 篇已清理", count);
+        } catch (Exception e) {
+            log.error("清理过期草稿失败: {}", e.getMessage());
+        }
+    }
+
+    /**
      * 每30分钟：检查缓存一致性
      * 对比 Redis 缓存中的文章详情与数据库最新数据，
      * 发现不一致时自动清除过期缓存

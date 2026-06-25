@@ -1,10 +1,10 @@
 <template>
   <!-- 文章卡片组件 - 微博风格布局 -->
-  <article class="card px-2 py-2 md:px-3 md:py-2.5 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer no-tap-highlight touch-feedback" @click="navigateToDetail">
+  <article class="card px-2 py-1.5 md:px-3 md:py-1.5 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer no-tap-highlight touch-feedback" @click="navigateToDetail">
     <!-- 作者信息栏（标题上方） -->
-    <div class="flex items-center gap-1.5 mb-0.5">
+    <div class="flex items-center gap-1 mb-0">
       <!-- 作者头像 -->
-      <NuxtLink :to="`/user/${article.author?.id}`" class="shrink-0" @click.stop>
+      <NuxtLink :to="`/user/${article.author?.id}`" class="shrink-0 flex items-center" @click.stop>
         <UserAvatar :src="article.authorAvatar || article.author?.avatar" :alt="article.authorName || article.author?.nickname" size="md" />
       </NuxtLink>
       <div class="flex-1 min-w-0 flex items-center">
@@ -14,6 +14,16 @@
         </NuxtLink>
         <span class="text-xs text-slate-400 mx-1 shrink-0">·</span>
         <time class="text-xs text-slate-400 shrink-0">{{ formatTimestamp(article.createdAt) }}</time>
+        <template v-if="article.location">
+          <span class="text-xs text-slate-400 mx-1 shrink-0">·</span>
+          <span class="text-xs text-slate-400 shrink-0 inline-flex items-center gap-0.5">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {{ article.location }}
+          </span>
+        </template>
         <span v-if="article.deviceInfo" class="text-xs text-slate-400 ml-1 shrink-0">来自{{ article.deviceInfo }}</span>
         <span v-if="article.matchType" class="ml-1.5 inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium shrink-0"
           :class="matchTypeStyle">
@@ -23,23 +33,23 @@
     </div>
 
     <!-- 文章内容区 -->
-    <div class="flex gap-2">
+    <div class="flex gap-1.5">
       <div class="flex-1 min-w-0">
         <!-- 标题（支持高亮HTML） -->
-        <h3 v-if="article.matchType === 'title'" class="text-sm md:text-base font-semibold text-slate-900 line-clamp-2 mb-0.5" v-html="article.title" />
-        <h3 v-else class="text-sm md:text-base font-semibold text-slate-900 line-clamp-2 mb-0.5">
+        <h3 v-if="article.matchType === 'title'" class="text-sm md:text-base font-semibold text-slate-900 line-clamp-2 mb-0" v-html="article.title" />
+        <h3 v-else class="text-sm md:text-base font-semibold text-slate-900 line-clamp-2 mb-0">
           {{ article.title }}
         </h3>
 
         <!-- 正文内容（溢出省略+全文按钮） -->
         <div
           v-if="article.matchType === 'content' && article.contentSnippet"
-          class="article-text text-xs md:text-sm text-slate-500 mb-0.5 search-snippet"
+          class="article-text text-xs md:text-sm text-slate-500 mb-0 line-clamp-6 search-snippet"
           v-html="article.contentSnippet"
         />
         <div
           v-else-if="displayContent"
-          class="article-text text-xs md:text-sm text-slate-500 mb-0.5"
+          class="article-text text-xs md:text-sm text-slate-500 mb-0 line-clamp-6"
         >
           {{ displayContent }}
         </div>
@@ -56,12 +66,17 @@
 
       <!-- 封面图（右侧，sm以上显示） -->
       <div v-if="article.coverImage" class="hidden sm:block w-24 md:w-28 h-20 md:h-24 shrink-0">
-        <img :src="resolveUrl(article.coverImage) || ''" :alt="typeof article.title === 'string' ? article.title : ''" class="w-full h-full object-cover rounded-lg" loading="lazy" />
+        <img v-if="autoLoadImages" :src="resolveUrl(article.coverImage) || ''" :alt="typeof article.title === 'string' ? article.title : ''" class="w-full h-full object-cover rounded-lg" loading="lazy" />
+        <div v-else class="w-full h-full bg-slate-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
       </div>
     </div>
 
     <!-- 文章互动部分（内容下方） -->
-    <div class="flex items-center mt-1 gap-0.5">
+    <div class="flex items-center mt-0.5 gap-0.5">
       <!-- 点赞 -->
       <button
         class="flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors hover:bg-slate-50 active:scale-95"
@@ -150,6 +165,7 @@ const props = defineProps<{
 const { resolveUrl } = useResourceUrl()
 const userStore = useUserStore()
 const { invalidateArticle } = useCacheInvalidation()
+const { autoLoadImages } = useLocalSettings()
 
 // 分享菜单状态
 const showShareMenu = ref(false)

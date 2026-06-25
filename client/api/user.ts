@@ -14,6 +14,18 @@ export const userApi = {
     return put<User>('/user/profile', data)
   },
 
+  /** 修改UID */
+  updateUid: (uid: string) => {
+    const { put } = useApi()
+    return put<User>('/user/uid', { uid })
+  },
+
+  /** 通过UID查找用户 */
+  findByUid: (uid: string) => {
+    const { get } = useApi()
+    return get<User>('/users/by-uid', { uid })
+  },
+
   /** 获取用户设置 */
   getSettings: () => {
     const { get } = useApi()
@@ -60,5 +72,11 @@ export const userApi = {
   getMyComments: (params?: PaginationParams) => {
     const { get } = useApi()
     return get<PageResult<Comment>>('/user/comments', params)
+  },
+
+  /** 获取我的草稿 */
+  getMyDrafts: (params?: PaginationParams) => {
+    const { get } = useApi()
+    return get<PageResult<Article>>('/user/articles', { ...params, status: 0 })
   },
 }

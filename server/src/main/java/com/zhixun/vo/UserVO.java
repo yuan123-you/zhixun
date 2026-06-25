@@ -13,6 +13,9 @@ public class UserVO {
     /** 用户ID */
     private Long id;
 
+    /** 用户唯一标识号 */
+    private String uid;
+
     /** 用户名 */
     private String username;
 
@@ -24,6 +27,9 @@ public class UserVO {
 
     /** 个人简介 */
     private String bio;
+
+    /** 所属省份 */
+    private String province;
 
     /** 邮箱 */
     private String email;

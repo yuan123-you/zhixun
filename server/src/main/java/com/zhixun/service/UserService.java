@@ -87,4 +87,12 @@ public interface UserService {
      * @param request 设置更新请求
      */
     void updateSettings(Long userId, SettingsUpdateRequest request);
+
+    /**
+     * 修改用户UID（30天内只能修改一次）
+     *
+     * @param userId 用户ID
+     * @param newUid 新的UID
+     */
+    void updateUid(Long userId, String newUid);
 }

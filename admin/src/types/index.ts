@@ -60,6 +60,7 @@ export interface LoginUserInfo {
 /** 用户信息 */
 export interface UserInfo {
   id: number
+  uid: string
   username: string
   nickname: string
   avatar: string
@@ -111,6 +112,8 @@ export interface Article {
   viewCount: number
   likeCount: number
   commentCount: number
+  location?: string
+  ipAddress?: string
   rejectReason?: string
   publishedAt?: string
   createdAt: string

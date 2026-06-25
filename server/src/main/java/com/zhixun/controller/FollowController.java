@@ -57,10 +57,12 @@ public class FollowController {
         }
         UserVO vo = new UserVO();
         vo.setId(user.getId());
+        vo.setUid(user.getUid());
         vo.setUsername(user.getUsername());
         vo.setNickname(user.getNickname());
         vo.setAvatar(user.getAvatar());
         vo.setBio(user.getBio());
+        vo.setProvince(user.getProvince());
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);
         vo.setStatus(user.getStatus());
         vo.setCreatedAt(user.getCreatedAt());

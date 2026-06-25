@@ -472,10 +472,12 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
     private Map<String, Object> buildUserDoc(User user) {
         Map<String, Object> doc = new java.util.LinkedHashMap<>();
         doc.put("id", user.getId());
+        doc.put("uid", user.getUid());
         doc.put("username", user.getUsername());
         doc.put("nickname", user.getNickname());
         doc.put("avatar", user.getAvatar());
         doc.put("bio", user.getBio());
+        doc.put("province", user.getProvince());
         doc.put("role", user.getRole() != null ? user.getRole().getValue() : null);
         doc.put("status", user.getStatus());
         doc.put("followCount", user.getFollowCount());

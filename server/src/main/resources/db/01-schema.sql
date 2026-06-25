@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS cms_article (
   publish_at DATETIME,
   reject_reason VARCHAR(500),
   device_info VARCHAR(100),
+  location VARCHAR(255),
+  ip_address VARCHAR(45),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   deleted_at DATETIME,

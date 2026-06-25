@@ -130,6 +130,11 @@ public class UserServiceImpl implements UserService {
             user.setBio(request.getBio());
         }
 
+        // 更新所属省份
+        if (request.getProvince() != null) {
+            user.setProvince(request.getProvince());
+        }
+
         userMapper.updateById(user);
 
         // 同步到 OpenSearch（非关键操作，失败不影响主事务）
@@ -490,6 +495,40 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUid(Long userId, String newUid) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        // 校验UID格式（仅允许大小写字母、数字、下划线，长度4-20）
+        if (!newUid.matches("^[a-zA-Z0-9_]{4,20}$")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "UID仅允许大小写字母、数字和下划线，长度4-20个字符");
+        }
+
+        // 检查UID是否已被占用
+        User existingUser = userMapper.selectByUid(newUid);
+        if (existingUser != null && !existingUser.getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.CONFLICT, "该UID已被占用");
+        }
+
+        // 检查30天修改限制
+        if (user.getUidUpdatedAt() != null) {
+            if (user.getUidUpdatedAt().plusDays(30).isAfter(LocalDateTime.now())) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "UID每30天只能修改一次");
+            }
+        }
+
+        // 更新UID
+        User updateUser = new User();
+        updateUser.setId(userId);
+        updateUser.setUid(newUid);
+        updateUser.setUidUpdatedAt(LocalDateTime.now());
+        userMapper.updateById(updateUser);
+    }
+
     // ========== 内部方法 ==========
 
     /**
@@ -498,6 +537,7 @@ public class UserServiceImpl implements UserService {
     private UserVO buildUserVO(User user) {
         UserVO vo = new UserVO();
         vo.setId(user.getId());
+        vo.setUid(user.getUid());
         vo.setUsername(user.getUsername());
         vo.setNickname(user.getNickname());
         vo.setAvatar(user.getAvatar());
@@ -508,6 +548,7 @@ public class UserServiceImpl implements UserService {
         vo.setFollowerCount(user.getFollowerCount());
         vo.setArticleCount(user.getArticleCount());
         vo.setBio(user.getBio());
+        vo.setProvince(user.getProvince());
 
         // 解密邮箱和手机号
         try {
@@ -573,6 +614,7 @@ public class UserServiceImpl implements UserService {
             vo.setCommentCount(article.getCommentCount());
             vo.setCollectCount(article.getCollectCount());
             vo.setIsTop(article.getIsTop());
+            vo.setVisibility(article.getVisibility());
             vo.setCreatedAt(article.getCreatedAt());
 
             User author = userMap.get(article.getAuthorId());

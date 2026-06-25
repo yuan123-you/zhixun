@@ -79,6 +79,12 @@ public class Article implements Serializable {
     /** 发布设备信息，对应 device_info */
     private String deviceInfo;
 
+    /** 发布位置，对应 location */
+    private String location;
+
+    /** 发布IP属地，对应 ip_address */
+    private String ipAddress;
+
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
@@ -86,6 +92,9 @@ public class Article implements Serializable {
     /** 更新时间 */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    /** 可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己，对应 visibility */
+    private Integer visibility;
 
     /** 删除时间，DATETIME类型，NULL=未删除，非NULL=已删除 */
     private LocalDateTime deletedAt;
@@ -104,4 +113,16 @@ public class Article implements Serializable {
 
     /** 状态常量 - 下架 */
     public static final int STATUS_OFFLINE = 4;
+
+    /** 可见性常量 - 公开 */
+    public static final int VISIBILITY_PUBLIC = 0;
+
+    /** 可见性常量 - 仅粉丝 */
+    public static final int VISIBILITY_FOLLOWERS = 1;
+
+    /** 可见性常量 - 仅互关 */
+    public static final int VISIBILITY_MUTUAL = 2;
+
+    /** 可见性常量 - 仅自己 */
+    public static final int VISIBILITY_PRIVATE = 3;
 }

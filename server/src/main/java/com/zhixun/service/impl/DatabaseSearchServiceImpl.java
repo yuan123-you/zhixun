@@ -30,6 +30,12 @@ import java.util.stream.Collectors;
 
 /**
  * 搜索服务Fallback实现（基于数据库，当OpenSearch不可用时使用）
+ * <p>
+ * 增强功能：
+ * - 文章搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
+ * - 用户搜索：昵称 + 用户名 + UID 多字段模糊匹配
+ * - 图片搜索：按文章标题匹配
+ * - 搜索建议：文章标题 + 用户昵称 + 标签名
  */
 @Slf4j
 @Service
@@ -89,13 +95,25 @@ public class DatabaseSearchServiceImpl implements SearchService {
         return result;
     }
 
+    /**
+     * 文章搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
+     * MyBatis-Plus 的 .like() 自动添加 %keyword% 实现模糊搜索
+     */
     private long searchArticles(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w.like(Article::getTitle, keyword)
+        // 多字段模糊搜索：标题、摘要、正文、作者名、分类名
+        wrapper.and(w -> w
+                .like(Article::getTitle, keyword)
                 .or().like(Article::getSummary, keyword)
-                .or().like(Article::getContent, keyword));
+                .or().like(Article::getContent, keyword)
+                .or().like(Article::getAuthorName, keyword)
+                .or().like(Article::getCategoryName, keyword)
+        );
         wrapper.eq(Article::getStatus, 1);
         wrapper.isNull(Article::getDeletedAt);
+        // 排序：置顶优先，再按时间倒序
+        wrapper.orderByDesc(Article::getIsTop);
+        wrapper.orderByDesc(Article::getCreatedAt);
 
         long total = articleMapper.selectCount(wrapper);
         wrapper.last("LIMIT " + (page - 1) * pageSize + ", " + pageSize);
@@ -110,6 +128,10 @@ public class DatabaseSearchServiceImpl implements SearchService {
             vo.setViewCount(a.getViewCount());
             vo.setLikeCount(a.getLikeCount());
             vo.setCreatedAt(a.getCreatedAt());
+            vo.setIsTop(a.getIsTop());
+            vo.setAuthorName(a.getAuthorName());
+            vo.setAuthorAvatar(a.getAuthorAvatar());
+            vo.setCategoryName(a.getCategoryName());
 
             // 设置匹配类型标识
             if (a.getTitle() != null && a.getTitle().contains(keyword)) {
@@ -157,10 +179,18 @@ public class DatabaseSearchServiceImpl implements SearchService {
         return snippet;
     }
 
+    /**
+     * 用户搜索：昵称 + 用户名 + UID 多字段模糊匹配
+     * 注意：UID 精确匹配使用 eq，模糊使用 like 进行前缀/模糊匹配
+     */
     private long searchUsers(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w.like(User::getNickname, keyword)
-                .or().like(User::getUsername, keyword));
+        // 多字段模糊搜索：昵称、用户名、UID
+        wrapper.and(w -> w
+                .like(User::getNickname, keyword)
+                .or().like(User::getUsername, keyword)
+                .or().like(User::getUid, keyword)
+        );
 
         long total = userMapper.selectCount(wrapper);
         wrapper.last("LIMIT " + (page - 1) * pageSize + ", " + pageSize);
@@ -169,10 +199,13 @@ public class DatabaseSearchServiceImpl implements SearchService {
         List<UserVO> userVOs = users.stream().map(u -> {
             UserVO vo = new UserVO();
             vo.setId(u.getId());
+            vo.setUid(u.getUid());
             vo.setUsername(u.getUsername());
             vo.setNickname(u.getNickname());
             vo.setAvatar(u.getAvatar());
+            vo.setBio(u.getBio());
             vo.setArticleCount(u.getArticleCount());
+            vo.setFollowerCount(u.getFollowerCount());
             vo.setCreatedAt(u.getCreatedAt());
             return vo;
         }).collect(Collectors.toList());
@@ -243,16 +276,19 @@ public class DatabaseSearchServiceImpl implements SearchService {
                 completions.add(vo);
             }
 
-            // 搜索用户
+            // 搜索用户（昵称 + 用户名 + UID）
             LambdaQueryWrapper<User> userWrapper = new LambdaQueryWrapper<>();
-            userWrapper.like(User::getNickname, keyword)
-                    .last("LIMIT 3");
+            userWrapper.and(w -> w
+                    .like(User::getNickname, keyword)
+                    .or().like(User::getUsername, keyword)
+                    .or().like(User::getUid, keyword)
+            ).last("LIMIT 3");
             List<User> users = userMapper.selectList(userWrapper);
             for (User u : users) {
                 SuggestionVO vo = new SuggestionVO();
                 vo.setType("user");
                 vo.setId(u.getId());
-                vo.setText(u.getNickname());
+                vo.setText(u.getNickname() != null ? u.getNickname() : u.getUsername());
                 vo.setAvatar(u.getAvatar());
                 completions.add(vo);
             }

@@ -1,4 +1,4 @@
-/** WebSocket插件：私信实时通信 - 延迟连接，不阻塞首屏渲染 */
+/** WebSocket插件：私信实时通信 - 延迟连接，不阻塞首屏渲染，带指数退避重连 */
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
   const userStore = useUserStore()
@@ -6,12 +6,22 @@ export default defineNuxtPlugin(() => {
 
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let reconnectAttempts = 0
+  const MAX_RECONNECT_ATTEMPTS = 8
+  const BASE_RECONNECT_DELAY = 2000
+
+  // 计算指数退避延迟（上限30秒）
+  const getReconnectDelay = () => {
+    const delay = BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts)
+    return Math.min(delay, 30000)
+  }
 
   // 连接WebSocket
   const connect = () => {
     if (!import.meta.client) return
     if (!userStore.isLoggedIn) return
-    if (ws && ws.readyState === WebSocket.OPEN) return
+    if (!userStore.token) return
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return
 
     const wsBase = config.public.wsBase as string
     let wsUrl: string
@@ -26,44 +36,36 @@ export default defineNuxtPlugin(() => {
     ws = new WebSocket(wsUrl)
 
     ws.onopen = () => {
-      // WebSocket连接成功
+      reconnectAttempts = 0
     }
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        // 根据消息类型分发处理，与后端 ChatWebSocketHandler 对齐
         switch (data.type) {
           case 'CHAT':
-            // 新私信消息
             notificationStore.incrementUnread()
-            // 触发浏览器系统通知
             showBrowserNotification(data.data)
-            // 通过自定义事件通知聊天页面实时更新
             if (import.meta.client) {
               window.dispatchEvent(new CustomEvent('ws:chat', { detail: data.data }))
             }
             break
           case 'ONLINE':
-            // 用户上线通知
             if (import.meta.client) {
               window.dispatchEvent(new CustomEvent('ws:online', { detail: data.data }))
             }
             break
           case 'OFFLINE':
-            // 用户下线通知
             if (import.meta.client) {
               window.dispatchEvent(new CustomEvent('ws:offline', { detail: data.data }))
             }
             break
           case 'READ':
-            // 消息已读通知
             if (import.meta.client) {
               window.dispatchEvent(new CustomEvent('ws:read', { detail: data.data }))
             }
             break
           case 'NOTIFICATION':
-            // 系统通知（来自 RabbitMQ 推送）
             notificationStore.addNotification(data.data)
             showBrowserNotification(data.data)
             break
@@ -75,21 +77,27 @@ export default defineNuxtPlugin(() => {
 
     ws.onclose = () => {
       ws = null
-      // 5秒后自动重连
-      reconnectTimer = setTimeout(() => {
-        if (userStore.isLoggedIn) {
-          connect()
-        }
-      }, 5000)
+      // 指数退避重连，达到最大次数后停止
+      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && userStore.isLoggedIn && userStore.token) {
+        const delay = getReconnectDelay()
+        reconnectAttempts++
+        reconnectTimer = setTimeout(() => {
+          if (userStore.isLoggedIn) {
+            connect()
+          }
+        }, delay)
+      }
     }
 
     ws.onerror = () => {
+      // 仅关闭连接，由 onclose 统一处理重连逻辑
       ws?.close()
     }
   }
 
   // 断开WebSocket
   const disconnect = () => {
+    reconnectAttempts = MAX_RECONNECT_ATTEMPTS // 阻止自动重连
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null
@@ -109,14 +117,21 @@ export default defineNuxtPlugin(() => {
 
   // 监听用户登录状态变化，延迟连接避免阻塞首屏
   if (import.meta.client) {
+    let initialCheckDone = false
     watch(
-      () => userStore.isLoggedIn,
-      (loggedIn) => {
-        if (loggedIn) {
-          // 延迟到浏览器空闲时连接，不阻塞首屏渲染
-          requestIdleCallback
-            ? requestIdleCallback(() => connect())
-            : setTimeout(() => connect(), 2000)
+      () => ({ loggedIn: userStore.isLoggedIn, token: userStore.token }),
+      ({ loggedIn, token }) => {
+        if (loggedIn && token) {
+          reconnectAttempts = 0
+          // 首次连接延迟到浏览器空闲时，后续重连立即执行
+          if (!initialCheckDone) {
+            initialCheckDone = true
+            requestIdleCallback
+              ? requestIdleCallback(() => connect())
+              : setTimeout(() => connect(), 2000)
+          } else {
+            connect()
+          }
         } else {
           disconnect()
         }

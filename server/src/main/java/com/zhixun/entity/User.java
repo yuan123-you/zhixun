@@ -24,6 +24,12 @@ public class User implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 用户唯一标识号（可自定义，30天可修改一次，支持大小写字母、数字、下划线） */
+    private String uid;
+
+    /** 上次修改UID时间（用于限制30天内只能修改一次） */
+    private LocalDateTime uidUpdatedAt;
+
     /** 用户名 */
     private String username;
 
@@ -57,6 +63,9 @@ public class User implements Serializable {
 
     /** 个人简介 */
     private String bio;
+
+    /** 所属省份 */
+    private String province;
 
     /** 是否在线，对应 is_online */
     private Integer isOnline;

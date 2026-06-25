@@ -27,4 +27,8 @@ public class ProfileUpdateRequest {
     /** 简介 */
     @Size(max = 500, message = "简介最长500个字符")
     private String bio;
+
+    /** 所属省份 */
+    @Size(max = 50, message = "省份最长50个字符")
+    private String province;
 }

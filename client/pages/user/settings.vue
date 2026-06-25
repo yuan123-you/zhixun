@@ -7,7 +7,7 @@
     </div>
 
     <template v-else>
-    <div class="flex items-center gap-3 mb-3">
+    <div>
       <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -190,6 +190,7 @@ const goBack = () => {
   }
 }
 
+const userStore = useUserStore()
 const pageLoading = ref(true)
 const saving = ref(false)
 
@@ -241,15 +242,23 @@ const sortOptions = [
   { label: '热门', value: 'hot' as const },
 ]
 
-// 字体大小映射
-const fontSizeMap: Record<string, string> = {
+// 字体大小映射（本地 string ↔ CSS px）
+const fontSizePxMap: Record<string, string> = {
   small: '14px', medium: '16px', large: '18px',
+}
+
+// 服务器端字体 int ↔ 本地 string 映射
+const serverFontToLocal: Record<number, string> = {
+  0: 'small', 1: 'medium', 2: 'large',
+}
+const localFontToServer: Record<string, number> = {
+  small: 0, medium: 1, large: 2,
 }
 
 // 应用字体大小
 const applyFontSize = () => {
   if (import.meta.client) {
-    document.documentElement.style.setProperty('font-size', fontSizeMap[localSettings.fontSize] || '16px')
+    document.documentElement.style.setProperty('font-size', fontSizePxMap[localSettings.fontSize] || '16px')
   }
 }
 
@@ -280,6 +289,13 @@ const loadServerSettings = async () => {
           theme: s.display.theme ?? 'light',
           language: s.display.language ?? 'zh-CN',
         })
+        // 同步服务器显示设置到本地设置（仅首次加载，本地修改优先）
+        const savedLocal = storage.get<UserSettingsLocal>(STORAGE_KEY)
+        if (!savedLocal) {
+          localSettings.theme = s.display.theme === 'auto' ? 'system' : (s.display.theme as any) || 'system'
+          localSettings.fontSize = serverFontToLocal[s.display.fontSize ?? 1] || 'medium'
+          localSettings.language = s.display.language ?? 'zh-CN'
+        }
       }
       if (s.recommend) {
         Object.assign(serverSettings.recommend, {
@@ -302,6 +318,10 @@ const saveLocalSettings = () => {
   colorMode.preference = localSettings.theme === 'system' ? 'system' : localSettings.theme
   // 应用字体大小
   applyFontSize()
+  // 同步本地显示设置到服务器数据（确保保存时发送正确值）
+  serverSettings.display.theme = localSettings.theme === 'system' ? 'auto' : localSettings.theme
+  serverSettings.display.fontSize = localFontToServer[localSettings.fontSize] ?? 1
+  serverSettings.display.language = localSettings.language
 }
 
 // 保存服务器设置（通知/隐私/显示/偏好）

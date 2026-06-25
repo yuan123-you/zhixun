@@ -11,9 +11,11 @@ import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.config.RabbitMQConfig;
 import com.zhixun.config.Slave;
 import com.zhixun.dto.article.ArticleCreateRequest;
+import com.zhixun.dto.article.ArticlePublishRequest;
 import com.zhixun.dto.article.ArticleQueryRequest;
 import com.zhixun.dto.article.ArticleStatusRequest;
 import com.zhixun.dto.article.ArticleUpdateRequest;
+import com.zhixun.dto.article.ArticleVisibilityRequest;
 import com.zhixun.entity.Article;
 import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.ArticleOperateLog;
@@ -25,6 +27,7 @@ import com.zhixun.entity.Category;
 import com.zhixun.entity.Tag;
 import com.zhixun.entity.User;
 import com.zhixun.enums.ArticleStatusEnum;
+import com.zhixun.enums.ArticleVisibilityEnum;
 import com.zhixun.enums.LikeTargetTypeEnum;
 import com.zhixun.mapper.ArticleLikeMapper;
 import com.zhixun.mapper.ArticleMapper;
@@ -119,7 +122,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createArticle(Long userId, ArticleCreateRequest request) {
+    public Long createArticle(Long userId, ArticleCreateRequest request, String clientIp) {
         Article article = new Article();
         article.setAuthorId(userId);
         article.setCategoryId(request.getCategoryId());
@@ -130,6 +133,8 @@ public class ArticleServiceImpl implements ArticleService {
         article.setSummary(sanitize(request.getSummary()));
         article.setCoverImage(request.getCoverImage());
         article.setDeviceInfo(request.getDeviceInfo());
+        article.setLocation(sanitize(request.getLocation()));
+        article.setIpAddress(resolveIpLocation(clientIp));
         article.setViewCount(0L);
         article.setLikeCount(0L);
         article.setCommentCount(0L);
@@ -158,6 +163,13 @@ public class ArticleServiceImpl implements ArticleService {
         // 处理定时发布
         if (request.getPublishAt() != null) {
             article.setPublishAt(request.getPublishAt());
+        }
+
+        // 设置可见性（默认为公开）
+        if (request.getVisibility() != null) {
+            article.setVisibility(request.getVisibility());
+        } else {
+            article.setVisibility(ArticleVisibilityEnum.PUBLIC.getValue());
         }
 
         // 如果状态为已发布，设置发布时间
@@ -212,6 +224,16 @@ public class ArticleServiceImpl implements ArticleService {
         article.setSummary(sanitize(request.getSummary()));
         article.setCategoryId(request.getCategoryId());
         article.setCoverImage(request.getCoverImage());
+
+        // 更新可见性
+        if (request.getVisibility() != null) {
+            article.setVisibility(request.getVisibility());
+        }
+
+        // 更新位置
+        if (request.getLocation() != null) {
+            article.setLocation(sanitize(request.getLocation()));
+        }
 
         // 敏感词检测
         boolean hasSensitiveWord = checkSensitiveWord(request.getTitle(), request.getContent());
@@ -284,11 +306,14 @@ public class ArticleServiceImpl implements ArticleService {
         vo.setCollectCount(article.getCollectCount());
         vo.setShareCount(article.getShareCount());
         vo.setIsTop(article.getIsTop());
+        vo.setVisibility(article.getVisibility());
         vo.setRejectReason(article.getRejectReason());
         vo.setCategoryId(article.getCategoryId());
         vo.setCreatedAt(article.getCreatedAt());
         vo.setUpdatedAt(article.getUpdatedAt());
         vo.setDeviceInfo(article.getDeviceInfo());
+        vo.setLocation(article.getLocation());
+        vo.setIpAddress(article.getIpAddress());
 
         // 查询作者信息
         User author = userMapper.selectById(article.getAuthorId());
@@ -770,6 +795,124 @@ public class ArticleServiceImpl implements ArticleService {
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateArticleVisibility(Long userId, Long articleId, ArticleVisibilityRequest request) {
+        Article article = getArticleOrThrow(articleId);
+
+        // 权限校验：仅作者可修改可见性
+        if (!article.getAuthorId().equals(userId) && !securityUtil.isAdmin()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权修改此文章的可见性");
+        }
+
+        article.setVisibility(request.getVisibility());
+        articleMapper.updateById(article);
+
+        // 清除文章缓存
+        clearArticleCache(articleId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void publishDraft(Long userId, Long articleId, ArticlePublishRequest request) {
+        Article article = getArticleOrThrow(articleId);
+
+        // 权限校验：仅作者可操作
+        if (!article.getAuthorId().equals(userId) && !securityUtil.isAdmin()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作此文章");
+        }
+
+        // 仅草稿状态可发布
+        if (article.getStatus() != ArticleStatusEnum.DRAFT) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "仅草稿状态的文章可以发布");
+        }
+
+        // 处理定时发布
+        if (request.getPublishAt() != null) {
+            // 定时发布：状态设为待审核
+            article.setStatus(ArticleStatusEnum.PENDING);
+            article.setPublishAt(request.getPublishAt());
+        } else {
+            // 立即发布：敏感词检测后决定状态
+            boolean hasSensitiveWord = checkSensitiveWord(article.getTitle(), article.getContent());
+            if (hasSensitiveWord) {
+                article.setStatus(ArticleStatusEnum.PENDING);
+            } else {
+                article.setStatus(ArticleStatusEnum.PUBLISHED);
+            }
+            article.setPublishAt(LocalDateTime.now());
+        }
+
+        articleMapper.updateById(article);
+
+        // 立即发布的文章同步到 OpenSearch 并推送到粉丝时间线
+        if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
+            try {
+                openSearchSyncService.syncArticle(articleId);
+            } catch (Exception e) {
+                log.error("发布草稿同步OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
+            }
+            try {
+                feedService.fanoutOnPublish(article.getAuthorId(), articleId, article.getPublishAt());
+            } catch (Exception e) {
+                log.error("推送粉丝时间线失败, articleId={}: {}", articleId, e.getMessage());
+            }
+        }
+
+        // 清除文章缓存
+        clearArticleCache(articleId);
+    }
+
+    @Override
+    public int cleanExpiredDrafts() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(30);
+
+        // 查询30天前创建的草稿文章（未更新过的）
+        List<Article> expiredDrafts = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>()
+                        .eq(Article::getStatus, ArticleStatusEnum.DRAFT)
+                        .lt(Article::getUpdatedAt, cutoff)
+        );
+
+        if (expiredDrafts.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (Article article : expiredDrafts) {
+            try {
+                // 软删除
+                Article softDelete = new Article();
+                softDelete.setId(article.getId());
+                softDelete.setDeletedAt(LocalDateTime.now());
+                articleMapper.updateById(softDelete);
+
+                // 更新用户文章数 -1
+                userMapper.update(null, new LambdaUpdateWrapper<User>()
+                        .eq(User::getId, article.getAuthorId())
+                        .gt(User::getArticleCount, 0)
+                        .setSql("article_count = article_count - 1"));
+
+                // 删除标签关联
+                articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>()
+                        .eq(ArticleTag::getArticleId, article.getId()));
+
+                // 清除文章缓存
+                clearArticleCache(article.getId());
+
+                count++;
+            } catch (Exception e) {
+                log.error("清理过期草稿失败, articleId={}: {}", article.getId(), e.getMessage());
+            }
+        }
+
+        if (count > 0) {
+            log.info("清理过期草稿：共清理 {} 篇", count);
+        }
+
+        return count;
+    }
+
     // ========== 内部方法 ==========
 
     /**
@@ -993,7 +1136,10 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setCommentCount(article.getCommentCount());
             vo.setCollectCount(article.getCollectCount());
             vo.setIsTop(article.getIsTop());
+            vo.setVisibility(article.getVisibility());
             vo.setDeviceInfo(article.getDeviceInfo());
+            vo.setLocation(article.getLocation());
+            vo.setIpAddress(article.getIpAddress());
             vo.setCreatedAt(article.getCreatedAt());
 
             // 设置作者信息
@@ -1297,5 +1443,42 @@ public class ArticleServiceImpl implements ArticleService {
         result.put("fixedCount", fixedCount);
         result.put("inconsistentIds", inconsistentIds);
         return result;
+    }
+
+    /**
+     * 通过 IP 解析地理位置（如"北京""上海"），失败时返回空字符串
+     */
+    private String resolveIpLocation(String ip) {
+        if (ip == null || ip.isEmpty() || "127.0.0.1".equals(ip)
+                || "0:0:0:0:0:0:0:1".equals(ip) || ip.startsWith("192.168.")
+                || ip.startsWith("10.") || ip.startsWith("172.")) {
+            return "";
+        }
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(3))
+                    .build();
+            java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create("http://ip-api.com/json/" + ip + "?lang=zh-CN&fields=city,regionName"))
+                    .timeout(java.time.Duration.ofSeconds(3))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> resp = client.send(req,
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200) {
+                com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(resp.body());
+                String city = node.has("city") ? node.get("city").asText() : "";
+                String region = node.has("regionName") ? node.get("regionName").asText() : "";
+                if (!city.isEmpty()) {
+                    return city;
+                }
+                if (!region.isEmpty()) {
+                    return region;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("IP地理位置解析失败, ip={}: {}", ip, e.getMessage());
+        }
+        return "";
     }
 }

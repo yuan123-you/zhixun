@@ -1,10 +1,15 @@
 <template>
   <!-- 搜索页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 搜索框（自动聚焦） -->
+    <!-- 搜索框（自动聚焦 + 自动搜索） -->
     <div class="mb-3">
       <div class="flex items-center bg-white rounded-full px-3 py-2 shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
-        <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- 加载指示器 -->
+        <svg v-if="autoSearching" class="w-5 h-5 text-primary animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <svg v-else class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -102,27 +107,27 @@
         </button>
       </div>
 
-      <!-- 筛选栏 -->
-      <div class="flex items-center flex-wrap gap-2 mb-2 text-sm">
+      <!-- 筛选栏（紧凑型） -->
+      <div class="flex items-center flex-wrap gap-1 mb-1.5">
         <!-- 分类筛选 -->
-        <select v-model="filterCategoryId" class="input py-1.5 text-sm w-auto min-w-[120px]" @change="doSearch()">
+        <select v-model="filterCategoryId" class="input py-0.5 text-xs w-auto min-w-[80px] max-w-[100px] rounded" @change="doSearch()">
           <option :value="undefined">{{ '全部分类' }}</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
 
         <!-- 时间范围筛选 -->
-        <select v-model="filterTimeRange" class="input py-1.5 text-sm w-auto min-w-[120px]" @change="doSearch()">
+        <select v-model="filterTimeRange" class="input py-0.5 text-xs w-auto min-w-[80px] max-w-[100px] rounded" @change="doSearch()">
           <option :value="undefined">{{ '全部时间' }}</option>
-          <option value="24h">{{ '最近24小时' }}</option>
-          <option value="7d">{{ '最近7天' }}</option>
-          <option value="30d">{{ '最近30天' }}</option>
+          <option value="24h">{{ '24小时' }}</option>
+          <option value="7d">{{ '7天' }}</option>
+          <option value="30d">{{ '30天' }}</option>
         </select>
 
         <!-- 排序 -->
-        <select v-model="sortBy" class="input py-1.5 text-sm w-auto min-w-[120px]" @change="doSearch()">
+        <select v-model="sortBy" class="input py-0.5 text-xs w-auto min-w-[72px] max-w-[90px] rounded" @change="doSearch()">
           <option value="relevance">{{ '相关度' }}</option>
-          <option value="latest">{{ '最新发布' }}</option>
-          <option value="popular">{{ '最多点赞' }}</option>
+          <option value="latest">{{ '最新' }}</option>
+          <option value="popular">{{ '最热' }}</option>
         </select>
       </div>
 
@@ -341,12 +346,18 @@ const hasAnyResult = computed(() => {
 })
 
 // 防抖定时器
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
+let suggestTimer: ReturnType<typeof setTimeout> | null = null
+let autoSearchTimer: ReturnType<typeof setTimeout> | null = null
+// AbortController 取消进行中的请求
+let abortController: AbortController | null = null
 
 // IntersectionObserver实例
 let articleObserver: IntersectionObserver | null = null
 let userObserver: IntersectionObserver | null = null
 let imageObserver: IntersectionObserver | null = null
+
+// 自动搜索中指示
+const autoSearching = ref(false)
 
 // 从URL参数初始化搜索
 onMounted(async () => {
@@ -372,33 +383,154 @@ onUnmounted(() => {
   imageObserver?.disconnect()
 })
 
-// 输入处理（防抖300ms）
+// 输入处理：建议快速展示200ms，自动搜索防抖500ms
 const handleInput = () => {
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(async () => {
-    if (keyword.value.trim()) {
-      try {
-        const { searchApi } = await import('~/api')
-        const response = await cachedRequestShort(
-          () => searchApi.getSuggestions(keyword.value.trim()),
-          '/search/suggestions',
-          { keyword: keyword.value.trim() }
-        )
-        const data = response.data.data
-        suggestions.value = data?.completions || []
-      } catch {
-        suggestions.value = []
-      }
-    } else {
+  const trimmed = keyword.value.trim()
+
+  // 清除旧的定时器
+  if (suggestTimer) clearTimeout(suggestTimer)
+  if (autoSearchTimer) clearTimeout(autoSearchTimer)
+
+  // 取消进行中的搜索请求
+  if (abortController) {
+    abortController.abort()
+    abortController = null
+  }
+
+  if (!trimmed) {
+    suggestions.value = []
+    autoSearching.value = false
+    return
+  }
+
+  // 搜索建议（短延迟，快速展示）
+  suggestTimer = setTimeout(async () => {
+    try {
+      const { searchApi } = await import('~/api')
+      const response = await cachedRequestShort(
+        () => searchApi.getSuggestions(trimmed),
+        '/search/suggestions',
+        { keyword: trimmed }
+      )
+      const data = response.data.data
+      suggestions.value = data?.completions || []
+    } catch {
       suggestions.value = []
     }
-  }, 300)
+  }, 200)
+
+  // 自动搜索（较长延迟，不为空即触发）
+  autoSearchTimer = setTimeout(() => {
+    autoSearching.value = true
+    doAutoSearch()
+  }, 500)
+}
+
+// 自动搜索（带 AbortController 取消机制）
+const doAutoSearch = async () => {
+  const trimmed = keyword.value.trim()
+  if (!trimmed) {
+    autoSearching.value = false
+    return
+  }
+
+  // 创建新的 AbortController
+  abortController = new AbortController()
+  const signal = abortController.signal
+
+  try {
+    const { searchApi } = await import('~/api')
+    const params: SearchParams = {
+      page: 1,
+      pageSize,
+      sort: sortBy.value as SearchParams['sort'],
+      categoryId: filterCategoryId.value,
+      timeRange: filterTimeRange.value,
+    }
+
+    // 检查是否已被取消
+    if (signal.aborted) return
+
+    hasSearched.value = true
+    loading.value = true
+    searchError.value = ''
+    currentPage.value = 1
+    articleResults.value = []
+    userResults.value = []
+    imageResults.value = []
+    tabCounts.value = { all: 0, articles: 0, users: 0, images: 0 }
+
+    saveHistory(trimmed)
+
+    const response = await searchApi.search(trimmed, activeTab.value as any, params)
+
+    // 请求完成后检查是否已被取消
+    if (signal.aborted) return
+
+    const result = response.data.data
+
+    if (activeTab.value === 'all') {
+      articleResults.value = (result.articles || []) as Article[]
+      userResults.value = (result.users || []) as User[]
+      imageResults.value = (result.images || []).map((img: any) => ({
+        url: resolveUrl(img.coverImage) || '',
+        title: img.title || '',
+        articleTitle: img.title || '',
+        author: img.authorName || img.author?.nickname || '',
+      }))
+      tabCounts.value.articles = result.articleTotal ?? articleResults.value.length
+      tabCounts.value.users = result.userTotal ?? userResults.value.length
+      tabCounts.value.images = result.imageTotal ?? imageResults.value.length
+      tabCounts.value.all = tabCounts.value.articles + tabCounts.value.users + tabCounts.value.images
+    } else if (activeTab.value === 'articles') {
+      articleResults.value = (result.articles || []) as Article[]
+      tabCounts.value.articles = result.total || articleResults.value.length
+    } else if (activeTab.value === 'users') {
+      userResults.value = (result.users || []) as User[]
+      tabCounts.value.users = result.total || userResults.value.length
+    } else if (activeTab.value === 'images') {
+      imageResults.value = (result.images || []).map((img: any) => ({
+        url: resolveUrl(img.coverImage) || '',
+        title: img.title || '',
+        articleTitle: img.title || '',
+        author: img.authorName || img.author?.nickname || '',
+      }))
+      tabCounts.value.images = result.total || imageResults.value.length
+    }
+
+    nextTick(() => setupInfiniteScroll())
+    router.replace({ query: { keyword: trimmed } })
+  } catch (err: any) {
+    if (signal.aborted) return
+    articleResults.value = []
+    userResults.value = []
+    imageResults.value = []
+    // 如果是自动搜索触发的，不显示错误提示（用户可能还在输入）
+  } finally {
+    if (!signal.aborted) {
+      loading.value = false
+      autoSearching.value = false
+    }
+  }
 }
 
 // 执行搜索
 const doSearch = async (loadMore = false) => {
   if (!keyword.value.trim()) return
   hasSearched.value = true
+
+  // 取消进行中的自动搜索
+  if (!loadMore && abortController) {
+    abortController.abort()
+    abortController = null
+  }
+  if (!loadMore && autoSearchTimer) {
+    clearTimeout(autoSearchTimer)
+    autoSearching.value = false
+  }
+  if (!loadMore && suggestTimer) {
+    clearTimeout(suggestTimer)
+  }
 
   if (!loadMore) {
     loading.value = true
@@ -544,6 +676,13 @@ const clearKeyword = () => {
   keyword.value = ''
   suggestions.value = []
   hasSearched.value = false
+  autoSearching.value = false
+  if (suggestTimer) clearTimeout(suggestTimer)
+  if (autoSearchTimer) clearTimeout(autoSearchTimer)
+  if (abortController) {
+    abortController.abort()
+    abortController = null
+  }
 }
 
 // 关键词高亮

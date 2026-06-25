@@ -62,18 +62,33 @@
               {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
             </span>
           </NuxtLink>
+
+          <!-- 设置图标（已登录） -->
+          <NuxtLink v-if="userStore.isLoggedIn" to="/user/settings" class="p-1.5 md:p-2 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 rounded-lg transition-colors" title="设置">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </NuxtLink>
         </ClientOnly>
 
         <!-- 用户头像菜单（已登录） / 登录按钮（未登录） -->
         <ClientOnly>
           <div v-if="userStore.isLoggedIn" class="relative">
-            <button class="flex items-center space-x-2 p-1 rounded-lg hover:bg-slate-50 transition-colors" @click="showUserMenu = !showUserMenu">
-              <UserAvatar
-                :src="userStore.userInfo?.avatar"
-                :alt="userStore.userInfo?.nickname"
-                size="sm"
-              />
-            </button>
+            <div class="flex items-center">
+              <NuxtLink to="/user" class="p-1 rounded-lg hover:bg-slate-50 transition-colors no-tap-highlight" title="个人中心">
+                <UserAvatar
+                  :src="userStore.userInfo?.avatar"
+                  :alt="userStore.userInfo?.nickname"
+                  size="sm"
+                />
+              </NuxtLink>
+              <button class="p-0.5 text-slate-400 hover:text-slate-600 transition-colors" @click.stop="showUserMenu = !showUserMenu" title="更多">
+                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': showUserMenu }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
             <!-- 下拉菜单 - 点击切换，避免触摸设备 hover 粘滞 -->
             <Transition name="user-menu">
               <div v-if="showUserMenu" class="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-[var(--shadow-lg)] border border-slate-100 z-50">

@@ -21,7 +21,7 @@ export const interactionApi = {
   },
 
   /** 发表评论 */
-  createComment: (articleId: number, data: { content: string; parentId?: number }) => {
+  createComment: (articleId: number, data: { content: string; parentId?: number; replyUserId?: number }) => {
     const { post } = useApi()
     return post<Comment>(`/articles/${articleId}/comments`, data)
   },

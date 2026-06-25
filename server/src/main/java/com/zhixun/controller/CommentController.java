@@ -43,7 +43,7 @@ public class CommentController {
     @PreAuthorize("isAuthenticated()")
     @OperationLog(module = "评论", action = "发表")
     @SentinelResource(value = "comment-create", blockHandler = "createCommentBlockHandler", blockHandlerClass = CommentController.BlockHandlers.class)
-    public R<Long> createComment(@PathVariable Long id,
+    public R<CommentVO> createComment(@PathVariable Long id,
                                   @Valid @RequestBody CommentCreateRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         // 确保 articleId 与路径一致
@@ -115,7 +115,7 @@ public class CommentController {
      * Sentinel 限流降级处理
      */
     public static class BlockHandlers {
-        public static R<Long> createCommentBlockHandler(Long id, CommentCreateRequest request, BlockException e) {
+        public static R<CommentVO> createCommentBlockHandler(Long id, CommentCreateRequest request, BlockException e) {
             return R.fail(429, "评论请求过于频繁，请稍后重试");
         }
     }

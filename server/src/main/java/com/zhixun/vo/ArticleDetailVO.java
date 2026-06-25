@@ -47,6 +47,9 @@ public class ArticleDetailVO {
     /** 是否置顶 */
     private Integer isTop;
 
+    /** 可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己 */
+    private Integer visibility;
+
     /** 拒绝原因 */
     private String rejectReason;
 
@@ -76,6 +79,12 @@ public class ArticleDetailVO {
 
     /** 发布设备信息 */
     private String deviceInfo;
+
+    /** 发布位置 */
+    private String location;
+
+    /** 发布IP属地 */
+    private String ipAddress;
 
     /**
      * 作者信息嵌套视图

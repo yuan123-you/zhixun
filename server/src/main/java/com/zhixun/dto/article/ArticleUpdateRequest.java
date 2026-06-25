@@ -33,4 +33,10 @@ public class ArticleUpdateRequest {
 
     /** 文章状态：0-草稿，1-待审核，2-已发布 */
     private Integer status;
+
+    /** 可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己 */
+    private Integer visibility;
+
+    /** 发布位置 */
+    private String location;
 }

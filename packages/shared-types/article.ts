@@ -16,6 +16,9 @@ export interface ArticleVO {
   categoryName?: string
   tags?: TagVO[]
   author?: UserBrief
+  deviceInfo?: string
+  location?: string
+  ipAddress?: string
   createdAt: string
   updatedAt: string
 }

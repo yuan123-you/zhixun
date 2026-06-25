@@ -40,6 +40,7 @@ import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -130,6 +131,9 @@ public class AuthServiceImpl implements AuthService {
         user.setNickname(StringUtils.hasText(request.getNickname()) ? request.getNickname() : request.getUsername());
         user.setStatus(User.STATUS_NORMAL);
         user.setRole(RoleEnum.USER);
+
+        // 生成默认UID（格式: user_ + 8位随机字符）
+        user.setUid(generateDefaultUid());
 
         // 邮箱/手机号 AES 加密存储，同时存储哈希用于唯一性校验
         if (StringUtils.hasText(request.getEmail())) {
@@ -407,6 +411,7 @@ public class AuthServiceImpl implements AuthService {
         // 构建用户信息
         LoginUserVO userInfo = new LoginUserVO();
         userInfo.setId(user.getId());
+        userInfo.setUid(user.getUid());
         userInfo.setUsername(user.getUsername());
         userInfo.setNickname(user.getNickname());
         userInfo.setAvatar(user.getAvatar());
@@ -484,5 +489,18 @@ public class AuthServiceImpl implements AuthService {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    /**
+     * 生成默认UID（格式: user_ + 8位随机字符）
+     */
+    private String generateDefaultUid() {
+        String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder("user_");
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

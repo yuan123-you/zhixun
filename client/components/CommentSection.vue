@@ -82,7 +82,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [data: { content: string; parentId?: number }]
+  submit: [data: { content: string; parentId?: number; replyUserId?: number }]
   loadMore: []
   like: [commentId: number]
   delete: [commentId: number]
@@ -120,6 +120,7 @@ const submitComment = () => {
   emit('submit', {
     content: commentContent.value.trim(),
     parentId: replyTo.value?.id,
+    replyUserId: replyTo.value?.userId,
   })
   commentContent.value = ''
   replyTo.value = null

@@ -2,9 +2,11 @@ package com.zhixun.service;
 
 import com.zhixun.common.result.PageResult;
 import com.zhixun.dto.article.ArticleCreateRequest;
+import com.zhixun.dto.article.ArticlePublishRequest;
 import com.zhixun.dto.article.ArticleQueryRequest;
 import com.zhixun.dto.article.ArticleStatusRequest;
 import com.zhixun.dto.article.ArticleUpdateRequest;
+import com.zhixun.dto.article.ArticleVisibilityRequest;
 import com.zhixun.vo.ArticleDetailVO;
 import com.zhixun.vo.ArticleVO;
 
@@ -19,11 +21,12 @@ public interface ArticleService {
     /**
      * 发布文章
      *
-     * @param userId  用户ID
-     * @param request 文章创建请求
+     * @param userId   用户ID
+     * @param request  文章创建请求
+     * @param clientIp 客户端IP
      * @return 文章ID
      */
-    Long createArticle(Long userId, ArticleCreateRequest request);
+    Long createArticle(Long userId, ArticleCreateRequest request, String clientIp);
 
     /**
      * 编辑文章
@@ -89,6 +92,31 @@ public interface ArticleService {
      * 定时发布：将到期的待审核文章发布
      */
     void publishScheduledArticles();
+
+    /**
+     * 修改文章可见性
+     *
+     * @param userId    用户ID
+     * @param articleId 文章ID
+     * @param request   可见性请求
+     */
+    void updateArticleVisibility(Long userId, Long articleId, ArticleVisibilityRequest request);
+
+    /**
+     * 发布草稿（将草稿状态改为待审核或已发布）
+     *
+     * @param userId    用户ID
+     * @param articleId 文章ID
+     * @param request   发布请求（含定时发布时间）
+     */
+    void publishDraft(Long userId, Long articleId, ArticlePublishRequest request);
+
+    /**
+     * 清理过期草稿（30天未更新的草稿）
+     *
+     * @return 清理的草稿数量
+     */
+    int cleanExpiredDrafts();
 
     /**
      * 检查文章详情缓存与数据库数据的一致性

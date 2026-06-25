@@ -26,4 +26,10 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Select("SELECT id, username, password_hash FROM sys_user WHERE id = #{id}")
     User selectByIdWithPassword(Long id);
+
+    /**
+     * 根据 UID 查询用户
+     */
+    @Select("SELECT * FROM sys_user WHERE uid = #{uid}")
+    User selectByUid(String uid);
 }

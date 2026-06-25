@@ -74,7 +74,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createComment(Long userId, CommentCreateRequest request) {
+    public CommentVO createComment(Long userId, CommentCreateRequest request) {
         // 检查文章是否存在
         Article article = articleMapper.selectById(request.getArticleId());
         if (article == null) {
@@ -106,6 +106,21 @@ public class CommentServiceImpl implements CommentService {
 
         commentMapper.insert(comment);
 
+        // 构建返回的 CommentVO（含用户信息和时间）
+        User currentUser = userMapper.selectById(userId);
+        Map<Long, User> userMap = new java.util.HashMap<>();
+        if (currentUser != null) {
+            userMap.put(userId, currentUser);
+        }
+        // 如果是回复，还需要查询被回复用户的信息
+        if (request.getReplyUserId() != null && !request.getReplyUserId().equals(userId)) {
+            User replyUser = userMapper.selectById(request.getReplyUserId());
+            if (replyUser != null) {
+                userMap.put(request.getReplyUserId(), replyUser);
+            }
+        }
+        CommentVO commentVO = buildCommentVO(comment, userMap);
+
         // 评论默认待审核，审核通过后再增加文章评论数
 
         // 发送回复通知：如果是回复评论，通知被回复的评论作者（非关键操作，失败不影响评论创建）
@@ -131,7 +146,7 @@ public class CommentServiceImpl implements CommentService {
             log.debug("递增数据版本号失败: {}", e.getMessage());
         }
 
-        return comment.getId();
+        return commentVO;
     }
 
     @Override

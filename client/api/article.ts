@@ -32,6 +32,18 @@ export const articleApi = {
     return del(`/articles/${id}`)
   },
 
+  /** 修改文章可见性 */
+  updateVisibility: (id: number, visibility: number) => {
+    const { put } = useApi()
+    return put(`/articles/${id}/visibility`, { visibility })
+  },
+
+  /** 发布草稿（支持定时发布） */
+  publishDraft: (id: number, publishAt?: string) => {
+    const { put } = useApi()
+    return put(`/articles/${id}/publish`, publishAt ? { publishAt } : {})
+  },
+
   /** 记录分享 */
   recordShare: (id: number, platform?: string) => {
     const { post } = useApi()

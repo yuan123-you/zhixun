@@ -261,7 +261,8 @@ public class AdminServiceImpl implements AdminService {
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(User::getUsername, keyword)
                     .or().like(User::getNickname, keyword)
-                    .or().like(User::getEmail, keyword));
+                    .or().like(User::getEmail, keyword)
+                    .or().like(User::getUid, keyword));
         }
 
         // 角色筛选（兼容大小写）
@@ -282,6 +283,7 @@ public class AdminServiceImpl implements AdminService {
         List<UserVO> voList = result.getRecords().stream().map(user -> {
             UserVO vo = new UserVO();
             vo.setId(user.getId());
+            vo.setUid(user.getUid());
             vo.setUsername(user.getUsername());
             vo.setNickname(user.getNickname());
             vo.setAvatar(user.getAvatar());

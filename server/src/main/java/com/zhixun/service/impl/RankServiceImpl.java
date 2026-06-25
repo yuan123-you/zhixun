@@ -63,7 +63,7 @@ public class RankServiceImpl implements RankService {
     @Override
     public List<HotArticleVO> getHotRank(String period, Long categoryId, Integer limit) {
         if (limit == null || limit <= 0) {
-            limit = 20;
+            limit = 10;
         }
 
         // 构建缓存 Key

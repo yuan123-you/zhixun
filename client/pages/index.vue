@@ -5,27 +5,8 @@
     <div class="flex gap-6">
       <!-- 左侧主内容区 -->
       <div class="flex-1 min-w-0">
-        <!-- 轮播图 + 公告栏 - 仅桌面端显示 -->
-        <ClientOnly>
-          <div>
-            <LazyBannerCarousel v-if="bannerList.length > 0" :banners="bannerList" />
-            <!-- 轮播图骨架屏 -->
-            <div v-else class="animate-pulse rounded-xl overflow-hidden">
-              <div class="w-full bg-slate-200" style="padding-bottom: 40%"></div>
-            </div>
-            <div v-if="announcementList.length > 0" class="mt-2">
-              <LazyAnnouncementBar :announcements="announcementList" />
-            </div>
-          </div>
-          <template #fallback>
-            <div class="animate-pulse rounded-xl overflow-hidden">
-              <div class="w-full bg-slate-200" style="padding-bottom: 40%"></div>
-            </div>
-          </template>
-        </ClientOnly>
-
         <!-- Tab切换 - 移动端紧凑布局确保单行显示 -->
-        <div class="flex items-center border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar">
+        <div class="flex items-center border-b border-slate-200 overflow-x-auto no-scrollbar">
           <button
             v-for="tab in tabs"
             :key="tab.key"
@@ -77,12 +58,10 @@
 /** 首页：推荐/热门/最新/关注四个Tab，文章卡片列表 */
 
 import type { Article, PageResult, ApiResponse } from '~/types'
-import type { BannerItem, AnnouncementItem } from '~/api/banner'
-import { storage } from '~/utils/storage'
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()
-const { isMobile } = useBreakpoints()
+const { defaultSort: savedDefaultSort } = useLocalSettings()
 
 // Tab配置
 const tabs = [
@@ -92,19 +71,18 @@ const tabs = [
   { key: 'following', label: computed(() => '关注') },
 ]
 
-const activeTab = ref('recommend')
+// 初始Tab：根据用户设置的默认排序选择
+const initialTab = computed(() => {
+  if (savedDefaultSort.value === 'latest') return 'latest'
+  if (savedDefaultSort.value === 'hot') return 'hot'
+  return 'recommend'
+})
+const activeTab = ref(initialTab.value)
 const articles = ref<Article[]>([])
 const loading = ref(false)
 const hasMore = ref(true)
 const error = ref<string | null>(null)
 const page = ref(1)
-const bannerList = ref<BannerItem[]>([])
-const announcementList = ref<AnnouncementItem[]>([])
-
-// 请求缓存
-const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
-
-// 推荐刷新机制
 const refreshKey = ref('')
 
 // 构建API基础URL：SSR时使用内部地址，客户端时走Nginx代理
@@ -256,60 +234,22 @@ const handleRetry = () => {
   fetchArticles()
 }
 
-// 客户端刷新banner和公告数据（使用请求缓存 + useApi 替代 $fetch）
-const refreshBannerAndAnnouncements = async () => {
-  if (!import.meta.client) return
-
-  try {
-    const [banners, announcements] = await Promise.all([
-      cachedRequest(
-        async () => {
-          const res = await useApi().get<BannerItem[]>('/banners')
-          return res.data
-        },
-        '/banners',
-        undefined,
-        { ttl: 10 * 60 * 1000 }
-      ),
-      cachedRequest(
-        async () => {
-          const res = await useApi().get<AnnouncementItem[]>('/announcements')
-          return res.data
-        },
-        '/announcements',
-        undefined,
-        { ttl: 10 * 60 * 1000 }
-      ),
-    ])
-    bannerList.value = banners?.data || bannerList.value
-    announcementList.value = announcements?.data || announcementList.value
-  } catch {
-    // 静默失败，保留现有数据
-  }
-}
-
 // SSR数据获取 - 使用单个 useAsyncData + Promise.all 并行请求，避免串行等待
 const { data: homeData } = await useAsyncData('home-init', async () => {
   const base = getApiBase()
   const headers = import.meta.server ? { 'X-SSR-Request': 'true' } : {}
 
-  const [feedRes, bannerRes, announcementRes] = await Promise.all([
-    $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
-      params: { page: 1, pageSize: 10 },
-      headers,
-    }).catch(() => null),
-    $fetch<ApiResponse<BannerItem[]>>(`${base}/banners`, { headers }).catch(() => null),
-    $fetch<ApiResponse<AnnouncementItem[]>>(`${base}/announcements`, { headers }).catch(() => null),
-  ])
+  const feedRes = await $fetch<ApiResponse<PageResult<Article>>>(`${base}/feed/recommend`, {
+    params: { page: 1, pageSize: 10 },
+    headers,
+  }).catch(() => null)
 
   return {
     feed: feedRes?.data?.list || [],
     refreshKey: (feedRes?.data as any)?.refresh_key || '',
-    banners: bannerRes?.data || [],
-    announcements: announcementRes?.data || [],
   }
 }, {
-  default: () => ({ feed: [] as Article[], refreshKey: '', banners: [] as BannerItem[], announcements: [] as AnnouncementItem[] }),
+  default: () => ({ feed: [] as Article[], refreshKey: '' }),
   // 客户端缓存：60秒内使用缓存，避免导航回首页时重复请求
   // 如果缓存的feed为空（SSR失败场景），跳过缓存让客户端重新请求
   getCachedData(key, nuxtApp) {
@@ -333,28 +273,6 @@ if (import.meta.client) {
 
 articles.value = homeData.value.feed
 refreshKey.value = homeData.value.refreshKey
-bannerList.value = homeData.value.banners
-announcementList.value = homeData.value.announcements
-
-// 客户端挂载后：将 SSR 数据持久化到 localStorage，供后续页面导航使用
-onMounted(() => {
-  if (import.meta.client && bannerList.value.length > 0) {
-    const base = getApiBase()
-    // 生成与 useRequestCache 一致的缓存 key
-    const cacheKey = (url: string, params?: Record<string, any>) => {
-      const sortedParams = params
-        ? JSON.stringify(Object.entries(params).sort(([a], [b]) => a.localeCompare(b)))
-        : ''
-      return `${url}:${sortedParams}`
-    }
-    // 直接写入 localStorage 持久化，供下次页面加载时使用
-    const persistData = (key: string, data: any) => {
-      storage.set(`req_cache_${key}`, { data, cachedAt: Date.now(), ttl: 10 * 60 * 1000 }, 30 * 60 * 1000)
-    }
-    persistData(cacheKey(`${base}/banners`), bannerList.value)
-    persistData(cacheKey(`${base}/announcements`), announcementList.value)
-  }
-})
 
 // 页面元信息
 useHead({

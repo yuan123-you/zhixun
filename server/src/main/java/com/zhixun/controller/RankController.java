@@ -32,7 +32,7 @@ public class RankController {
     public R<List<HotArticleVO>> hotRank(
             @RequestParam(defaultValue = "daily") String period,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(defaultValue = "20") Integer limit) {
+            @RequestParam(defaultValue = "10") Integer limit) {
         return R.ok(rankService.getHotRank(period, categoryId, limit));
     }
 

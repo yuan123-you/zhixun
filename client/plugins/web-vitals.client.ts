@@ -15,9 +15,8 @@ export default defineNuxtPlugin(() => {
         timestamp: Date.now(),
       }
 
-      if (process.env.NODE_ENV === 'production') {
-        navigator.sendBeacon('/api/v1/metrics', JSON.stringify(body))
-      } else {
+      // 仅在开发环境打印，生产环境暂不上报（sendBeacon 无法携带 Auth 头，且后端未实现 /metrics 端点）
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[WebVitals]', metric.name, metric.value, metric.rating)
       }
     }

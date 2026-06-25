@@ -6,6 +6,7 @@ import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.dto.user.ProfileUpdateRequest;
 import com.zhixun.dto.user.SettingsUpdateRequest;
+import com.zhixun.dto.user.UidUpdateRequest;
 import com.zhixun.service.CommentService;
 import com.zhixun.service.OnlineStatusService;
 import com.zhixun.service.UserService;
@@ -174,5 +175,17 @@ public class UserController {
         Long requesterId = securityUtil.getCurrentUserId();
         Map<Long, Boolean> result = onlineStatusService.batchGetOnlineStatus(userIds, requesterId);
         return R.ok(result);
+    }
+
+    /**
+     * 修改UID（30天内只能修改一次）
+     */
+    @PutMapping("/uid")
+    @PreAuthorize("isAuthenticated()")
+    @OperationLog(module = "用户设置", action = "修改UID")
+    public R<Void> updateUid(@Valid @RequestBody UidUpdateRequest request) {
+        Long userId = securityUtil.getCurrentUserId();
+        userService.updateUid(userId, request.getUid());
+        return R.ok();
     }
 }

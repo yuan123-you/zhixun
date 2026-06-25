@@ -4,7 +4,7 @@
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline>
         <el-form-item label="关键词">
-          <el-input v-model="queryParams.keyword" placeholder="搜索用户名/昵称" clearable @keyup.enter="handleSearch" />
+          <el-input v-model="queryParams.keyword" placeholder="搜索用户名/昵称/UID" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="全部状态" clearable>
@@ -36,6 +36,7 @@
       <template v-else>
         <el-table v-loading="loading" :data="userList" stripe>
           <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column prop="uid" label="UID" width="150" />
           <el-table-column label="用户" min-width="200">
             <template #default="{ row }">
               <div class="user-cell">

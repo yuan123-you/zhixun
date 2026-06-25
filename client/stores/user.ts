@@ -38,6 +38,14 @@ export const useUserStore = defineStore('user', () => {
     storage.set(STORAGE_KEYS.USER_SUMMARY, user)
   }
 
+  // 更新UID
+  const updateUid = (uid: string) => {
+    if (userInfo.value) {
+      userInfo.value.uid = uid
+      storage.set(STORAGE_KEYS.USER_SUMMARY, userInfo.value)
+    }
+  }
+
   // 更新用户资料
   const updateProfile = (data: Partial<User>) => {
     if (userInfo.value) {
@@ -88,6 +96,7 @@ export const useUserStore = defineStore('user', () => {
     setToken,
     setUser,
     updateProfile,
+    updateUid,
     logout,
     init,
   }
