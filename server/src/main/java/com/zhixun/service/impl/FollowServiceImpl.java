@@ -256,6 +256,9 @@ public class FollowServiceImpl implements FollowService {
         vo.setFollowCount(user.getFollowCount());
         vo.setFollowerCount(user.getFollowerCount());
         vo.setArticleCount(user.getArticleCount());
+        vo.setBio(user.getBio());
+        vo.setProvince(user.getProvince());
+        vo.setIpLocation(user.getIpLocation());
         return vo;
     }
 

@@ -85,11 +85,20 @@ export interface User {
   birthday: string
   role?: string
   province?: string
+  ipLocation?: string
   followCount: number
   followerCount: number
   articleCount: number
   likeCount: number
+  /** 获赞总数（所有作品的总点赞数，含隐藏作品） */
+  totalLikeCount?: number
+  /** 是否互相关注 */
+  isMutualFollow?: boolean
+  /** 是否在线 */
+  isOnline?: boolean
   isFollowing: boolean
+  /** 是否在个人主页展示性别 */
+  showGenderOnProfile?: boolean
   createdAt: string
 }
 

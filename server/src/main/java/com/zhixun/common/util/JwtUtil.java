@@ -57,6 +57,10 @@ public class JwtUtil {
     /** 自定义声明 - 用户角色 */
     public static final String CLAIM_ROLE = "role";
 
+    /** 已知的默认密钥（来自 application.yml 默认值），生产环境不应使用 */
+    private static final String DEFAULT_ACCESS_SECRET = "sdOJgjRUoN/+6k2rJMlZOilv1uTKJfQJ9uoG/8fmPok=";
+    private static final String DEFAULT_REFRESH_SECRET = "STApEN/Ne/o9C+g7A8CnMM31+ChzquUR8GFXH97l7v4=";
+
     /**
      * 初始化时验证 JWT 密钥长度
      * 确保密钥至少 32 字节（256 位），符合 HS256 算法要求
@@ -65,6 +69,22 @@ public class JwtUtil {
     public void validateSecrets() {
         validateSecretLength("JWT Access Secret", accessSecret, 32);
         validateSecretLength("JWT Refresh Secret", refreshSecret, 32);
+
+        // 生产环境警告：检测是否使用了 application.yml 中的默认硬编码密钥
+        if (DEFAULT_ACCESS_SECRET.equals(accessSecret)) {
+            log.warn("===========================================");
+            log.warn("⚠ 安全警告：JWT_ACCESS_SECRET 使用了默认硬编码密钥！");
+            log.warn("   请在生产环境中通过环境变量 JWT_ACCESS_SECRET 设置强随机密钥。");
+            log.warn("   生成命令：openssl rand -base64 32");
+            log.warn("===========================================");
+        }
+        if (DEFAULT_REFRESH_SECRET.equals(refreshSecret)) {
+            log.warn("===========================================");
+            log.warn("⚠ 安全警告：JWT_REFRESH_SECRET 使用了默认硬编码密钥！");
+            log.warn("   请在生产环境中通过环境变量 JWT_REFRESH_SECRET 设置强随机密钥。");
+            log.warn("   生成命令：openssl rand -base64 32");
+            log.warn("===========================================");
+        }
     }
 
     /**

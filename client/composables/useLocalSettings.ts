@@ -1,7 +1,5 @@
-import { storage } from '~/utils/storage'
+import { storage, STORAGE_KEYS } from '~/utils/storage'
 import type { UserSettingsLocal } from '~/types'
-
-const STORAGE_KEY = 'settings_local'
 
 /**
  * 读取本地设置（仅从 localStorage 读取，不需要服务端同步）
@@ -10,7 +8,7 @@ const STORAGE_KEY = 'settings_local'
 export const useLocalSettings = () => {
   /** 获取本地存储的设置（带默认值） */
   const getSettings = (): UserSettingsLocal => {
-    const saved = storage.get<UserSettingsLocal>(STORAGE_KEY)
+    const saved = storage.get<UserSettingsLocal>(STORAGE_KEYS.SETTINGS_LOCAL)
     return {
       theme: 'system',
       fontSize: 'medium',

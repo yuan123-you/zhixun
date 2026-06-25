@@ -529,6 +529,15 @@ public class UserServiceImpl implements UserService {
         userMapper.updateById(updateUser);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateIpLocation(Long userId, String ipLocation) {
+        User updateUser = new User();
+        updateUser.setId(userId);
+        updateUser.setIpLocation(ipLocation);
+        userMapper.updateById(updateUser);
+    }
+
     // ========== 内部方法 ==========
 
     /**
@@ -549,6 +558,11 @@ public class UserServiceImpl implements UserService {
         vo.setArticleCount(user.getArticleCount());
         vo.setBio(user.getBio());
         vo.setProvince(user.getProvince());
+        vo.setIpLocation(user.getIpLocation());
+
+        // 计算获赞总数
+        Long totalLikes = getTotalLikeCount(user.getId());
+        vo.setTotalLikeCount(totalLikes);
 
         // 解密邮箱和手机号
         try {
@@ -559,6 +573,23 @@ public class UserServiceImpl implements UserService {
         }
 
         return vo;
+    }
+
+    @Override
+    @Slave
+    public Long getTotalLikeCount(Long userId) {
+        // 汇总该用户所有作品（含隐藏/非公开/已删除）的总点赞数
+        List<Article> userArticles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>()
+                        .eq(Article::getAuthorId, userId)
+                        .select(Article::getLikeCount)
+        );
+        if (CollectionUtils.isEmpty(userArticles)) {
+            return 0L;
+        }
+        return userArticles.stream()
+                .mapToLong(a -> a.getLikeCount() != null ? a.getLikeCount() : 0L)
+                .sum();
     }
 
     /**
@@ -576,17 +607,21 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toSet());
         List<Long> articleIds = articles.stream().map(Article::getId).collect(Collectors.toList());
 
-        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
+        // 批量查询作者信息（带空安全和重复处理）
+        Map<Long, User> userMap = CollectionUtils.isEmpty(userIds) ? Collections.emptyMap()
+                : safeToList(userMapper.selectBatchIds(userIds)).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (existing, replacement) -> existing));
+        // 批量查询分类信息（带空安全和重复处理）
         Map<Long, Category> categoryMap = categoryIds.isEmpty() ? Collections.emptyMap()
-                : categoryMapper.selectBatchIds(categoryIds).stream()
-                .collect(Collectors.toMap(Category::getId, c -> c));
+                : safeToList(categoryMapper.selectBatchIds(categoryIds)).stream()
+                .collect(Collectors.toMap(Category::getId, c -> c, (existing, replacement) -> existing));
 
-        List<ArticleTag> allArticleTags = articleTagMapper.selectList(
-                new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
+        List<ArticleTag> allArticleTags = safeToList(articleTagMapper.selectList(
+                new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds)));
         Set<Long> tagIds = allArticleTags.stream().map(ArticleTag::getTagId).collect(Collectors.toSet());
         Map<Long, Tag> tagMap = CollectionUtils.isEmpty(tagIds) ? Collections.emptyMap()
-                : tagMapper.selectBatchIds(tagIds).stream().collect(Collectors.toMap(Tag::getId, t -> t));
+                : safeToList(tagMapper.selectBatchIds(tagIds)).stream()
+                .collect(Collectors.toMap(Tag::getId, t -> t, (existing, replacement) -> existing));
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getArticleId));
 
@@ -648,5 +683,12 @@ public class UserServiceImpl implements UserService {
             }
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 安全的 null 列表转空列表
+     */
+    private <T> List<T> safeToList(List<T> list) {
+        return list == null ? Collections.emptyList() : list;
     }
 }

@@ -93,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "邮箱注册需要验证码");
             }
             if (!captchaService.verifyCode(request.getEmail(), request.getCode())) {
-                throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期");
+                throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期（5分钟内有效，请确认输入无误）");
             }
         }
 
@@ -376,7 +376,7 @@ public class AuthServiceImpl implements AuthService {
         // 验证验证码 - 使用 CaptchaService
         String verifyTarget = StringUtils.hasText(request.getEmail()) ? request.getEmail() : request.getUsername();
         if (!captchaService.verifyCode(verifyTarget, request.getCode())) {
-            throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期");
+            throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期（5分钟内有效，请确认输入无误）");
         }
 
         String newPassword = request.getNewPassword();

@@ -95,4 +95,20 @@ public interface UserService {
      * @param newUid 新的UID
      */
     void updateUid(Long userId, String newUid);
+
+    /**
+     * 更新IP属地
+     *
+     * @param userId     用户ID
+     * @param ipLocation IP属地（如：广东）
+     */
+    void updateIpLocation(Long userId, String ipLocation);
+
+    /**
+     * 获取用户获赞总数（所有作品的总点赞数，含隐藏作品）
+     *
+     * @param userId 用户ID
+     * @return 总点赞数
+     */
+    Long getTotalLikeCount(Long userId);
 }

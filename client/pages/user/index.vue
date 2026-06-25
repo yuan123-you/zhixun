@@ -25,8 +25,14 @@
             <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
               ID: {{ userStore.userInfo?.uid }}
             </span>
+            <span v-if="userStore.userInfo?.showGenderOnProfile && userStore.userInfo?.gender" class="text-xs text-slate-400 bg-pink-50 px-2 py-0.5 rounded">
+              {{ userStore.userInfo.gender === 1 ? '男' : userStore.userInfo.gender === 2 ? '女' : '' }}
+            </span>
             <span v-if="userStore.userInfo?.province" class="text-xs text-slate-400 bg-blue-50 px-2 py-0.5 rounded">
               {{ userStore.userInfo?.province }}
+            </span>
+            <span v-if="userStore.userInfo?.ipLocation" class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+              IP属地: {{ userStore.userInfo?.ipLocation }}
             </span>
           </div>
           <p v-if="userStore.userInfo?.bio" class="text-sm text-slate-500 mt-1">{{ userStore.userInfo?.bio }}</p>
@@ -606,8 +612,19 @@ const formatDate = (date: string) => {
 }
 
 // 页面加载时获取默认Tab数据
-onMounted(() => {
+onMounted(async () => {
   loadTabData()
+  // 自动更新IP属地
+  try {
+    const { userApi } = await import('~/api')
+    const res = await userApi.updateIpLocation()
+    const ipLocation = res.data?.data
+    if (ipLocation && userStore.userInfo) {
+      userStore.updateProfile({ ipLocation })
+    }
+  } catch {
+    // 静默失败，不影响主流程
+  }
 })
 
 // 页面元信息

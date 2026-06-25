@@ -79,4 +79,10 @@ export const userApi = {
     const { get } = useApi()
     return get<PageResult<Article>>('/user/articles', { ...params, status: 0 })
   },
+
+  /** 自动更新IP属地 */
+  updateIpLocation: () => {
+    const { post } = useApi()
+    return post<string>('/user/ip-location')
+  },
 }

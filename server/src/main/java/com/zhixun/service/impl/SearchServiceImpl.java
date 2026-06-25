@@ -729,6 +729,7 @@ public class SearchServiceImpl implements SearchService {
         vo.setAvatar(toString(source.get("avatar")));
         vo.setBio(toString(source.get("bio")));
         vo.setProvince(toString(source.get("province")));
+        vo.setIpLocation(toString(source.get("ipLocation")));
         vo.setRole(toString(source.get("role")));
         vo.setStatus(toInteger(source.get("status")));
         vo.setCreatedAt(toLocalDateTime(source.get("createdAt")));

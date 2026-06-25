@@ -67,6 +67,9 @@ public class User implements Serializable {
     /** 所属省份 */
     private String province;
 
+    /** IP属地 */
+    private String ipLocation;
+
     /** 是否在线，对应 is_online */
     private Integer isOnline;
 

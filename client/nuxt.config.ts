@@ -57,7 +57,7 @@ export default defineNuxtConfig({
     '/editor/**': { ssr: false },
     '/messages/**': { ssr: false },
     // API代理到后端（本地开发时使用；线上由 Nginx 代理，此规则不生效）
-    '/api/**': { proxy: `${process.env.API_BASE || 'http://localhost:8082'}/api/**` },
+    '/api/**': { proxy: `${process.env.API_BASE || 'http://localhost:8080'}/api/**` },
   },
 
   // 运行时配置
@@ -67,7 +67,7 @@ export default defineNuxtConfig({
   // - public.wsBase → NUXT_PUBLIC_WS_BASE
   runtimeConfig: {
     // 服务端私有配置（运行时通过 NUXT_API_BASE 覆盖）
-    apiBase: process.env.API_BASE || 'http://localhost:8082',
+    apiBase: process.env.API_BASE || 'http://localhost:8080',
     // 公共配置（客户端和服务端均可访问，运行时通过 NUXT_PUBLIC_* 覆盖）
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api/v1',

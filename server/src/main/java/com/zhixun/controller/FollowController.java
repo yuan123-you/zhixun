@@ -43,7 +43,10 @@ public class FollowController {
     @PreAuthorize("isAuthenticated()")
     public R<UserVO> getCurrentUser() {
         Long userId = securityUtil.getCurrentUserId();
-        return R.ok(userService.getProfile(userId));
+        UserVO vo = userService.getProfile(userId);
+        // 获取获赞总数
+        vo.setTotalLikeCount(userService.getTotalLikeCount(userId));
+        return R.ok(vo);
     }
 
     /**
@@ -63,6 +66,7 @@ public class FollowController {
         vo.setAvatar(user.getAvatar());
         vo.setBio(user.getBio());
         vo.setProvince(user.getProvince());
+        vo.setIpLocation(user.getIpLocation());
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);
         vo.setStatus(user.getStatus());
         vo.setCreatedAt(user.getCreatedAt());
@@ -70,14 +74,22 @@ public class FollowController {
         vo.setFollowerCount(user.getFollowerCount());
         vo.setArticleCount(user.getArticleCount());
 
-        // 如果当前用户已登录，查询是否关注了该用户
+        // 计算获赞总数（所有作品的总点赞数，含隐藏/非公开作品）
+        Long totalLikes = userService.getTotalLikeCount(id);
+        vo.setTotalLikeCount(totalLikes);
+
+        // 如果当前用户已登录，查询是否关注了该用户及是否互关
         try {
             Long currentUserId = securityUtil.getCurrentUserId();
             if (currentUserId != null && !currentUserId.equals(id)) {
                 vo.setIsFollowing(followService.isFollowed(currentUserId, id));
+                // 检查互关：当前用户关注了对方，且对方也关注了当前用户
+                boolean isMutual = followService.isFollowed(currentUserId, id)
+                        && followService.isFollowed(id, currentUserId);
+                vo.setIsMutualFollow(isMutual);
             }
         } catch (Exception e) {
-            // 未登录用户，不设置 isFollowing
+            // 未登录用户，不设置 isFollowing / isMutualFollow
         }
 
         return R.ok(vo);

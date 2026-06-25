@@ -7,17 +7,6 @@
     </div>
 
     <template v-else>
-    <div>
-      <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-        {{ '返回' }}
-      </button>
-      <h1 class="text-2xl font-bold text-slate-900">{{ '编辑资料' }}</h1>
-      <p class="text-sm text-slate-500 mt-1">修改你的个人公开信息</p>
-    </div>
-
     <!-- 头像 -->
     <section class="card p-3 mb-3">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '头像' }}</h2>
@@ -138,26 +127,50 @@
               {{ g.label }}
             </button>
           </div>
+          <!-- 性别展示开关 -->
+          <div class="flex items-center gap-2 mt-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" v-model="showGenderOnProfile" class="sr-only peer" @change="saveGenderDisplay" />
+              <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+            <span class="text-sm text-slate-600">{{ '在个人主页展示性别' }}</span>
+          </div>
         </div>
 
         <!-- 所属省份 -->
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '所属省份' }}</label>
-          <div class="flex items-center gap-2">
+          <div class="relative" ref="provinceDropdownRef">
             <input
-              v-model="provinceInput"
+              v-model="provinceSearch"
               type="text"
-              maxlength="50"
-              placeholder="输入省份，如：广东、北京"
-              class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="搜索并选择省份..."
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              @focus="provinceDropdownOpen = true"
+              @blur="handleProvinceBlur"
+              @input="filterProvinces"
             />
-            <button
-              class="btn-primary text-sm px-4 py-2 shrink-0"
-              :disabled="provinceSaving || provinceInput === userStore.userInfo?.province"
-              @click="saveProvince"
+            <!-- 下拉选项 -->
+            <div
+              v-if="provinceDropdownOpen && filteredProvinces.length > 0"
+              class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto"
             >
-              {{ provinceSaving ? '保存中...' : '保存' }}
-            </button>
+              <button
+                v-for="p in filteredProvinces"
+                :key="p"
+                class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors"
+                :class="provinceInput === p ? 'bg-primary-50 text-primary font-medium' : 'text-slate-700'"
+                @mousedown.prevent="selectProvince(p)"
+              >
+                {{ p }}
+              </button>
+            </div>
+            <div
+              v-if="provinceDropdownOpen && provinceSearch && filteredProvinces.length === 0"
+              class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 px-3 py-4 text-center text-sm text-slate-400"
+            >
+              未找到匹配的省份
+            </div>
           </div>
           <p class="text-xs text-slate-400 mt-1">设置你的所属省份，将显示在个人主页上</p>
         </div>
@@ -196,7 +209,6 @@ definePageMeta({
   middleware: 'auth',
 })
 
-const router = useRouter()
 const userStore = useUserStore()
 const pageLoading = ref(true)
 
@@ -358,22 +370,75 @@ const saveGender = async (gender: number) => {
   }
 }
 
-// 省份
-const provinceInput = ref('')
-const provinceSaving = ref(false)
+// 性别展示开关
+const showGenderOnProfile = ref(false)
 
-const saveProvince = async () => {
-  provinceSaving.value = true
+const saveGenderDisplay = async () => {
   try {
     const { put: apiPut } = useApi()
-    await apiPut('/user/profile', { province: provinceInput.value.trim() })
-    userStore.updateProfile({ province: provinceInput.value.trim() })
+    await apiPut('/user/profile', { showGenderOnProfile: showGenderOnProfile.value })
+    userStore.updateProfile({ showGenderOnProfile: showGenderOnProfile.value } as any)
+    showToast('性别展示设置已保存')
+  } catch {
+    showToast('设置保存失败', 'error')
+    showGenderOnProfile.value = !showGenderOnProfile.value
+  }
+}
+
+// 省份（全部中国有效省份/直辖市/自治区/特别行政区）
+const allProvinces = [
+  '北京市', '天津市', '上海市', '重庆市',
+  '河北省', '山西省', '辽宁省', '吉林省', '黑龙江省',
+  '江苏省', '浙江省', '安徽省', '福建省', '江西省', '山东省',
+  '河南省', '湖北省', '湖南省', '广东省', '海南省',
+  '四川省', '贵州省', '云南省',
+  '陕西省', '甘肃省', '青海省',
+  '台湾省',
+  '内蒙古自治区', '广西壮族自治区', '西藏自治区', '宁夏回族自治区', '新疆维吾尔自治区',
+  '香港特别行政区', '澳门特别行政区',
+]
+
+const provinceInput = ref('')
+const provinceSearch = ref('')
+const provinceDropdownOpen = ref(false)
+const filteredProvinces = ref<string[]>(allProvinces)
+const provinceDropdownRef = ref<HTMLElement | null>(null)
+
+const filterProvinces = () => {
+  const keyword = provinceSearch.value.trim().toLowerCase()
+  if (!keyword) {
+    filteredProvinces.value = allProvinces
+  } else {
+    filteredProvinces.value = allProvinces.filter(p =>
+      p.toLowerCase().includes(keyword) || p.includes(keyword)
+    )
+  }
+}
+
+const selectProvince = async (p: string) => {
+  provinceSearch.value = p
+  provinceInput.value = p
+  provinceDropdownOpen.value = false
+  // 自动保存
+  try {
+    const { put: apiPut } = useApi()
+    await apiPut('/user/profile', { province: p })
+    userStore.updateProfile({ province: p })
     showToast('所属省份保存成功')
   } catch {
     showToast('保存失败，请稍后重试', 'error')
-  } finally {
-    provinceSaving.value = false
   }
+}
+
+const handleProvinceBlur = () => {
+  // 延迟关闭，让 mousedown 事件先触发
+  setTimeout(() => {
+    provinceDropdownOpen.value = false
+    // 如果已选省份，恢复显示
+    if (provinceInput.value) {
+      provinceSearch.value = provinceInput.value
+    }
+  }, 200)
 }
 
 // 初始化表单数据
@@ -382,22 +447,15 @@ const initForm = () => {
   bioInput.value = userStore.userInfo?.bio || ''
   uidInput.value = userStore.userInfo?.uid || ''
   provinceInput.value = userStore.userInfo?.province || ''
+  provinceSearch.value = userStore.userInfo?.province || ''
   genderInput.value = userStore.userInfo?.gender ?? 0
+  showGenderOnProfile.value = (userStore.userInfo as any)?.showGenderOnProfile ?? false
 }
 
 // 格式化日期
 const formatDate = (date?: string) => {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('zh-CN')
-}
-
-// 返回上一页
-const goBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    navigateTo('/user')
-  }
 }
 
 // Toast提示

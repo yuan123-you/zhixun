@@ -49,6 +49,7 @@ public class PublicUserController {
         vo.setAvatar(user.getAvatar());
         vo.setBio(user.getBio());
         vo.setProvince(user.getProvince());
+        vo.setIpLocation(user.getIpLocation());
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);
         vo.setFollowCount(user.getFollowCount());
         vo.setFollowerCount(user.getFollowerCount());

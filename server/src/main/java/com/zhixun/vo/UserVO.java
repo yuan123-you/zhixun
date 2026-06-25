@@ -31,6 +31,9 @@ public class UserVO {
     /** 所属省份 */
     private String province;
 
+    /** IP属地 */
+    private String ipLocation;
+
     /** 邮箱 */
     private String email;
 
@@ -63,4 +66,10 @@ public class UserVO {
 
     /** 是否已关注（当前用户是否关注了此用户） */
     private Boolean isFollowing;
+
+    /** 获赞总数（所有作品的总点赞数，含隐藏作品） */
+    private Long totalLikeCount;
+
+    /** 是否在个人主页展示性别 */
+    private Boolean showGenderOnProfile;
 }

@@ -30,8 +30,14 @@
                 <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
                   ID: {{ userInfo?.uid }}
                 </span>
+                <span v-if="userInfo?.showGenderOnProfile && userInfo?.gender" class="text-xs text-slate-400 bg-pink-50 px-2 py-0.5 rounded">
+                  {{ userInfo.gender === 1 ? '男' : userInfo.gender === 2 ? '女' : '' }}
+                </span>
                 <span v-if="userInfo?.province" class="text-xs text-slate-400 bg-blue-50 px-2 py-0.5 rounded">
                   {{ userInfo?.province }}
+                </span>
+                <span v-if="userInfo?.ipLocation" class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                  IP属地: {{ userInfo?.ipLocation }}
                 </span>
               </div>
             </div>
@@ -54,14 +60,42 @@
               <strong class="text-slate-900">{{ userInfo?.followerCount }}</strong> {{ '粉丝' }}
             </button>
             <span><strong class="text-slate-900">{{ userInfo?.articleCount }}</strong> {{ '文章' }}</span>
+            <!-- 互关标识：仅自己查看自己主页时显示，点击跳转互相关注列表 -->
+            <span
+              v-if="isOwnProfile"
+              class="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+              @click="activeTab = 'mutual'"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              互关
+            </span>
+            <!-- 获赞总数 -->
+            <span class="inline-flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-rose-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+              </svg>
+              <strong class="text-slate-900">{{ formatNumber(userInfo?.totalLikeCount ?? 0) }}</strong> {{ '获赞' }}
+            </span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 关注/粉丝 Tab 切换 -->
+    <!-- 关注/粉丝/互关 Tab 切换 -->
     <div class="card overflow-hidden">
       <div class="flex border-b border-slate-200">
+        <!-- 互相关注 Tab（仅自己可见） -->
+        <button
+          v-if="isOwnProfile"
+          class="flex-1 py-3 text-sm font-medium text-center transition-colors relative"
+          :class="activeTab === 'mutual' ? 'text-primary' : 'text-slate-500 hover:text-slate-700'"
+          @click="activeTab = 'mutual'"
+        >
+          {{ '互相关注' }}
+          <span v-if="activeTab === 'mutual'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full"></span>
+        </button>
         <button
           class="flex-1 py-3 text-sm font-medium text-center transition-colors relative"
           :class="activeTab === 'following' ? 'text-primary' : 'text-slate-500 hover:text-slate-700'"
@@ -95,7 +129,7 @@
           <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <p class="text-sm">{{ activeTab === 'following' ? '暂无关注用户' : '暂无粉丝' }}</p>
+          <p class="text-sm">{{ activeTab === 'following' ? '暂无关注用户' : activeTab === 'mutual' ? '暂无互相关注的用户' : '暂无粉丝' }}</p>
         </div>
 
         <!-- 用户列表 -->
@@ -139,12 +173,12 @@
             <button
               v-if="user.id !== userStore.userInfo?.id"
               class="btn text-xs shrink-0 ml-3"
-              :class="user.isFollowing ? 'btn-secondary' : 'btn-primary'"
+              :class="activeTab === 'mutual' && user.isFollowing ? 'btn-secondary' : user.isFollowing ? 'btn-secondary' : 'btn-primary'"
               :disabled="followLoading[user.id]"
-              @click="toggleFollowUser(user)"
+              @click="activeTab === 'mutual' && user.isFollowing ? openUnfollowConfirm(user) : toggleFollowUser(user)"
             >
               <span v-if="followLoading[user.id]" class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin inline-block mr-1"></span>
-              {{ user.isFollowing ? '已关注' : '关注' }}
+              {{ activeTab === 'mutual' && user.isFollowing ? '互相关注' : user.isFollowing ? '已关注' : '关注' }}
             </button>
           </div>
         </div>
@@ -185,6 +219,40 @@
         </button>
       </div>
     </div>
+
+    <!-- 取消关注确认弹框 -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="unfollowConfirm.show"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          @click.self="unfollowConfirm.show = false"
+        >
+          <div class="bg-white rounded-xl shadow-2xl p-6 w-[360px] max-w-[90vw]">
+            <h3 class="text-base font-semibold text-slate-900 mb-2">取消关注</h3>
+            <p class="text-sm text-slate-600 mb-6">
+              确定要取消关注 <span class="font-medium text-slate-900">{{ unfollowConfirm.user?.nickname }}</span> 吗？
+            </p>
+            <div class="flex justify-end gap-3">
+              <button
+                class="px-4 py-2 text-sm text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                @click="unfollowConfirm.show = false"
+              >
+                取消
+              </button>
+              <button
+                class="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+                :disabled="unfollowConfirm.loading"
+                @click="confirmUnfollow"
+              >
+                <span v-if="unfollowConfirm.loading" class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin inline-block mr-1"></span>
+                确认取消关注
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -197,6 +265,20 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const userId = computed(() => Number(route.params.id))
+
+/** 是否为自己的主页 */
+const isOwnProfile = computed(() => {
+  if (!import.meta.client) return false
+  return userStore.userInfo?.id === userId.value
+})
+
+/** 格式化大数字（如 12345 → 1.2万） */
+const formatNumber = (num: number): string => {
+  if (num >= 10000) {
+    return (num / 10000).toFixed(1).replace(/\.0$/, '') + '万'
+  }
+  return num.toLocaleString()
+}
 
 // Toast 提示
 const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -229,8 +311,8 @@ const articles = ref<Article[]>([])
 const loading = ref(false)
 const hasMore = ref(true)
 
-// 关注/粉丝 Tab
-const activeTab = ref<'following' | 'followers'>('following')
+// 关注/粉丝/互关 Tab
+const activeTab = ref<'mutual' | 'following' | 'followers'>('following')
 
 // 关注列表
 const followingList = ref<FollowUser[]>([])
@@ -257,7 +339,12 @@ const listError = ref<string | null>(null)
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
 
 // 当前显示列表
-const currentList = computed(() => activeTab.value === 'following' ? followingList.value : followersList.value)
+const currentList = computed(() => {
+  if (activeTab.value === 'mutual') {
+    return followingList.value.filter(u => u.isMutualFollow)
+  }
+  return activeTab.value === 'following' ? followingList.value : followersList.value
+})
 const listHasMore = computed(() => activeTab.value === 'following' ? followingHasMore.value : followersHasMore.value)
 
 // 获取用户信息
@@ -348,7 +435,7 @@ const fetchFollowers = async (page: number = 1) => {
 const loadListData = async () => {
   listLoading.value = true
   try {
-    if (activeTab.value === 'following') {
+    if (activeTab.value === 'mutual' || activeTab.value === 'following') {
       if (followingList.value.length === 0) {
         await fetchFollowing(1)
       }
@@ -364,7 +451,7 @@ const loadListData = async () => {
 
 // 加载更多
 const loadMoreList = async () => {
-  if (activeTab.value === 'following') {
+  if (activeTab.value === 'mutual' || activeTab.value === 'following') {
     await fetchFollowing(followingPage.value + 1)
   } else {
     await fetchFollowers(followersPage.value + 1)
@@ -455,6 +542,53 @@ const toggleFollowUser = async (user: FollowUser) => {
   }
 }
 
+// ========== 取消关注确认弹框 ==========
+const unfollowConfirm = reactive({
+  show: false,
+  loading: false,
+  user: null as FollowUser | null,
+})
+
+/** 打开取消关注确认弹框 */
+const openUnfollowConfirm = (user: FollowUser) => {
+  unfollowConfirm.user = user
+  unfollowConfirm.show = true
+}
+
+/** 确认取消关注 */
+const confirmUnfollow = async () => {
+  const user = unfollowConfirm.user
+  if (!user) return
+  unfollowConfirm.loading = true
+  try {
+    const { socialApi } = await import('~/api/social')
+    const response = await socialApi.toggleFollow(user.id)
+    const result = response.data.data
+    user.isFollowing = result.followed
+    user.isMutualFollow = false
+
+    // 同步更新粉丝列表中的同一用户
+    const otherUser = followersList.value.find(u => u.id === user.id)
+    if (otherUser) {
+      otherUser.isFollowing = result.followed
+      otherUser.isMutualFollow = false
+    }
+
+    // 更新用户资料卡中的关注数
+    if (userInfo.value) {
+      userInfo.value.followCount = Math.max(0, userInfo.value.followCount - 1)
+    }
+
+    showToast(`已取消关注 ${user.nickname}`)
+  } catch {
+    showToast('操作失败，请稍后重试', 'error')
+  } finally {
+    unfollowConfirm.loading = false
+    unfollowConfirm.show = false
+    unfollowConfirm.user = null
+  }
+}
+
 // 文章分页
 const articlePage = ref(1)
 const articlePageSize = 20
@@ -518,3 +652,14 @@ useHead({
   title: () => userInfo.value ? `${userInfo.value.nickname} - 知讯` : '个人中心' + ' - 知讯',
 })
 </script>
+
+<style>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

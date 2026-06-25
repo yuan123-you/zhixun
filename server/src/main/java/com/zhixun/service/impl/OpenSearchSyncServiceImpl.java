@@ -478,6 +478,7 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
         doc.put("avatar", user.getAvatar());
         doc.put("bio", user.getBio());
         doc.put("province", user.getProvince());
+        doc.put("ipLocation", user.getIpLocation());
         doc.put("role", user.getRole() != null ? user.getRole().getValue() : null);
         doc.put("status", user.getStatus());
         doc.put("followCount", user.getFollowCount());

@@ -7,15 +7,7 @@
     </div>
 
     <template v-else>
-    <div>
-      <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-        {{ '返回' }}
-      </button>
-      <h1 class="text-2xl font-bold text-slate-900">{{ '设置' }}</h1>
-    </div>
+
 
     <!-- 通知设置 -->
     <section class="card p-3 mb-3">
@@ -140,59 +132,28 @@
       </div>
     </section>
 
-    <!-- 保存按钮 -->
-    <div class="flex justify-end">
-      <button class="btn-primary" :disabled="saving" @click="saveSettings">
-        {{ saving ? '保存中...' : '保存设置' }}
-      </button>
-    </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-/** 全局设置页 - 支持服务端同步 + 本地存储 */
+/** 全局设置页 - 支持服务端同步 + 本地存储，任意操作自动保存 */
 import type { UserSettingsServer, UserSettingsLocal, UserSettingsNotification, UserSettingsPrivacy, UserSettingsDisplay, UserSettingsRecommend } from '~/types'
-import { storage } from '~/utils/storage'
+import { storage, STORAGE_KEYS } from '~/utils/storage'
 import { userApi } from '~/api'
 
 definePageMeta({
   middleware: 'auth',
 })
 
-const router = useRouter()
 const colorMode = useColorMode()
 
-const STORAGE_KEY = 'settings_local'
-
-// Toast 提示
-const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-  if (!import.meta.client) return
-  const toast = document.createElement('div')
-  toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm transition-all duration-300 transform translate-x-0 opacity-100 ${
-    type === 'success' ? 'bg-green-500' : 'bg-red-500'
-  }`
-  toast.textContent = message
-  document.body.appendChild(toast)
-  setTimeout(() => {
-    toast.style.opacity = '0'
-    toast.style.transform = 'translateX(100%)'
-    setTimeout(() => toast.remove(), 300)
-  }, 2000)
-}
-
-// 返回上一页
-const goBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    navigateTo('/')
-  }
-}
+const STORAGE_KEY = STORAGE_KEYS.SETTINGS_LOCAL
 
 const userStore = useUserStore()
 const pageLoading = ref(true)
-const saving = ref(false)
+// 是否已完成初始化加载（加载完成后才启用自动保存）
+const initialized = ref(false)
 
 // 服务器端设置（嵌套结构，匹配后端 UserSettingsVO）
 const defaultNotification = (): UserSettingsNotification => ({
@@ -311,43 +272,52 @@ const loadServerSettings = async () => {
   }
 }
 
-// 保存本地设置（主题/字体/阅读偏好）
-const saveLocalSettings = () => {
-  storage.set(STORAGE_KEY, { ...localSettings })
-  // 应用主题
-  colorMode.preference = localSettings.theme === 'system' ? 'system' : localSettings.theme
-  // 应用字体大小
-  applyFontSize()
-  // 同步本地显示设置到服务器数据（确保保存时发送正确值）
+// ========== 自动保存 ==========
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+const syncAndSaveServer = async () => {
+  // 同步本地显示设置到服务器数据
   serverSettings.display.theme = localSettings.theme === 'system' ? 'auto' : localSettings.theme
   serverSettings.display.fontSize = localFontToServer[localSettings.fontSize] ?? 1
   serverSettings.display.language = localSettings.language
-}
-
-// 保存服务器设置（通知/隐私/显示/偏好）
-const saveServerSettings = async () => {
-  saving.value = true
   try {
     await userApi.updateSettings({ ...serverSettings } as any)
-    showToast('设置保存成功')
   } catch {
-    showToast('设置保存失败，请稍后重试', 'error')
-  } finally {
-    saving.value = false
+    // 自动保存静默失败
   }
 }
 
-// 保存所有设置
-const saveSettings = async () => {
-  saveLocalSettings()
-  await saveServerSettings()
+const debouncedServerSave = () => {
+  if (!initialized.value) return
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    syncAndSaveServer()
+  }, 600)
 }
+
+// 监听本地设置变化：立即生效并保存到 localStorage
+watch(localSettings, () => {
+  if (!initialized.value) return
+  storage.set(STORAGE_KEY, { ...localSettings })
+  applyFontSize()
+  colorMode.preference = localSettings.theme === 'system' ? 'system' : localSettings.theme
+  // 延迟同步到服务器
+  debouncedServerSave()
+}, { deep: true })
+
+// 监听服务器设置变化：自动同步到服务器
+watch(serverSettings, () => {
+  if (!initialized.value) return
+  debouncedServerSave()
+}, { deep: true })
 
 // 页面初始化
 onMounted(async () => {
   await loadServerSettings()
   applyFontSize()
   pageLoading.value = false
+  // 标记初始化完成，之后的操作才会触发自动保存
+  initialized.value = true
 })
 
 // 页面元信息

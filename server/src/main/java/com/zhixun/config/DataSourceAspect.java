@@ -71,6 +71,7 @@ public class DataSourceAspect {
         Method method = signature.getMethod();
 
         boolean useSlave = false;
+        boolean markedUnavailable = false;
 
         try {
             // 1. 检查方法上的注解
@@ -114,17 +115,27 @@ public class DataSourceAspect {
 
             return point.proceed();
         } catch (Exception e) {
-            // 3. 如果是从库操作失败，尝试回退到主库重试
-            if (useSlave && isConnectionException(e)) {
-                log.warn("从库操作失败，尝试回退到主库重试: {}", e.getMessage());
+            // 3. 如果是从库操作失败，回退到主库重试
+            //    @Slave 标记的方法：任何异常都应该回退到主库（因为从库可能部分故障）
+            //    自动读操作：仅连接类异常回退（避免将业务异常误判为数据库问题）
+            boolean isSlaveAnnotated = method.isAnnotationPresent(Slave.class);
+            boolean shouldFallback = useSlave && (isSlaveAnnotated || isConnectionException(e));
+
+            if (shouldFallback) {
+                log.warn("从库操作失败，回退到主库重试: method={}, error={}", method.getName(), e.getMessage());
                 DynamicDataSourceConfig.markSlaveUnavailable();
+                markedUnavailable = true;
 
                 try {
                     DataSourceContextHolder.forceMaster();
                     SLAVE_FALLBACK_COUNT.incrementAndGet();
                     return point.proceed();
                 } catch (Exception retryEx) {
-                    log.error("主库重试也失败: {}", retryEx.getMessage());
+                    // 输出完整异常链方便定位问题
+                    log.error("主库重试也失败: method={}, error={}, cause={}",
+                            method.getName(),
+                            retryEx.getMessage(),
+                            retryEx.getCause() != null ? retryEx.getCause().getMessage() : "none");
                     throw retryEx;
                 }
             }
@@ -133,8 +144,8 @@ public class DataSourceAspect {
             // 4. 方法执行完毕后清除数据源标识，防止线程复用导致的数据源污染
             DataSourceContextHolder.clear();
 
-            // 5. 如果从库标记为不可用，定期尝试恢复
-            if (!DynamicDataSourceConfig.isSlaveAvailable()) {
+            // 5. 如果从库标记为不可用，定期尝试恢复（仅在未被本次标记的情况下检查）
+            if (!DynamicDataSourceConfig.isSlaveAvailable() && !markedUnavailable) {
                 DynamicDataSourceConfig.tryRecoverSlave();
             }
         }
@@ -175,18 +186,52 @@ public class DataSourceAspect {
     }
 
     /**
-     * 判断是否为数据库连接异常
+     * 判断是否为数据库连接异常（从库不可用时应触发回退）
+     * 同时检查异常链中的 cause 信息
      */
     private boolean isConnectionException(Exception e) {
-        String message = e.getMessage();
+        // 检查当前异常消息
+        if (containsConnectionError(e.getMessage())) {
+            return true;
+        }
+        // 递归检查异常链
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            if (containsConnectionError(cause.getMessage())) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * 判断异常消息是否包含连接相关错误
+     */
+    private boolean containsConnectionError(String message) {
         if (message == null) return false;
         String lowerMessage = message.toLowerCase();
-        return lowerMessage.contains("connection") 
+        return lowerMessage.contains("connection")
                 || lowerMessage.contains("timeout")
                 || lowerMessage.contains("refused")
                 || lowerMessage.contains("reset")
                 || lowerMessage.contains("broken pipe")
                 || lowerMessage.contains("no route to host")
-                || lowerMessage.contains("connect timed out");
+                || lowerMessage.contains("connect timed out")
+                || lowerMessage.contains("communications link failure")
+                || lowerMessage.contains("connection is not available")
+                || lowerMessage.contains("connection pool")
+                || lowerMessage.contains("connection reset")
+                || lowerMessage.contains("end of stream")
+                || lowerMessage.contains("unable to connect")
+                || lowerMessage.contains("socket")
+                || lowerMessage.contains("network")
+                || lowerMessage.contains("read timed out")
+                || lowerMessage.contains("host is unreachable")
+                || lowerMessage.contains("unknown column")
+                || lowerMessage.contains("doesn't exist")
+                || lowerMessage.contains("table")
+                || lowerMessage.contains("bad sql grammar")
+                || lowerMessage.contains("syntax error");
     }
 }

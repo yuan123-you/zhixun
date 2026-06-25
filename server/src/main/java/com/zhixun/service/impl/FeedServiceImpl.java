@@ -970,25 +970,23 @@ public class FeedServiceImpl implements FeedService {
                 .collect(Collectors.toSet());
         List<Long> articleIds = articles.stream().map(Article::getId).collect(Collectors.toList());
 
-        // 批量查询作者信息
-        Map<Long, User> userMap = CollectionUtils.isEmpty(userIds) ? Collections.emptyMap()
-                : userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
+        // 批量查询作者信息（带空安全和重复处理）
+        Map<Long, User> userMap = getSafeUserMap(userIds);
 
-        // 批量查询分类信息
+        // 批量查询分类信息（带空安全和重复处理）
         Map<Long, Category> categoryMap = CollectionUtils.isEmpty(categoryIds) ? Collections.emptyMap()
-                : categoryMapper.selectBatchIds(categoryIds).stream()
-                .collect(Collectors.toMap(Category::getId, c -> c));
+                : safeToList(categoryMapper.selectBatchIds(categoryIds)).stream()
+                .collect(Collectors.toMap(Category::getId, c -> c, (existing, replacement) -> existing));
 
         // 批量查询标签关联
-        List<ArticleTag> allArticleTags = articleTagMapper.selectList(
-                new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
+        List<ArticleTag> allArticleTags = safeToList(articleTagMapper.selectList(
+                new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds)));
         Set<Long> tagIds = allArticleTags.stream().map(ArticleTag::getTagId).collect(Collectors.toSet());
 
-        // 批量查询标签信息
+        // 批量查询标签信息（带空安全和重复处理）
         Map<Long, Tag> tagMap = CollectionUtils.isEmpty(tagIds) ? Collections.emptyMap()
-                : tagMapper.selectBatchIds(tagIds).stream()
-                .collect(Collectors.toMap(Tag::getId, t -> t));
+                : safeToList(tagMapper.selectBatchIds(tagIds)).stream()
+                .collect(Collectors.toMap(Tag::getId, t -> t, (existing, replacement) -> existing));
 
         // 按文章ID分组标签
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
@@ -1046,5 +1044,27 @@ public class FeedServiceImpl implements FeedService {
 
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 安全获取用户映射，处理 null 值和重复键
+     */
+    private Map<Long, User> getSafeUserMap(Set<Long> userIds) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return Collections.emptyMap();
+        }
+        List<User> users = userMapper.selectBatchIds(userIds);
+        if (CollectionUtils.isEmpty(users)) {
+            return Collections.emptyMap();
+        }
+        return users.stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (existing, replacement) -> existing));
+    }
+
+    /**
+     * 安全的 null 列表转空列表
+     */
+    private <T> List<T> safeToList(List<T> list) {
+        return list == null ? Collections.emptyList() : list;
     }
 }
