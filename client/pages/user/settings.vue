@@ -18,65 +18,6 @@
       <h1 class="text-2xl font-bold text-slate-900">{{ '设置' }}</h1>
     </div>
 
-    <!-- 推荐偏好 -->
-    <section class="card p-3 mb-3">
-      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '推荐偏好' }}</h2>
-
-      <!-- 感兴趣的分类 -->
-      <div class="mb-3">
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '感兴趣的分类' }}</label>
-        <div class="flex flex-wrap gap-1.5">
-          <button
-            v-for="category in availableCategories"
-            :key="category.id"
-            class="px-2 py-1 text-sm rounded-full border transition-colors"
-            :class="serverSettings.interestedCategories.includes(category.id)
-              ? 'bg-primary text-white border-primary'
-              : 'bg-white text-slate-700 border-slate-300 hover:border-primary-400'"
-            @click="toggleCategory(category.id, 'interested')"
-          >
-            {{ category.name }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 屏蔽的分类 -->
-      <div class="mb-3">
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '屏蔽的分类' }}</label>
-        <div class="flex flex-wrap gap-1.5">
-          <button
-            v-for="category in availableCategories"
-            :key="category.id"
-            class="px-2 py-1 text-sm rounded-full border transition-colors"
-            :class="serverSettings.blockedCategories.includes(category.id)
-              ? 'bg-danger text-white border-danger'
-              : 'bg-white text-slate-700 border-slate-300 hover:border-red-400'"
-            @click="toggleCategory(category.id, 'blocked')"
-          >
-            {{ category.name }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 感兴趣的标签 -->
-      <div class="mb-3">
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '感兴趣的标签' }}</label>
-        <div class="flex flex-wrap gap-1.5">
-          <span v-for="tagId in serverSettings.interestedTags" :key="tagId" class="badge-primary flex items-center space-x-1">
-            <span>标签{{ tagId }}</span>
-            <button @click="removeTag(tagId, 'interested')">×</button>
-          </span>
-          <input
-            v-model="tagInput"
-            type="text"
-            class="input py-1 text-sm w-auto"
-            placeholder="添加标签"
-            @keydown.enter.prevent="addTag('interested')"
-          />
-        </div>
-      </div>
-    </section>
-
     <!-- 通知设置 -->
     <section class="card p-3 mb-3">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '通知设置' }}</h2>
@@ -173,7 +114,7 @@
 
 <script setup lang="ts">
 /** 全局设置页 */
-import type { UserSettingsServer, UserSettingsLocal, Category } from '~/types'
+import type { UserSettingsServer, UserSettingsLocal } from '~/types'
 import { storage, STORAGE_KEYS } from '~/utils/storage'
 import { userApi } from '~/api'
 
@@ -237,8 +178,6 @@ const localSettings = reactive<UserSettingsLocal>(
   }
 )
 
-const availableCategories = ref<Category[]>([])
-const tagInput = ref('')
 const saving = ref(false)
 
 const themes = [
@@ -292,49 +231,6 @@ const loadServerSettings = async () => {
   }
 }
 
-// 加载分类列表
-const loadCategories = async () => {
-  try {
-    const { get } = useApi()
-    const response = await get<Category[]>('/categories')
-    availableCategories.value = response.data.data || []
-  } catch {
-    // 分类加载失败，静默处理
-  }
-}
-
-// 切换分类
-const toggleCategory = (categoryId: number, type: 'interested' | 'blocked') => {
-  const key = type === 'interested' ? 'interestedCategories' : 'blockedCategories'
-  const index = serverSettings[key].indexOf(categoryId)
-  if (index > -1) {
-    serverSettings[key].splice(index, 1)
-  } else {
-    serverSettings[key].push(categoryId)
-  }
-}
-
-// 添加标签
-const addTag = (type: 'interested' | 'blocked') => {
-  if (!tagInput.value.trim()) return
-  const key = type === 'interested' ? 'interestedTags' : 'blockedTags'
-  const tagId = Number(tagInput.value.trim())
-  if (isNaN(tagId)) {
-    showToast('请输入有效的标签ID', 'error')
-    return
-  }
-  if (!serverSettings[key].includes(tagId)) {
-    serverSettings[key].push(tagId)
-  }
-  tagInput.value = ''
-}
-
-// 移除标签
-const removeTag = (tagId: number, type: 'interested' | 'blocked') => {
-  const key = type === 'interested' ? 'interestedTags' : 'blockedTags'
-  serverSettings[key] = serverSettings[key].filter((id) => id !== tagId)
-}
-
 // 保存本地设置（主题/字体）
 const saveLocalSettings = () => {
   storage.set(STORAGE_KEYS.SETTINGS_LOCAL, { ...localSettings })
@@ -369,10 +265,7 @@ const saveSettings = async () => {
 
 // 页面初始化
 onMounted(async () => {
-  await Promise.all([
-    loadServerSettings(),
-    loadCategories(),
-  ])
+  await loadServerSettings()
   applyFontSize()
   pageLoading.value = false
 })
