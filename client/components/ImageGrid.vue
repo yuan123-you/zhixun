@@ -1,6 +1,6 @@
 <template>
   <!-- 图片网格组件（搜索图片Tab用） -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
     <div
       v-for="(image, index) in images"
       :key="index"

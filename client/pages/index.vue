@@ -6,31 +6,32 @@
       <!-- 左侧主内容区 -->
       <div class="flex-1 min-w-0">
         <!-- 轮播图 - 仅桌面端显示 -->
-        <template v-if="!isMobile">
-          <LazyBannerCarousel v-if="bannerList.length > 0" :banners="bannerList" />
-          <!-- 轮播图骨架屏 -->
-          <div v-else class="animate-pulse rounded-xl overflow-hidden">
-            <div class="w-full bg-gray-200 dark:bg-gray-700" style="padding-bottom: 40%"></div>
-          </div>
-        </template>
+        <ClientOnly>
+          <template v-if="!isMobile">
+            <LazyBannerCarousel v-if="bannerList.length > 0" :banners="bannerList" />
+            <!-- 轮播图骨架屏 -->
+            <div v-else class="animate-pulse rounded-xl overflow-hidden">
+              <div class="w-full bg-slate-200" style="padding-bottom: 40%"></div>
+            </div>
+          </template>
+        </ClientOnly>
 
         <!-- 公告栏 - 仅桌面端显示 -->
-        <div v-if="!isMobile && announcementList.length > 0" class="mt-4">
-          <LazyAnnouncementBar :announcements="announcementList" />
-        </div>
+        <ClientOnly>
+          <div v-if="!isMobile && announcementList.length > 0" class="mt-2">
+            <LazyAnnouncementBar :announcements="announcementList" />
+          </div>
+        </ClientOnly>
 
         <!-- Tab切换 - 移动端紧凑布局确保单行显示 -->
-        <div class="flex items-center border-b border-gray-200 dark:border-gray-700 mb-6" :class="isMobile ? 'gap-0' : 'overflow-x-auto no-scrollbar'">
+        <div class="flex items-center border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="text-sm font-medium border-b-2 transition-colors whitespace-nowrap no-tap-highlight touch-target"
-            :class="[
-              activeTab === tab.key
+            class="text-sm font-medium border-b-2 transition-colors whitespace-nowrap no-tap-highlight touch-target px-2 py-2"
+            :class="activeTab === tab.key
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-              isMobile ? 'flex-1 px-1 py-2 text-center' : 'px-2 py-2'
-            ]"
+                : 'border-transparent text-slate-500 hover:text-slate-700'"
             @click="switchTab(tab.key)"
           >
             {{ tab.label }}
@@ -39,8 +40,7 @@
           <!-- 推荐Tab的"换一批"刷新按钮 - 移动端仅显示图标 -->
           <button
             v-if="activeTab === 'recommend'"
-            class="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors rounded-full hover:bg-primary/5 no-tap-highlight shrink-0"
-            :class="isMobile ? 'px-1.5 py-1' : 'px-2 py-1'"
+            class="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors rounded-full hover:bg-primary-50/50 no-tap-highlight shrink-0 px-2 py-1"
             :disabled="refreshing"
             @click="handleRefresh"
           >
@@ -53,7 +53,7 @@
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span v-if="!isMobile">{{ refreshing ? t('common.refreshing') : t('common.refresh') }}</span>
+            <span>{{ refreshing ? '刷新中' : '换一批' }}</span>
           </button>
         </div>
 
@@ -83,14 +83,12 @@ const userStore = useUserStore()
 const config = useRuntimeConfig()
 const { isMobile } = useBreakpoints()
 
-const { t } = useI18n()
-
 // Tab配置
 const tabs = [
-  { key: 'recommend', label: computed(() => t('nav.recommend')) },
-  { key: 'hot', label: computed(() => t('nav.hot')) },
-  { key: 'latest', label: computed(() => t('nav.latest')) },
-  { key: 'following', label: computed(() => t('nav.follow')) },
+  { key: 'recommend', label: computed(() => '推荐') },
+  { key: 'hot', label: computed(() => '排行') },
+  { key: 'latest', label: computed(() => '最新') },
+  { key: 'following', label: computed(() => '关注') },
 ]
 
 const activeTab = ref('recommend')
@@ -237,7 +235,7 @@ const fetchArticles = async () => {
     }
     hasMore.value = items.length >= pageSize
   } catch {
-    error.value = t('common.loadFailed')
+    error.value = '加载失败，请稍后重试'
     hasMore.value = false
   } finally {
     loading.value = false

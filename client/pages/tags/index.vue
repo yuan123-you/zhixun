@@ -1,14 +1,14 @@
 <template>
   <!-- 标签聚合页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">标签</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">标签</h1>
 
     <!-- Tab切换：标签云 / 热门标签 / 已关注 -->
-    <div class="flex items-center space-x-2 mb-6">
+    <div class="flex items-center space-x-2 mb-3">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+        class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
         :class="activeTab === tab.key
           ? 'bg-primary text-white'
           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
@@ -27,11 +27,11 @@
             <LoadingSkeleton v-for="i in 12" :key="i" type="article" />
           </div>
           <ErrorRetry v-else-if="cloudError" :message="cloudError" :on-retry="retryCloud" />
-          <div v-else-if="cloudTags.length > 0" class="flex flex-wrap gap-3">
+          <div v-else-if="cloudTags.length > 0" class="flex flex-wrap gap-2">
             <button
               v-for="tag in cloudTags"
               :key="tag.id"
-              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full transition-all hover:shadow-md cursor-pointer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all hover:shadow-md cursor-pointer"
               :style="getTagStyle(tag)"
               @click="selectTag(tag)"
             >
@@ -44,7 +44,7 @@
 
         <!-- 热门标签列表 -->
         <div v-if="activeTab === 'hot'" class="card">
-          <div v-if="hotLoading" class="p-4 space-y-3">
+          <div v-if="hotLoading" class="p-2 space-y-2">
             <LoadingSkeleton v-for="i in 8" :key="i" type="article" />
           </div>
           <ErrorRetry v-else-if="hotError" :message="hotError" :on-retry="retryHot" />
@@ -52,11 +52,11 @@
             <div
               v-for="(tag, index) in hotTags"
               :key="tag.id"
-              class="flex items-center w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
+              class="flex items-center w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
               @click="selectTag(tag)"
             >
               <!-- 排名 -->
-              <span class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm mr-3" :class="getRankClass(index)">
+              <span class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm mr-2" :class="getRankClass(index)">
                 {{ index + 1 }}
               </span>
               <!-- 标签名 -->
@@ -82,7 +82,7 @@
 
         <!-- 已关注标签 -->
         <div v-if="activeTab === 'followed'" class="card">
-          <div v-if="followedLoading" class="p-4 space-y-3">
+          <div v-if="followedLoading" class="p-2 space-y-2">
             <LoadingSkeleton v-for="i in 5" :key="i" type="article" />
           </div>
           <ErrorRetry v-else-if="followedError" :message="followedError" :on-retry="retryFollowed" />
@@ -90,7 +90,7 @@
             <div
               v-for="tag in followedTags"
               :key="tag.id"
-              class="flex items-center w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
+              class="flex items-center w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
               @click="selectTag(tag)"
             >
               <div class="flex-1 min-w-0">
@@ -109,8 +109,8 @@
         </div>
 
         <!-- 选中标签后的文章列表 -->
-        <div v-if="selectedTag" class="mt-6">
-          <div class="flex items-center justify-between mb-4">
+        <div v-if="selectedTag" class="mt-3">
+          <div class="flex items-center justify-between mb-2">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               「{{ selectedTag.name }}」相关文章
             </h2>
@@ -128,19 +128,19 @@
       </div>
 
       <!-- 右侧栏（桌面端） -->
-      <aside class="hidden lg:block w-80 2xl:w-96 shrink-0 space-y-6">
+      <aside class="hidden lg:block w-80 2xl:w-96 shrink-0 space-y-3">
         <!-- 当前选中标签信息 -->
         <div v-if="selectedTag" class="card">
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="p-2 border-b border-gray-200 dark:border-gray-700">
             <h3 class="font-semibold text-gray-900 dark:text-white">{{ selectedTag.name }}</h3>
           </div>
-          <div class="p-4 space-y-3">
+          <div class="p-2 space-y-2">
             <div class="flex items-center justify-between text-sm">
               <span class="text-gray-500 dark:text-gray-400">文章数</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ selectedTag.articleCount }}</span>
             </div>
             <button
-              class="w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              class="w-full px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
               :class="selectedTag.isFollowed
                 ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 : 'bg-primary text-white hover:bg-primary-dark'"
@@ -153,14 +153,14 @@
 
         <!-- 热门标签快捷入口 -->
         <div class="card">
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="p-2 border-b border-gray-200 dark:border-gray-700">
             <h3 class="font-semibold text-gray-900 dark:text-white">热门标签</h3>
           </div>
-          <div class="p-4 flex flex-wrap gap-2">
+          <div class="p-2 flex flex-wrap gap-1.5">
             <button
               v-for="tag in hotTags.slice(0, 10)"
               :key="tag.id"
-              class="px-3 py-1 text-sm rounded-full transition-colors"
+              class="px-2 py-0.5 text-sm rounded-full transition-colors"
               :class="selectedTag?.id === tag.id
                 ? 'bg-primary text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"

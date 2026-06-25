@@ -2,7 +2,7 @@
   <!-- 文章详情页 -->
   <div class="max-w-[800px] md:max-w-[900px] 2xl:max-w-[1200px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 返回导航 -->
-    <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors mb-4" @click="goBack">
+    <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors mb-2" @click="goBack">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
@@ -18,53 +18,55 @@
       <!-- 文章主体 -->
       <div class="2xl:flex-1 2xl:min-w-0 2xl:max-w-[800px]">
       <!-- 文章标题 -->
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      <h1 class="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
         {{ article.title }}
       </h1>
 
       <!-- 作者信息栏（微博风格） -->
-      <div class="flex items-center gap-2.5 mb-4">
+      <div class="flex items-center gap-2 mb-2">
         <NuxtLink :to="`/user/${article.author?.id}`" class="shrink-0">
           <UserAvatar :src="article.author?.avatar" :alt="article.author?.nickname" size="md" />
         </NuxtLink>
         <div class="flex-1 min-w-0">
-          <NuxtLink :to="`/user/${article.author?.id}`" class="text-sm font-medium text-gray-900 dark:text-white hover:text-primary transition-colors block">
+          <NuxtLink :to="`/user/${article.author?.id}`" class="text-sm font-medium text-slate-900 hover:text-primary transition-colors block">
             {{ article.author?.nickname }}
           </NuxtLink>
-          <p class="text-xs text-gray-400 dark:text-gray-500">
+          <p class="text-xs text-slate-400">
             <time>{{ formatTimestamp(article.createdAt) }}</time>
             <span v-if="article.deviceInfo" class="ml-1">来自{{ article.deviceInfo }}</span>
           </p>
         </div>
-        <button
-          v-if="article.author?.id !== userStore.userInfo?.id"
-          class="ml-auto btn text-sm"
-          :class="article.author?.isFollowing ? 'btn-secondary' : 'btn-primary'"
-          @click="toggleFollowAuthor"
-        >
-          {{ article.author?.isFollowing ? '已关注' : '关注' }}
-        </button>
+        <ClientOnly>
+          <button
+            v-if="article.author?.id !== userStore.userInfo?.id"
+            class="ml-auto btn text-sm"
+            :class="article.author?.isFollowing ? 'btn-secondary' : 'btn-primary'"
+            @click="toggleFollowAuthor"
+          >
+            {{ article.author?.isFollowing ? '已关注' : '关注' }}
+          </button>
+        </ClientOnly>
       </div>
 
       <!-- 封面图 -->
-      <div v-if="article.coverImage" class="mb-6 rounded-lg overflow-hidden cursor-pointer" @click="openImageZoom(resolveUrl(article.coverImage) || '', article.title)">
+      <div v-if="article.coverImage" class="mb-3 rounded-lg overflow-hidden cursor-pointer" @click="openImageZoom(resolveUrl(article.coverImage) || '', article.title)">
         <img :src="resolveUrl(article.coverImage) || ''" :alt="article.title" class="w-full max-h-96 object-cover" />
       </div>
 
       <!-- 文章内容（富文本渲染） -->
-      <div ref="contentRef" class="prose dark:prose-invert max-w-none mb-8" v-html="article.content" @click="handleContentClick"></div>
+      <div ref="contentRef" class="prose prose-slate max-w-none mb-4" v-html="article.content" @click="handleContentClick"></div>
 
       <!-- 标签 -->
-      <div v-if="article.tags?.length" class="flex flex-wrap gap-2 mb-6">
+      <div v-if="article.tags?.length" class="flex flex-wrap gap-1.5 mb-3">
         <span v-for="tag in article.tags" :key="tag.id" class="badge-primary">
           # {{ tag.name }}
         </span>
       </div>
 
       <!-- 互动按钮栏（微博风格） -->
-      <div class="flex items-center justify-around py-4 border-y border-gray-200 dark:border-gray-700 mb-6">
+      <div class="flex items-center justify-around py-4 border-y border-slate-200 mb-6">
         <!-- 点赞 -->
-        <button class="flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors touch-target" :class="article.isLiked ? 'text-primary bg-primary/5' : 'text-gray-500 dark:text-gray-400 hover:text-primary hover:bg-primary/5'" @click="toggleLike">
+        <button class="flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors touch-target" :class="article.isLiked ? 'text-primary bg-primary-50/50' : 'text-slate-500 hover:text-primary hover:bg-primary-50/50'" @click="toggleLike">
           <svg class="w-5 h-5" :class="article.isLiked ? 'fill-primary' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
@@ -72,7 +74,7 @@
         </button>
 
         <!-- 评论 -->
-        <button class="flex items-center gap-1.5 px-4 py-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors touch-target" @click="scrollToComments">
+        <button class="flex items-center gap-1.5 px-4 py-2 rounded-full text-slate-500 hover:text-primary hover:bg-primary-50/50 transition-colors touch-target" @click="scrollToComments">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
@@ -81,7 +83,7 @@
 
         <!-- 分享/转发 -->
         <div class="relative">
-          <button class="flex items-center gap-1.5 px-4 py-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors touch-target" @click="showSharePanel = !showSharePanel">
+          <button class="flex items-center gap-1.5 px-4 py-2 rounded-full text-slate-500 hover:text-primary hover:bg-primary-50/50 transition-colors touch-target" @click="showSharePanel = !showSharePanel">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
@@ -90,58 +92,58 @@
 
           <!-- 分享面板 -->
           <Transition name="fade">
-            <div v-if="showSharePanel" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-3 w-56 z-10">
+            <div v-if="showSharePanel" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-3 w-56 z-10">
               <!-- 分享方式 -->
               <div class="grid grid-cols-4 gap-3 mb-3">
                 <!-- 生成海报 -->
                 <button class="flex flex-col items-center space-y-1" @click="openSharePoster">
-                  <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <div class="w-10 h-10 bg-primary-50 text-primary-700 rounded-full flex items-center justify-center">
                     <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <span class="text-xs text-gray-600 dark:text-gray-300">海报</span>
+                  <span class="text-xs text-slate-600">海报</span>
                 </button>
 
                 <!-- 复制链接 -->
                 <button class="flex flex-col items-center space-y-1" @click="copyLink">
-                  <div class="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                  <div class="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
                     <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
                   </div>
-                  <span class="text-xs text-gray-600 dark:text-gray-300">链接</span>
+                  <span class="text-xs text-slate-600">链接</span>
                 </button>
 
                 <!-- 微信 -->
                 <button class="flex flex-col items-center space-y-1" @click="shareToPlatform('wechat')">
-                  <div class="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                  <div class="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
                     <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05a6.42 6.42 0 01-.246-1.79c0-3.558 3.39-6.441 7.573-6.441.258 0 .509.025.764.042C16.626 4.834 13.004 2.188 8.691 2.188zm-2.6 4.408c.56 0 1.015.46 1.015 1.025 0 .566-.455 1.025-1.014 1.025-.56 0-1.015-.46-1.015-1.025 0-.566.456-1.025 1.015-1.025zm5.144 0c.56 0 1.015.46 1.015 1.025 0 .566-.456 1.025-1.015 1.025-.56 0-1.014-.46-1.014-1.025 0-.566.455-1.025 1.014-1.025zM16.1 9.273c-3.68 0-6.667 2.488-6.667 5.558 0 3.07 2.987 5.558 6.667 5.558.715 0 1.404-.108 2.055-.293a.697.697 0 01.58.08l1.377.807a.262.262 0 00.135.043c.13 0 .235-.108.235-.24 0-.059-.024-.116-.04-.173l-.282-1.07a.477.477 0 01.173-.539C21.913 18.478 22.9 16.77 22.9 14.83c0-3.07-2.988-5.558-6.668-5.558h-.132zm-2.3 3.283c.454 0 .822.373.822.833 0 .46-.368.833-.822.833a.828.828 0 01-.822-.833c0-.46.368-.833.822-.833zm4.6 0c.454 0 .822.373.822.833 0 .46-.368.833-.822.833a.828.828 0 01-.822-.833c0-.46.368-.833.822-.833z"/>
                     </svg>
                   </div>
-                  <span class="text-xs text-gray-600 dark:text-gray-300">微信</span>
+                  <span class="text-xs text-slate-600">微信</span>
                 </button>
 
                 <!-- QQ -->
                 <button class="flex flex-col items-center space-y-1" @click="shareToPlatform('qq')">
-                  <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
                     <svg class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 13.2c-.18.53-.5.98-.93 1.33.27.12.58.2.9.2.16 0 .28-.01.39-.04-.32.3-.74.5-1.2.56-.16.02-.3.03-.45.03-.36 0-.7-.08-1.01-.22-.32.08-.65.13-1 .13s-.68-.05-1-.13c-.31.14-.65.22-1.01.22-.15 0-.3-.01-.45-.03-.46-.06-.88-.26-1.2-.56.11.03.23.04.39.04.32 0 .63-.08.9-.2-.43-.35-.75-.8-.93-1.33.38.32.86.52 1.39.52.24 0 .47-.04.68-.12-.3-.28-.5-.66-.5-1.09 0-.36.13-.69.35-.95-.53-.19-.91-.69-.91-1.28 0-.3.1-.58.28-.81-.1-.33-.16-.69-.16-1.07 0-1.82 1.17-3.29 2.61-3.29s2.61 1.47 2.61 3.29c0 .38-.06.74-.16 1.07.18.23.28.51.28.81 0 .59-.38 1.09-.91 1.28.22.26.35.59.35.95 0 .43-.2.81-.5 1.09.21.08.44.12.68.12.53 0 1.01-.2 1.39-.52z"/>
                     </svg>
                   </div>
-                  <span class="text-xs text-gray-600 dark:text-gray-300">QQ</span>
+                  <span class="text-xs text-slate-600">QQ</span>
                 </button>
               </div>
 
               <!-- 微博分享 -->
-              <button class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" @click="shareToPlatform('weibo')">
-                <div class="w-8 h-8 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+              <button class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors" @click="shareToPlatform('weibo')">
+                <div class="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center">
                   <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10.09 16.82c-2.83.3-5.27-1-5.46-2.9-.19-1.9 1.95-3.69 4.78-3.99 2.83-.3 5.27 1 5.46 2.9.19 1.9-1.95 3.69-4.78 3.99zm7.71-5.1c-.23-.7-.92-1.08-1.54-.85-.62.23-.94.94-.71 1.59.23.65.92 1.03 1.54.8.62-.22.94-.89.71-1.54zM17.6 3.4C15.8 1.6 13.3.8 10.9 1.1c-.8.1-1.4.8-1.3 1.6.1.8.8 1.4 1.6 1.3 1.6-.2 3.3.3 4.5 1.5 1.2 1.2 1.7 2.9 1.5 4.5-.1.8.5 1.5 1.3 1.6.8.1 1.5-.5 1.6-1.3.3-2.4-.5-4.9-2.5-6.9z"/>
                   </svg>
                 </div>
-                <span class="text-sm text-gray-700 dark:text-gray-300">分享到微博</span>
+                <span class="text-sm text-slate-700">分享到微博</span>
               </button>
             </div>
           </Transition>
@@ -153,7 +155,7 @@
         <!-- 评论懒加载触发器 -->
         <div :ref="(el: any) => commentsLazyTrigger = el" class="h-0"></div>
 
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">评论 ({{ commentTotal }})</h2>
+        <h2 class="text-lg font-semibold text-slate-900 mb-2">评论 ({{ commentTotal }})</h2>
 
         <!-- 评论加载中 -->
         <div v-if="commentsLoading" class="flex items-center justify-center py-8">
@@ -180,12 +182,12 @@
       </section>
 
       <!-- 相关推荐 -->
-      <section class="mt-8">
+      <section class="mt-4">
         <!-- 相关推荐懒加载触发器 -->
         <div :ref="(el: any) => relatedLazyTrigger = el" class="h-0"></div>
 
         <template v-if="relatedLoading">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ '相关推荐' }}</h2>
+          <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '相关推荐' }}</h2>
           <div class="flex items-center justify-center py-8">
             <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             <span class="ml-2 text-sm text-gray-500">{{ '加载中...' }}</span>
@@ -195,8 +197,8 @@
         <ErrorRetry v-else-if="relatedError" :message="relatedError" :on-retry="retryRelated" />
 
         <template v-else-if="relatedLoaded && relatedArticles.length">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ '相关推荐' }}</h2>
-          <div class="space-y-4">
+          <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '相关推荐' }}</h2>
+          <div class="space-y-2">
             <ArticleCard v-for="a in relatedArticles" :key="a.id" :article="a" />
           </div>
         </template>
@@ -205,18 +207,18 @@
 
       <!-- 2xl断点右侧目录/推荐栏 -->
       <aside class="hidden 2xl:block w-72 shrink-0">
-        <div class="sticky top-20 space-y-6">
+        <div class="sticky top-20 space-y-3">
           <!-- 目录 -->
           <div v-if="tocItems.length" class="card">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ '目录' }}</h3>
+            <div class="p-2 border-b border-slate-200">
+              <h3 class="font-semibold text-slate-900">{{ '目录' }}</h3>
             </div>
-            <nav class="p-4 space-y-1 max-h-[60vh] overflow-y-auto">
+            <nav class="p-2 space-y-1 max-h-[60vh] overflow-y-auto">
               <a
                 v-for="item in tocItems"
                 :key="item.id"
                 :href="'#' + item.id"
-                class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors truncate"
+                class="block text-sm text-slate-500 hover:text-primary-600 transition-colors truncate"
                 :style="{ paddingLeft: (item.level - 1) * 12 + 'px' }"
               >
                 {{ item.text }}
@@ -226,15 +228,15 @@
 
           <!-- 相关推荐 -->
           <div v-if="relatedArticles.length" class="card">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ '相关推荐' }}</h3>
+            <div class="p-2 border-b border-slate-200">
+              <h3 class="font-semibold text-slate-900">{{ '相关推荐' }}</h3>
             </div>
-            <div class="p-4 space-y-3">
+            <div class="p-2 space-y-2">
               <NuxtLink
                 v-for="a in relatedArticles.slice(0, 5)"
                 :key="a.id"
                 :to="`/articles/${a.id}`"
-                class="block text-sm text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 transition-colors line-clamp-2"
+                class="block text-sm text-slate-700 hover:text-primary-600 transition-colors line-clamp-2"
               >
                 {{ a.title }}
               </NuxtLink>

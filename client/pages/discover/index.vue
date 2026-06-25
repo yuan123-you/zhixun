@@ -1,68 +1,68 @@
 <template>
   <!-- 发现页 -->
-  <div class="max-w-4xl mx-auto px-4 py-6">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
 
 
     <PullToRefresh :on-refresh="() => refreshAll()" :error="usersError || rankError || tagsError">
       <!-- 热榜 -->
-      <section class="mb-8">
-        <div class="flex items-center justify-between mb-4">
+      <section class="mb-2">
+        <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('hotRank.title') }}</h2>
+            <h2 class="text-lg font-semibold text-slate-900">{{ '热榜' }}</h2>
             <span v-if="rankUpdateTime" class="text-xs text-gray-400">{{ rankUpdateTime }}</span>
           </div>
           <NuxtLink to="/rank" class="text-sm text-primary hover:text-primary-600 transition-colors">查看全部</NuxtLink>
         </div>
         <div v-if="rankLoading" class="space-y-2">
-          <div v-for="i in 5" :key="i" class="card p-3 flex items-center space-x-3 animate-pulse">
-            <div class="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0"></div>
-            <div class="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div v-for="i in 5" :key="i" class="card px-2 py-2 flex items-center space-x-2 animate-pulse">
+            <div class="w-7 h-7 rounded-full bg-slate-200 shrink-0"></div>
+            <div class="flex-1 h-4 bg-slate-200 rounded"></div>
           </div>
         </div>
         <ErrorRetry v-else-if="rankError" :message="rankError" :on-retry="fetchHotRank" />
-        <div v-else-if="hotRankItems.length > 0" class="space-y-2">
+        <div v-else-if="hotRankItems.length > 0" class="space-y-1.5">
           <div
             v-for="(item, index) in hotRankItems"
             :key="item.id"
-            class="card p-3 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer"
+            class="card px-2 py-2 flex items-center gap-2 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer"
             @click="navigateTo(`/articles/${item.id}`)"
           >
             <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-xs" :class="getRankClass(index)">
               {{ index + 1 }}
             </div>
             <div class="flex-1 min-w-0 overflow-hidden">
-              <h3 class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.title }}</h3>
+              <h3 class="text-sm font-medium text-slate-900 truncate">{{ item.title }}</h3>
               <div class="flex items-center space-x-2 mt-0.5 text-xs text-gray-400">
                 <span v-if="item.authorNickname" class="truncate max-w-[100px]">{{ item.authorNickname }}</span>
                 <span v-if="item.authorNickname && item.score != null">·</span>
-                <span v-if="item.score != null" class="shrink-0">{{ formatHeat(item.score) }} {{ t('article.heat') }}</span>
+                <span v-if="item.score != null" class="shrink-0">{{ formatHeat(item.score) }} {{ '热度' }}</span>
               </div>
             </div>
             <span class="text-xs text-accent font-bold shrink-0">{{ formatHeat(item.score ?? 0) }}</span>
           </div>
         </div>
-        <EmptyState v-else :title="t('hotRank.empty')" />
+        <EmptyState v-else :title="'暂无热榜数据'" />
       </section>
 
       <!-- 热门标签 -->
-      <section class="mb-8">
-        <div class="flex items-center justify-between mb-4">
+      <section class="mb-2">
+        <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('hotTags.title') }}</h2>
+            <h2 class="text-lg font-semibold text-slate-900">{{ '热门标签' }}</h2>
             <span v-if="tagsUpdateTime" class="text-xs text-gray-400">{{ tagsUpdateTime }}</span>
           </div>
-          <NuxtLink to="/tags" class="text-sm text-primary hover:text-primary-600 transition-colors">{{ t('hotTags.viewAll') }}</NuxtLink>
+          <NuxtLink to="/tags" class="text-sm text-primary hover:text-primary-600 transition-colors">{{ '查看全部' }}</NuxtLink>
         </div>
-        <div v-if="tagsLoading" class="flex flex-wrap gap-2">
-          <div v-for="i in 8" :key="i" class="px-3 py-1.5 text-sm rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse w-16 h-7"></div>
+        <div v-if="tagsLoading" class="flex flex-wrap gap-1.5">
+          <div v-for="i in 8" :key="i" class="px-2 py-1 text-sm rounded-full bg-slate-200 animate-pulse w-16 h-7"></div>
         </div>
         <ErrorRetry v-else-if="tagsError" :message="tagsError" :on-retry="fetchHotTags" />
-        <div v-else-if="hotTags.length > 0" class="flex flex-wrap gap-2">
+        <div v-else-if="hotTags.length > 0" class="flex flex-wrap gap-1.5">
           <NuxtLink
             v-for="tag in hotTags"
             :key="tag.id"
             to="/tags"
-            class="px-3 py-1.5 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors"
+            class="px-2 py-1 text-sm rounded-full bg-slate-50 text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors"
           >
             # {{ tag.name }}
           </NuxtLink>
@@ -70,10 +70,10 @@
       </section>
 
       <!-- 推荐用户 -->
-      <section class="mb-8">
-        <div class="flex items-center justify-between mb-4">
+      <section class="mb-2">
+        <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('recommendUsers.title') }}</h2>
+            <h2 class="text-lg font-semibold text-slate-900">{{ '推荐关注' }}</h2>
             <span v-if="usersUpdateTime" class="text-xs text-gray-400">{{ usersUpdateTime }}</span>
           </div>
           <button
@@ -90,20 +90,20 @@
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>{{ usersLoading ? t('common.refreshing') : t('common.refresh') }}</span>
+            <span>{{ usersLoading ? '刷新中' : '换一批' }}</span>
           </button>
         </div>
-        <div v-if="usersLoading" class="space-y-3">
-          <div v-for="i in 3" :key="i" class="card p-4 flex items-center space-x-3 animate-pulse">
-            <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0"></div>
+        <div v-if="usersLoading" class="space-y-2">
+          <div v-for="i in 3" :key="i" class="card px-2 py-2 flex items-center space-x-2 animate-pulse">
+            <div class="w-10 h-10 rounded-full bg-slate-200 shrink-0"></div>
             <div class="flex-1">
-              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
-              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+              <div class="h-4 bg-slate-200 rounded w-24 mb-2"></div>
+              <div class="h-3 bg-slate-200 rounded w-32"></div>
             </div>
           </div>
         </div>
         <ErrorRetry v-else-if="usersError" :message="usersError" :on-retry="fetchRecommendUsers" />
-        <div v-else-if="recommendUsers.length > 0" class="space-y-3">
+        <div v-else-if="recommendUsers.length > 0" class="space-y-2">
           <UserCard v-for="user in recommendUsers" :key="user.id" :user="user" :show-follow-button="true" @toggle-follow="toggleFollow" />
         </div>
       </section>
@@ -118,7 +118,6 @@ import { storage } from '~/utils/storage'
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()
-const { t } = useI18n()
 
 const hotRankItems = ref<RankItem[]>([])
 const hotTags = ref<Tag[]>([])
@@ -241,7 +240,7 @@ const getRankClass = (index: number) => {
   if (index === 0) return 'bg-yellow-400 text-white'
   if (index === 1) return 'bg-gray-300 text-white'
   if (index === 2) return 'bg-orange-400 text-white'
-  return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+  return 'bg-slate-50 text-slate-500'
 }
 
 // 格式化热度值：>=1，最多1位小数

@@ -124,11 +124,7 @@ watch(() => props.src, () => {
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background-color: #E5E7EB;
-}
-
-.dark .avatar-wrapper {
-  background-color: #374151;
+  background-color: #E2E8F0;
 }
 
 .avatar-bordered {
@@ -136,20 +132,11 @@ watch(() => props.src, () => {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
-.dark .avatar-bordered {
-  border-color: #1F2937;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
 .avatar-placeholder {
   position: absolute;
   inset: 0;
-  background-color: #D1D5DB;
+  background-color: #CBD5E1;
   border-radius: 50%;
-}
-
-.dark .avatar-placeholder {
-  background-color: #4B5563;
 }
 
 .avatar-image {
@@ -174,13 +161,8 @@ watch(() => props.src, () => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background-color: #E5E7EB;
-  color: #9CA3AF;
-}
-
-.dark .avatar-fallback {
-  background-color: #374151;
-  color: #6B7280;
+  background-color: #E2E8F0;
+  color: #94A3B8;
 }
 
 .avatar-fallback-icon {

@@ -1,5 +1,13 @@
 import { useBreakpoints as useVueUseBreakpoints, useWindowSize } from '@vueuse/core'
 
+/** 通过 User-Agent 检测是否为移动设备（SSR 阶段使用） */
+const detectMobileByUA = (): boolean => {
+  if (!import.meta.server) return false
+  const headers = useRequestHeaders(['user-agent'])
+  const ua = headers['user-agent'] || ''
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
+}
+
 /** 响应式断点组合式函数 */
 export const useBreakpoints = () => {
   // 使用 @vueuse/core 的 useBreakpoints，与 Tailwind 配置的断点一致
@@ -19,8 +27,14 @@ export const useBreakpoints = () => {
   const isMounted = ref(false)
   onMounted(() => { isMounted.value = true })
 
+  // SSR 阶段通过 User-Agent 预判移动端，减少水合闪烁
+  const ssrIsMobile = import.meta.server ? detectMobileByUA() : false
+
   // 是否为移动端（小于768px）
-  const isMobile = computed(() => isMounted.value && !breakpoints.md.value)
+  const isMobile = computed(() => {
+    if (isMounted.value) return !breakpoints.md.value
+    return ssrIsMobile
+  })
 
   // 是否为平板端（768px - 1023px）
   const isTablet = computed(() => {
@@ -32,11 +46,14 @@ export const useBreakpoints = () => {
   })
 
   // 是否为桌面端（大于等于1024px）
-  const isDesktop = computed(() => isMounted.value && breakpoints.lg.value)
+  const isDesktop = computed(() => {
+    if (isMounted.value) return breakpoints.lg.value
+    return !ssrIsMobile
+  })
 
   // 当前断点名称
   const currentBreakpoint = computed(() => {
-    if (!isMounted.value) return 'desktop' // SSR 默认值，避免移动端专属内容在 SSR 渲染
+    if (!isMounted.value) return ssrIsMobile ? 'mobile' : 'desktop'
     if (isMobile.value) return 'mobile'
     if (isTablet.value) return 'tablet'
     return 'desktop'

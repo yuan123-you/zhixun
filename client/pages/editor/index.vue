@@ -1,33 +1,33 @@
 <template>
   <!-- 文章编辑器 -->
-  <div class="max-w-7xl mx-auto px-4 py-6">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 返回导航 -->
-    <div class="flex items-center gap-3 mb-6">
+    <div class="flex items-center gap-3 mb-3">
       <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
-        {{ t('common.back') }}
+        {{ '返回' }}
       </button>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('nav.write') }}</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ '写文章' }}</h1>
     </div>
 
     <!-- 标题输入 -->
     <input
       v-model="form.title"
       type="text"
-      class="input text-2xl font-bold mb-6"
-      :placeholder="t('article.enterTitle')"
+      class="input text-2xl font-bold mb-3"
+      placeholder="请输入文章标题..."
     />
 
     <!-- 摘要输入 -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.summary') }}</label>
+    <div class="mb-3">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '摘要' }}</label>
       <textarea
         v-model="form.summary"
         class="input resize-none"
         rows="2"
-        :placeholder="t('article.enterSummary')"
+        placeholder="请输入文章摘要（选填，不超过200字）..."
         maxlength="200"
       ></textarea>
       <p class="text-xs text-gray-400 mt-1 text-right">{{ form.summary.length }}/200</p>
@@ -41,7 +41,7 @@
           :class="activeTab === 'edit' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'"
           @click="activeTab = 'edit'"
         >
-          {{ t('common.edit') }}
+          {{ '编辑' }}
         </button>
         <button
           class="flex-1 py-2 text-sm font-medium text-center transition-colors"
@@ -54,7 +54,7 @@
     </div>
 
     <!-- 编辑器区域：桌面端双栏，移动端Tab切换 -->
-    <div class="mb-6">
+    <div class="mb-3">
       <div class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
         <!-- 工具栏 -->
         <div class="flex items-center space-x-1 p-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600">
@@ -83,13 +83,13 @@
           <!-- 左侧编辑区 -->
           <div class="w-1/2 border-r border-gray-300 dark:border-gray-600">
             <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 font-medium">
-              {{ t('common.edit') }}
+              {{ '编辑' }}
             </div>
             <textarea
               ref="editorRef"
               v-model="form.content"
               class="w-full min-h-[400px] p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none outline-none font-mono text-sm"
-              :placeholder="t('article.enterContent')"
+              placeholder="开始写作..."
             ></textarea>
           </div>
           <!-- 右侧预览区 -->
@@ -111,7 +111,7 @@
               ref="editorRef"
               v-model="form.content"
               class="w-full min-h-[400px] p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none outline-none font-mono text-sm"
-              :placeholder="t('article.enterContent')"
+              placeholder="开始写作..."
             ></textarea>
           </div>
           <div v-show="activeTab === 'preview'">
@@ -125,12 +125,12 @@
     </div>
 
     <!-- 分类和标签选择 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
       <!-- 分类选择 -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.category') }}</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '分类' }}</label>
         <select v-model="form.categoryId" class="input">
-          <option value="">{{ t('article.noCategory') }}</option>
+          <option value="">{{ '请选择分类' }}</option>
           <option v-for="category in categories" :key="category.id" :value="category.id">
             {{ category.name }}
           </option>
@@ -139,12 +139,12 @@
 
       <!-- 标签选择 -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.tags') }}</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '标签' }}</label>
         <input
           v-model="tagInput"
           type="text"
           class="input"
-          :placeholder="t('settings.addTag')"
+          placeholder="添加标签"
           @keydown.enter.prevent="addTag"
         />
         <div v-if="form.tags.length" class="flex flex-wrap gap-2 mt-2">
@@ -157,44 +157,44 @@
     </div>
 
     <!-- 封面图上传 -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('article.coverImage') }}</label>
-      <div class="flex items-center space-x-4">
+    <div class="mb-3">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '封面图' }}</label>
+      <div class="flex items-center space-x-3">
         <div v-if="form.coverImage" class="relative w-40 h-28 rounded-lg overflow-hidden">
           <img :src="resolveUrl(form.coverImage) || ''" alt="封面" class="w-full h-full object-cover" />
           <button class="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center text-xs" @click="form.coverImage = ''">×</button>
         </div>
         <label class="btn-secondary cursor-pointer">
-          <span>{{ t('article.selectImage') }}</span>
+          <span>{{ '选择图片' }}</span>
           <input type="file" accept="image/*" class="hidden" @change="handleCoverUpload" />
         </label>
       </div>
     </div>
 
     <!-- 操作按钮 -->
-    <div class="flex items-center justify-end space-x-4">
-      <button class="btn-ghost" @click="saveDraft">{{ t('article.saveDraft') }}</button>
-      <button class="btn-primary" :disabled="!canPublish" @click="publishArticle">{{ t('article.publishArticle') }}</button>
+    <div class="flex items-center justify-end space-x-3">
+      <button class="btn-ghost" @click="saveDraft">{{ '保存草稿' }}</button>
+      <button class="btn-primary" :disabled="!canPublish" @click="publishArticle">{{ '发布文章' }}</button>
     </div>
 
     <!-- 定时发布选项 -->
-    <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <div class="flex items-center space-x-3">
+    <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div class="flex items-center space-x-2">
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" v-model="scheduledPublish" class="sr-only peer" />
           <div class="w-9 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
         </label>
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('article.scheduledPublishLabel') }}</span>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ '定时发布' }}</span>
       </div>
       <div v-if="scheduledPublish" class="mt-3">
-        <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{ t('article.selectPublishTime') }}</label>
+        <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{ '选择发布时间' }}</label>
         <input
           type="datetime-local"
           v-model="publishAt"
           class="input"
           :min="minPublishAt"
         />
-        <p class="text-xs text-gray-400 mt-1">{{ t('article.scheduledPublishHint') }}</p>
+        <p class="text-xs text-gray-400 mt-1">{{ '文章将在指定时间自动发布' }}</p>
       </div>
     </div>
   </div>
@@ -210,7 +210,6 @@ definePageMeta({
 
 const router = useRouter()
 const { resolveUrl } = useResourceUrl()
-const { t } = useI18n()
 
 // 返回上一页
 const goBack = () => {
@@ -407,9 +406,9 @@ const saveDraft = async () => {
   try {
     const { articleApi } = await import('~/api')
     await articleApi.createArticle({ ...form, status: 0 } as any)
-    showToast(t('article.draftSaved'))
+    showToast('草稿已保存')
   } catch (error: any) {
-    showToast(error.message || t('article.saveDraftFailed'), 'error')
+    showToast(error.message || '保存失败，请稍后重试', 'error')
   }
 }
 
@@ -447,13 +446,13 @@ const publishArticle = async () => {
     }
     const response = await articleApi.createArticle(data)
     if (scheduledPublish.value && publishAt.value) {
-      showToast(t('article.scheduledPublish'))
+      showToast('文章已设置为定时发布')
       navigateTo('/user')
     } else {
       navigateTo(`/articles/${response.data.data.id}`)
     }
   } catch (error: any) {
-    showToast(error.message || t('article.publishFailed'), 'error')
+    showToast(error.message || '发布失败，请稍后重试', 'error')
   }
 }
 
@@ -464,6 +463,6 @@ onMounted(() => {
 
 // 页面元信息
 useHead({
-  title: () => t('nav.write') + ' - 知讯',
+  title: () => '写文章' + ' - 知讯',
 })
 </script>

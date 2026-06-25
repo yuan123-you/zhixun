@@ -1,6 +1,6 @@
 <template>
   <!-- 全局设置页 -->
-  <div class="max-w-2xl mx-auto px-4 py-6">
+  <div class="max-w-2xl mx-auto px-2 2xl:px-3 py-2">
     <!-- 加载状态 -->
     <div v-if="pageLoading" class="flex items-center justify-center py-20">
       <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -8,31 +8,31 @@
 
     <template v-else>
     <!-- 返回导航 -->
-    <div class="flex items-center gap-3 mb-6">
+    <div class="flex items-center gap-3 mb-3">
       <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
-        {{ t('common.back') }}
+        {{ '返回' }}
       </button>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('nav.settings') }}</h1>
+      <h1 class="text-2xl font-bold text-slate-900">{{ '设置' }}</h1>
     </div>
 
     <!-- 推荐偏好 -->
-    <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.recommendPrefs') }}</h2>
+    <section class="card p-3 mb-3">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '推荐偏好' }}</h2>
 
       <!-- 感兴趣的分类 -->
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.interestedCategories') }}</label>
-        <div class="flex flex-wrap gap-2">
+      <div class="mb-3">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '感兴趣的分类' }}</label>
+        <div class="flex flex-wrap gap-1.5">
           <button
             v-for="category in availableCategories"
             :key="category.id"
-            class="px-3 py-1.5 text-sm rounded-full border transition-colors"
+            class="px-2 py-1 text-sm rounded-full border transition-colors"
             :class="serverSettings.interestedCategories.includes(category.id)
               ? 'bg-primary text-white border-primary'
-              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-primary'"
+              : 'bg-white text-slate-700 border-slate-300 hover:border-primary-400'"
             @click="toggleCategory(category.id, 'interested')"
           >
             {{ category.name }}
@@ -41,16 +41,16 @@
       </div>
 
       <!-- 屏蔽的分类 -->
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.blockedCategories') }}</label>
-        <div class="flex flex-wrap gap-2">
+      <div class="mb-3">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '屏蔽的分类' }}</label>
+        <div class="flex flex-wrap gap-1.5">
           <button
             v-for="category in availableCategories"
             :key="category.id"
-            class="px-3 py-1.5 text-sm rounded-full border transition-colors"
+            class="px-2 py-1 text-sm rounded-full border transition-colors"
             :class="serverSettings.blockedCategories.includes(category.id)
               ? 'bg-danger text-white border-danger'
-              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-danger'"
+              : 'bg-white text-slate-700 border-slate-300 hover:border-red-400'"
             @click="toggleCategory(category.id, 'blocked')"
           >
             {{ category.name }}
@@ -59,9 +59,9 @@
       </div>
 
       <!-- 感兴趣的标签 -->
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.interestedTags') }}</label>
-        <div class="flex flex-wrap gap-2">
+      <div class="mb-3">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '感兴趣的标签' }}</label>
+        <div class="flex flex-wrap gap-1.5">
           <span v-for="tagId in serverSettings.interestedTags" :key="tagId" class="badge-primary flex items-center space-x-1">
             <span>标签{{ tagId }}</span>
             <button @click="removeTag(tagId, 'interested')">×</button>
@@ -70,7 +70,7 @@
             v-model="tagInput"
             type="text"
             class="input py-1 text-sm w-auto"
-            :placeholder="t('settings.addTag')"
+            placeholder="添加标签"
             @keydown.enter.prevent="addTag('interested')"
           />
         </div>
@@ -78,62 +78,62 @@
     </section>
 
     <!-- 通知设置 -->
-    <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.notification') }}</h2>
-      <div class="space-y-3">
+    <section class="card p-3 mb-3">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '通知设置' }}</h2>
+      <div class="space-y-2">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.likeNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '点赞通知' }}</span>
           <input v-model="serverSettings.enableLikeNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.commentNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '评论通知' }}</span>
           <input v-model="serverSettings.enableCommentNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.followNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '关注通知' }}</span>
           <input v-model="serverSettings.enableFollowNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.systemNotification') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '系统通知' }}</span>
           <input v-model="serverSettings.enableSystemNotification" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
     </section>
 
     <!-- 隐私设置 -->
-    <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.privacy') }}</h2>
-      <div class="space-y-3">
+    <section class="card p-3 mb-3">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '隐私设置' }}</h2>
+      <div class="space-y-2">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.showOnlineStatus') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '显示在线状态' }}</span>
           <input v-model="serverSettings.showOnlineStatus" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.allowStrangerMessage') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '允许陌生人私信' }}</span>
           <input v-model="serverSettings.allowStrangerMessage" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.showViewHistory') }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ '显示浏览历史' }}</span>
           <input v-model="serverSettings.showViewHistory" type="checkbox" class="w-5 h-5 text-primary rounded" />
         </label>
       </div>
     </section>
 
     <!-- 显示设置 -->
-    <section class="card p-6 mb-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('settings.display') }}</h2>
-      <div class="space-y-4">
+    <section class="card p-3 mb-3">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '显示设置' }}</h2>
+      <div class="space-y-3">
         <!-- 主题 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.theme') }}</label>
-          <div class="flex space-x-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '主题' }}</label>
+          <div class="flex space-x-1.5">
             <button
               v-for="theme in themes"
               :key="theme.value"
-              class="px-4 py-2 text-sm rounded-lg border transition-colors"
+              class="px-3 py-1.5 text-sm rounded-lg border transition-colors"
               :class="localSettings.theme === theme.value
                 ? 'bg-primary text-white border-primary'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'"
+                : 'bg-white text-slate-700 border-slate-300'"
               @click="localSettings.theme = theme.value"
             >
               {{ theme.label }}
@@ -143,36 +143,18 @@
 
         <!-- 字体大小 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.fontSize') }}</label>
-          <div class="flex space-x-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ '字体大小' }}</label>
+          <div class="flex space-x-1.5">
             <button
               v-for="size in fontSizes"
               :key="size.value"
-              class="px-4 py-2 text-sm rounded-lg border transition-colors"
+              class="px-3 py-1.5 text-sm rounded-lg border transition-colors"
               :class="localSettings.fontSize === size.value
                 ? 'bg-primary text-white border-primary'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'"
+                : 'bg-white text-slate-700 border-slate-300'"
               @click="localSettings.fontSize = size.value"
             >
               {{ size.label }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 语言 -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.language') }}</label>
-          <div class="flex space-x-2">
-            <button
-              v-for="lang in languages"
-              :key="lang.value"
-              class="px-4 py-2 text-sm rounded-lg border transition-colors"
-              :class="locale === lang.value
-                ? 'bg-primary text-white border-primary'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'"
-              @click="switchLanguage(lang.value)"
-            >
-              {{ lang.label }}
             </button>
           </div>
         </div>
@@ -182,7 +164,7 @@
     <!-- 保存按钮 -->
     <div class="flex justify-end">
       <button class="btn-primary" :disabled="saving" @click="saveSettings">
-        {{ saving ? t('settings.saving') : t('settings.saveSettings') }}
+        {{ saving ? '保存中...' : '保存设置' }}
       </button>
     </div>
     </template>
@@ -227,7 +209,6 @@ const goBack = () => {
 }
 
 const colorMode = useColorMode()
-const { locale, setLocale, t } = useI18n()
 
 // 页面加载状态
 const pageLoading = ref(true)
@@ -247,7 +228,7 @@ const serverSettings = reactive<UserSettingsServer>({
   showViewHistory: true,
 })
 
-// 本地设置（主题/字体/语言，仅存 localStorage）
+// 本地设置（主题/字体，仅存 localStorage）
 const localSettings = reactive<UserSettingsLocal>(
   storage.get<UserSettingsLocal>(STORAGE_KEYS.SETTINGS_LOCAL) || {
     theme: 'system',
@@ -261,20 +242,15 @@ const tagInput = ref('')
 const saving = ref(false)
 
 const themes = [
-  { label: computed(() => t('settings.light')), value: 'light' },
-  { label: computed(() => t('settings.dark')), value: 'dark' },
-  { label: computed(() => t('settings.followSystem')), value: 'system' },
+  { label: '浅色', value: 'light' },
+  { label: '深色', value: 'dark' },
+  { label: '跟随系统', value: 'system' },
 ]
 
 const fontSizes = [
-  { label: computed(() => t('settings.small')), value: 'small' },
-  { label: computed(() => t('settings.medium')), value: 'medium' },
-  { label: computed(() => t('settings.large')), value: 'large' },
-]
-
-const languages = [
-  { label: computed(() => t('settings.chinese')), value: 'zh-CN' },
-  { label: computed(() => t('settings.english')), value: 'en' },
+  { label: '小', value: 'small' },
+  { label: '中', value: 'medium' },
+  { label: '大', value: 'large' },
 ]
 
 // 字体大小映射
@@ -327,13 +303,6 @@ const loadCategories = async () => {
   }
 }
 
-// 切换语言
-const switchLanguage = async (lang: string) => {
-  await setLocale(lang)
-  localSettings.language = lang
-  saveLocalSettings()
-}
-
 // 切换分类
 const toggleCategory = (categoryId: number, type: 'interested' | 'blocked') => {
   const key = type === 'interested' ? 'interestedCategories' : 'blockedCategories'
@@ -351,7 +320,7 @@ const addTag = (type: 'interested' | 'blocked') => {
   const key = type === 'interested' ? 'interestedTags' : 'blockedTags'
   const tagId = Number(tagInput.value.trim())
   if (isNaN(tagId)) {
-    showToast(t('settings.invalidTagId') || '请输入有效的标签ID', 'error')
+    showToast('请输入有效的标签ID', 'error')
     return
   }
   if (!serverSettings[key].includes(tagId)) {
@@ -366,7 +335,7 @@ const removeTag = (tagId: number, type: 'interested' | 'blocked') => {
   serverSettings[key] = serverSettings[key].filter((id) => id !== tagId)
 }
 
-// 保存本地设置（主题/字体/语言）
+// 保存本地设置（主题/字体）
 const saveLocalSettings = () => {
   storage.set(STORAGE_KEYS.SETTINGS_LOCAL, { ...localSettings })
   // 应用主题
@@ -384,9 +353,9 @@ const saveServerSettings = async () => {
   saving.value = true
   try {
     await userApi.updateSettings(serverSettings)
-    showToast(t('settings.saveSuccess') || '设置保存成功')
+    showToast('设置保存成功')
   } catch {
-    showToast(t('settings.saveFailed') || '设置保存失败，请稍后重试', 'error')
+    showToast('设置保存失败，请稍后重试', 'error')
   } finally {
     saving.value = false
   }
@@ -410,6 +379,6 @@ onMounted(async () => {
 
 // 页面元信息
 useHead({
-  title: () => t('nav.settings') + ' - 知讯',
+  title: () => '设置' + ' - 知讯',
 })
 </script>

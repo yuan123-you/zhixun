@@ -12,25 +12,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vueuse/nuxt',
     '@nuxtjs/color-mode',
-    '@nuxtjs/i18n',
   ],
-
-  // 国际化
-  i18n: {
-    locales: [
-      { code: 'zh-CN', name: '中文', file: 'zh-CN.json' },
-      { code: 'en', name: 'English', file: 'en.json' },
-    ],
-    defaultLocale: 'zh-CN',
-    lazy: true,
-    langDir: 'locales',
-    strategy: 'no_prefix',
-    fallbackLocale: 'zh-CN',
-    detectBrowserLanguage: false,
-    bundle: {
-      optimizeTranslationDirective: false,
-    },
-  },
 
   // 全局CSS
   css: [
@@ -102,17 +84,17 @@ export default defineNuxtConfig({
     shim: false,
   },
 
-  // 暗色模式配置
+  // 暗色模式配置 - 强制浅色主题
   colorMode: {
     classSuffix: '',
-    preference: 'system',
+    preference: 'light',
     fallback: 'light',
   },
 
   // 页面切换加载指示器
   loadingIndicator: {
     name: 'chasing-dots',
-    color: '#4f46e5',
+    color: '#6366f1',
     height: '3px',
     throttle: 200,
   },

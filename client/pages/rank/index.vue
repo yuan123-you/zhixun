@@ -1,17 +1,17 @@
 <template>
   <!-- 排行榜页 -->
-  <div class="max-w-4xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ t('hotRank.title') }}</h1>
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
+    <h1 class="text-2xl font-bold text-slate-900 mb-3">{{ '热榜' }}</h1>
 
     <!-- 日榜/周榜/月榜切换 -->
-    <div class="flex items-center space-x-2 mb-6">
+    <div class="flex items-center space-x-2 mb-3">
       <button
         v-for="tab in tabs"
         :key="tab.key"
         class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
         :class="activeTab === tab.key
           ? 'bg-primary text-white'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+          : 'bg-slate-50 text-slate-700 hover:bg-slate-200'"
         @click="switchTab(tab.key)"
       >
         {{ tab.label }}
@@ -19,11 +19,11 @@
     </div>
 
     <!-- 排行列表 -->
-    <div v-if="rankItems.length > 0" class="space-y-3">
+    <div v-if="rankItems.length > 0" class="space-y-2">
       <div
         v-for="(item, index) in rankItems"
         :key="item.id"
-        class="card p-4 flex items-center space-x-4 hover:shadow-md transition-shadow cursor-pointer"
+        class="card px-2 py-2 flex items-center space-x-3 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer"
         @click="navigateTo(`/articles/${item.id}`)"
       >
         <!-- 排名 -->
@@ -33,7 +33,7 @@
 
         <!-- 文章信息 -->
         <div class="flex-1 min-w-0">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1">{{ item.title }}</h3>
+          <h3 class="text-sm font-semibold text-slate-900 line-clamp-1">{{ item.title }}</h3>
           <div class="flex items-center space-x-4 mt-1 text-xs text-gray-400">
             <span>{{ item.authorNickname }}</span>
             <span class="flex items-center space-x-0.5">
@@ -54,7 +54,7 @@
         <!-- 热度值 -->
         <div class="text-right shrink-0">
           <span class="text-sm font-bold text-accent">{{ formatHeat(item.score ?? 0) }}</span>
-          <p class="text-2xs text-gray-400">{{ t('article.heat') }}</p>
+          <p class="text-2xs text-gray-400">{{ '热度' }}</p>
         </div>
       </div>
     </div>
@@ -68,7 +68,7 @@
     <ErrorRetry v-if="error && !loading" :message="error" :on-retry="retryLastRequest" />
 
     <!-- 空状态 -->
-    <EmptyState v-if="!loading && !error && rankItems.length === 0" :title="t('hotRank.empty')" />
+    <EmptyState v-if="!loading && !error && rankItems.length === 0" title="暂无热榜数据" />
   </div>
 </template>
 
@@ -76,12 +76,10 @@
 /** 排行榜页：日榜/周榜/月榜 */
 import type { RankItem } from '~/types'
 
-const { t } = useI18n()
-
 const tabs = [
-  { key: 'daily', label: computed(() => t('hotRank.daily')) },
-  { key: 'weekly', label: computed(() => t('hotRank.weekly')) },
-  { key: 'monthly', label: computed(() => t('hotRank.monthly')) },
+  { key: 'daily', label: computed(() => '日榜') },
+  { key: 'weekly', label: computed(() => '周榜') },
+  { key: 'monthly', label: computed(() => '月榜') },
 ]
 
 const activeTab = ref('daily')
@@ -111,7 +109,7 @@ const fetchRank = async () => {
     )
     rankItems.value = data || []
   } catch {
-    error.value = t('hotRank.loadFailed')
+    error.value = '加载排行榜失败，请稍后重试'
     rankItems.value = []
   } finally {
     loading.value = false
@@ -128,7 +126,7 @@ const getRankClass = (index: number) => {
   if (index === 0) return 'bg-yellow-400 text-white'
   if (index === 1) return 'bg-gray-300 text-white'
   if (index === 2) return 'bg-orange-400 text-white'
-  return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+  return 'bg-slate-50 text-slate-500'
 }
 
 // 格式化热度值
@@ -154,6 +152,6 @@ rankItems.value = initialData.value || []
 
 // 页面元信息
 useHead({
-  title: () => t('hotRank.title') + ' - 知讯',
+  title: () => '热榜' + ' - 知讯',
 })
 </script>

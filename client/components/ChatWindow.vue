@@ -1,28 +1,28 @@
 <template>
   <!-- 聊天窗口组件 -->
-  <div class="flex flex-col h-full bg-white dark:bg-gray-800">
+  <div class="flex flex-col h-full bg-white">
     <!-- 聊天头部 -->
-    <div v-if="conversation" class="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
-      <button class="md:hidden p-2 mr-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" @click="$emit('back')">
+    <div v-if="conversation" class="flex items-center p-4 border-b border-slate-200/60">
+      <button class="md:hidden p-2 mr-2 text-slate-600 hover:bg-slate-50 rounded-lg" @click="$emit('back')">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
       <UserAvatar :src="conversation.user?.avatar" alt="头像" size="md" />
       <div class="ml-3">
-        <p class="font-medium text-gray-900 dark:text-white">{{ conversation.user?.nickname }}</p>
+        <p class="font-medium text-slate-900">{{ conversation.user?.nickname }}</p>
         <p class="text-xs" :class="isOnline ? 'text-green-500' : 'text-gray-400'">{{ isOnline ? '在线' : '离线' }}</p>
       </div>
     </div>
 
     <!-- 消息列表 -->
-    <div ref="messageListRef" class="flex-1 overflow-y-auto p-4 space-y-4">
+    <div ref="messageListRef" class="flex-1 overflow-y-auto p-2 space-y-2">
       <div v-for="message in messages" :key="message.id" class="flex" :class="isMine(message) ? 'justify-end' : 'justify-start'">
         <!-- 对方消息 -->
         <div v-if="!isMine(message)" class="flex items-end space-x-2 max-w-[70%]">
           <UserAvatar :src="message.sender?.avatar" alt="头像" size="sm" />
-          <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-2">
-            <p class="text-sm text-gray-900 dark:text-white">{{ message.content }}</p>
+          <div class="bg-slate-100 rounded-2xl rounded-bl-sm px-3 py-1.5">
+            <p class="text-sm text-slate-900">{{ message.content }}</p>
             <span class="text-[10px] text-gray-400 mt-1 block">{{ formatTime(message.createdAt) }}</span>
           </div>
         </div>
@@ -38,7 +38,7 @@
     </div>
 
     <!-- 消息输入框 -->
-    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+    <div class="p-2 border-t border-slate-200/60">
       <div class="flex items-center space-x-2">
         <input
           v-model="inputContent"

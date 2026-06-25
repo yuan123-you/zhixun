@@ -1,60 +1,60 @@
 <template>
   <!-- 注册页 -->
-  <div class="w-full max-w-md mx-auto px-4">
-    <div class="card p-8">
+  <div class="w-full max-w-md mx-auto px-2">
+    <div class="card p-4 md:p-6">
       <!-- Logo和标题 -->
-      <div class="text-center mb-8">
-        <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="text-center mb-4">
+        <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3">
           <span class="text-white font-bold text-2xl">知</span>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('auth.registerTitle') }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ t('auth.registerDesc') }}</p>
+        <h1 class="text-2xl font-bold text-slate-900">{{ '注册知讯' }}</h1>
+        <p class="text-sm text-slate-500 mt-2">{{ '加入知讯，开启你的知识之旅' }}</p>
       </div>
 
       <!-- 注册表单 -->
-      <form class="space-y-4" @submit.prevent="handleRegister">
+      <form class="space-y-3" @submit.prevent="handleRegister">
         <!-- 用户名 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.username') }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '用户名' }}</label>
           <input
             v-model="form.username"
             type="text"
             class="input"
-            :placeholder="t('auth.enterUsernameHint')"
+            placeholder="请输入用户名（3-20位字母数字下划线）"
             required
           />
         </div>
 
         <!-- 邮箱 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.email') }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '邮箱' }}</label>
           <div class="flex items-center">
             <input
               v-model="emailPrefix"
               type="text"
               class="input flex-1 rounded-r-none"
-              :placeholder="t('auth.enterQQEmailPrefix')"
+              placeholder="请输入QQ号"
               required
             />
-            <span class="inline-flex items-center px-3 h-[40px] bg-gray-100 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">@qq.com</span>
+            <span class="inline-flex items-center px-3 h-[40px] bg-slate-50 border border-l-0 border-slate-300 rounded-r-md text-sm text-slate-500 whitespace-nowrap">@qq.com</span>
           </div>
         </div>
 
         <!-- 图形验证码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('auth.graphCaptcha') }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '图形验证码' }}</label>
           <div class="flex gap-2 items-center">
             <input
               v-model="form.captchaAnswer"
               type="text"
               class="input flex-1"
-              :placeholder="t('auth.enterCaptchaResult')"
+              placeholder="请计算结果"
               required
             />
-            <div class="cursor-pointer flex-shrink-0 h-[40px] rounded-md overflow-hidden border border-gray-200 dark:border-gray-700" @click="refreshGraphCaptcha" :title="t('auth.clickToRefresh')">
-              <img v-if="graphCaptchaImage" :src="graphCaptchaImage" :alt="t('auth.graphCaptcha')" class="h-full w-[120px] object-cover" />
-              <div v-else class="h-full w-[120px] flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs text-gray-400">
-                {{ t('auth.clickToGet') }}
+            <div class="cursor-pointer flex-shrink-0 h-[40px] rounded-md overflow-hidden border border-slate-200" @click="refreshGraphCaptcha" title="点击刷新">
+              <img v-if="graphCaptchaImage" :src="graphCaptchaImage" alt="图形验证码" class="h-full w-[120px] object-cover" />
+              <div v-else class="h-full w-[120px] flex items-center justify-center bg-slate-50 text-xs text-gray-400">
+                {{ '点击获取' }}
               </div>
             </div>
           </div>
@@ -62,13 +62,13 @@
 
         <!-- 邮箱验证码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('auth.emailCaptcha') }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '邮箱验证码' }}</label>
           <div class="flex gap-2">
             <input
               v-model="form.code"
               type="text"
               class="input flex-1"
-              :placeholder="t('auth.enter6DigitCode')"
+              placeholder="请输入6位验证码"
               required
               maxlength="6"
             />
@@ -78,20 +78,20 @@
               :disabled="codeCooldown > 0 || !emailPrefix || !form.captchaAnswer"
               @click="handleSendCode"
             >
-              {{ codeCooldown > 0 ? `${codeCooldown}s` : t('auth.getCode') }}
+              {{ codeCooldown > 0 ? `${codeCooldown}s` : '获取验证码' }}
             </button>
           </div>
         </div>
 
         <!-- 密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.password') }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '密码' }}</label>
           <div class="relative">
             <input
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               class="input pr-10 w-full"
-              :placeholder="t('auth.enterPasswordHint')"
+              placeholder="请输入密码（需包含字母和数字，至少6位）"
               autocomplete="new-password"
               required
               minlength="6"
@@ -99,7 +99,7 @@
             <button
               type="button"
               tabindex="-1"
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 select-none"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
               @mousedown.prevent="showPassword = !showPassword"
               @touchstart.prevent="showPassword = !showPassword"
             >
@@ -112,25 +112,25 @@
               </svg>
             </button>
           </div>
-          <p class="text-xs text-gray-400 mt-1">{{ t('auth.passwordRequirement') }}</p>
+          <p class="text-xs text-gray-400 mt-1">{{ '密码需包含字母和数字' }}</p>
         </div>
 
         <!-- 确认密码 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('user.confirmPassword') }}</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ '确认密码' }}</label>
           <div class="relative">
             <input
               v-model="form.confirmPassword"
               :type="showConfirmPassword ? 'text' : 'password'"
               class="input pr-10 w-full"
-              :placeholder="t('auth.enterPasswordAgain')"
+              placeholder="请再次输入密码"
               autocomplete="new-password"
               required
             />
             <button
               type="button"
               tabindex="-1"
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 select-none"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-600 select-none"
               @mousedown.prevent="showConfirmPassword = !showConfirmPassword"
               @touchstart.prevent="showConfirmPassword = !showConfirmPassword"
             >
@@ -151,14 +151,14 @@
           class="btn-primary w-full transition-all duration-200"
           :disabled="loading"
         >
-          {{ loading ? t('auth.registering') : t('common.register') }}
+          {{ loading ? '注册中...' : '注册' }}
         </button>
       </form>
 
       <!-- 跳转登录 -->
-      <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-        {{ t('auth.hasAccount') }}
-        <NuxtLink to="/login" class="text-primary hover:text-primary-600 font-medium">{{ t('auth.loginNow') }}</NuxtLink>
+      <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+        {{ '已有账号？' }}
+        <NuxtLink to="/login" class="text-primary hover:text-primary-600 font-medium">{{ '立即登录' }}</NuxtLink>
       </p>
     </div>
   </div>
@@ -173,7 +173,6 @@ definePageMeta({
 })
 
 const { register, sendCode, getGraphCaptcha } = useAuth()
-const { t } = useI18n()
 
 const form = reactive({
   username: '',
@@ -206,7 +205,7 @@ const refreshGraphCaptcha = async () => {
     graphCaptchaKey.value = data.captchaKey
     graphCaptchaImage.value = data.image
   } catch (err: any) {
-    error.value = err.message || t('auth.getCaptchaFailed')
+    error.value = err.message || '验证码获取失败'
   }
 }
 
@@ -218,15 +217,15 @@ onMounted(() => {
 // 发送邮箱验证码
 const handleSendCode = async () => {
   if (!emailPrefix.value) {
-    showAlert(t('auth.enterEmailFirst'))
+    showAlert('请先填写邮箱')
     return
   }
   if (!/^\d{5,11}$/.test(emailPrefix.value)) {
-    showAlert(t('auth.invalidQQEmail'))
+    showAlert('请输入有效的QQ号（5-11位数字）')
     return
   }
   if (!form.captchaAnswer) {
-    showAlert(t('auth.completeCaptchaFirst'))
+    showAlert('请先完成图形验证')
     return
   }
   try {
@@ -246,7 +245,7 @@ const handleSendCode = async () => {
       }
     }, 1000)
   } catch (err: any) {
-    showAlert(err.message || t('auth.sendCodeFailed'))
+    showAlert(err.message || '验证码发送失败')
     // 失败后也刷新图形验证码
     refreshGraphCaptcha()
     form.captchaAnswer = ''
@@ -256,23 +255,23 @@ const handleSendCode = async () => {
 // 处理注册
 const handleRegister = async () => {
   if (!emailPrefix.value || !/^\d{5,11}$/.test(emailPrefix.value)) {
-    showAlert(t('auth.invalidQQEmail'))
+    showAlert('请输入有效的QQ号（5-11位数字）')
     return
   }
   if (!form.code || form.code.length !== 6) {
-    showAlert(t('auth.input6DigitCode'))
+    showAlert('请填写6位验证码')
     return
   }
   if (form.password !== form.confirmPassword) {
-    showAlert(t('auth.passwordMismatch'))
+    showAlert('两次密码不一致')
     return
   }
   if (form.password.length < 6) {
-    showAlert(t('auth.passwordMinLength'))
+    showAlert('密码至少6位')
     return
   }
   if (!/[a-zA-Z]/.test(form.password) || !/\d/.test(form.password)) {
-    showAlert(t('auth.passwordRequirementError'))
+    showAlert('密码需包含字母和数字')
     return
   }
 
@@ -282,14 +281,14 @@ const handleRegister = async () => {
     await register(form)
     navigateTo('/')
   } catch (err: any) {
-    showAlert(err.message || t('auth.registerFailed'))
+    showAlert(err.message || '注册失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
 useHead({
-  title: () => `${t('common.register')} - 知讯`,
+  title: () => `${'注册'} - 知讯`,
 })
 
 onUnmounted(() => {

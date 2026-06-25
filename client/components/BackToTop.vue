@@ -2,8 +2,8 @@
   <Transition name="back-to-top-fade">
     <button
       v-show="isVisible"
-      class="back-to-top"
-      :aria-label="t('common.backToTop')"
+      class="back-to-top bg-white shadow-[var(--shadow-md)] border border-slate-100 text-slate-600 hover:text-primary"
+      aria-label="返回顶部"
       @click="scrollToTop"
     >
       <svg
@@ -24,8 +24,6 @@
 
 <script setup lang="ts">
 /** 返回顶部按钮：滚动超过视口50%时显示，点击平滑滚动至顶部 */
-
-const { t } = useI18n()
 
 const isVisible = ref(false)
 let ticking = false
@@ -85,23 +83,18 @@ onBeforeUnmount(() => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: var(--color-primary);
-  color: #ffffff;
-  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   -webkit-tap-highlight-color: transparent;
   tap-highlight-color: transparent;
-  transition: transform 0.1s ease, opacity 0.1s ease;
+  transition: transform 0.1s ease, opacity 0.1s ease, color 0.15s ease;
   opacity: 0.6;
 }
 
 .back-to-top:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  opacity: 1;
 }
 
 .back-to-top:active {
@@ -148,8 +141,7 @@ onBeforeUnmount(() => {
   }
 
   .back-to-top:hover {
-    filter: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    opacity: 0.6;
   }
 }
 

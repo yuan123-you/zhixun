@@ -44,15 +44,13 @@ import type { Article, PageResult, ApiResponse } from '~/types'
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const { t } = useI18n()
-
 const slug = computed(() => route.params.slug as string)
 
 // 分类映射
 const categoryMap: Record<string, { label: string; color: string; id: number }> = {
-  tech: { label: t('nav.tech'), color: 'bg-blue-500', id: 1 },
-  design: { label: t('nav.design'), color: 'bg-purple-500', id: 2 },
-  product: { label: t('nav.product'), color: 'bg-green-500', id: 3 },
+  tech: { label: '技术', color: 'bg-blue-500', id: 1 },
+  design: { label: '设计', color: 'bg-purple-500', id: 2 },
+  product: { label: '产品', color: 'bg-green-500', id: 3 },
 }
 
 const categoryLabel = computed(() => categoryMap[slug.value]?.label || slug.value)
@@ -60,8 +58,8 @@ const categoryColor = computed(() => categoryMap[slug.value]?.color || 'bg-gray-
 const categoryId = computed(() => categoryMap[slug.value]?.id)
 
 const tabs = [
-  { key: 'latest', label: computed(() => t('nav.latest')) },
-  { key: 'hot', label: computed(() => t('nav.hot')) },
+  { key: 'latest', label: computed(() => '最新') },
+  { key: 'hot', label: computed(() => '排行') },
 ]
 
 const activeTab = ref('latest')
@@ -118,7 +116,7 @@ const fetchArticles = async () => {
     }
     hasMore.value = items.length >= 10
   } catch {
-    error.value = t('common.loadFailed')
+    error.value = '加载失败，请稍后重试'
     hasMore.value = false
   } finally {
     loading.value = false

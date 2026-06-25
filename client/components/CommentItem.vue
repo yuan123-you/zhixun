@@ -1,27 +1,27 @@
 <template>
   <!-- 单条评论项组件（供 CommentSection 内部使用） -->
-  <div class="flex space-x-3">
+  <div class="flex space-x-2">
     <!-- 用户头像 -->
     <UserAvatar :src="comment.user?.avatar" :alt="comment.user?.nickname" size="sm" />
 
     <div class="flex-1 min-w-0">
       <!-- 用户名和内容 -->
       <div>
-        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ comment.user?.nickname }}</span>
+        <span class="text-sm font-medium text-slate-900">{{ comment.user?.nickname }}</span>
         <!-- 待审核标签 -->
-        <span v-if="comment.status === 0" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+        <span v-if="comment.status === 0" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
           待审核
         </span>
         <!-- 回复目标用户名 -->
         <template v-if="comment.replyUser">
-          <span class="text-xs text-gray-400 dark:text-gray-500 mx-1">回复</span>
+          <span class="text-xs text-slate-400 mx-1">回复</span>
           <span class="text-sm font-medium text-primary">@{{ comment.replyUser.nickname }}</span>
         </template>
-        <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ comment.content }}</p>
+        <p class="text-sm text-slate-700 mt-1">{{ comment.content }}</p>
       </div>
 
       <!-- 底部操作栏 -->
-      <div class="flex items-center space-x-4 mt-2 text-xs text-gray-400 dark:text-gray-500">
+      <div class="flex items-center space-x-4 mt-2 text-xs text-slate-400">
         <span>{{ formatTime(comment.createdAt) }}</span>
         <!-- 点赞 -->
         <button class="flex items-center space-x-1 transition-colors" :class="comment.isLiked ? 'text-primary' : 'hover:text-primary'" @click="$emit('like', comment.id)">
@@ -39,9 +39,11 @@
           删除
         </button>
         <!-- 举报（非自己的评论且已登录） -->
-        <button v-if="!isOwner && !isAdmin && userStore.isLoggedIn" class="hover:text-primary transition-colors" @click="showReportModal = true">
-          举报
-        </button>
+        <ClientOnly>
+          <button v-if="!isOwner && !isAdmin && userStore.isLoggedIn" class="hover:text-primary transition-colors" @click="showReportModal = true">
+            举报
+          </button>
+        </ClientOnly>
       </div>
     </div>
   </div>
@@ -50,8 +52,8 @@
   <Teleport to="body">
     <div v-if="showReportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showReportModal = false">
       <div class="absolute inset-0 bg-black/50" @click="showReportModal = false"></div>
-      <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">举报评论</h3>
+      <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">举报评论</h3>
         <textarea
           v-model="reportReason"
           class="input resize-none"

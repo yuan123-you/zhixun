@@ -2,7 +2,7 @@
   <!-- 错误状态与重试组件 -->
   <div class="flex flex-col items-center justify-center py-8 px-4">
     <!-- 错误图标 -->
-    <div class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600">
+    <div class="w-16 h-16 mb-4 text-slate-300">
       <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
@@ -14,7 +14,7 @@
     </div>
 
     <!-- 错误信息 -->
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center max-w-xs">
+    <p class="text-sm text-slate-500 mb-4 text-center max-w-xs">
       {{ message || '加载失败，请稍后重试' }}
     </p>
 
@@ -38,7 +38,7 @@
           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
         />
       </svg>
-      <span>{{ retrying ? t('common.retrying') : t('common.retry') }}</span>
+      <span>{{ retrying ? '重试中...' : '点击重试' }}</span>
     </button>
   </div>
 </template>
@@ -55,7 +55,6 @@ const props = withDefaults(defineProps<{
   message: '加载失败，请稍后重试',
 })
 
-const { t } = useI18n()
 const retrying = ref(false)
 
 const handleRetry = async () => {

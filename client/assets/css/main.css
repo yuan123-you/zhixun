@@ -112,44 +112,60 @@
   100% { transform: translateX(350%); }
 }
 
-/* 自定义CSS变量 */
+/* 自定义CSS变量 - 现代浅色主题 */
 :root {
-  --color-primary: #4F46E5;
+  /* 主色系 - 柔和靛蓝 */
+  --color-primary: #6366F1;
   --color-primary-light: #818CF8;
-  --color-primary-dark: #3730A3;
-  --color-secondary: #22C55E;
-  --color-accent: #F97316;
+  --color-primary-dark: #4F46E5;
+  --color-primary-rgb: 99, 102, 241;
+  /* 功能色 */
+  --color-secondary: #10B981;
+  --color-accent: #F59E0B;
   --color-danger: #EF4444;
-  --color-bg: #F9FAFB;
+  /* 背景色系 - 暖白层次 */
+  --color-bg: #F8F9FC;
   --color-bg-secondary: #FFFFFF;
-  --color-text: #111827;
-  --color-text-secondary: #6B7280;
-  --color-border: #E5E7EB;
+  --color-bg-tertiary: #F1F3F8;
+  /* 文字色系 */
+  --color-text: #1E293B;
+  --color-text-secondary: #64748B;
+  --color-text-tertiary: #94A3B8;
+  /* 边框与分割 */
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  /* 卡片背景 */
+  --card-bg: #FFFFFF;
+  /* 布局尺寸 */
   --header-height: 4rem;
   --mobile-nav-height: 3.5rem;
-}
-
-/* 暗色模式变量 */
-.dark {
-  --color-bg: #111827;
-  --color-bg-secondary: #1F2937;
-  --color-text: #F9FAFB;
-  --color-text-secondary: #9CA3AF;
-  --color-border: #374151;
+  /* 圆角 */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
 }
 
 /* 基础样式 */
 @layer base {
   html {
     @apply scroll-smooth;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-[var(--color-bg)] text-[var(--color-text)] transition-colors duration-200;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
-  /* 自定义滚动条 */
+  /* 自定义滚动条 - 浅色主题 */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -160,32 +176,28 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-gray-500;
+    @apply bg-slate-300 rounded-full hover:bg-slate-400;
   }
 }
 
-/* 自定义组件样式 */
+/* 自定义组件样式 - 现代浅色主题 */
 @layer components {
-  /* 卡片样式 */
+  /* 卡片样式 - 柔和阴影 + 圆角 */
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700;
+    @apply bg-white rounded-xl shadow-[var(--shadow-sm)] border border-slate-100;
   }
 
-  /* 按钮基础样式 */
+  /* 按钮基础样式 - 现代圆角 */
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply btn bg-primary text-white hover:bg-primary-600 focus:ring-primary-500;
+    @apply btn bg-primary text-white hover:bg-primary-600 focus:ring-primary-500 shadow-sm;
   }
 
   .btn-secondary {
-    @apply btn bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-gray-500;
+    @apply btn bg-slate-50 text-slate-700 hover:bg-slate-100 focus:ring-slate-400 border border-slate-200;
   }
 
   .btn-outline {
@@ -193,35 +205,35 @@
   }
 
   .btn-danger {
-    @apply btn bg-danger text-white hover:bg-red-600 focus:ring-red-500;
+    @apply btn bg-danger text-white hover:bg-red-600 focus:ring-red-500 shadow-sm;
   }
 
   .btn-ghost {
-    @apply btn bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-gray-500;
+    @apply btn bg-transparent text-slate-500 hover:bg-slate-50 focus:ring-slate-400;
   }
 
-  /* 输入框样式 */
+  /* 输入框样式 - 现代边框 */
   .input {
-    @apply w-full h-10 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-[border-color,box-shadow] duration-200;
+    @apply w-full h-10 px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-[border-color,box-shadow] duration-200;
     /* 防止移动端点击输入框时浏览器自动缩放 */
     font-size: 16px;
   }
 
   /* 标签样式 */
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
 
   .badge-primary {
-    @apply badge bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300;
+    @apply badge bg-primary-50 text-primary-700;
   }
 
   .badge-secondary {
-    @apply badge bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300;
+    @apply badge bg-emerald-50 text-emerald-700;
   }
 
   .badge-accent {
-    @apply badge bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300;
+    @apply badge bg-amber-50 text-amber-700;
   }
 
   /* 头像样式规范 */
@@ -276,6 +288,43 @@
   }
 }
 
+/* ==================== 移动端紧凑布局优化 ==================== */
+@media (max-width: 767px) {
+  /* 移动端减小标题字号 */
+  h1 { font-size: 1.25rem !important; line-height: 1.4 !important; }
+  h2 { font-size: 1.125rem !important; line-height: 1.4 !important; }
+  h3 { font-size: 1rem !important; line-height: 1.5 !important; }
+
+  /* 移动端紧凑行高 */
+  p, li { line-height: 1.5 !important; }
+
+  /* 移动端紧凑卡片内边距 */
+  .card { padding: 0.5rem !important; }
+
+  /* 移动端按钮紧凑化但保持可点击性 */
+  .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    min-height: 36px;
+  }
+
+  /* 移动端输入框紧凑化 */
+  .input {
+    height: 2.25rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 16px; /* 保持16px防止iOS缩放 */
+  }
+
+  /* 移动端badge紧凑化 */
+  .badge {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+
+  /* 移动端减少section间距 */
+  .card + .card { margin-top: 0.375rem; }
+}
+
 /* ==================== 平板端适配 ==================== */
 @media (min-width: 768px) and (max-width: 1024px) {
   /* 两栏布局优化 */
@@ -324,9 +373,9 @@
     padding-right: 1rem;
   }
 
-  /* 卡片在平板上的间距调整 */
+  /* 卡片在平板上的间距调整 - 紧凑 */
   .card {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
   }
 }
 
@@ -413,41 +462,25 @@
   }
 
   .btn-secondary:active {
-    background-color: #d1d5db;
+    background-color: #e2e8f0;
   }
 
   .btn-ghost:active {
-    background-color: #f3f4f6;
-  }
-
-  /* 暗色模式触摸反馈 */
-  .dark .btn-secondary:active {
-    background-color: #4b5563;
-  }
-
-  .dark .btn-ghost:active {
-    background-color: #374151;
+    background-color: #f1f5f9;
   }
 
   /* 列表项触摸反馈 */
   .card:active,
-  .hover\:bg-gray-50:active {
-    background-color: #f9fafb;
-  }
-
-  .dark .card:active,
-  .dark .hover\:bg-gray-700\/50:active {
-    background-color: #374151;
+  .hover\:bg-slate-50:active {
+    background-color: #f8fafc;
   }
 
   /* 禁用触摸设备上的 hover 效果 */
   .hover\:shadow-md:hover,
-  .hover\:bg-gray-50:hover,
-  .hover\:bg-gray-100:hover,
-  .hover\:bg-gray-700:hover,
+  .hover\:bg-slate-50:hover,
+  .hover\:bg-slate-100:hover,
   .hover\:text-primary:hover,
-  .hover\:text-gray-700:hover,
-  .hover\:text-gray-300:hover {
+  .hover\:text-slate-700:hover {
     /* 触摸设备上 hover 效果不生效，避免"粘滞" */
   }
 }
@@ -472,28 +505,16 @@
   }
 
   .btn-secondary:hover {
-    background-color: #f3f4f6;
-  }
-
-  .dark .btn-secondary:hover {
-    background-color: #374151;
+    background-color: #f8fafc;
   }
 
   .btn-ghost:hover {
     background-color: transparent;
   }
 
-  .dark .btn-ghost:hover {
-    background-color: transparent;
-  }
-
   /* 导航链接 hover 重置 */
-  .hover\:bg-gray-100:hover,
-  .hover\:bg-gray-50:hover {
-    background-color: transparent;
-  }
-
-  .dark .hover\:bg-gray-700:hover {
+  .hover\:bg-slate-100:hover,
+  .hover\:bg-slate-50:hover {
     background-color: transparent;
   }
 }
@@ -624,4 +645,19 @@
   0%, 20% { transform: rotate(0deg); }
   50%, 70% { transform: rotate(90deg); }
   100% { transform: rotate(0deg); }
+}
+
+/* ==================== 页面初始加载过渡控制 ==================== */
+
+/*
+ * 防止 SSR 水合期间布局属性（padding、margin 等）产生过渡动画。
+ * 页面加载完成后由 JS 移除该类名，恢复正常过渡效果。
+ * 这是解决"DevTools 检查元素时布局正常、正常浏览时错位"的关键修复：
+ * DevTools 打开时会强制同步重排（reflow），将过渡"快进"到最终状态，
+ * 而正常浏览时过渡可能停留在中间状态导致布局错位。
+ */
+.pre-hydration,
+.pre-hydration * {
+  transition: none !important;
+  animation-duration: 0s !important;
 }

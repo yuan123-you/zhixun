@@ -6,8 +6,8 @@
         <!-- 左侧会话列表 -->
         <div class="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" :class="{ 'hidden md:flex': activeConversation }">
           <!-- 搜索会话 -->
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <input v-model="conversationSearch" type="text" class="input text-sm" :placeholder="t('message.searchConversation')" />
+          <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+            <input v-model="conversationSearch" type="text" class="input text-sm" placeholder="搜索会话..." />
           </div>
 
           <!-- 会话列表 -->
@@ -42,7 +42,7 @@
               </button>
 
               <!-- 空状态 -->
-              <EmptyState v-if="conversations.length === 0" :title="t('message.noConversations')" :description="t('message.startConversation')" />
+              <EmptyState v-if="conversations.length === 0" title="暂无会话" description="开始一段新的对话吧" />
             </template>
           </div>
         </div>
@@ -63,7 +63,7 @@
               <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <p class="text-gray-500 dark:text-gray-400">{{ t('message.selectConversation') }}</p>
+              <p class="text-gray-500 dark:text-gray-400">{{ '选择一个会话开始聊天' }}</p>
             </div>
           </div>
         </div>
@@ -82,7 +82,6 @@ definePageMeta({
 })
 
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
-const { t } = useI18n()
 
 const conversations = ref<Conversation[]>([])
 const activeConversation = ref<Conversation | null>(null)
@@ -112,7 +111,7 @@ const loadConversations = async () => {
     )
     conversations.value = response.data.data.list || []
   } catch {
-    conversationsError.value = t('message.loadConversationsFailed')
+    conversationsError.value = '加载会话列表失败，请稍后重试'
     conversations.value = []
   } finally {
     loading.value = false
@@ -244,6 +243,6 @@ const formatTime = (time: string) => {
 
 // 页面元信息
 useHead({
-  title: () => t('message.privateMessage') + ' - 知讯',
+  title: () => '私信' + ' - 知讯',
 })
 </script>

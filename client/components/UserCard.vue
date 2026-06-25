@@ -8,13 +8,13 @@
 
     <!-- 用户信息 -->
     <div class="flex-1 min-w-0">
-      <NuxtLink :to="`/user/${user.id}`" class="text-sm font-semibold text-gray-900 dark:text-white hover:text-primary transition-colors">
+      <NuxtLink :to="`/user/${user.id}`" class="text-sm font-semibold text-slate-900 hover:text-primary transition-colors">
         {{ user.nickname }}
       </NuxtLink>
-      <p v-if="user.bio" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ user.bio }}</p>
-      <div class="flex items-center space-x-3 text-xs text-gray-400 dark:text-gray-500 mt-1">
-        <span>{{ user.articleCount }} {{ t('article.articles') }}</span>
-        <span>{{ user.followerCount }} {{ t('article.followers') }}</span>
+      <p v-if="user.bio" class="text-xs text-slate-500 line-clamp-1 mt-0.5">{{ user.bio }}</p>
+      <div class="flex items-center space-x-2 text-xs text-slate-400 mt-1">
+        <span>{{ user.articleCount }} 文章</span>
+        <span>{{ user.followerCount }} 粉丝</span>
       </div>
     </div>
 
@@ -25,7 +25,7 @@
       :class="user.isFollowing ? 'btn-secondary' : 'btn-primary'"
       @click="$emit('toggleFollow', user.id)"
     >
-      {{ user.isFollowing ? t('article.followed') : t('article.followBtn') }}
+      {{ user.isFollowing ? '已关注' : '关注' }}
     </button>
   </div>
 </template>
@@ -38,8 +38,6 @@ defineProps<{
   user: User
   showFollowButton?: boolean
 }>()
-
-const { t } = useI18n()
 
 defineEmits<{
   toggleFollow: [userId: number]

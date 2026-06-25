@@ -3,11 +3,11 @@
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="visible" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="close">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[340px] max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl w-[340px] max-h-[90vh] overflow-y-auto">
           <!-- 海报预览区 -->
-          <div ref="posterRef" class="p-6 bg-white">
+          <div ref="posterRef" class="p-4 bg-white">
             <!-- 封面图 -->
-            <div v-if="article?.coverImage" class="mb-4 rounded-lg overflow-hidden">
+            <div v-if="article?.coverImage" class="mb-3 rounded-lg overflow-hidden">
               <img :src="resolveUrl(article?.coverImage) || ''" :alt="article?.title" class="w-full h-40 object-cover" crossorigin="anonymous" />
             </div>
 
@@ -22,13 +22,13 @@
             </p>
 
             <!-- 作者信息 -->
-            <div class="flex items-center space-x-3 mb-4">
+            <div class="flex items-center space-x-2 mb-3">
               <UserAvatar :src="article?.author?.avatar || article?.authorAvatar" :alt="article?.author?.nickname || article?.authorName" size="md" />
               <span class="text-sm font-medium text-gray-700">{{ article?.author?.nickname || article?.authorName }}</span>
             </div>
 
             <!-- 分割线 -->
-            <div class="border-t border-gray-200 pt-4">
+            <div class="border-t border-gray-200 pt-3">
               <div class="flex items-center justify-between">
                 <!-- 品牌信息 -->
                 <div class="flex items-center space-x-2">
@@ -49,7 +49,7 @@
           </div>
 
           <!-- 操作按钮 -->
-          <div class="p-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+          <div class="p-3 border-t border-slate-100 space-y-2">
             <button
               class="w-full btn btn-primary py-2.5 text-sm"
               :disabled="generating"

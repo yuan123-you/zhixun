@@ -1,6 +1,6 @@
 <template>
   <!-- 文章卡片组件 - 微博风格布局 -->
-  <article class="card px-2 py-2 md:px-3 md:py-2.5 hover:shadow-md transition-shadow cursor-pointer no-tap-highlight touch-feedback" @click="navigateToDetail">
+  <article class="card px-2 py-2 md:px-3 md:py-2.5 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer no-tap-highlight touch-feedback" @click="navigateToDetail">
     <!-- 作者信息栏（标题上方） -->
     <div class="flex items-center gap-1.5 mb-0.5">
       <!-- 作者头像 -->
@@ -9,12 +9,12 @@
       </NuxtLink>
       <div class="flex-1 min-w-0 flex items-center">
         <!-- 作者姓名 + 发布时间 -->
-        <NuxtLink :to="`/user/${article.author?.id}`" class="text-sm font-medium text-gray-900 dark:text-white hover:text-primary transition-colors truncate" @click.stop>
+        <NuxtLink :to="`/user/${article.author?.id}`" class="text-sm font-medium text-slate-900 hover:text-primary transition-colors truncate" @click.stop>
           {{ article.authorName || article.author?.nickname }}
         </NuxtLink>
-        <span class="text-xs text-gray-400 dark:text-gray-500 mx-1 shrink-0">·</span>
-        <time class="text-xs text-gray-400 dark:text-gray-500 shrink-0">{{ formatTimestamp(article.createdAt) }}</time>
-        <span v-if="article.deviceInfo" class="text-xs text-gray-400 dark:text-gray-500 ml-1 shrink-0">来自{{ article.deviceInfo }}</span>
+        <span class="text-xs text-slate-400 mx-1 shrink-0">·</span>
+        <time class="text-xs text-slate-400 shrink-0">{{ formatTimestamp(article.createdAt) }}</time>
+        <span v-if="article.deviceInfo" class="text-xs text-slate-400 ml-1 shrink-0">来自{{ article.deviceInfo }}</span>
         <span v-if="article.matchType" class="ml-1.5 inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium shrink-0"
           :class="matchTypeStyle">
           {{ matchTypeLabel }}
@@ -26,19 +26,19 @@
     <div class="flex gap-2">
       <div class="flex-1 min-w-0">
         <!-- 标题（支持高亮HTML） -->
-        <h3 v-if="article.matchType === 'title'" class="text-sm md:text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-0.5" v-html="article.title" />
-        <h3 v-else class="text-sm md:text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-0.5">
+        <h3 v-if="article.matchType === 'title'" class="text-sm md:text-base font-semibold text-slate-900 line-clamp-2 mb-0.5" v-html="article.title" />
+        <h3 v-else class="text-sm md:text-base font-semibold text-slate-900 line-clamp-2 mb-0.5">
           {{ article.title }}
         </h3>
 
         <!-- 摘要/正文（溢出省略+全文链接） -->
-        <div v-if="article.matchType === 'summary' && article.summary" class="article-text text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-0.5" v-html="article.summary" />
-        <div v-else-if="article.summary" class="article-text text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-0.5">
+        <div v-if="article.matchType === 'summary' && article.summary" class="article-text text-xs md:text-sm text-slate-500 mb-0.5" v-html="article.summary" />
+        <div v-else-if="article.summary" class="article-text text-xs md:text-sm text-slate-500 mb-0.5">
           {{ article.summary }}
         </div>
 
         <!-- 正文内容片段（搜索结果中显示，支持高亮HTML） -->
-        <div v-if="article.contentSnippet" class="article-text text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-0.5 search-snippet" v-html="article.contentSnippet" />
+        <div v-if="article.contentSnippet" class="article-text text-xs md:text-sm text-slate-500 mb-0.5 search-snippet" v-html="article.contentSnippet" />
       </div>
 
       <!-- 封面图（右侧，sm以上显示） -->
@@ -51,8 +51,8 @@
     <div class="flex items-center mt-1 gap-0.5">
       <!-- 点赞 -->
       <button
-        class="flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95"
-        :class="article.isLiked ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-primary'"
+        class="flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors hover:bg-slate-50 active:scale-95"
+        :class="article.isLiked ? 'text-primary' : 'text-slate-400 hover:text-primary'"
         @click.stop="handleToggleLike"
       >
         <svg class="w-4 h-4" :class="article.isLiked ? 'fill-primary' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,7 +63,7 @@
 
       <!-- 评论 - 跳转到文章评论区 -->
       <button
-        class="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-gray-400 dark:text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active:scale-95"
+        class="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors active:scale-95"
         @click.stop="navigateToComments"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,7 +75,7 @@
       <!-- 分享/转发 - 弹出分享面板 -->
       <div class="relative" @click.stop>
         <button
-          class="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-gray-400 dark:text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active:scale-95"
+          class="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors active:scale-95"
           @click="showShareMenu = !showShareMenu"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,32 +88,32 @@
         <Transition name="share-menu">
           <div
             v-if="showShareMenu"
-            class="absolute bottom-full left-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-[140px] max-w-[calc(100vw-32px)]"
+            class="absolute bottom-full left-0 mb-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50 min-w-[140px] max-w-[calc(100vw-32px)]"
             @click.stop
           >
             <!-- 复制链接 -->
-            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareCopyLink">
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors" @click="shareCopyLink">
               <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
               <span>复制链接</span>
             </button>
             <!-- 微信 -->
-            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareToWechat">
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors" @click="shareToWechat">
               <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 01.598.082l1.584.926a.272.272 0 00.14.045c.133 0 .241-.11.241-.246 0-.06-.024-.12-.04-.178l-.325-1.233a.492.492 0 01.177-.554C23.025 18.265 24 16.572 24 14.71c0-3.38-3.126-5.852-7.062-5.852zm-2.095 2.99c.535 0 .969.44.969.983a.976.976 0 01-.969.983.976.976 0 01-.969-.983c0-.544.434-.983.97-.983zm4.19 0c.535 0 .969.44.969.983a.976.976 0 01-.969.983.976.976 0 01-.969-.983c0-.544.434-.983.97-.983z"/>
               </svg>
               <span>微信</span>
             </button>
             <!-- 微博 -->
-            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareToWeibo">
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors" @click="shareToWeibo">
               <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zm-1.409-7.498c-2.623.269-4.587 2.108-4.387 4.11.193 1.99 2.47 3.349 5.09 3.072 2.624-.269 4.588-2.108 4.388-4.107-.196-2-2.473-3.349-5.091-3.075zm1.172 4.664c-.251.623-.929.903-1.513.627-.577-.271-.789-.972-.537-1.584.249-.609.913-.892 1.497-.625.585.27.804.967.553 1.582zm1.427-1.747c-.1.233-.335.349-.524.259-.186-.09-.258-.342-.164-.569.097-.228.327-.344.516-.256.189.087.268.336.172.566zm.757-7.586c-2.875-.798-6.114.077-7.353 2.096-.478.778-.424 1.508.017 2.043.826 1.001 2.553.321 2.553.321s-.945.312-1.566-.156c-.459-.346-.356-.935.015-1.468.843-1.22 3.086-1.874 5.259-1.332 2.171.542 3.583 2.067 3.583 3.412 0 .699-.541 1.047-1.123 1.079-.001 0-.729.045-.729.045s.445.186.938.186c.932 0 1.657-.623 1.657-1.578 0-2.096-1.595-3.846-3.251-4.648zM20.5 7.908c-.562-1.396-1.836-2.181-3.149-2.181-.277 0-.557.037-.832.113a.75.75 0 00-.499.936.762.762 0 00.941.493 2.078 2.078 0 012.56 1.246c.349.866-.009 1.896-.834 2.393a.752.752 0 00-.263 1.032.764.764 0 001.04.261c1.289-.776 1.848-2.316 1.336-3.293z"/>
               </svg>
               <span>微博</span>
             </button>
             <!-- QQ -->
-            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareToQQ">
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors" @click="shareToQQ">
               <svg class="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12.003 2c-2.265 0-6.29 1.364-6.29 7.325v1.195S3.55 14.96 3.55 17.474c0 .665.17 1.025.396 1.025.116 0 .263-.072.42-.215.83-.798 2.616-2.478 3.145-2.937.078-.067.16-.1.24-.1h8.502c.08 0 .16.033.24.1.529.46 2.315 2.14 3.145 2.937.157.143.304.215.42.215.227 0 .396-.36.396-1.025 0-2.514-2.163-6.954-2.163-6.954V9.325C18.292 3.364 14.268 2 12.003 2zm-2.34 5.21a1.21 1.21 0 110-2.42 1.21 1.21 0 010 2.42zm4.68 0a1.21 1.21 0 110-2.42 1.21 1.21 0 010 2.42z"/>
               </svg>
@@ -163,9 +163,9 @@ const matchTypeLabel = computed(() => {
 // 匹配类型样式
 const matchTypeStyle = computed(() => {
   switch (props.article.matchType) {
-    case 'title': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-    case 'summary': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-    case 'content': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+    case 'title': return 'bg-blue-50 text-blue-700'
+    case 'summary': return 'bg-emerald-50 text-emerald-700'
+    case 'content': return 'bg-amber-50 text-amber-700'
     default: return ''
   }
 })
@@ -296,10 +296,6 @@ const shareToQQ = async () => {
   bottom: 0;
   padding-left: 20px;
   background: linear-gradient(to right, transparent, var(--card-bg, #fff) 30%);
-}
-
-:root.dark .article-text::after {
-  background: linear-gradient(to right, transparent, var(--card-bg, #1f2937) 30%);
 }
 
 /* 搜索结果高亮样式 */

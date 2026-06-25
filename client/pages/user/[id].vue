@@ -1,30 +1,30 @@
 <template>
   <!-- 用户主页 -->
-  <div class="max-w-4xl mx-auto px-4 py-6">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 返回导航 -->
-    <button class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 transition-colors mb-4" @click="goBack">
+    <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors mb-2" @click="goBack">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
-      {{ t('common.back') }}
+      {{ '返回' }}
     </button>
 
     <!-- 用户资料卡 -->
-    <div class="card p-6 mb-6">
-      <div class="flex items-start space-x-4">
+    <div class="card p-3 mb-3">
+      <div class="flex items-start space-x-3">
         <!-- 头像 -->
         <div class="relative shrink-0">
           <UserAvatar :src="userInfo?.avatar" alt="头像" size="xl" />
           <!-- 在线状态指示灯 -->
           <span
-            class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800"
+            class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white"
             :class="onlineStatus ? 'bg-green-500' : 'bg-gray-400'"
           ></span>
         </div>
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ userInfo?.nickname }}</h2>
+            <h2 class="text-xl font-bold text-slate-900">{{ userInfo?.nickname }}</h2>
             <!-- 关注按钮 -->
             <button
               v-if="userStore.userInfo?.id !== userId"
@@ -32,18 +32,18 @@
               :class="userInfo?.isFollowing ? 'btn-secondary' : 'btn-primary'"
               @click="toggleFollow"
             >
-              {{ userInfo?.isFollowing ? t('article.followed') : t('article.followBtn') }}
+              {{ userInfo?.isFollowing ? '已关注' : '关注' }}
             </button>
           </div>
-          <p v-if="userInfo?.bio" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ userInfo?.bio }}</p>
-          <div class="flex items-center space-x-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
+          <p v-if="userInfo?.bio" class="text-sm text-slate-500 mt-1">{{ userInfo?.bio }}</p>
+          <div class="flex items-center space-x-4 mt-2 text-sm text-slate-500">
             <button class="hover:text-primary transition-colors" @click="activeTab = 'following'">
-              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followCount }}</strong> {{ t('user.following') }}
+              <strong class="text-slate-900">{{ userInfo?.followCount }}</strong> {{ '关注' }}
             </button>
             <button class="hover:text-primary transition-colors" @click="activeTab = 'followers'">
-              <strong class="text-gray-900 dark:text-white">{{ userInfo?.followerCount }}</strong> {{ t('user.followers') }}
+              <strong class="text-slate-900">{{ userInfo?.followerCount }}</strong> {{ '粉丝' }}
             </button>
-            <span><strong class="text-gray-900 dark:text-white">{{ userInfo?.articleCount }}</strong> {{ t('article.articles') }}</span>
+            <span><strong class="text-slate-900">{{ userInfo?.articleCount }}</strong> {{ '文章' }}</span>
           </div>
         </div>
       </div>
@@ -51,27 +51,27 @@
 
     <!-- 关注/粉丝 Tab 切换 -->
     <div class="card overflow-hidden">
-      <div class="flex border-b border-gray-200 dark:border-gray-700">
+      <div class="flex border-b border-slate-200">
         <button
           class="flex-1 py-3 text-sm font-medium text-center transition-colors relative"
-          :class="activeTab === 'following' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+          :class="activeTab === 'following' ? 'text-primary' : 'text-slate-500 hover:text-slate-700'"
           @click="activeTab = 'following'"
         >
-          {{ t('user.following') }}
+          {{ '关注' }}
           <span v-if="activeTab === 'following'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full"></span>
         </button>
         <button
           class="flex-1 py-3 text-sm font-medium text-center transition-colors relative"
-          :class="activeTab === 'followers' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+          :class="activeTab === 'followers' ? 'text-primary' : 'text-slate-500 hover:text-slate-700'"
           @click="activeTab = 'followers'"
         >
-          {{ t('user.followers') }}
+          {{ '粉丝' }}
           <span v-if="activeTab === 'followers'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full"></span>
         </button>
       </div>
 
       <!-- 列表内容 -->
-      <div class="p-4">
+      <div class="p-2">
         <!-- 加载状态 -->
         <div v-if="listLoading" class="flex items-center justify-center py-8">
           <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -81,26 +81,26 @@
         <ErrorRetry v-else-if="listError" :message="listError" :on-retry="retryList" />
 
         <!-- 空状态 -->
-        <div v-else-if="currentList.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
-          <svg class="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-else-if="currentList.length === 0" class="text-center py-8 text-slate-400">
+          <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <p class="text-sm">{{ activeTab === 'following' ? t('user.noFollowing') : t('user.noFollowers') }}</p>
+          <p class="text-sm">{{ activeTab === 'following' ? '暂无关注用户' : '暂无粉丝' }}</p>
         </div>
 
         <!-- 用户列表 -->
-        <div v-else class="space-y-3">
+        <div v-else class="space-y-2">
           <div
             v-for="user in currentList"
             :key="user.id"
-            class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors"
           >
-            <div class="flex items-center space-x-3 min-w-0 flex-1">
+            <div class="flex items-center space-x-2 min-w-0 flex-1">
               <!-- 头像 + 在线状态 -->
               <div class="relative shrink-0">
                 <UserAvatar :src="user.avatar" :alt="user.nickname" size="md" />
                 <span
-                  class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800"
+                  class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
                   :class="user.isOnline ? 'bg-green-500' : 'bg-gray-400'"
                 ></span>
               </div>
@@ -109,19 +109,19 @@
                 <div class="flex items-center space-x-2">
                   <NuxtLink
                     :to="`/user/${user.id}`"
-                    class="text-sm font-medium text-gray-900 dark:text-white hover:text-primary transition-colors truncate"
+                    class="text-sm font-medium text-slate-900 hover:text-primary transition-colors truncate"
                   >
                     {{ user.nickname }}
                   </NuxtLink>
                   <!-- 互关标识 -->
                   <span
                     v-if="user.isMutualFollow"
-                    class="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 shrink-0"
+                    class="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-primary-100 text-primary-700 shrink-0"
                   >
                     互关
                   </span>
                 </div>
-                <p v-if="user.bio" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{{ user.bio }}</p>
+                <p v-if="user.bio" class="text-xs text-slate-500 truncate mt-0.5">{{ user.bio }}</p>
               </div>
             </div>
 
@@ -134,7 +134,7 @@
               @click="toggleFollowUser(user)"
             >
               <span v-if="followLoading[user.id]" class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin inline-block mr-1"></span>
-              {{ user.isFollowing ? t('article.followed') : t('article.followBtn') }}
+              {{ user.isFollowing ? '已关注' : '关注' }}
             </button>
           </div>
         </div>
@@ -145,15 +145,15 @@
             class="text-sm text-primary hover:text-primary-600 transition-colors"
             @click="loadMoreList"
           >
-            {{ t('common.loadMore') }}
+            {{ '加载更多' }}
           </button>
         </div>
       </div>
     </div>
 
     <!-- Ta的文章列表 -->
-    <div class="mt-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('article.articles') }}</h3>
+    <div class="mt-3">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2">{{ '文章' }}</h3>
       <ArticleList :articles="articles" :loading="loading" :has-more="hasMore" :error="articlesError" @load-more="loadMore" @retry="retryArticles" />
     </div>
   </div>
@@ -167,7 +167,6 @@ import type { FollowUser } from '~/api/social'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-const { t } = useI18n()
 const userId = computed(() => Number(route.params.id))
 
 // Toast 提示
@@ -255,7 +254,7 @@ const { data: articleData } = await useAsyncData(`user-articles-${userId.value}`
     )
     return response.data.data
   } catch (error: any) {
-    articlesError.value = error.message || t('article.loadArticleFailed')
+    articlesError.value = error.message || '文章加载失败，请稍后重试'
     return null
   }
 })
@@ -292,7 +291,7 @@ const fetchFollowing = async (page: number = 1) => {
     followingHasMore.value = data?.hasMore ?? items.length >= 20
     followingPage.value = page
   } catch (error: any) {
-    listError.value = error.message || t('user.loadDataFailed')
+    listError.value = error.message || '数据加载失败，请稍后重试'
   }
 }
 
@@ -312,7 +311,7 @@ const fetchFollowers = async (page: number = 1) => {
     followersHasMore.value = data?.hasMore ?? items.length >= 20
     followersPage.value = page
   } catch (error: any) {
-    listError.value = error.message || t('user.loadDataFailed')
+    listError.value = error.message || '数据加载失败，请稍后重试'
   }
 }
 
@@ -374,7 +373,7 @@ const toggleFollow = async () => {
       await fetchFollowers(1)
     }
   } catch (error: any) {
-    showToast(t('article.followFailed') || '关注操作失败', 'error')
+    showToast('关注操作失败', 'error')
   }
 }
 
@@ -421,7 +420,7 @@ const toggleFollowUser = async (user: FollowUser) => {
       }
     }
   } catch (error: any) {
-    showToast(t('article.followFailed') || '关注操作失败', 'error')
+    showToast('关注操作失败', 'error')
   } finally {
     followLoading.value[user.id] = false
   }
@@ -465,7 +464,7 @@ const retryArticles = async () => {
     articles.value = data?.list || data?.items || []
     hasMore.value = articles.value.length >= 20
   } catch (error: any) {
-    articlesError.value = error.message || t('article.loadArticleFailed')
+    articlesError.value = error.message || '文章加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -487,6 +486,6 @@ onMounted(async () => {
 
 // 页面元信息
 useHead({
-  title: () => userInfo.value ? `${userInfo.value.nickname} - 知讯` : t('nav.profile') + ' - 知讯',
+  title: () => userInfo.value ? `${userInfo.value.nickname} - 知讯` : '个人中心' + ' - 知讯',
 })
 </script>
