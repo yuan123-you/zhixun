@@ -354,6 +354,7 @@
     -webkit-tap-highlight-color: transparent;
     tap-highlight-color: transparent;
     transition: transform 0.1s ease, opacity 0.1s ease;
+    min-height: 120px;
   }
 
   .touch-feedback:active {
