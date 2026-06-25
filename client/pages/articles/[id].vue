@@ -6,7 +6,7 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
-      {{ t('common.back') }}
+      {{ '返回' }}
     </button>
 
     <!-- 加载状态 -->
@@ -42,7 +42,7 @@
           :class="article.author?.isFollowing ? 'btn-secondary' : 'btn-primary'"
           @click="toggleFollowAuthor"
         >
-          {{ article.author?.isFollowing ? t('article.followed') : t('article.followBtn') }}
+          {{ article.author?.isFollowing ? '已关注' : '关注' }}
         </button>
       </div>
 
@@ -85,7 +85,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            <span class="text-sm">{{ article.shareCount || t('article.share') }}</span>
+            <span class="text-sm">{{ article.shareCount || '分享' }}</span>
           </button>
 
           <!-- 分享面板 -->
@@ -149,7 +149,7 @@
       </div>
 
       <!-- 评论区 -->
-      <section>
+      <section id="comments">
         <!-- 评论懒加载触发器 -->
         <div :ref="(el: any) => commentsLazyTrigger = el" class="h-0"></div>
 
@@ -158,7 +158,7 @@
         <!-- 评论加载中 -->
         <div v-if="commentsLoading" class="flex items-center justify-center py-8">
           <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <span class="ml-2 text-sm text-gray-500">{{ t('common.loading') }}</span>
+          <span class="ml-2 text-sm text-gray-500">{{ '加载中...' }}</span>
         </div>
 
         <!-- 评论加载失败 -->
@@ -185,17 +185,17 @@
         <div :ref="(el: any) => relatedLazyTrigger = el" class="h-0"></div>
 
         <template v-if="relatedLoading">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('article.relatedArticles') }}</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ '相关推荐' }}</h2>
           <div class="flex items-center justify-center py-8">
             <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <span class="ml-2 text-sm text-gray-500">{{ t('common.loading') }}</span>
+            <span class="ml-2 text-sm text-gray-500">{{ '加载中...' }}</span>
           </div>
         </template>
 
         <ErrorRetry v-else-if="relatedError" :message="relatedError" :on-retry="retryRelated" />
 
         <template v-else-if="relatedLoaded && relatedArticles.length">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ t('article.relatedArticles') }}</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ '相关推荐' }}</h2>
           <div class="space-y-4">
             <ArticleCard v-for="a in relatedArticles" :key="a.id" :article="a" />
           </div>
@@ -209,7 +209,7 @@
           <!-- 目录 -->
           <div v-if="tocItems.length" class="card">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ t('article.toc') }}</h3>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{{ '目录' }}</h3>
             </div>
             <nav class="p-4 space-y-1 max-h-[60vh] overflow-y-auto">
               <a
@@ -227,7 +227,7 @@
           <!-- 相关推荐 -->
           <div v-if="relatedArticles.length" class="card">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ t('article.relatedArticles') }}</h3>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{{ '相关推荐' }}</h3>
             </div>
             <div class="p-4 space-y-3">
               <NuxtLink
@@ -261,7 +261,6 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const { resolveUrl } = useResourceUrl()
-const { t } = useI18n()
 const { invalidateArticle, invalidateUser } = useCacheInvalidation()
 
 // 返回上一页
@@ -406,7 +405,7 @@ const toggleFollowAuthor = async () => {
     // 失效用户相关缓存
     invalidateUser()
   } catch (error: any) {
-    console.error(t('article.followFailed') + ':', error.message)
+    console.error('关注操作失败' + ':', error.message)
   }
 }
 
@@ -681,6 +680,14 @@ onMounted(() => {
   // 点击页面其他区域关闭分享面板
   document.addEventListener('click', handleClickOutside)
 
+  // 处理URL hash滚动到评论区
+  if (window.location.hash === '#comments') {
+    setTimeout(() => {
+      const el = document.getElementById('comments')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 500)
+  }
+
   if (article.value) {
     // 记录浏览历史
     recordView(article.value.id, article.value.title)
@@ -719,6 +726,6 @@ onUnmounted(() => {
 
 // 页面元信息
 useHead({
-  title: () => article.value ? `${article.value.title} - 知讯` : t('article.loadArticleFailed') + ' - 知讯',
+  title: () => article.value ? `${article.value.title} - 知讯` : '文章加载失败，请稍后重试' + ' - 知讯',
 })
 </script>

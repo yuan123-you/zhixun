@@ -31,14 +31,14 @@
           {{ article.title }}
         </h3>
 
-        <!-- 摘要（支持高亮HTML） -->
-        <p v-if="article.matchType === 'summary' && article.summary" class="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-3 mb-0.5" v-html="article.summary" />
-        <p v-else-if="article.summary" class="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-3 mb-0.5">
+        <!-- 摘要/正文（溢出省略+全文链接） -->
+        <div v-if="article.matchType === 'summary' && article.summary" class="article-text text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-0.5" v-html="article.summary" />
+        <div v-else-if="article.summary" class="article-text text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-0.5">
           {{ article.summary }}
-        </p>
+        </div>
 
         <!-- 正文内容片段（搜索结果中显示，支持高亮HTML） -->
-        <div v-if="article.contentSnippet" class="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-3 mb-0.5 search-snippet" v-html="article.contentSnippet" />
+        <div v-if="article.contentSnippet" class="article-text text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-0.5 search-snippet" v-html="article.contentSnippet" />
       </div>
 
       <!-- 封面图（右侧，sm以上显示） -->
@@ -61,10 +61,10 @@
         <span>{{ formatCount(article.likeCount) }}</span>
       </button>
 
-      <!-- 评论 -->
+      <!-- 评论 - 跳转到文章评论区 -->
       <button
         class="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-gray-400 dark:text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active:scale-95"
-        @click.stop="navigateToDetail"
+        @click.stop="navigateToComments"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -72,16 +72,56 @@
         <span>{{ formatCount(article.commentCount) }}</span>
       </button>
 
-      <!-- 分享/转发 -->
-      <button
-        class="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-gray-400 dark:text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active:scale-95"
-        @click.stop="handleShare"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-        </svg>
-        <span>{{ formatCount(article.shareCount) }}</span>
-      </button>
+      <!-- 分享/转发 - 弹出分享面板 -->
+      <div class="relative" @click.stop>
+        <button
+          class="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-gray-400 dark:text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active:scale-95"
+          @click="showShareMenu = !showShareMenu"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          <span>{{ formatCount(article.shareCount) }}</span>
+        </button>
+
+        <!-- 分享弹出面板 -->
+        <Transition name="share-menu">
+          <div
+            v-if="showShareMenu"
+            class="absolute bottom-full left-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-[140px] max-w-[calc(100vw-32px)]"
+            @click.stop
+          >
+            <!-- 复制链接 -->
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareCopyLink">
+              <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              <span>复制链接</span>
+            </button>
+            <!-- 微信 -->
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareToWechat">
+              <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 01.598.082l1.584.926a.272.272 0 00.14.045c.133 0 .241-.11.241-.246 0-.06-.024-.12-.04-.178l-.325-1.233a.492.492 0 01.177-.554C23.025 18.265 24 16.572 24 14.71c0-3.38-3.126-5.852-7.062-5.852zm-2.095 2.99c.535 0 .969.44.969.983a.976.976 0 01-.969.983.976.976 0 01-.969-.983c0-.544.434-.983.97-.983zm4.19 0c.535 0 .969.44.969.983a.976.976 0 01-.969.983.976.976 0 01-.969-.983c0-.544.434-.983.97-.983z"/>
+              </svg>
+              <span>微信</span>
+            </button>
+            <!-- 微博 -->
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareToWeibo">
+              <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zm-1.409-7.498c-2.623.269-4.587 2.108-4.387 4.11.193 1.99 2.47 3.349 5.09 3.072 2.624-.269 4.588-2.108 4.388-4.107-.196-2-2.473-3.349-5.091-3.075zm1.172 4.664c-.251.623-.929.903-1.513.627-.577-.271-.789-.972-.537-1.584.249-.609.913-.892 1.497-.625.585.27.804.967.553 1.582zm1.427-1.747c-.1.233-.335.349-.524.259-.186-.09-.258-.342-.164-.569.097-.228.327-.344.516-.256.189.087.268.336.172.566zm.757-7.586c-2.875-.798-6.114.077-7.353 2.096-.478.778-.424 1.508.017 2.043.826 1.001 2.553.321 2.553.321s-.945.312-1.566-.156c-.459-.346-.356-.935.015-1.468.843-1.22 3.086-1.874 5.259-1.332 2.171.542 3.583 2.067 3.583 3.412 0 .699-.541 1.047-1.123 1.079-.001 0-.729.045-.729.045s.445.186.938.186c.932 0 1.657-.623 1.657-1.578 0-2.096-1.595-3.846-3.251-4.648zM20.5 7.908c-.562-1.396-1.836-2.181-3.149-2.181-.277 0-.557.037-.832.113a.75.75 0 00-.499.936.762.762 0 00.941.493 2.078 2.078 0 012.56 1.246c.349.866-.009 1.896-.834 2.393a.752.752 0 00-.263 1.032.764.764 0 001.04.261c1.289-.776 1.848-2.316 1.336-3.293z"/>
+              </svg>
+              <span>微博</span>
+            </button>
+            <!-- QQ -->
+            <button class="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="shareToQQ">
+              <svg class="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.003 2c-2.265 0-6.29 1.364-6.29 7.325v1.195S3.55 14.96 3.55 17.474c0 .665.17 1.025.396 1.025.116 0 .263-.072.42-.215.83-.798 2.616-2.478 3.145-2.937.078-.067.16-.1.24-.1h8.502c.08 0 .16.033.24.1.529.46 2.315 2.14 3.145 2.937.157.143.304.215.42.215.227 0 .396-.36.396-1.025 0-2.514-2.163-6.954-2.163-6.954V9.325C18.292 3.364 14.268 2 12.003 2zm-2.34 5.21a1.21 1.21 0 110-2.42 1.21 1.21 0 010 2.42zm4.68 0a1.21 1.21 0 110-2.42 1.21 1.21 0 010 2.42z"/>
+              </svg>
+              <span>QQ</span>
+            </button>
+          </div>
+        </Transition>
+      </div>
     </div>
   </article>
 </template>
@@ -94,17 +134,28 @@ const props = defineProps<{
   article: Article
 }>()
 
-const { t } = useI18n()
 const { resolveUrl } = useResourceUrl()
 const userStore = useUserStore()
 const { invalidateArticle } = useCacheInvalidation()
 
+// 分享菜单状态
+const showShareMenu = ref(false)
+
+// 点击外部关闭分享菜单
+onMounted(() => {
+  const closeMenu = (e: MouseEvent) => {
+    if (showShareMenu.value) showShareMenu.value = false
+  }
+  document.addEventListener('click', closeMenu)
+  onUnmounted(() => document.removeEventListener('click', closeMenu))
+})
+
 // 匹配类型标签
 const matchTypeLabel = computed(() => {
   switch (props.article.matchType) {
-    case 'title': return t('search.matchTitle')
-    case 'summary': return t('search.matchSummary')
-    case 'content': return t('search.matchContent')
+    case 'title': return '标题匹配'
+    case 'summary': return '摘要匹配'
+    case 'content': return '正文匹配'
     default: return ''
   }
 })
@@ -122,6 +173,11 @@ const matchTypeStyle = computed(() => {
 // 跳转到文章详情
 const navigateToDetail = () => {
   navigateTo(`/articles/${props.article.id}`)
+}
+
+// 跳转到文章评论区
+const navigateToComments = () => {
+  navigateTo(`/articles/${props.article.id}#comments`)
 }
 
 // 格式化标准时间戳
@@ -161,21 +217,91 @@ const handleToggleLike = async () => {
   }
 }
 
-// 分享
-const handleShare = async () => {
+// 获取文章链接
+const getArticleUrl = () => `${window.location.origin}/articles/${props.article.id}`
+
+// 复制链接
+const shareCopyLink = async () => {
+  showShareMenu.value = false
   try {
-    const url = `${window.location.origin}/articles/${props.article.id}`
-    await navigator.clipboard.writeText(url)
-    // 记录分享统计
+    await navigator.clipboard.writeText(getArticleUrl())
     const { articleApi } = await import('~/api')
-    await articleApi.recordShare(props.article.id, 'link')
+    articleApi.recordShare(props.article.id, 'copy')
   } catch {
-    // 分享失败静默处理
+    // 复制失败
+  }
+}
+
+// 分享到微信
+const shareToWechat = async () => {
+  showShareMenu.value = false
+  try {
+    await navigator.clipboard.writeText(getArticleUrl())
+    const { articleApi } = await import('~/api')
+    articleApi.recordShare(props.article.id, 'wechat')
+  } catch {
+    // 复制失败
+  }
+}
+
+// 分享到微博
+const shareToWeibo = async () => {
+  showShareMenu.value = false
+  const url = encodeURIComponent(getArticleUrl())
+  const title = encodeURIComponent(typeof props.article.title === 'string' ? props.article.title : '')
+  window.open(`https://service.weibo.com/share/share.php?url=${url}&title=${title}`, '_blank', 'width=600,height=500')
+  try {
+    const { articleApi } = await import('~/api')
+    articleApi.recordShare(props.article.id, 'weibo')
+  } catch {
+    // 记录失败
+  }
+}
+
+// 分享到QQ
+const shareToQQ = async () => {
+  showShareMenu.value = false
+  const url = encodeURIComponent(getArticleUrl())
+  const title = encodeURIComponent(typeof props.article.title === 'string' ? props.article.title : '')
+  const summary = encodeURIComponent(props.article.summary || '')
+  window.open(`https://connect.qq.com/widget/shareqq/index.html?url=${url}&title=${title}&summary=${summary}`, '_blank', 'width=600,height=500')
+  try {
+    const { articleApi } = await import('~/api')
+    articleApi.recordShare(props.article.id, 'qq')
+  } catch {
+    // 记录失败
   }
 }
 </script>
 
 <style scoped>
+/* 文章正文/摘要 - 溢出省略 + 全文链接 */
+.article-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 全文链接 - 使用伪元素追加在省略号后 */
+.article-text::after {
+  content: '全文';
+  color: var(--color-primary, #3b82f6);
+  font-weight: 500;
+  margin-left: 2px;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding-left: 20px;
+  background: linear-gradient(to right, transparent, var(--card-bg, #fff) 30%);
+}
+
+:root.dark .article-text::after {
+  background: linear-gradient(to right, transparent, var(--card-bg, #1f2937) 30%);
+}
+
 /* 搜索结果高亮样式 */
 .search-snippet :deep(em) {
   font-style: normal;
@@ -197,12 +323,23 @@ h3 :deep(em) {
 }
 
 /* 摘要高亮样式 */
-p :deep(em) {
+.article-text :deep(em) {
   font-style: normal;
   font-weight: 600;
   color: var(--color-primary);
   background-color: rgba(var(--color-primary-rgb, 59, 130, 246), 0.1);
   border-radius: 2px;
   padding: 0 2px;
+}
+
+/* 分享菜单动画 */
+.share-menu-enter-active,
+.share-menu-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.share-menu-enter-from,
+.share-menu-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 </style>
