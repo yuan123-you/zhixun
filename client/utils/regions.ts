@@ -391,8 +391,8 @@ export const provinces: RegionNode[] = [
     ]
   },
   {
-    value: '500000', label: '重庆市', children: [{
-      value: '500100', label: '重庆市', children: [
+    value: '500000', label: '重庆市', children: [
+      { value: '500100', label: '重庆市', children: [
         { value: '500101', label: '万州区' }, { value: '500102', label: '涪陵区' },
         { value: '500103', label: '渝中区' }, { value: '500104', label: '大渡口区' },
         { value: '500105', label: '江北区' }, { value: '500106', label: '沙坪坝区' },
@@ -406,9 +406,8 @@ export const provinces: RegionNode[] = [
         { value: '500151', label: '铜梁区' }, { value: '500152', label: '潼南区' },
         { value: '500153', label: '荣昌区' }, { value: '500154', label: '开州区' },
         { value: '500155', label: '梁平区' }, { value: '500156', label: '武隆区' },
-      ]}
-    ]},
-    { value: '500200', label: '郊县', children: [
+      ]},
+      { value: '500200', label: '郊县', children: [
         { value: '500229', label: '城口县' }, { value: '500230', label: '丰都县' },
         { value: '500231', label: '垫江县' }, { value: '500233', label: '忠县' },
         { value: '500235', label: '云阳县' }, { value: '500236', label: '奉节县' },
