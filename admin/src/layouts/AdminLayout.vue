@@ -30,11 +30,18 @@
           <el-menu-item index="/articles/pending">待审核作品</el-menu-item>
           <el-menu-item index="/categories">分类管理</el-menu-item>
           <el-menu-item index="/tags">标签管理</el-menu-item>
+          <el-menu-item index="/topics">话题管理</el-menu-item>
+          <el-menu-item index="/templates">模板管理</el-menu-item>
         </el-sub-menu>
 
         <el-menu-item index="/comments">
           <el-icon><ChatDotRound /></el-icon>
           <template #title>评论管理</template>
+        </el-menu-item>
+
+        <el-menu-item index="/reports">
+          <el-icon><WarningFilled /></el-icon>
+          <template #title>举报管理</template>
         </el-menu-item>
 
         <el-menu-item index="/users">
@@ -48,6 +55,7 @@
             <span>系统管理</span>
           </template>
           <el-menu-item index="/sensitive-words">敏感词管理</el-menu-item>
+          <el-menu-item index="/badges">徽章管理</el-menu-item>
           <el-menu-item index="/operation-logs">操作日志</el-menu-item>
           <el-menu-item index="/settings">系统设置</el-menu-item>
         </el-sub-menu>

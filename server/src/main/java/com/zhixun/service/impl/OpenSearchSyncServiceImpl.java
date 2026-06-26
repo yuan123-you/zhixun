@@ -24,7 +24,8 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -42,8 +43,9 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@Primary
 @RequiredArgsConstructor
-@ConditionalOnBean(OpenSearchClient.class)
+@ConditionalOnProperty(name = "opensearch.enabled", havingValue = "true")
 public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
     private final OpenSearchClient openSearchClient;

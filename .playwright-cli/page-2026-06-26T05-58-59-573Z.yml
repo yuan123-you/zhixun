@@ -1,0 +1,271 @@
+- generic [active] [ref=e1]:
+  - main [ref=e5]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - img [ref=e9]
+        - generic [ref=e11]: 下拉刷新
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - button "推荐" [ref=e16] [cursor=pointer]
+          - button "排行" [ref=e17] [cursor=pointer]
+          - button "最新" [ref=e18] [cursor=pointer]
+          - button "关注" [ref=e19] [cursor=pointer]
+          - button "换一批" [ref=e20] [cursor=pointer]:
+            - img [ref=e21]
+            - generic [ref=e23]: 换一批
+        - generic [ref=e25]:
+          - article [ref=e26] [cursor=pointer]:
+            - generic [ref=e27]:
+              - link [ref=e28]:
+                - /url: /user/undefined
+              - generic [ref=e31]:
+                - link "AI前沿实验室" [ref=e32]:
+                  - /url: /user/undefined
+                - generic [ref=e33]: ·
+                - time [ref=e34]: 2026-03-15 00:00
+            - generic [ref=e35]:
+              - generic [ref=e36]:
+                - heading "人工智能2026：从大模型到通用智能的探索" [level=3] [ref=e37]
+                - generic [ref=e38]: 2026年，AI大模型技术持续突破，多模态、长上下文和Agent能力显著提升。
+                - button "全文" [ref=e39]
+              - img "人工智能2026：从大模型到通用智能的探索" [ref=e41]
+            - generic [ref=e42]:
+              - button "456" [ref=e43]:
+                - img [ref=e44]
+                - generic [ref=e46]: "456"
+              - button "58" [ref=e47]:
+                - img [ref=e48]
+                - generic [ref=e50]: "58"
+              - button "0" [ref=e52]:
+                - img [ref=e53]
+                - generic [ref=e55]: "0"
+          - article [ref=e56] [cursor=pointer]:
+            - generic [ref=e57]:
+              - link [ref=e58]:
+                - /url: /user/undefined
+              - generic [ref=e61]:
+                - link "AI前沿实验室" [ref=e62]:
+                  - /url: /user/undefined
+                - generic [ref=e63]: ·
+                - time [ref=e64]: 2026-01-05 00:00
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - heading "半导体与芯片：全球竞争格局与中国的突围之路" [level=3] [ref=e67]
+                - generic [ref=e68]: 半导体是数字时代的基石，也是大国博弈的焦点。本文深入分析全球半导体竞争格局和中国芯片产业的突围路径。
+                - button "全文" [ref=e69]
+              - img "半导体与芯片：全球竞争格局与中国的突围之路" [ref=e71]
+            - generic [ref=e72]:
+              - button "389" [ref=e73]:
+                - img [ref=e74]
+                - generic [ref=e76]: "389"
+              - button "52" [ref=e77]:
+                - img [ref=e78]
+                - generic [ref=e80]: "52"
+              - button "0" [ref=e82]:
+                - img [ref=e83]
+                - generic [ref=e85]: "0"
+          - article [ref=e86] [cursor=pointer]:
+            - generic [ref=e87]:
+              - link [ref=e88]:
+                - /url: /user/undefined
+              - generic [ref=e91]:
+                - link "知讯官方" [ref=e92]:
+                  - /url: /user/undefined
+                - generic [ref=e93]: ·
+                - time [ref=e94]: 2026-06-23 00:00
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - heading "欢迎来到知讯：一个为优质内容而生的平台" [level=3] [ref=e97]
+                - generic [ref=e98]: 知讯正式上线了！在这里，每一篇好文章都值得被发现，每一个创作者都值得被看见。了解知讯的初心与愿景。
+                - button "全文" [ref=e99]
+              - img "欢迎来到知讯：一个为优质内容而生的平台" [ref=e101]
+            - generic [ref=e102]:
+              - button "345" [ref=e103]:
+                - img [ref=e104]
+                - generic [ref=e106]: "345"
+              - button "67" [ref=e107]:
+                - img [ref=e108]
+                - generic [ref=e110]: "67"
+              - button "0" [ref=e112]:
+                - img [ref=e113]
+                - generic [ref=e115]: "0"
+          - article [ref=e116] [cursor=pointer]:
+            - generic [ref=e117]:
+              - link [ref=e118]:
+                - /url: /user/undefined
+              - generic [ref=e121]:
+                - link "AI前沿实验室" [ref=e122]:
+                  - /url: /user/undefined
+                - generic [ref=e123]: ·
+                - time [ref=e124]: 2026-01-18 00:00
+            - generic [ref=e125]:
+              - generic [ref=e126]:
+                - heading "AI Agent技术全景：从单智能体到多智能体协作" [level=3] [ref=e127]
+                - generic [ref=e128]: AI Agent正在从概念走向落地。本文系统梳理AI Agent的技术架构、工具调用、记忆机制和多智能体协作框架。
+                - button "全文" [ref=e129]
+              - img "AI Agent技术全景：从单智能体到多智能体协作" [ref=e131]
+            - generic [ref=e132]:
+              - button "289" [ref=e133]:
+                - img [ref=e134]
+                - generic [ref=e136]: "289"
+              - button "42" [ref=e137]:
+                - img [ref=e138]
+                - generic [ref=e140]: "42"
+              - button "0" [ref=e142]:
+                - img [ref=e143]
+                - generic [ref=e145]: "0"
+          - article [ref=e146] [cursor=pointer]:
+            - generic [ref=e147]:
+              - link [ref=e148]:
+                - /url: /user/undefined
+              - generic [ref=e151]:
+                - link "AI前沿实验室" [ref=e152]:
+                  - /url: /user/undefined
+                - generic [ref=e153]: ·
+                - time [ref=e154]: 2026-04-01 00:00
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - heading "新能源2026：光伏、风电与氢能的最新进展" [level=3] [ref=e157]
+                - generic [ref=e158]: 2026年，新能源行业继续高歌猛进。光伏效率再创新高，海上风电走向深远海，绿氢产业链加速成型。
+                - button "全文" [ref=e159]
+              - img "新能源2026：光伏、风电与氢能的最新进展" [ref=e161]
+            - generic [ref=e162]:
+              - button "298" [ref=e163]:
+                - img [ref=e164]
+                - generic [ref=e166]: "298"
+              - button "48" [ref=e167]:
+                - img [ref=e168]
+                - generic [ref=e170]: "48"
+              - button "0" [ref=e172]:
+                - img [ref=e173]
+                - generic [ref=e175]: "0"
+          - article [ref=e176] [cursor=pointer]:
+            - generic [ref=e177]:
+              - link [ref=e178]:
+                - /url: /user/undefined
+              - generic [ref=e181]:
+                - link "AI前沿实验室" [ref=e182]:
+                  - /url: /user/undefined
+                - generic [ref=e183]: ·
+                - time [ref=e184]: 2026-01-08 00:00
+            - generic [ref=e185]:
+              - generic [ref=e186]:
+                - heading "多模态大模型：AI的\"通感\"时代" [level=3] [ref=e187]
+                - generic [ref=e188]: 从文本到图像、从图像到视频、从语音到动作——多模态大模型正在让AI拥有类似人类的多感官整合能力。
+                - button "全文" [ref=e189]
+              - img "多模态大模型：AI的\"通感\"时代" [ref=e191]
+            - generic [ref=e192]:
+              - button "298" [ref=e193]:
+                - img [ref=e194]
+                - generic [ref=e196]: "298"
+              - button "45" [ref=e197]:
+                - img [ref=e198]
+                - generic [ref=e200]: "45"
+              - button "0" [ref=e202]:
+                - img [ref=e203]
+                - generic [ref=e205]: "0"
+          - article [ref=e206] [cursor=pointer]:
+            - generic [ref=e207]:
+              - link [ref=e208]:
+                - /url: /user/undefined
+              - generic [ref=e211]:
+                - link "代码匠人" [ref=e212]:
+                  - /url: /user/undefined
+                - generic [ref=e213]: ·
+                - time [ref=e214]: 2026-02-14 00:00
+            - generic [ref=e215]:
+              - generic [ref=e216]:
+                - heading "人形机器人：从实验室到量产的关键十年" [level=3] [ref=e217]
+                - generic [ref=e218]: 人形机器人正在迎来量产元年。本文分析人形机器人的技术架构、关键零部件和商业化路径。
+                - button "全文" [ref=e219]
+              - img "人形机器人：从实验室到量产的关键十年" [ref=e221]
+            - generic [ref=e222]:
+              - button "267" [ref=e223]:
+                - img [ref=e224]
+                - generic [ref=e226]: "267"
+              - button "44" [ref=e227]:
+                - img [ref=e228]
+                - generic [ref=e230]: "44"
+              - button "0" [ref=e232]:
+                - img [ref=e233]
+                - generic [ref=e235]: "0"
+          - article [ref=e236] [cursor=pointer]:
+            - generic [ref=e237]:
+              - link [ref=e238]:
+                - /url: /user/undefined
+              - generic [ref=e241]:
+                - link "AI前沿实验室" [ref=e242]:
+                  - /url: /user/undefined
+                - generic [ref=e243]: ·
+                - time [ref=e244]: 2026-04-05 00:00
+            - generic [ref=e245]:
+              - generic [ref=e246]:
+                - heading "大语言模型应用开发指南：从 Prompt Engineering 到 RAG 架构" [level=3] [ref=e247]
+                - generic [ref=e248]: 大语言模型正在重塑软件开发的方方面面。本文系统介绍 LLM 应用开发的核心技术，从提示工程到检索增强生成。
+                - button "全文" [ref=e249]
+              - img "大语言模型应用开发指南：从 Prompt Engineering 到 RAG 架构" [ref=e251]
+            - generic [ref=e252]:
+              - button "312" [ref=e253]:
+                - img [ref=e254]
+                - generic [ref=e256]: "312"
+              - button "56" [ref=e257]:
+                - img [ref=e258]
+                - generic [ref=e260]: "56"
+              - button "0" [ref=e262]:
+                - img [ref=e263]
+                - generic [ref=e265]: "0"
+          - article [ref=e266] [cursor=pointer]:
+            - generic [ref=e267]:
+              - link [ref=e268]:
+                - /url: /user/undefined
+              - generic [ref=e271]:
+                - link "AI前沿实验室" [ref=e272]:
+                  - /url: /user/undefined
+                - generic [ref=e273]: ·
+                - time [ref=e274]: 2026-03-12 00:00
+            - generic [ref=e275]:
+              - generic [ref=e276]:
+                - heading "多模态大模型：视觉、语言与行动的统一" [level=3] [ref=e277]
+                - generic [ref=e278]: 多模态大模型正在打破文本、图像、视频之间的壁垒。本文深入分析多模态大模型的能力与技术路径。
+                - button "全文" [ref=e279]
+              - img "多模态大模型：视觉、语言与行动的统一" [ref=e281]
+            - generic [ref=e282]:
+              - button "234" [ref=e283]:
+                - img [ref=e284]
+                - generic [ref=e286]: "234"
+              - button "36" [ref=e287]:
+                - img [ref=e288]
+                - generic [ref=e290]: "36"
+              - button "0" [ref=e292]:
+                - img [ref=e293]
+                - generic [ref=e295]: "0"
+          - article [ref=e296] [cursor=pointer]:
+            - generic [ref=e297]:
+              - link [ref=e298]:
+                - /url: /user/undefined
+              - generic [ref=e301]:
+                - link "AI前沿实验室" [ref=e302]:
+                  - /url: /user/undefined
+                - generic [ref=e303]: ·
+                - time [ref=e304]: 2026-03-20 00:00
+            - generic [ref=e305]:
+              - generic [ref=e306]:
+                - heading "航空航天制造：中国大飞机与商业航天的崛起" [level=3] [ref=e307]
+                - generic [ref=e308]: C919商业运营、可复用火箭突破、空间站建成，中国航空航天制造业正在迎来黄金时代。
+                - button "全文" [ref=e309]
+              - img "航空航天制造：中国大飞机与商业航天的崛起" [ref=e311]
+            - generic [ref=e312]:
+              - button "289" [ref=e313]:
+                - img [ref=e314]
+                - generic [ref=e316]: "289"
+              - button "47" [ref=e317]:
+                - img [ref=e318]
+                - generic [ref=e320]: "47"
+              - button "0" [ref=e322]:
+                - img [ref=e323]
+                - generic [ref=e325]: "0"
+  - generic [ref=e329]:
+    - img [ref=e331]:
+      - generic [ref=e333]: 知
+    - generic [ref=e334]: 知讯
+    - generic [ref=e335]: 发现优质内容，分享知识与见解

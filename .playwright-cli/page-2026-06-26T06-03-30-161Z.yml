@@ -1,0 +1,255 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - heading "404" [level=1] [ref=e5]
+    - paragraph [ref=e6]: "Page not found: /dashboard"
+    - link "返回首页" [ref=e7] [cursor=pointer]:
+      - /url: /
+  - generic [ref=e10]:
+    - img [ref=e12]:
+      - generic [ref=e14]: 知
+    - generic [ref=e15]: 知讯
+    - generic [ref=e16]: 发现优质内容，分享知识与见解
+  - status [ref=e19]
+  - iframe [ref=e20]:
+    - generic [ref=f13e2]:
+      - banner [ref=f13e3]:
+        - generic [ref=f13e5]:
+          - checkbox [ref=f13e6]
+          - generic "Light mode" [ref=f13e8] [cursor=pointer]:
+            - img [ref=f13e9]
+      - generic [ref=f13e13]:
+        - heading "Error" [level=4] [ref=f13e14]
+        - heading "An error has occurred" [level=1] [ref=f13e15]
+      - 'heading "Page not found: /dashboard Copy error with stack trace to clipboard" [level=2] [ref=f13e19]':
+        - img [ref=f13e21]
+        - generic [ref=f13e23]: "Page not found: /dashboard"
+        - button "Copy error with stack trace to clipboard" [ref=f13e24] [cursor=pointer]:
+          - img [ref=f13e25]
+      - generic [ref=f13e30]:
+        - heading "Stack Trace" [level=3] [ref=f13e33]
+        - generic [ref=f13e35]:
+          - generic [ref=f13e36]:
+            - generic [ref=f13e38]:
+              - checkbox "View All Frames" [ref=f13e39]
+              - generic [ref=f13e40]: View All Frames
+            - generic [ref=f13e42]:
+              - button "Pretty" [ref=f13e43]
+              - button "Raw" [ref=f13e44]
+          - list [ref=f13e47]:
+            - listitem [ref=f13e48]:
+              - generic [ref=f13e49]:
+                - button "D:/zhixun/client/node_modules/h3/dist/index.mjs in createError at line 71:15" [ref=f13e50]:
+                  - link "D:/zhixun/client/node_modules/h3/dist/index.mjs" [ref=f13e51] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/h3/dist/index.mjs:71
+                  - generic [ref=f13e52]:
+                    - text: in
+                    - code [ref=f13e53]: createError
+                  - generic [ref=f13e54]:
+                    - text: at line
+                    - code [ref=f13e55]: 71:15
+                - button [ref=f13e57]:
+                  - img [ref=f13e58]
+              - code [ref=f13e62]:
+                - generic [ref=f13e76]: "return new H3Error(input); } if (isError(input)) { return input; } const err = new H3Error(input.message ?? input.statusMessage ?? \"\", { cause: input.cause || input }); if (hasProp(input, \"stack\")) { try { Object.defineProperty(err, \"stack\", {"
+            - listitem [ref=f13e77]:
+              - generic [ref=f13e78]:
+                - button "D:/zhixun/client/node_modules/nuxt/dist/app/composables/error.js in createError at line 47:58" [ref=f13e79]:
+                  - link "D:/zhixun/client/node_modules/nuxt/dist/app/composables/error.js" [ref=f13e80] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/nuxt/dist/app/composables/error.js:47
+                  - generic [ref=f13e81]:
+                    - text: in
+                    - code [ref=f13e82]: createError
+                  - generic [ref=f13e83]:
+                    - text: at line
+                    - code [ref=f13e84]: 47:58
+                - button [ref=f13e86]:
+                  - img [ref=f13e87]
+            - listitem [ref=f13e89]:
+              - generic [ref=f13e90]:
+                - button "D:/zhixun/client/node_modules/nuxt/dist/pages/runtime/plugins/router.js at line 243:118" [ref=f13e91]:
+                  - link "D:/zhixun/client/node_modules/nuxt/dist/pages/runtime/plugins/router.js" [ref=f13e92] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/nuxt/dist/pages/runtime/plugins/router.js:243
+                  - generic [ref=f13e93]:
+                    - text: at line
+                    - code [ref=f13e94]: 243:118
+                - button [ref=f13e96]:
+                  - img [ref=f13e97]
+            - listitem [ref=f13e99]:
+              - generic [ref=f13e100]:
+                - button "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js in fn at line 239:44" [ref=f13e101]:
+                  - link "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js" [ref=f13e102] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js:239
+                  - generic [ref=f13e103]:
+                    - text: in
+                    - code [ref=f13e104]: fn
+                  - generic [ref=f13e105]:
+                    - text: at line
+                    - code [ref=f13e106]: 239:44
+                - button [ref=f13e108]:
+                  - img [ref=f13e109]
+            - listitem [ref=f13e111]:
+              - generic [ref=f13e112]:
+                - button "D:/zhixun/client/node_modules/unctx/dist/index.mjs in Object.callAsync at line 68:55" [ref=f13e113]:
+                  - link "D:/zhixun/client/node_modules/unctx/dist/index.mjs" [ref=f13e114] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/unctx/dist/index.mjs:68
+                  - generic [ref=f13e115]:
+                    - text: in
+                    - code [ref=f13e116]: Object.callAsync
+                  - generic [ref=f13e117]:
+                    - text: at line
+                    - code [ref=f13e118]: 68:55
+                - button [ref=f13e120]:
+                  - img [ref=f13e121]
+            - listitem [ref=f13e123]:
+              - generic [ref=f13e124]:
+                - button "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js at line 242:56" [ref=f13e125]:
+                  - link "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js" [ref=f13e126] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js:242
+                  - generic [ref=f13e127]:
+                    - text: at line
+                    - code [ref=f13e128]: 242:56
+                - button [ref=f13e130]:
+                  - img [ref=f13e131]
+            - listitem [ref=f13e133]:
+              - generic [ref=f13e134]:
+                - button "D:/zhixun/client/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js in Object.runWithContext at line 4294:18" [ref=f13e135]:
+                  - link "D:/zhixun/client/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js" [ref=f13e136] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:4294
+                  - generic [ref=f13e137]:
+                    - text: in
+                    - code [ref=f13e138]: Object.runWithContext
+                  - generic [ref=f13e139]:
+                    - text: at line
+                    - code [ref=f13e140]: 4294:18
+                - button [ref=f13e142]:
+                  - img [ref=f13e143]
+            - listitem [ref=f13e145]:
+              - generic [ref=f13e146]:
+                - button "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js in callWithNuxt at line 242:24" [ref=f13e147]:
+                  - link "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js" [ref=f13e148] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js:242
+                  - generic [ref=f13e149]:
+                    - text: in
+                    - code [ref=f13e150]: callWithNuxt
+                  - generic [ref=f13e151]:
+                    - text: at line
+                    - code [ref=f13e152]: 242:24
+                - button [ref=f13e154]:
+                  - img [ref=f13e155]
+            - listitem [ref=f13e157]:
+              - generic [ref=f13e158]:
+                - button "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js at line 56:41" [ref=f13e159]:
+                  - link "D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js" [ref=f13e160] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/nuxt/dist/app/nuxt.js:56
+                  - generic [ref=f13e161]:
+                    - text: at line
+                    - code [ref=f13e162]: 56:41
+                - button [ref=f13e164]:
+                  - img [ref=f13e165]
+            - listitem [ref=f13e167]:
+              - generic [ref=f13e168]:
+                - button "D:/zhixun/client/node_modules/@vue/reactivity/dist/reactivity.cjs.js in EffectScope.run at line 93:16" [ref=f13e169]:
+                  - link "D:/zhixun/client/node_modules/@vue/reactivity/dist/reactivity.cjs.js" [ref=f13e170] [cursor=pointer]:
+                    - /url: vscode://file/D:/zhixun/client/node_modules/@vue/reactivity/dist/reactivity.cjs.js:93
+                  - generic [ref=f13e171]:
+                    - text: in
+                    - code [ref=f13e172]: EffectScope.run
+                  - generic [ref=f13e173]:
+                    - text: at line
+                    - code [ref=f13e174]: 93:16
+                - button [ref=f13e176]:
+                  - img [ref=f13e177]
+      - generic [ref=f13e180]:
+        - heading "Error Cause" [level=3] [ref=f13e183]
+        - code [ref=f13e188]:
+          - generic [ref=f13e189]:
+            - text: "Object {"
+            - button "▼" [ref=f13e190]:
+              - generic [ref=f13e191]: ▼
+            - text: "}"
+      - generic [ref=f13e193]:
+        - heading "Request" [level=3] [ref=f13e195]
+        - generic [ref=f13e196]:
+          - generic [ref=f13e197]:
+            - heading "url" [level=4] [ref=f13e198]
+            - text: http://localhost:3001/dashboard
+          - generic [ref=f13e199]:
+            - heading "method" [level=4] [ref=f13e200]
+            - text: GET
+          - generic [ref=f13e201]:
+            - heading "headers" [level=4] [ref=f13e202]
+            - table [ref=f13e203]:
+              - rowgroup [ref=f13e204]:
+                - row "host localhost:3001" [ref=f13e205]:
+                  - cell "host" [ref=f13e206]
+                  - cell "localhost:3001" [ref=f13e207]
+                - row "connection keep-alive" [ref=f13e208]:
+                  - cell "connection" [ref=f13e209]
+                  - cell "keep-alive" [ref=f13e210]
+                - row "sec-ch-ua \"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"" [ref=f13e211]:
+                  - cell "sec-ch-ua" [ref=f13e212]
+                  - cell "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"" [ref=f13e213]
+                - row "sec-ch-ua-mobile ?0" [ref=f13e214]:
+                  - cell "sec-ch-ua-mobile" [ref=f13e215]
+                  - cell "?0" [ref=f13e216]
+                - row "sec-ch-ua-platform \"Windows\"" [ref=f13e217]:
+                  - cell "sec-ch-ua-platform" [ref=f13e218]
+                  - cell "\"Windows\"" [ref=f13e219]
+                - row "upgrade-insecure-requests 1" [ref=f13e220]:
+                  - cell "upgrade-insecure-requests" [ref=f13e221]
+                  - cell "1" [ref=f13e222]
+                - row "user-agent Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36" [ref=f13e223]:
+                  - cell "user-agent" [ref=f13e224]
+                  - cell "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36" [ref=f13e225]
+                - row "accept text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" [ref=f13e226]:
+                  - cell "accept" [ref=f13e227]
+                  - cell "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" [ref=f13e228]
+                - row "sec-fetch-site none" [ref=f13e229]:
+                  - cell "sec-fetch-site" [ref=f13e230]
+                  - cell "none" [ref=f13e231]
+                - row "sec-fetch-mode navigate" [ref=f13e232]:
+                  - cell "sec-fetch-mode" [ref=f13e233]
+                  - cell "navigate" [ref=f13e234]
+                - row "sec-fetch-user ?1" [ref=f13e235]:
+                  - cell "sec-fetch-user" [ref=f13e236]
+                  - cell "?1" [ref=f13e237]
+                - row "sec-fetch-dest document" [ref=f13e238]:
+                  - cell "sec-fetch-dest" [ref=f13e239]
+                  - cell "document" [ref=f13e240]
+                - row "accept-encoding gzip, deflate, br, zstd" [ref=f13e241]:
+                  - cell "accept-encoding" [ref=f13e242]
+                  - cell "gzip, deflate, br, zstd" [ref=f13e243]
+                - row "accept-language zh-CN,zh;q=0.9" [ref=f13e244]:
+                  - cell "accept-language" [ref=f13e245]
+                  - cell "zh-CN,zh;q=0.9" [ref=f13e246]
+                - 'row "cookie Object { ▼ }" [ref=f13e247]':
+                  - cell "cookie" [ref=f13e248]
+                  - 'cell "Object { ▼ }" [ref=f13e249]':
+                    - code [ref=f13e252]:
+                      - generic [ref=f13e253]:
+                        - text: "Object {"
+                        - button "▼" [ref=f13e254]:
+                          - generic [ref=f13e255]: ▼
+                        - text: "}"
+                - row "x-forwarded-for ::1" [ref=f13e256]:
+                  - cell "x-forwarded-for" [ref=f13e257]
+                  - cell "::1" [ref=f13e258]
+                - row "x-forwarded-port 3001" [ref=f13e259]:
+                  - cell "x-forwarded-port" [ref=f13e260]
+                  - cell "3001" [ref=f13e261]
+                - row "x-forwarded-proto http" [ref=f13e262]:
+                  - cell "x-forwarded-proto" [ref=f13e263]
+                  - cell "http" [ref=f13e264]
+  - button "Toggle detailed error view Hide error overlay" [ref=e21]:
+    - generic [ref=e22]: Toggle detailed error view
+    - button "Hide error overlay" [ref=e23] [cursor=pointer]: ×
+  - generic:
+    - img
+  - generic [ref=e24]:
+    - button "Toggle Nuxt DevTools" [ref=e25] [cursor=pointer]:
+      - img [ref=e26]
+    - generic "App load time" [ref=e29]:
+      - generic [ref=e30]: "84"
+      - generic [ref=e31]: ms
+    - button "Toggle Component Inspector" [ref=e33] [cursor=pointer]:
+      - img [ref=e34]

@@ -7,15 +7,18 @@
     <!-- 网络状态检测 -->
     <NetworkStatus />
 
-    <!-- 顶部导航栏 -->
-    <AppHeader />
+    <!-- 全局浮动返回按钮（左上角最边缘，非首页显示） -->
+    <BackButton />
+
+    <!-- 顶部导航栏（仅"我的"页面显示） -->
+    <AppHeader v-if="showHeader" />
 
     <!-- 平板端侧边栏（768-1023px） -->
     <ClientOnly>
       <aside
         v-if="isTablet"
-        class="tablet-sidebar fixed left-0 top-12 md:top-16 bottom-0 w-[260px] z-40 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 overflow-y-auto transition-transform duration-300"
-        :class="isTabletSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+        class="tablet-sidebar fixed left-0 bottom-0 w-[260px] z-40 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 overflow-y-auto transition-transform duration-300"
+        :class="[isTabletSidebarOpen ? 'translate-x-0' : '-translate-x-full', isBackButtonVisible ? 'top-12' : 'top-0', showHeader ? 'md:top-16' : 'md:top-0']"
       >
         <div class="p-3 space-y-3">
           <!-- 侧边栏导航 -->
@@ -31,6 +34,18 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
               </svg>
               <span>排行</span>
+            </NuxtLink>
+            <NuxtLink to="/topics" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors no-tap-highlight touch-target" :class="isActive('/topics') ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700'" @click="closeTabletSidebar">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+              </svg>
+              <span>话题</span>
+            </NuxtLink>
+            <NuxtLink to="/groups" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors no-tap-highlight touch-target" :class="isActive('/groups') ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700'" @click="closeTabletSidebar">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>群组</span>
             </NuxtLink>
             <ClientOnly>
               <NuxtLink v-if="userStore.isLoggedIn" to="/editor" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors no-tap-highlight touch-target" :class="isActive('/editor') ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700'" @click="closeTabletSidebar">
@@ -79,7 +94,8 @@
       <Transition name="fade">
         <div
           v-if="isTablet && isTabletSidebarOpen"
-          class="fixed inset-0 top-12 md:top-16 bg-black/30 z-39"
+          class="fixed inset-0 bg-black/30 z-39"
+          :class="[isBackButtonVisible ? 'top-12' : 'top-0', showHeader ? 'md:top-16' : 'md:top-0']"
           @click="closeTabletSidebar"
         />
       </Transition>
@@ -87,7 +103,8 @@
 
     <!-- 主内容区 -->
     <main
-      class="pt-12 md:pt-16 pb-16 md:pb-0"
+      class="pb-16 md:pb-0"
+      :class="mainTopPadding"
       style="transition: padding-left 0.3s ease;"
       :style="isTablet && isTabletSidebarOpen ? 'padding-left: 260px' : ''"
     >
@@ -145,7 +162,36 @@
 const route = useRoute()
 const userStore = useUserStore()
 const { isTablet } = useBreakpoints()
-const { showOrientationPrompt, dismissOrientationPrompt } = useOrientation()
+const { showOrientationPrompt, dismissOrientationPrompt, promptOrientationLock, desiredOrientation } = useOrientation()
+
+// 仅"我的"页面显示顶部导航栏
+const showHeader = computed(() => route.path.startsWith('/user'))
+
+// 是否首页（首页不显示返回按钮，无需为按钮留顶部空间）
+const isHomePage = computed(() => route.path === '/')
+
+// 全局返回按钮是否可见（与 BackButton.vue 中的逻辑保持一致）
+const isBackButtonVisible = computed(() => {
+  if (route.path === '/') return false
+  // 带自己返回按钮的页面：私信详情、群聊、他人关注/粉丝列表
+  if (/^\/messages\/\d+/.test(route.path)) return false
+  if (/^\/groups\/\d+/.test(route.path)) return false
+  if (/^\/user\/\d+\/(followers|following)/.test(route.path)) return false
+  return true
+})
+
+// 主内容区顶部内边距：
+// - /user 页面：移动端 AppHeader(48) + 可选返回顶栏(48)，桌面端 AppHeader(64) 留空间；
+// - 其他页面：仅在全局返回按钮可见时为其顶栏留空间，桌面端贴顶
+const mainTopPadding = computed(() => {
+  if (showHeader.value) {
+    // /user 页面：移动端 AppHeader 48px + 可选 BackButton 48px
+    return isBackButtonVisible.value ? 'pt-24 md:pt-16' : 'pt-12 md:pt-16'
+  }
+  // 其他页面：仅在返回按钮可见时为移动端顶栏留 48px 空间
+  if (isBackButtonVisible.value) return 'pt-12 md:pt-0'
+  return ''
+})
 
 // 启动浏览历史自动同步
 const { startAutoSync } = useViewHistory()
@@ -155,7 +201,6 @@ onMounted(() => {
 
 // 平板侧边栏状态
 const isTabletSidebarOpen = ref(false)
-const desiredOrientation = ref<'portrait' | 'landscape' | null>(null)
 
 // 切换平板侧边栏
 const toggleTabletSidebar = () => {

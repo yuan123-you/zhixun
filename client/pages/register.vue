@@ -191,6 +191,7 @@ watch(emailPrefix, (val) => {
 })
 
 const loading = ref(false)
+const error = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const codeCooldown = ref(0)
@@ -204,6 +205,7 @@ const refreshGraphCaptcha = async () => {
     const data = await getGraphCaptcha()
     graphCaptchaKey.value = data.captchaKey
     graphCaptchaImage.value = data.image
+    error.value = ''
   } catch (err: any) {
     error.value = err.message || '验证码获取失败'
   }

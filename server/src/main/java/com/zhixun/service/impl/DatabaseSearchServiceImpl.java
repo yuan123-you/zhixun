@@ -18,8 +18,7 @@ import com.zhixun.vo.SuggestionVO;
 import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opensearch.client.OpenSearchClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -40,7 +39,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnMissingBean(OpenSearchClient.class)
+@ConditionalOnProperty(name = "opensearch.enabled", havingValue = "false", matchIfMissing = true)
 public class DatabaseSearchServiceImpl implements SearchService {
 
     private final ArticleMapper articleMapper;
@@ -62,9 +61,13 @@ public class DatabaseSearchServiceImpl implements SearchService {
             return result;
         }
 
-        String searchType = type != null ? type : "all";
+        // 规范化 type：兼容前端复数形式
+        String normalizedType = type != null ? type : "all";
+        if ("articles".equals(normalizedType)) normalizedType = "article";
+        if ("users".equals(normalizedType)) normalizedType = "user";
+        if ("images".equals(normalizedType)) normalizedType = "image";
 
-        switch (searchType) {
+        switch (normalizedType) {
             case "article":
                 long articleTotal = searchArticles(keyword, page, pageSize, result);
                 result.setArticleTotal(articleTotal);

@@ -1,77 +1,79 @@
 ﻿<template>
   <!-- 搜索页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 md:px-2 2xl:px-3 py-1.5 md:py-2">
     <!-- 搜索框（自动聚焦 + 自动搜索） -->
-    <div class="mb-3">
-      <div class="flex items-center bg-white rounded-full px-3 py-2 shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
+    <div class="mb-2 md:mb-3">
+      <div class="flex items-center bg-white rounded-full px-2 md:px-3 py-1.5 md:py-2 shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
         <!-- 加载指示器 -->
-        <svg v-if="autoSearching" class="w-5 h-5 text-primary animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+        <svg v-if="autoSearching" class="w-4 h-4 md:w-5 md:h-5 text-primary animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        <svg v-else class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg v-else class="w-4 h-4 md:w-5 md:h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
           ref="searchInputRef"
           v-model="keyword"
           type="text"
-          class="flex-1 bg-transparent border-none outline-none ml-2 text-slate-900 placeholder-gray-400"
+          class="flex-1 bg-transparent border-none outline-none ml-1.5 md:ml-2 text-sm md:text-base text-slate-900 placeholder-gray-400"
           placeholder="搜索作品、用户..."
           @input="handleInput"
           @keydown.enter="doSearch"
         />
-        <button v-if="keyword" class="p-1 text-gray-400 hover:text-gray-600" @click="clearKeyword">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button v-show="keyword" class="p-0.5 md:p-1 text-gray-400 hover:text-gray-600 shrink-0" @click="clearKeyword">
+          <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+        <!-- 清除按钮占位（保持搜索按钮位置固定） -->
+        <span v-show="!keyword" class="w-5 md:w-6 h-3.5 md:h-4 shrink-0"></span>
         <!-- 搜索按钮 -->
-        <button class="ml-2 px-4 py-1.5 bg-primary text-white text-sm rounded-full hover:bg-primary-600 transition-colors shrink-0" @click="doSearch">
-          {{ '搜索' }}
+        <button class="ml-1.5 md:ml-2 px-2.5 md:px-3 py-1 md:py-1.5 bg-primary text-white text-xs md:text-sm rounded-full hover:bg-primary-600 transition-colors shrink-0" @click="doSearch">
+          搜索
         </button>
       </div>
 
     </div>
 
     <!-- 搜索建议/热门搜索（未搜索时） -->
-    <div v-if="!hasSearched">
+    <div v-if="!hasSearched" class="text-xs md:text-sm">
       <!-- 搜索建议 -->
-      <div v-if="suggestions.length > 0" class="mb-6">
-        <h3 class="text-sm font-medium text-slate-500 mb-3">{{ '搜索建议' }}</h3>
-        <div class="space-y-1">
+      <div v-if="suggestions.length > 0" class="mb-3 md:mb-6">
+        <h3 class="text-xs md:text-sm font-medium text-slate-500 mb-2 md:mb-3">搜索建议</h3>
+        <div class="space-y-0.5 md:space-y-1">
           <button
             v-for="item in suggestions"
             :key="`${item.type}-${item.id}`"
-            class="w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
+            class="w-full text-left flex items-center px-2.5 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
             @click="selectSuggestion(item)"
           >
             <!-- 类型图标 -->
-            <svg v-if="item.type === 'user'" class="w-4 h-4 text-gray-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="item.type === 'user'" class="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 mr-1.5 md:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <svg v-else-if="item.type === 'article'" class="w-4 h-4 text-gray-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else-if="item.type === 'article'" class="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 mr-1.5 md:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <svg v-else class="w-4 h-4 text-gray-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else class="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 mr-1.5 md:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
             <!-- 用户头像 -->
-            <UserAvatar v-if="item.type === 'user'" :src="item.avatar" :alt="item.text" size="xs" class="mr-2" />
+            <UserAvatar v-if="item.type === 'user'" :src="item.avatar" :alt="item.text" size="xs" class="mr-1.5 md:mr-2" />
             <span v-html="highlightKeyword(item.text)"></span>
-            <span class="ml-auto text-xs text-gray-400">{{ item.type === 'user' ? '用户' : item.type === 'article' ? '作品' : '标签' }}</span>
+            <span class="ml-auto text-[10px] md:text-xs text-gray-400">{{ item.type === 'user' ? '用户' : item.type === 'article' ? '作品' : '标签' }}</span>
           </button>
         </div>
       </div>
 
       <!-- 搜索历史 -->
-      <div v-if="searchHistory.length > 0" class="mb-6">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-medium text-slate-500">{{ '搜索历史' }}</h3>
-          <button class="text-xs text-gray-400 hover:text-danger" @click="clearHistory">{{ '清除' }}</button>
+      <div v-if="searchHistory.length > 0" class="mb-3 md:mb-6">
+        <div class="flex items-center justify-between mb-2 md:mb-3">
+          <h3 class="text-xs md:text-sm font-medium text-slate-500">搜索历史</h3>
+          <button class="text-[10px] md:text-xs text-gray-400 hover:text-danger" @click="clearHistory">清除</button>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button v-for="item in searchHistory" :key="item" class="px-3 py-1.5 bg-slate-50 text-sm text-slate-700 rounded-full hover:bg-slate-200" @click="keyword = item; doSearch()">
+        <div class="flex flex-wrap gap-1.5 md:gap-2">
+          <button v-for="item in searchHistory" :key="item" class="px-2 md:px-3 py-1 md:py-1.5 bg-slate-50 text-xs md:text-sm text-slate-700 rounded-full hover:bg-slate-200" @click="keyword = item; doSearch()">
             {{ item }}
           </button>
         </div>
@@ -79,55 +81,55 @@
 
       <!-- 热门搜索 -->
       <div v-if="hotSearches.length > 0">
-        <h3 class="text-sm font-medium text-slate-500 mb-2">{{ '热门搜索' }}</h3>
-        <div class="space-y-1">
-          <button v-for="(item, index) in hotSearches" :key="item" class="w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg" @click="keyword = item; doSearch()">
-            <span class="w-5 text-center text-xs font-bold" :class="index < 3 ? 'text-danger' : 'text-gray-400'">{{ index + 1 }}</span>
-            <span class="ml-3">{{ item }}</span>
+        <h3 class="text-xs md:text-sm font-medium text-slate-500 mb-1.5 md:mb-2">热门搜索</h3>
+        <div class="space-y-0.5 md:space-y-1">
+          <button v-for="(item, index) in hotSearches" :key="item" class="w-full text-left flex items-center px-2.5 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-slate-700 hover:bg-slate-50 rounded-lg" @click="keyword = item; doSearch()">
+            <span class="w-4 md:w-5 text-center text-[10px] md:text-xs font-bold" :class="index < 3 ? 'text-danger' : 'text-gray-400'">{{ index + 1 }}</span>
+            <span class="ml-2 md:ml-3">{{ item }}</span>
           </button>
         </div>
       </div>
     </div>
 
     <!-- 搜索结果（已搜索时） -->
-    <div v-else>
+    <div v-else class="text-xs md:text-sm">
       <!-- Tab切换 -->
-      <div class="flex items-center border-b border-slate-200 mb-4">
+      <div class="flex items-center border-b border-slate-200 mb-2 md:mb-4">
         <button
           v-for="tab in searchTabs"
           :key="tab.key"
-          class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+          class="px-2.5 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium border-b-2 transition-colors"
           :class="activeTab === tab.key
             ? 'border-primary text-primary'
             : 'border-transparent text-slate-500 hover:text-slate-700'"
           @click="switchTab(tab.key)"
         >
           {{ tab.label }}
-          <span v-if="tabCounts[tab.key]" class="ml-1 text-xs text-gray-400">({{ tabCounts[tab.key] }})</span>
+          <span v-if="tabCounts[tab.key]" class="ml-0.5 md:ml-1 text-[10px] md:text-xs text-gray-400">({{ tabCounts[tab.key] }})</span>
         </button>
       </div>
 
       <!-- 筛选栏（紧凑型） -->
-      <div class="flex items-center flex-wrap gap-1 mb-1.5">
+      <div class="flex items-center flex-wrap gap-1 mb-1 md:mb-1.5">
         <!-- 分类筛选 -->
-        <select v-model="filterCategoryId" class="input py-0.5 text-xs w-auto min-w-[80px] max-w-[100px] rounded" @change="doSearch()">
-          <option :value="undefined">{{ '全部分类' }}</option>
+        <select v-model="filterCategoryId" class="input py-0.5 text-[10px] md:text-xs w-auto min-w-[72px] max-w-[90px] rounded" @change="doSearch()">
+          <option :value="undefined">全部分类</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
 
         <!-- 时间范围筛选 -->
-        <select v-model="filterTimeRange" class="input py-0.5 text-xs w-auto min-w-[80px] max-w-[100px] rounded" @change="doSearch()">
-          <option :value="undefined">{{ '全部时间' }}</option>
-          <option value="24h">{{ '24小时' }}</option>
-          <option value="7d">{{ '7天' }}</option>
-          <option value="30d">{{ '30天' }}</option>
+        <select v-model="filterTimeRange" class="input py-0.5 text-[10px] md:text-xs w-auto min-w-[72px] max-w-[90px] rounded" @change="doSearch()">
+          <option :value="undefined">全部时间</option>
+          <option value="24h">24小时</option>
+          <option value="7d">7天</option>
+          <option value="30d">30天</option>
         </select>
 
         <!-- 排序 -->
-        <select v-model="sortBy" class="input py-0.5 text-xs w-auto min-w-[72px] max-w-[90px] rounded" @change="doSearch()">
-          <option value="relevance">{{ '相关度' }}</option>
-          <option value="latest">{{ '最新' }}</option>
-          <option value="popular">{{ '最热' }}</option>
+        <select v-model="sortBy" class="input py-0.5 text-[10px] md:text-xs w-auto min-w-[64px] max-w-[80px] rounded" @change="doSearch()">
+          <option value="relevance">相关度</option>
+          <option value="latest">最新</option>
+          <option value="popular">最热</option>
         </select>
       </div>
 
@@ -135,40 +137,40 @@
       <div v-if="loading">
         <!-- 综合Tab骨架屏 -->
         <template v-if="activeTab === 'all'">
-          <div class="mb-3">
-            <div class="h-4 bg-slate-200 rounded w-20 mb-3 animate-pulse"></div>
-            <div class="space-y-2">
+          <div class="mb-2 md:mb-3">
+            <div class="h-3 md:h-4 bg-slate-200 rounded w-16 md:w-20 mb-2 md:mb-3 animate-pulse"></div>
+            <div class="space-y-1.5 md:space-y-2">
               <LoadingSkeleton v-for="i in 2" :key="'a'+i" type="article" />
             </div>
           </div>
-          <div class="mb-3">
-            <div class="h-4 bg-slate-200 rounded w-20 mb-3 animate-pulse"></div>
-            <div class="space-y-2">
+          <div class="mb-2 md:mb-3">
+            <div class="h-3 md:h-4 bg-slate-200 rounded w-16 md:w-20 mb-2 md:mb-3 animate-pulse"></div>
+            <div class="space-y-1.5 md:space-y-2">
               <LoadingSkeleton v-for="i in 2" :key="'u'+i" type="user" />
             </div>
           </div>
           <div>
-            <div class="h-4 bg-slate-200 rounded w-20 mb-3 animate-pulse"></div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="h-3 md:h-4 bg-slate-200 rounded w-16 md:w-20 mb-2 md:mb-3 animate-pulse"></div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
               <div v-for="i in 6" :key="'img'+i" class="aspect-square bg-slate-200 rounded-lg animate-pulse"></div>
             </div>
           </div>
         </template>
         <!-- 作品Tab骨架屏 -->
         <template v-else-if="activeTab === 'articles'">
-          <div class="space-y-3">
+          <div class="space-y-2 md:space-y-3">
             <LoadingSkeleton v-for="i in 5" :key="i" type="article" />
           </div>
         </template>
         <!-- 用户Tab骨架屏 -->
         <template v-else-if="activeTab === 'users'">
-          <div class="space-y-3">
+          <div class="space-y-2 md:space-y-3">
             <LoadingSkeleton v-for="i in 5" :key="i" type="user" />
           </div>
         </template>
         <!-- 图片Tab骨架屏 -->
         <template v-else-if="activeTab === 'images'">
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
             <div v-for="i in 9" :key="i" class="aspect-square bg-slate-200 rounded-lg animate-pulse"></div>
           </div>
         </template>
@@ -182,32 +184,32 @@
         <!-- ===== 综合Tab ===== -->
         <template v-if="activeTab === 'all'">
           <!-- 用户区块 -->
-          <div v-if="allUserResults.length > 0" class="mb-3">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-slate-500">{{ '相关用户' }}</h3>
-              <button v-if="tabCounts.users > 3" class="text-xs text-primary hover:underline" @click="switchTab('users')">{{ '查看全部' }} ({{ tabCounts.users }})</button>
+          <div v-if="allUserResults.length > 0" class="mb-2 md:mb-3">
+            <div class="flex items-center justify-between mb-1.5 md:mb-2">
+              <h3 class="text-xs md:text-sm font-medium text-slate-500">相关用户</h3>
+              <button v-if="tabCounts.users > 3" class="text-[10px] md:text-xs text-primary hover:underline" @click="switchTab('users')">查看全部 ({{ tabCounts.users }})</button>
             </div>
-            <div class="space-y-2">
+            <div class="space-y-1.5 md:space-y-2">
               <UserCard v-for="user in allUserResults" :key="'u-'+user.id" :user="user" :show-follow-button="true" @toggle-follow="toggleFollow" />
             </div>
           </div>
 
           <!-- 作品区块 -->
-          <div v-if="allArticleResults.length > 0" class="mb-3">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-slate-500">{{ '相关作品' }}</h3>
-              <button v-if="tabCounts.articles > 5" class="text-xs text-primary hover:underline" @click="switchTab('articles')">{{ '查看全部' }} ({{ tabCounts.articles }})</button>
+          <div v-if="allArticleResults.length > 0" class="mb-2 md:mb-3">
+            <div class="flex items-center justify-between mb-1.5 md:mb-2">
+              <h3 class="text-xs md:text-sm font-medium text-slate-500">相关作品</h3>
+              <button v-if="tabCounts.articles > 5" class="text-[10px] md:text-xs text-primary hover:underline" @click="switchTab('articles')">查看全部 ({{ tabCounts.articles }})</button>
             </div>
-            <div class="space-y-2">
+            <div class="space-y-1.5 md:space-y-2">
               <ArticleCard v-for="item in allArticleResults" :key="'a-'+item.id" :article="item" />
             </div>
           </div>
 
           <!-- 图片区块 -->
-          <div v-if="allImageResults.length > 0" class="mb-3">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-slate-500">{{ '相关图片' }}</h3>
-              <button v-if="tabCounts.images > 6" class="text-xs text-primary hover:underline" @click="switchTab('images')">{{ '查看全部' }} ({{ tabCounts.images }})</button>
+          <div v-if="allImageResults.length > 0" class="mb-2 md:mb-3">
+            <div class="flex items-center justify-between mb-1.5 md:mb-2">
+              <h3 class="text-xs md:text-sm font-medium text-slate-500">相关图片</h3>
+              <button v-if="tabCounts.images > 6" class="text-[10px] md:text-xs text-primary hover:underline" @click="switchTab('images')">查看全部 ({{ tabCounts.images }})</button>
             </div>
             <ImageGrid :images="allImageResults" @click="handleImageClick" />
           </div>
@@ -215,51 +217,51 @@
 
         <!-- ===== 作品Tab ===== -->
         <template v-if="activeTab === 'articles'">
-          <div class="space-y-2">
+          <div class="space-y-1.5 md:space-y-2">
             <ArticleCard v-for="item in articleResults" :key="item.id" :article="item" />
           </div>
           <!-- 加载更多 -->
-          <div ref="articleSentinel" class="h-1"></div>
-          <div v-if="loadingMore" class="py-4 text-center text-sm text-gray-400">
-            <svg class="animate-spin inline w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+          <div ref="articleSentinel" class="h-0.5 md:h-1"></div>
+          <div v-if="loadingMore" class="py-3 md:py-4 text-center text-xs md:text-sm text-gray-400">
+            <svg class="animate-spin inline w-3.5 h-3.5 md:w-4 md:h-4 mr-1" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            {{ '加载中...' }}
+            加载中...
           </div>
-          <div v-if="!hasMoreArticles && articleResults.length > 0" class="py-4 text-center text-sm text-gray-400">{{ '没有更多了' }}</div>
+          <div v-if="!hasMoreArticles && articleResults.length > 0" class="py-3 md:py-4 text-center text-xs md:text-sm text-gray-400">没有更多了</div>
         </template>
 
         <!-- ===== 用户Tab ===== -->
         <template v-if="activeTab === 'users'">
-          <div class="space-y-2">
+          <div class="space-y-1.5 md:space-y-2">
             <UserCard v-for="user in userResults" :key="user.id" :user="user" :show-follow-button="true" @toggle-follow="toggleFollow" />
           </div>
           <!-- 加载更多 -->
-          <div ref="userSentinel" class="h-1"></div>
-          <div v-if="loadingMore" class="py-4 text-center text-sm text-gray-400">
-            <svg class="animate-spin inline w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+          <div ref="userSentinel" class="h-0.5 md:h-1"></div>
+          <div v-if="loadingMore" class="py-3 md:py-4 text-center text-xs md:text-sm text-gray-400">
+            <svg class="animate-spin inline w-3.5 h-3.5 md:w-4 md:h-4 mr-1" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            {{ '加载中...' }}
+            加载中...
           </div>
-          <div v-if="!hasMoreUsers && userResults.length > 0" class="py-4 text-center text-sm text-gray-400">{{ '没有更多了' }}</div>
+          <div v-if="!hasMoreUsers && userResults.length > 0" class="py-3 md:py-4 text-center text-xs md:text-sm text-gray-400">没有更多了</div>
         </template>
 
         <!-- ===== 图片Tab ===== -->
         <template v-if="activeTab === 'images'">
           <ImageGrid :images="imageResults" @click="handleImageClick" />
           <!-- 加载更多 -->
-          <div ref="imageSentinel" class="h-1"></div>
-          <div v-if="loadingMore" class="py-4 text-center text-sm text-gray-400">
-            <svg class="animate-spin inline w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+          <div ref="imageSentinel" class="h-0.5 md:h-1"></div>
+          <div v-if="loadingMore" class="py-3 md:py-4 text-center text-xs md:text-sm text-gray-400">
+            <svg class="animate-spin inline w-3.5 h-3.5 md:w-4 md:h-4 mr-1" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            {{ '加载中...' }}
+            加载中...
           </div>
-          <div v-if="!hasMoreImages && imageResults.length > 0" class="py-4 text-center text-sm text-gray-400">{{ '没有更多了' }}</div>
+          <div v-if="!hasMoreImages && imageResults.length > 0" class="py-3 md:py-4 text-center text-xs md:text-sm text-gray-400">没有更多了</div>
         </template>
       </div>
 
@@ -696,25 +698,29 @@ const highlightKeyword = (text: string) => {
 
 // HTML转义，防止XSS
 const escapeHtml = (str: string) => {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/`/g, '&#96;')
 }
+
+// 搜索历史管理（使用统一 composable）
+const { getHistory, addHistory, clearHistory: clearSearchHistory } = useSearchHistory()
 
 // 保存搜索历史
 const saveHistory = (kw: string) => {
-  const history = searchHistory.value.filter((h) => h !== kw)
-  history.unshift(kw)
-  searchHistory.value = history.slice(0, 10)
-  if (import.meta.client) {
-    localStorage.setItem('searchHistory', JSON.stringify(searchHistory.value))
-  }
+  addHistory(kw)
+  // 同步更新本地显示列表
+  searchHistory.value = getHistory().map((e) => e.keyword)
 }
 
 // 清除搜索历史
 const clearHistory = () => {
+  clearSearchHistory()
   searchHistory.value = []
-  if (import.meta.client) {
-    localStorage.removeItem('searchHistory')
-  }
 }
 
 // 加载热门搜索
@@ -731,18 +737,9 @@ const loadHotSearches = async () => {
   }
 }
 
-// 加载搜索历史
+// 加载搜索历史（从统一 composable 读取）
 const loadSearchHistory = () => {
-  if (import.meta.client) {
-    const saved = localStorage.getItem('searchHistory')
-    if (saved) {
-      try {
-        searchHistory.value = JSON.parse(saved)
-      } catch {
-        searchHistory.value = []
-      }
-    }
-  }
+  searchHistory.value = getHistory().map((e) => e.keyword)
 }
 
 // 加载分类列表

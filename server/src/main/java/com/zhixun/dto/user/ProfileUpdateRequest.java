@@ -24,6 +24,12 @@ public class ProfileUpdateRequest {
     /** 手机号 */
     private String phone;
 
+    /** 性别：0=未知，1=男，2=女 */
+    private Integer gender;
+
+    /** 是否在个人主页展示性别 */
+    private Boolean showGenderOnProfile;
+
     /** 简介 */
     @Size(max = 500, message = "简介最长500个字符")
     private String bio;

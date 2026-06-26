@@ -248,6 +248,8 @@ export const TTL = {
   DAY_7: 7 * 24 * 60 * 60 * 1000,
   /** 30 天 */
   DAY_30: 30 * 24 * 60 * 60 * 1000,
+  /** 永不过期（语义化常量，实际传入时不设 TTL） */
+  PERMANENT: undefined as unknown as number,
 } as const
 
 /** 本地存储键名常量 */
@@ -264,8 +266,10 @@ export const STORAGE_KEYS = {
   TAGS_CACHE: 'tags_cache',
   /** 用户信息摘要缓存 */
   USER_SUMMARY: 'user_summary',
-  /** 用户本地设置（主题/字体/语言） */
+  /** 用户本地设置（主题/字体/语言） - 供 settings.vue 页面使用 */
   SETTINGS_LOCAL: 'settings_local',
+  /** 用户偏好设置（主题/语言/通知/读写偏好） - 供 useUserSettings composable 使用 */
+  USER_PREFERENCES: 'user_preferences',
   /** 搜索历史 */
   SEARCH_HISTORY: 'search_history',
   /** 作品草稿 */
@@ -274,4 +278,6 @@ export const STORAGE_KEYS = {
   READ_PROGRESS_PREFIX: 'read_progress_',
   /** 浏览历史本地记录 */
   VIEW_HISTORY_LOCAL: 'view_history_local',
+  /** 数据版本号 */
+  DATA_VERSION: 'data_version',
 } as const

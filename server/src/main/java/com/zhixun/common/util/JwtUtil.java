@@ -14,6 +14,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * JWT 工具类
@@ -173,6 +174,8 @@ public class JwtUtil {
         claims.put(CLAIM_USERNAME, username);
         claims.put(CLAIM_TOKEN_TYPE, tokenType);
         claims.put(CLAIM_ROLE, role);
+        // 加入随机 nonce 确保每次生成的 JWT 唯一（防止 RefreshToken 轮转时新旧值相同）
+        claims.put("nonce", UUID.randomUUID().toString());
 
         Date now = new Date();
         Date expirationDate = new Date(now.getTime() + expiration * 1000);
@@ -182,7 +185,7 @@ public class JwtUtil {
                 .subject(username)
                 .issuedAt(now)
                 .expiration(expirationDate)
-                .signWith(getSigningKey(secret))
+                .signWith(getSigningKey(secret), Jwts.SIG.HS256)
                 .compact();
     }
 

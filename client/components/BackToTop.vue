@@ -119,8 +119,8 @@ onBeforeUnmount(() => {
   transform: translateY(0);
 }
 
-/* 移动端适配：考虑底部导航栏 */
-@media (max-width: 767px) {
+/* 移动端适配：考虑底部导航栏 (与 Tailwind md:768px 断点一致) */
+@media (max-width: 767.98px) {
   .back-to-top {
     bottom: calc(12px + var(--mobile-nav-height, 3.5rem));
   }
@@ -151,7 +151,7 @@ onBeforeUnmount(() => {
     bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767.98px) {
     .back-to-top {
       bottom: calc(12px + var(--mobile-nav-height, 3.5rem) + env(safe-area-inset-bottom));
     }

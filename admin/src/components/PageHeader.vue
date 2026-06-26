@@ -1,17 +1,22 @@
 <template>
   <div class="page-header">
-    <h2 class="page-title">{{ title }}</h2>
-    <p v-if="subtitle" class="page-subtitle">{{ subtitle }}</p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="page-title">{{ title }}</h2>
+        <p v-if="description || subtitle" class="page-subtitle">{{ description || subtitle }}</p>
+      </div>
+      <div v-if="$slots.actions" class="flex-shrink-0">
+        <slot name="actions" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-/** 页面标题组件 */
 defineProps<{
-  /** 页面标题 */
   title: string
-  /** 副标题 */
   subtitle?: string
+  description?: string
 }>()
 </script>
 

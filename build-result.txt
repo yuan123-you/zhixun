@@ -1,0 +1,16 @@
+┌  [36mBuilding Nuxt for production...[39m
+│
+●  [32mNuxt [1m3.21.8[22m[39m[90m (with [39m[90mNitro [1m2.13.4[22m[39m[90m, Vite [1m7.3.5[22m[39m[90m and Vue [1m3.5.38[22m[39m[90m)[39m
+[90m[[90mnuxt:tailwindcss[90m][39m [36mℹ[39m Using default Tailwind CSS file
+│
+●  Nitro preset: [36mnode-server[39m
+[36mℹ[39m Building client...
+[36mℹ[39m [36mvite v7.3.5 [32mbuilding client environment for production...[36m[39m
+[36mℹ[39m transforming...
+[36mℹ[39m [32m✓[39m 205 modules transformed.
+
+[41m[30m ERROR [39m[49m [31m✗[39m Build failed in 3.45s
+
+│
+■  Nuxt build error: RollupError: [31m[vite:vue] [plugin vite:vue] ../../../D:/zhixun/client/components/GroupChatWindow.vue (11:11): Element is missing end tag.[39m
+│  file: [36mD:/zhixun/client/components/GroupChatWindow.vue:11:11[39m

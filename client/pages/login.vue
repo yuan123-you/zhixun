@@ -1,6 +1,6 @@
 <template>
-  <!-- 登录页 -->
   <div class="w-full max-w-md mx-auto px-2">
+    <!-- 登录页 -->
     <div class="card p-4 md:p-6">
       <!-- Logo和标题 -->
       <div class="text-center mb-4">

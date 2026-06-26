@@ -66,6 +66,9 @@ public class AdminController {
     @Autowired(required = false)
     private SynonymService synonymService;
 
+    @Autowired
+    private org.springframework.context.ApplicationContext applicationContext;
+
     /**
      * 待审核作品列表
      */
@@ -349,6 +352,47 @@ public class AdminController {
         } catch (Exception e) {
             result.put("consistent", false);
             result.put("error", e.getMessage());
+        }
+        return R.ok(result);
+    }
+
+    /**
+     * 手动清空所有多级缓存（L1 Caffeine + L2 Redis）
+     * 用于解决缓存与数据库不一致时无需重启服务的应急操作
+     */
+    @PostMapping("/cache/clear")
+    public R<Map<String, Object>> clearAllCaches() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            // 获取 multiLevelCacheManager Bean（如果存在）
+            org.springframework.cache.CacheManager cm = applicationContext.getBean(
+                    "multiLevelCacheManager", org.springframework.cache.CacheManager.class);
+            if (cm instanceof MultiLevelCacheManager mlcm) {
+                mlcm.clearAllCachesOnStartup();
+                result.put("success", true);
+                result.put("message", "所有多级缓存已清空（L1 Caffeine + L2 Redis）");
+            } else {
+                result.put("success", false);
+                result.put("message", "缓存管理器类型不支持");
+            }
+        } catch (Exception e) {
+            // 降级：遍历所有缓存名逐一清空
+            try {
+                org.springframework.cache.CacheManager cm = applicationContext.getBean(
+                        org.springframework.cache.CacheManager.class);
+                java.util.Collection<String> names = cm.getCacheNames();
+                for (String name : names) {
+                    org.springframework.cache.Cache cache = cm.getCache(name);
+                    if (cache != null) {
+                        cache.clear();
+                    }
+                }
+                result.put("success", true);
+                result.put("message", "缓存已清空（降级模式），共处理 " + names.size() + " 个缓存");
+            } catch (Exception e2) {
+                result.put("success", false);
+                result.put("error", e.getMessage() + "; " + e2.getMessage());
+            }
         }
         return R.ok(result);
     }

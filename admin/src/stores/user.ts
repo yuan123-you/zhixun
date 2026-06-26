@@ -22,8 +22,8 @@ export const useUserStore = defineStore('user', () => {
   /** Token 过期时间戳（毫秒），用于判断是否需要提前刷新 */
   const tokenExpiresAt = ref<number>(storage.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT) || 0)
 
-  /** 用户信息 */
-  const userInfo = ref<UserInfo | null>(null)
+  /** 用户信息（初始从 localStorage 恢复，刷新后无需重新请求） */
+  const userInfo = ref<UserInfo | null>(storage.get<UserInfo>(STORAGE_KEYS.USER_INFO) || null)
 
   /** 用户权限列表 */
   const permissions = ref<string[]>(storage.get<string[]>(STORAGE_KEYS.USER_PERMISSIONS) || [])
@@ -62,44 +62,67 @@ export const useUserStore = defineStore('user', () => {
    * @param params 登录参数（用户名+密码）
    */
   async function login(params: LoginParams) {
-    const res = await loginApi(params)
-    token.value = res.data.accessToken
-    refreshToken.value = res.data.refreshToken
-    isLoggedIn.value = true
+    try {
+      const res = await loginApi(params)
+      token.value = res.data.accessToken
+      refreshToken.value = res.data.refreshToken
+      isLoggedIn.value = true
 
-    // 计算并持久化 Token 过期时间
-    if (res.data.expiresIn) {
-      const expiresAt = Date.now() + res.data.expiresIn * 1000
-      tokenExpiresAt.value = expiresAt
-      storage.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
+      // 计算并持久化 Token 过期时间
+      if (res.data.expiresIn) {
+        const expiresAt = Date.now() + res.data.expiresIn * 1000
+        tokenExpiresAt.value = expiresAt
+        storage.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
+      }
+
+      const loginUserInfo: LoginUserInfo = res.data.userInfo
+      permissions.value = loginUserInfo.permissions
+
+      // 将登录用户信息转为 UserInfo 存储
+      const userStatus = (loginUserInfo as any).status === 'active' ? 'active' : 'active'
+      userInfo.value = {
+        id: loginUserInfo.id,
+        username: loginUserInfo.username,
+        nickname: loginUserInfo.nickname,
+        avatar: loginUserInfo.avatar ?? '',
+        email: '',
+        phone: '',
+        role: loginUserInfo.role,
+        permissions: loginUserInfo.permissions,
+        status: userStatus,
+        createdAt: '',
+        updatedAt: '',
+      }
+
+      // 持久化存储
+      storage.set(STORAGE_KEYS.TOKEN, res.data.accessToken)
+      storage.set(STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
+      storage.set(STORAGE_KEYS.USER_PERMISSIONS, loginUserInfo.permissions)
+      storage.set(STORAGE_KEYS.USER_INFO, userInfo.value)
+
+      // 跳转到首页或来源页（安全校验：仅允许站内路径，防止开放重定向漏洞）
+      const redirect = validateRedirect((router.currentRoute.value.query.redirect as string) || '/')
+      router.push(redirect)
+    } catch (error: any) {
+      // 登录失败，清除可能的残留状态
+      isLoggedIn.value = false
+      token.value = ''
+      refreshToken.value = ''
+      throw error
     }
+  }
 
-    const loginUserInfo: LoginUserInfo = res.data.userInfo
-    permissions.value = loginUserInfo.permissions
-
-    // 将登录用户信息转为 UserInfo 存储
-    userInfo.value = {
-      id: loginUserInfo.id,
-      username: loginUserInfo.username,
-      nickname: loginUserInfo.nickname,
-      avatar: loginUserInfo.avatar ?? '',
-      email: '',
-      phone: '',
-      role: loginUserInfo.role,
-      permissions: loginUserInfo.permissions,
-      status: 'active' as any,
-      createdAt: '',
-      updatedAt: '',
+  /**
+   * 验证重定向 URL 是否为站内路径，防止开放重定向攻击
+   */
+  function validateRedirect(redirect: string): string {
+    // 只允许以 / 开头的相对路径，拒绝完整 URL 或协议前缀
+    if (!redirect || typeof redirect !== 'string') return '/'
+    // 必须以 / 开头且不包含 :// 或 . 开头（防止 //evil.com 或 https://evil.com）
+    if (!redirect.startsWith('/') || redirect.startsWith('//') || redirect.includes('://')) {
+      return '/'
     }
-
-    // 持久化存储
-    storage.set(STORAGE_KEYS.TOKEN, res.data.accessToken)
-    storage.set(STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
-    storage.set(STORAGE_KEYS.USER_PERMISSIONS, loginUserInfo.permissions)
-
-    // 跳转到首页或来源页
-    const redirect = (router.currentRoute.value.query.redirect as string) || '/'
-    router.push(redirect)
+    return redirect
   }
 
   /**
@@ -118,6 +141,7 @@ export const useUserStore = defineStore('user', () => {
     storage.remove(STORAGE_KEYS.REFRESH_TOKEN)
     storage.remove(STORAGE_KEYS.TOKEN_EXPIRES_AT)
     storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
+    storage.remove(STORAGE_KEYS.USER_INFO)
 
     router.push('/login')
   }
@@ -126,10 +150,16 @@ export const useUserStore = defineStore('user', () => {
    * 获取当前用户信息
    */
   async function fetchUserInfo() {
-    const res = await getUserInfoApi()
-    userInfo.value = res.data
-    permissions.value = res.data.permissions
-    storage.set(STORAGE_KEYS.USER_PERMISSIONS, res.data.permissions)
+    try {
+      const res = await getUserInfoApi()
+      userInfo.value = res.data
+      permissions.value = res.data.permissions
+      storage.set(STORAGE_KEYS.USER_PERMISSIONS, res.data.permissions)
+      storage.set(STORAGE_KEYS.USER_INFO, userInfo.value)
+    } catch {
+      // 获取用户信息失败，不清除现有状态（可能是网络问题）
+      // 如果 token 已过期，后续 API 调用将触发 401 处理
+    }
   }
 
   return {

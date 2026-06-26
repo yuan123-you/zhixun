@@ -1008,6 +1008,7 @@ public class FeedServiceImpl implements FeedService {
             vo.setCreatedAt(article.getCreatedAt());
 
             // 设置作者信息
+            vo.setAuthorId(article.getAuthorId());
             User author = userMap.get(article.getAuthorId());
             if (author != null) {
                 vo.setAuthorName(author.getNickname());

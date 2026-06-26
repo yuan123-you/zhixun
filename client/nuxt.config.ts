@@ -13,7 +13,41 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@nuxtjs/color-mode',
     '@nuxt/image',
+    '@vite-pwa/nuxt',
   ],
+
+  // PWA 配置
+  pwa: {
+    registerType: 'autoUpdate',
+    // 开发环境禁用 Service Worker，避免缓存旧错误响应导致登录/API 异常
+    disable: process.env.NODE_ENV === 'development',
+    manifest: {
+      name: '知讯 - 内容资讯平台',
+      short_name: '知讯',
+      description: '图文创作与社交平台',
+      theme_color: '#3b82f6',
+      background_color: '#ffffff',
+      display: 'standalone',
+      orientation: 'portrait-primary',
+      icons: [
+        { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+        { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ],
+      shortcuts: [
+        { name: '首页', url: '/', description: '浏览推荐内容' },
+        { name: '话题广场', url: '/topics', description: '发现热门话题' },
+        { name: '创作', url: '/editor', description: '开始创作' },
+      ],
+    },
+    workbox: {
+      navigateFallback: '/',
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,json,woff2}'],
+    },
+    client: {
+      installPrompt: true,
+    },
+  },
 
   // 全局CSS
   css: [
@@ -24,6 +58,10 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: '知讯 - 优质内容平台',
+      // pre-hydration 类由 server/plugins/pre-hydration.ts 在 SSR 阶段直接写入 <html> 标签，
+      // 避免与 color-mode 等模块的 htmlAttrs 合并产生不确定性。
+      // 用于在水合 + useBreakpoints 稳定前禁用所有 transition/动画，避免布局停留在中间帧。
+      // 客户端水合完成后由 plugins/hydration.client.ts 移除。
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
@@ -56,8 +94,14 @@ export default defineNuxtConfig({
     '/user/**': { ssr: false },
     '/editor/**': { ssr: false },
     '/messages/**': { ssr: false },
+    '/topics/**': { swr: 120 },
+    '/groups/**': { ssr: false },
+    // 管理后台：开发模式下重定向到独立 admin 开发服务器；线上由 Nginx 代理
+    '/admin/**': {
+      ssr: false,
+    },
     // API代理到后端（本地开发时使用；线上由 Nginx 代理，此规则不生效）
-    '/api/**': { proxy: `${process.env.API_BASE || 'http://localhost:8080'}/api/**` },
+    '/api/**': { proxy: 'http://localhost:8080/api/**' },
   },
 
   // 运行时配置
@@ -117,6 +161,12 @@ export default defineNuxtConfig({
         },
       },
     },
+  },
+
+  // 开发服务器配置：使用独立端口避免冲突
+  devServer: {
+    port: 3500,
+    host: 'localhost',
   },
 
   // Nitro 服务端配置

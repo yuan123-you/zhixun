@@ -82,6 +82,30 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '操作日志', icon: 'List' },
       },
       {
+        path: 'reports',
+        name: 'Reports',
+        component: () => import('@/views/reports/index.vue'),
+        meta: { title: '举报管理', icon: 'WarningFilled' },
+      },
+      {
+        path: 'topics',
+        name: 'Topics',
+        component: () => import('@/views/topics/index.vue'),
+        meta: { title: '话题管理', icon: 'Collection' },
+      },
+      {
+        path: 'templates',
+        name: 'Templates',
+        component: () => import('@/views/templates/index.vue'),
+        meta: { title: '模板管理', icon: 'Tickets' },
+      },
+      {
+        path: 'badges',
+        name: 'Badges',
+        component: () => import('@/views/badges/index.vue'),
+        meta: { title: '徽章管理', icon: 'Medal' },
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/settings/index.vue'),

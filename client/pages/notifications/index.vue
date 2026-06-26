@@ -93,6 +93,8 @@
             <!-- 输入框 -->
             <div class="p-3 border-t border-slate-200 bg-white shrink-0">
               <div class="flex items-center gap-2">
+                <EmojiPicker @select="(emoji: string) => inputContent += emoji" />
+                <VoiceRecorderButton @send="(blob: Blob) => handleVoiceSend(blob)" />
                 <input
                   v-model="inputContent"
                   type="text"
@@ -263,6 +265,24 @@ const sendMessage = async () => {
     const { data } = await socialApi.sendMessage(targetUserId, { content })
     messages.value.push(data.data)
     nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+  } catch {}
+}
+
+const handleVoiceSend = async (blob: Blob) => {
+  if (!activeConversation.value) return
+  const targetUserId = activeConversation.value.user?.id
+  if (!targetUserId) return
+  try {
+    const formData = new FormData()
+    formData.append('file', blob, 'voice.webm')
+    const { post } = useApi()
+    const uploadRes = await post<any>('/files/upload/voice', formData)
+    const voiceUrl = uploadRes.data?.data
+    if (voiceUrl) {
+      const { data } = await socialApi.sendMessage(targetUserId, { content: voiceUrl, type: 'voice' })
+      messages.value.push(data.data)
+      nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+    }
   } catch {}
 }
 

@@ -64,6 +64,12 @@ public class User implements Serializable {
     /** 个人简介 */
     private String bio;
 
+    /** 性别：0=未知，1=男，2=女 */
+    private Integer gender;
+
+    /** 是否在个人主页展示性别：0-否，1-是 */
+    private Integer showGenderOnProfile;
+
     /** 所属省份 */
     private String province;
 

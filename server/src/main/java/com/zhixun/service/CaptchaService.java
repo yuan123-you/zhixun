@@ -11,6 +11,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.security.SecureRandom;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -52,6 +53,17 @@ public class CaptchaService {
     /** 每日发送次数 Key 前缀（按 IP） */
     private static final String CAPTCHA_DAILY_IP_PREFIX = "auth:captcha:daily:ip:";
 
+    /** 本地缓存降级（Redis不可用时使用） */
+    private final ConcurrentHashMap<String, LocalCodeEntry> localCodeCache = new ConcurrentHashMap<>();
+
+    /** 本地验证码缓存条目 */
+    private record LocalCodeEntry(String code, long expireAt) {
+        boolean isExpired() { return System.currentTimeMillis() > expireAt; }
+    }
+
+    /** Redis是否可用（延迟判断，避免每次调用都尝试连接） */
+    private volatile boolean redisAvailable = true;
+
     private final SecureRandom random = new SecureRandom();
 
     /**
@@ -71,7 +83,77 @@ public class CaptchaService {
         }
         String normalizedEmail = email.toLowerCase().trim();
 
-        // 1. 检查发送间隔（先检查，避免过早消费图形验证码）
+        // 1-3. 频率限制检查（Redis可用时执行；不可用时跳过，仅日志告警）
+        if (redisAvailable) {
+            try {
+                checkRateLimits(normalizedEmail);
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                log.warn("Redis不可用，跳过频率限制检查: {}", e.getMessage());
+                redisAvailable = false;
+            }
+        } else {
+            // 尝试恢复Redis连接
+            try {
+                checkRateLimits(normalizedEmail);
+                redisAvailable = true;
+                log.info("Redis连接已恢复，频率限制检查重新启用");
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                // Redis仍不可用，继续降级流程
+            }
+        }
+
+        // 4. 校验图形验证码（GraphCaptchaService 已有 Redis 降级能力）
+        if (!graphCaptchaService.verify(captchaKey, captchaAnswer)) {
+            throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "图形验证码错误或已过期");
+        }
+
+        // 5. 生成6位数字验证码
+        String code = generateCode();
+
+        // 6. 存储验证码（Redis可用时存Redis，否则存本地缓存）
+        String codeKey = CAPTCHA_PREFIX + normalizedEmail;
+        if (redisAvailable) {
+            try {
+                stringRedisTemplate.opsForValue().set(codeKey, code, CODE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                log.warn("Redis不可用，验证码降级到本地缓存: {}", e.getMessage());
+                redisAvailable = false;
+                long expireAt = System.currentTimeMillis() + CODE_EXPIRE_MINUTES * 60 * 1000;
+                localCodeCache.put(codeKey, new LocalCodeEntry(code, expireAt));
+            }
+        } else {
+            long expireAt = System.currentTimeMillis() + CODE_EXPIRE_MINUTES * 60 * 1000;
+            localCodeCache.put(codeKey, new LocalCodeEntry(code, expireAt));
+        }
+
+        // 7-9. 设置发送间隔和每日计数（仅Redis可用时）
+        if (redisAvailable) {
+            try {
+                String intervalKey = CAPTCHA_INTERVAL_PREFIX + normalizedEmail;
+                stringRedisTemplate.opsForValue().set(intervalKey, "1", SEND_INTERVAL_SECONDS, TimeUnit.SECONDS);
+                incrementDailyCounts(normalizedEmail);
+            } catch (Exception e) {
+                log.warn("Redis不可用，跳过计数记录: {}", e.getMessage());
+                redisAvailable = false;
+            }
+        }
+
+        // 10. 异步发送邮件
+        emailService.sendVerifyCode(email, code, purpose);
+
+        // 开发环境：邮件未配置时，将验证码输出到日志以便调试
+        log.info("验证码已发送(email={}, purpose={})，验证码为: {}", normalizedEmail, purpose, code);
+    }
+
+    /**
+     * 检查频率限制（Redis操作，可能抛异常）
+     */
+    private void checkRateLimits(String normalizedEmail) {
+        // 1. 检查发送间隔
         String intervalKey = CAPTCHA_INTERVAL_PREFIX + normalizedEmail;
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(intervalKey))) {
             throw new BusinessException(ErrorCode.OPERATION_TOO_FREQUENT, "发送过于频繁，请60秒后重试");
@@ -87,54 +169,41 @@ public class CaptchaService {
 
         // 3. 检查 IP 每日发送上限
         String clientIp = getClientIp();
-        int ipCount = 0;
         if (clientIp != null) {
             String dailyIpKey = CAPTCHA_DAILY_IP_PREFIX + clientIp;
             String ipCountStr = stringRedisTemplate.opsForValue().get(dailyIpKey);
-            ipCount = ipCountStr != null ? Integer.parseInt(ipCountStr) : 0;
+            int ipCount = ipCountStr != null ? Integer.parseInt(ipCountStr) : 0;
             if (ipCount >= DAILY_LIMIT_PER_IP) {
                 log.warn("IP 每日发送上限触发: ip={}, count={}", clientIp, ipCount);
                 throw new BusinessException(ErrorCode.OPERATION_TOO_FREQUENT, "当前网络验证码发送次数已达上限");
             }
         }
+    }
 
-        // 4. 校验图形验证码（最后校验，避免上面的检查失败时提前消费 captchaKey）
-        if (!graphCaptchaService.verify(captchaKey, captchaAnswer)) {
-            throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "图形验证码错误或已过期");
-        }
-
-        // 5. 生成6位数字验证码
-        String code = generateCode();
-
-        // 6. 存入 Redis（使用统一小写的邮箱作为 key）
-        String codeKey = CAPTCHA_PREFIX + normalizedEmail;
-        stringRedisTemplate.opsForValue().set(codeKey, code, CODE_EXPIRE_MINUTES, TimeUnit.MINUTES);
-
-        // 7. 设置发送间隔
-        stringRedisTemplate.opsForValue().set(intervalKey, "1", SEND_INTERVAL_SECONDS, TimeUnit.SECONDS);
-
-        // 8. 递增单号每日发送次数（当天有效）
+    /**
+     * 递增每日次数计数（Redis操作，可能抛异常）
+     */
+    private void incrementDailyCounts(String normalizedEmail) {
+        String dailyKey = CAPTCHA_DAILY_PREFIX + normalizedEmail;
+        String dailyCountStr = stringRedisTemplate.opsForValue().get(dailyKey);
+        int dailyCount = dailyCountStr != null ? Integer.parseInt(dailyCountStr) : 0;
         if (dailyCount == 0) {
             stringRedisTemplate.opsForValue().set(dailyKey, "1", 1, TimeUnit.DAYS);
         } else {
             stringRedisTemplate.opsForValue().increment(dailyKey);
         }
 
-        // 9. 递增 IP 每日发送次数
+        String clientIp = getClientIp();
         if (clientIp != null) {
             String dailyIpKey = CAPTCHA_DAILY_IP_PREFIX + clientIp;
+            String ipCountStr = stringRedisTemplate.opsForValue().get(dailyIpKey);
+            int ipCount = ipCountStr != null ? Integer.parseInt(ipCountStr) : 0;
             if (ipCount == 0) {
                 stringRedisTemplate.opsForValue().set(dailyIpKey, "1", 1, TimeUnit.DAYS);
             } else {
                 stringRedisTemplate.opsForValue().increment(dailyIpKey);
             }
         }
-
-        // 10. 异步发送邮件
-        emailService.sendVerifyCode(email, code, purpose);
-
-        // 开发环境：邮件未配置时，将验证码输出到日志以便调试
-        log.info("验证码已发送(email={}, purpose={})，验证码为: {}", normalizedEmail, purpose, code);
     }
 
     /**
@@ -150,12 +219,26 @@ public class CaptchaService {
         }
         String normalizedTarget = target.toLowerCase().trim();
         String codeKey = CAPTCHA_PREFIX + normalizedTarget;
-        String storedCode = stringRedisTemplate.opsForValue().get(codeKey);
+        String storedCode = null;
+        try {
+            storedCode = stringRedisTemplate.opsForValue().get(codeKey);
+        } catch (Exception e) {
+            // Redis不可用，从本地缓存获取
+            log.warn("Redis不可用，从本地缓存获取验证码: {}", e.getMessage());
+            LocalCodeEntry entry = localCodeCache.get(codeKey);
+            if (entry != null && !entry.isExpired()) {
+                storedCode = entry.code;
+            }
+        }
         if (storedCode == null || !storedCode.equals(code)) {
             return false;
         }
         // 验证通过后删除验证码，防止重复使用
-        stringRedisTemplate.delete(codeKey);
+        try {
+            stringRedisTemplate.delete(codeKey);
+        } catch (Exception e) {
+            localCodeCache.remove(codeKey);
+        }
         return true;
     }
 

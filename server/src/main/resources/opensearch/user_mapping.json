@@ -34,6 +34,9 @@
   "mappings": {
     "properties": {
       "id": { "type": "long" },
+      "uid": {
+        "type": "keyword"
+      },
       "username": {
         "type": "text",
         "analyzer": "ik_max_word",

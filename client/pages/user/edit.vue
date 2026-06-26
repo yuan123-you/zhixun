@@ -137,42 +137,16 @@
           </div>
         </div>
 
-        <!-- 所属省份 -->
+        <!-- 所在地区 -->
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '所属省份' }}</label>
-          <div class="relative" ref="provinceDropdownRef">
-            <input
-              v-model="provinceSearch"
-              type="text"
-              placeholder="搜索并选择省份..."
-              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-              @focus="provinceDropdownOpen = true"
-              @blur="handleProvinceBlur"
-              @input="filterProvinces"
-            />
-            <!-- 下拉选项 -->
-            <div
-              v-if="provinceDropdownOpen && filteredProvinces.length > 0"
-              class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto"
-            >
-              <button
-                v-for="p in filteredProvinces"
-                :key="p"
-                class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors"
-                :class="provinceInput === p ? 'bg-primary-50 text-primary font-medium' : 'text-slate-700'"
-                @mousedown.prevent="selectProvince(p)"
-              >
-                {{ p }}
-              </button>
-            </div>
-            <div
-              v-if="provinceDropdownOpen && provinceSearch && filteredProvinces.length === 0"
-              class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 px-3 py-4 text-center text-sm text-slate-400"
-            >
-              未找到匹配的省份
-            </div>
-          </div>
-          <p class="text-xs text-slate-400 mt-1">设置你的所属省份，将显示在个人主页上</p>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '所在地区' }}</label>
+          <RegionSelector
+            ref="regionSelectorRef"
+            :show-auto-locate="false"
+            @change="handleRegionChange"
+            @clear="handleRegionClear"
+          />
+          <p class="text-xs text-slate-400 mt-1">选择你所在的省市，将显示在个人主页上</p>
         </div>
       </div>
     </section>
@@ -205,6 +179,8 @@
 
 <script setup lang="ts">
 /** 编辑资料页 - 修改个人公开信息 */
+import RegionSelector from '~/components/RegionSelector.vue'
+
 definePageMeta({
   middleware: 'auth',
 })
@@ -239,9 +215,8 @@ const handleAvatarChange = async (e: Event) => {
     const formData = new FormData()
     formData.append('file', file)
     const { post: apiPost } = useApi()
-    const uploadRes = await apiPost<any>('/files/upload/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    // 不手动设置 Content-Type，让 axios 自动设置带 boundary 的 multipart/form-data
+    const uploadRes = await apiPost<any>('/files/upload/image', formData)
     const avatarUrl = uploadRes.data?.data
     if (avatarUrl) {
       avatarPreview.value = avatarUrl
@@ -385,60 +360,40 @@ const saveGenderDisplay = async () => {
   }
 }
 
-// 省份（全部中国有效省份/直辖市/自治区/特别行政区）
-const allProvinces = [
-  '北京市', '天津市', '上海市', '重庆市',
-  '河北省', '山西省', '辽宁省', '吉林省', '黑龙江省',
-  '江苏省', '浙江省', '安徽省', '福建省', '江西省', '山东省',
-  '河南省', '湖北省', '湖南省', '广东省', '海南省',
-  '四川省', '贵州省', '云南省',
-  '陕西省', '甘肃省', '青海省',
-  '台湾省',
-  '内蒙古自治区', '广西壮族自治区', '西藏自治区', '宁夏回族自治区', '新疆维吾尔自治区',
-  '香港特别行政区', '澳门特别行政区',
-]
+// 地区选择（使用 RegionSelector 组件）
+const regionSelectorRef = ref<InstanceType<typeof RegionSelector> | null>(null)
 
-const provinceInput = ref('')
-const provinceSearch = ref('')
-const provinceDropdownOpen = ref(false)
-const filteredProvinces = ref<string[]>(allProvinces)
-const provinceDropdownRef = ref<HTMLElement | null>(null)
-
-const filterProvinces = () => {
-  const keyword = provinceSearch.value.trim().toLowerCase()
-  if (!keyword) {
-    filteredProvinces.value = allProvinces
-  } else {
-    filteredProvinces.value = allProvinces.filter(p =>
-      p.toLowerCase().includes(keyword) || p.includes(keyword)
-    )
+// 解析已存储的地区字符串（如 "湖北省·武汉市"）为省份和城市
+const parseRegion = (regionStr: string): { province: string; city: string } => {
+  if (!regionStr) return { province: '', city: '' }
+  const parts = regionStr.split('·')
+  return {
+    province: parts[0] || '',
+    city: parts[1] || '',
   }
 }
 
-const selectProvince = async (p: string) => {
-  provinceSearch.value = p
-  provinceInput.value = p
-  provinceDropdownOpen.value = false
-  // 自动保存
+const handleRegionChange = async (location: string) => {
+  if (!location) return
   try {
     const { put: apiPut } = useApi()
-    await apiPut('/user/profile', { province: p })
-    userStore.updateProfile({ province: p })
-    showToast('所属省份保存成功')
+    await apiPut('/user/profile', { province: location })
+    userStore.updateProfile({ province: location })
+    showToast('地区保存成功')
   } catch {
     showToast('保存失败，请稍后重试', 'error')
   }
 }
 
-const handleProvinceBlur = () => {
-  // 延迟关闭，让 mousedown 事件先触发
-  setTimeout(() => {
-    provinceDropdownOpen.value = false
-    // 如果已选省份，恢复显示
-    if (provinceInput.value) {
-      provinceSearch.value = provinceInput.value
-    }
-  }, 200)
+const handleRegionClear = async () => {
+  try {
+    const { put: apiPut } = useApi()
+    await apiPut('/user/profile', { province: '' })
+    userStore.updateProfile({ province: '' })
+    showToast('地区已清除')
+  } catch {
+    showToast('清除失败，请稍后重试', 'error')
+  }
 }
 
 // 初始化表单数据
@@ -446,10 +401,20 @@ const initForm = () => {
   nicknameInput.value = userStore.userInfo?.nickname || ''
   bioInput.value = userStore.userInfo?.bio || ''
   uidInput.value = userStore.userInfo?.uid || ''
-  provinceInput.value = userStore.userInfo?.province || ''
-  provinceSearch.value = userStore.userInfo?.province || ''
   genderInput.value = userStore.userInfo?.gender ?? 0
   showGenderOnProfile.value = (userStore.userInfo as any)?.showGenderOnProfile ?? false
+  // 初始化地区选择器
+  nextTick(() => {
+    const savedRegion = userStore.userInfo?.province || ''
+    if (savedRegion && regionSelectorRef.value) {
+      const { province, city } = parseRegion(savedRegion)
+      regionSelectorRef.value.setRegion({
+        province,
+        city,
+        district: '',
+      })
+    }
+  })
 }
 
 // 格式化日期

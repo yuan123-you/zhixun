@@ -13,8 +13,13 @@ export const useUserStore = defineStore('user', () => {
   // 用户信息 - 初始为空，客户端挂载后从 localStorage 恢复
   const userInfo = ref<User | null>(null)
 
-  // 是否已登录
-  const isLoggedIn = computed(() => !!token.value && !!userInfo.value)
+  // 是否已登录（同时校验 token 是否过期）
+  const isLoggedIn = computed(() => {
+    if (!token.value || !userInfo.value) return false
+    // 检查 token 是否已过期
+    if (tokenExpiresAt.value > 0 && Date.now() >= tokenExpiresAt.value) return false
+    return true
+  })
 
   // 设置Token
   const setToken = (newToken: string, newRefreshToken: string, expiresIn?: number) => {

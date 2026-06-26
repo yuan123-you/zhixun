@@ -1,0 +1,26 @@
+﻿[WARNING] 
+[WARNING] Some problems were encountered while building the effective settings
+[WARNING] Unrecognised tag: 'url' (position: START_TAG seen ...</mirror>\n    -->\n    <url>... @160:10)  @ D:\apache-maven-3.9.14-bin\apache-maven-3.9.14\conf\settings.xml, line 160, column 10
+[WARNING] 
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.zhixun:zhixun-server >----------------------
+[INFO] Building zhixun-server 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ zhixun-server ---
+[INFO] Deleting D:\zhixun\server\target
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.243 s
+[INFO] Finished at: 2026-06-26T13:20:42+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-clean-plugin:3.3.2:clean (default-clean) on project zhixun-server: Failed to clean project: Failed to delete D:\zhixun\server\target\zhixun-server-1.0.0.jar -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

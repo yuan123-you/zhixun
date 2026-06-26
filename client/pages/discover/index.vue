@@ -1,6 +1,6 @@
 <template>
-  <!-- 发现页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
+    <!-- 发现页 -->
 
 
     <PullToRefresh :on-refresh="() => refreshAll()" :error="usersError || rankError || tagsError">

@@ -128,7 +128,17 @@ public class ArticleServiceImpl implements ArticleService {
         article.setCategoryId(request.getCategoryId());
         article.setTitle(sanitize(request.getTitle()));
         // 先过滤敏感词，再做HTML白名单过滤
-        String filteredContent = sensitiveWordUtil.filter(request.getContent());
+        String rawContent = request.getContent() != null ? request.getContent() : "";
+        String filteredContent;
+        try {
+            filteredContent = sensitiveWordUtil.filter(rawContent);
+        } catch (BusinessException e) {
+            // 高级别敏感词被 BusinessException 拦截，直接向上抛出由 GlobalExceptionHandler 处理
+            throw e;
+        } catch (Exception e) {
+            log.error("敏感词过滤异常: {}", e.getMessage());
+            filteredContent = rawContent;
+        }
         article.setContent(HtmlWhitelistFilter.filterRichText(filteredContent));
         article.setSummary(sanitize(request.getSummary()));
         article.setCoverImage(request.getCoverImage());
@@ -143,7 +153,13 @@ public class ArticleServiceImpl implements ArticleService {
         article.setIsRecommend(0);
 
         // 敏感词检测（异步，先保存为草稿或待审核状态）
-        boolean hasSensitiveWord = checkSensitiveWord(request.getTitle(), request.getContent());
+        boolean hasSensitiveWord;
+        try {
+            hasSensitiveWord = checkSensitiveWord(request.getTitle(), request.getContent());
+        } catch (Exception e) {
+            log.error("敏感词检测异常: {}", e.getMessage());
+            hasSensitiveWord = false;
+        }
         if (hasSensitiveWord) {
             // 包含敏感词，设为待审核状态
             article.setStatus(ArticleStatusEnum.PENDING);

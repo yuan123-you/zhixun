@@ -4,9 +4,11 @@ import com.zhixun.common.result.R;
 import com.zhixun.entity.User;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.service.RankService;
+import com.zhixun.service.UserService;
 import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +25,15 @@ public class PublicUserController {
 
     private final RankService rankService;
     private final UserMapper userMapper;
+    private final UserService userService;
+
+    /**
+     * 通过用户ID获取用户资料（公开）
+     */
+    @GetMapping("/{userId}")
+    public R<UserVO> getByUserId(@PathVariable Long userId) {
+        return R.ok(userService.getProfile(userId));
+    }
 
     /**
      * 推荐用户（公开）
@@ -48,6 +59,8 @@ public class PublicUserController {
         vo.setNickname(user.getNickname());
         vo.setAvatar(user.getAvatar());
         vo.setBio(user.getBio());
+        vo.setGender(user.getGender());
+        vo.setShowGenderOnProfile(user.getShowGenderOnProfile() != null && user.getShowGenderOnProfile() == 1);
         vo.setProvince(user.getProvince());
         vo.setIpLocation(user.getIpLocation());
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);

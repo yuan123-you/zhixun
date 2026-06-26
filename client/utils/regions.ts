@@ -626,69 +626,375 @@ interface CityCoordinate {
 }
 
 const cityCoordinates: CityCoordinate[] = [
+  // ========== 北京市 (11) ==========
   { code: '110100', name: '北京市', lat: 39.9042, lng: 116.4074, provinceCode: '110000', provinceName: '北京市' },
+  // ========== 天津市 (12) ==========
   { code: '120100', name: '天津市', lat: 39.1252, lng: 117.1907, provinceCode: '120000', provinceName: '天津市' },
+  // ========== 河北省 (13) ==========
   { code: '130100', name: '石家庄市', lat: 38.0423, lng: 114.5149, provinceCode: '130000', provinceName: '河北省' },
   { code: '130200', name: '唐山市', lat: 39.6305, lng: 118.1802, provinceCode: '130000', provinceName: '河北省' },
   { code: '130300', name: '秦皇岛市', lat: 39.9355, lng: 119.5996, provinceCode: '130000', provinceName: '河北省' },
   { code: '130400', name: '邯郸市', lat: 36.6255, lng: 114.5391, provinceCode: '130000', provinceName: '河北省' },
+  { code: '130500', name: '邢台市', lat: 37.0706, lng: 114.5048, provinceCode: '130000', provinceName: '河北省' },
+  { code: '130600', name: '保定市', lat: 38.8739, lng: 115.4646, provinceCode: '130000', provinceName: '河北省' },
+  { code: '130700', name: '张家口市', lat: 40.8244, lng: 114.8875, provinceCode: '130000', provinceName: '河北省' },
+  { code: '130800', name: '承德市', lat: 40.9518, lng: 117.9634, provinceCode: '130000', provinceName: '河北省' },
+  { code: '130900', name: '沧州市', lat: 38.3045, lng: 116.8388, provinceCode: '130000', provinceName: '河北省' },
+  { code: '131000', name: '廊坊市', lat: 39.5378, lng: 116.6838, provinceCode: '130000', provinceName: '河北省' },
+  { code: '131100', name: '衡水市', lat: 37.7389, lng: 115.6702, provinceCode: '130000', provinceName: '河北省' },
+  // ========== 山西省 (14) ==========
   { code: '140100', name: '太原市', lat: 37.8706, lng: 112.5489, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140200', name: '大同市', lat: 40.0768, lng: 113.3000, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140300', name: '阳泉市', lat: 37.8567, lng: 113.5805, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140400', name: '长治市', lat: 36.1954, lng: 113.1165, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140500', name: '晋城市', lat: 35.4907, lng: 112.8511, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140600', name: '朔州市', lat: 39.3316, lng: 112.4329, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140700', name: '晋中市', lat: 37.6870, lng: 112.7525, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140800', name: '运城市', lat: 35.0264, lng: 111.0075, provinceCode: '140000', provinceName: '山西省' },
+  { code: '140900', name: '忻州市', lat: 38.4167, lng: 112.7342, provinceCode: '140000', provinceName: '山西省' },
+  { code: '141000', name: '临汾市', lat: 36.0880, lng: 111.5190, provinceCode: '140000', provinceName: '山西省' },
+  { code: '141100', name: '吕梁市', lat: 37.5193, lng: 111.1447, provinceCode: '140000', provinceName: '山西省' },
+  // ========== 内蒙古自治区 (15) ==========
   { code: '150100', name: '呼和浩特市', lat: 40.8415, lng: 111.7512, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150200', name: '包头市', lat: 40.6578, lng: 109.8404, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150300', name: '乌海市', lat: 39.6538, lng: 106.7955, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150400', name: '赤峰市', lat: 42.2586, lng: 118.8889, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150500', name: '通辽市', lat: 43.6529, lng: 122.2447, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150600', name: '鄂尔多斯市', lat: 39.6085, lng: 109.7813, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150700', name: '呼伦贝尔市', lat: 49.2116, lng: 119.7658, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150800', name: '巴彦淖尔市', lat: 40.7432, lng: 107.3877, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  { code: '150900', name: '乌兰察布市', lat: 40.9944, lng: 113.1326, provinceCode: '150000', provinceName: '内蒙古自治区' },
+  // ========== 辽宁省 (21) ==========
   { code: '210100', name: '沈阳市', lat: 41.8057, lng: 123.4315, provinceCode: '210000', provinceName: '辽宁省' },
   { code: '210200', name: '大连市', lat: 38.9140, lng: 121.6147, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '210300', name: '鞍山市', lat: 41.1078, lng: 122.9946, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '210400', name: '抚顺市', lat: 41.8809, lng: 123.9572, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '210500', name: '本溪市', lat: 41.2941, lng: 123.7665, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '210600', name: '丹东市', lat: 40.0005, lng: 124.3547, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '210700', name: '锦州市', lat: 41.0951, lng: 121.1270, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '210800', name: '营口市', lat: 40.6668, lng: 122.2352, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '210900', name: '阜新市', lat: 42.0217, lng: 121.6701, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '211000', name: '辽阳市', lat: 41.2681, lng: 123.2370, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '211100', name: '盘锦市', lat: 41.1200, lng: 122.0708, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '211200', name: '铁岭市', lat: 42.2862, lng: 123.8424, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '211300', name: '朝阳市', lat: 41.5735, lng: 120.4508, provinceCode: '210000', provinceName: '辽宁省' },
+  { code: '211400', name: '葫芦岛市', lat: 40.7110, lng: 120.8370, provinceCode: '210000', provinceName: '辽宁省' },
+  // ========== 吉林省 (22) ==========
   { code: '220100', name: '长春市', lat: 43.8965, lng: 125.3258, provinceCode: '220000', provinceName: '吉林省' },
+  { code: '220200', name: '吉林市', lat: 43.8378, lng: 126.5494, provinceCode: '220000', provinceName: '吉林省' },
+  { code: '220300', name: '四平市', lat: 43.1665, lng: 124.3504, provinceCode: '220000', provinceName: '吉林省' },
+  { code: '220400', name: '辽源市', lat: 42.8881, lng: 125.1437, provinceCode: '220000', provinceName: '吉林省' },
+  { code: '220500', name: '通化市', lat: 41.7283, lng: 125.9399, provinceCode: '220000', provinceName: '吉林省' },
+  { code: '220600', name: '白山市', lat: 41.9408, lng: 126.4144, provinceCode: '220000', provinceName: '吉林省' },
+  { code: '220700', name: '松原市', lat: 45.1411, lng: 124.8251, provinceCode: '220000', provinceName: '吉林省' },
+  { code: '220800', name: '白城市', lat: 45.6196, lng: 122.8387, provinceCode: '220000', provinceName: '吉林省' },
+  // ========== 黑龙江省 (23) ==========
   { code: '230100', name: '哈尔滨市', lat: 45.8038, lng: 126.5350, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230200', name: '齐齐哈尔市', lat: 47.3543, lng: 123.9182, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230300', name: '鸡西市', lat: 45.2951, lng: 130.9693, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230400', name: '鹤岗市', lat: 47.3499, lng: 130.2980, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230500', name: '双鸭山市', lat: 46.6466, lng: 131.1591, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230600', name: '大庆市', lat: 46.5876, lng: 125.1031, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230700', name: '伊春市', lat: 47.7275, lng: 128.8405, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230800', name: '佳木斯市', lat: 46.7998, lng: 130.3189, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '230900', name: '七台河市', lat: 45.7713, lng: 131.0031, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '231000', name: '牡丹江市', lat: 44.5517, lng: 129.6324, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '231100', name: '黑河市', lat: 50.2452, lng: 127.5285, provinceCode: '230000', provinceName: '黑龙江省' },
+  { code: '231200', name: '绥化市', lat: 46.6538, lng: 126.9693, provinceCode: '230000', provinceName: '黑龙江省' },
+  // ========== 上海市 (31) ==========
   { code: '310100', name: '上海市', lat: 31.2304, lng: 121.4737, provinceCode: '310000', provinceName: '上海市' },
+  // ========== 江苏省 (32) ==========
   { code: '320100', name: '南京市', lat: 32.0603, lng: 118.7969, provinceCode: '320000', provinceName: '江苏省' },
   { code: '320200', name: '无锡市', lat: 31.4910, lng: 120.3119, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '320300', name: '徐州市', lat: 34.2044, lng: 117.2858, provinceCode: '320000', provinceName: '江苏省' },
   { code: '320400', name: '常州市', lat: 31.8110, lng: 119.9741, provinceCode: '320000', provinceName: '江苏省' },
   { code: '320500', name: '苏州市', lat: 31.2990, lng: 120.5853, provinceCode: '320000', provinceName: '江苏省' },
   { code: '320600', name: '南通市', lat: 31.9796, lng: 120.8937, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '320700', name: '连云港市', lat: 34.5967, lng: 119.2229, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '320800', name: '淮安市', lat: 33.6102, lng: 119.0153, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '320900', name: '盐城市', lat: 33.3495, lng: 120.1616, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '321000', name: '扬州市', lat: 32.3942, lng: 119.4129, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '321100', name: '镇江市', lat: 32.1896, lng: 119.4250, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '321200', name: '泰州市', lat: 32.4555, lng: 119.9255, provinceCode: '320000', provinceName: '江苏省' },
+  { code: '321300', name: '宿迁市', lat: 33.9619, lng: 118.2755, provinceCode: '320000', provinceName: '江苏省' },
+  // ========== 浙江省 (33) ==========
   { code: '330100', name: '杭州市', lat: 30.2741, lng: 120.1551, provinceCode: '330000', provinceName: '浙江省' },
   { code: '330200', name: '宁波市', lat: 29.8735, lng: 121.5435, provinceCode: '330000', provinceName: '浙江省' },
   { code: '330300', name: '温州市', lat: 27.9939, lng: 120.6994, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '330400', name: '嘉兴市', lat: 30.7460, lng: 120.7556, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '330500', name: '湖州市', lat: 30.8930, lng: 120.0880, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '330600', name: '绍兴市', lat: 30.0303, lng: 120.5802, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '330700', name: '金华市', lat: 29.0781, lng: 119.6476, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '330800', name: '衢州市', lat: 28.9359, lng: 118.8595, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '330900', name: '舟山市', lat: 29.9853, lng: 122.2078, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '331000', name: '台州市', lat: 28.6557, lng: 121.4208, provinceCode: '330000', provinceName: '浙江省' },
+  { code: '331100', name: '丽水市', lat: 28.4676, lng: 119.9229, provinceCode: '330000', provinceName: '浙江省' },
+  // ========== 安徽省 (34) ==========
   { code: '340100', name: '合肥市', lat: 31.8206, lng: 117.2272, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '340200', name: '芜湖市', lat: 31.3527, lng: 118.4331, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '340300', name: '蚌埠市', lat: 32.9163, lng: 117.3893, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '340400', name: '淮南市', lat: 32.6255, lng: 116.9998, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '340500', name: '马鞍山市', lat: 31.6705, lng: 118.5061, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '340600', name: '淮北市', lat: 33.9548, lng: 116.7983, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '340700', name: '铜陵市', lat: 30.9447, lng: 117.8115, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '340800', name: '安庆市', lat: 30.5429, lng: 117.0636, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341000', name: '黄山市', lat: 29.7152, lng: 118.3387, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341100', name: '滁州市', lat: 32.3018, lng: 118.3168, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341200', name: '阜阳市', lat: 32.8896, lng: 115.8145, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341300', name: '宿州市', lat: 33.6477, lng: 116.9642, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341500', name: '六安市', lat: 31.7349, lng: 116.5219, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341600', name: '亳州市', lat: 33.8446, lng: 115.7790, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341700', name: '池州市', lat: 30.6647, lng: 117.4914, provinceCode: '340000', provinceName: '安徽省' },
+  { code: '341800', name: '宣城市', lat: 30.9407, lng: 118.7588, provinceCode: '340000', provinceName: '安徽省' },
+  // ========== 福建省 (35) ==========
   { code: '350100', name: '福州市', lat: 26.0745, lng: 119.2965, provinceCode: '350000', provinceName: '福建省' },
   { code: '350200', name: '厦门市', lat: 24.4798, lng: 118.0894, provinceCode: '350000', provinceName: '福建省' },
+  { code: '350300', name: '莆田市', lat: 25.4540, lng: 119.0077, provinceCode: '350000', provinceName: '福建省' },
+  { code: '350400', name: '三明市', lat: 26.2634, lng: 117.6392, provinceCode: '350000', provinceName: '福建省' },
+  { code: '350500', name: '泉州市', lat: 24.8741, lng: 118.6759, provinceCode: '350000', provinceName: '福建省' },
+  { code: '350600', name: '漳州市', lat: 24.5135, lng: 117.6473, provinceCode: '350000', provinceName: '福建省' },
+  { code: '350700', name: '南平市', lat: 26.6415, lng: 118.1777, provinceCode: '350000', provinceName: '福建省' },
+  { code: '350800', name: '龙岩市', lat: 25.0751, lng: 117.0172, provinceCode: '350000', provinceName: '福建省' },
+  { code: '350900', name: '宁德市', lat: 26.6656, lng: 119.5479, provinceCode: '350000', provinceName: '福建省' },
+  // ========== 江西省 (36) ==========
   { code: '360100', name: '南昌市', lat: 28.6820, lng: 115.8579, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360200', name: '景德镇市', lat: 29.2688, lng: 117.1784, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360300', name: '萍乡市', lat: 27.6228, lng: 113.8546, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360400', name: '九江市', lat: 29.7051, lng: 116.0015, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360500', name: '新余市', lat: 27.8178, lng: 114.9171, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360600', name: '鹰潭市', lat: 28.2602, lng: 117.0692, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360700', name: '赣州市', lat: 25.8310, lng: 114.9346, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360800', name: '吉安市', lat: 27.1138, lng: 114.9929, provinceCode: '360000', provinceName: '江西省' },
+  { code: '360900', name: '宜春市', lat: 27.8144, lng: 114.4168, provinceCode: '360000', provinceName: '江西省' },
+  { code: '361000', name: '抚州市', lat: 27.9490, lng: 116.3581, provinceCode: '360000', provinceName: '江西省' },
+  { code: '361100', name: '上饶市', lat: 28.4549, lng: 117.9436, provinceCode: '360000', provinceName: '江西省' },
+  // ========== 山东省 (37) ==========
   { code: '370100', name: '济南市', lat: 36.6512, lng: 116.9972, provinceCode: '370000', provinceName: '山东省' },
   { code: '370200', name: '青岛市', lat: 36.0671, lng: 120.3826, provinceCode: '370000', provinceName: '山东省' },
+  { code: '370300', name: '淄博市', lat: 36.8131, lng: 118.0548, provinceCode: '370000', provinceName: '山东省' },
+  { code: '370400', name: '枣庄市', lat: 34.8109, lng: 117.3220, provinceCode: '370000', provinceName: '山东省' },
+  { code: '370500', name: '东营市', lat: 37.4337, lng: 118.6747, provinceCode: '370000', provinceName: '山东省' },
+  { code: '370600', name: '烟台市', lat: 37.4635, lng: 121.4479, provinceCode: '370000', provinceName: '山东省' },
+  { code: '370700', name: '潍坊市', lat: 36.7069, lng: 119.1618, provinceCode: '370000', provinceName: '山东省' },
+  { code: '370800', name: '济宁市', lat: 35.4146, lng: 116.5872, provinceCode: '370000', provinceName: '山东省' },
+  { code: '370900', name: '泰安市', lat: 36.2000, lng: 117.0876, provinceCode: '370000', provinceName: '山东省' },
+  { code: '371000', name: '威海市', lat: 37.5135, lng: 122.1204, provinceCode: '370000', provinceName: '山东省' },
+  { code: '371100', name: '日照市', lat: 35.4164, lng: 119.5272, provinceCode: '370000', provinceName: '山东省' },
+  { code: '371300', name: '临沂市', lat: 35.1047, lng: 118.3564, provinceCode: '370000', provinceName: '山东省' },
+  { code: '371400', name: '德州市', lat: 37.4356, lng: 116.3593, provinceCode: '370000', provinceName: '山东省' },
+  { code: '371500', name: '聊城市', lat: 36.4570, lng: 115.9855, provinceCode: '370000', provinceName: '山东省' },
+  { code: '371600', name: '滨州市', lat: 37.3820, lng: 117.9728, provinceCode: '370000', provinceName: '山东省' },
+  { code: '371700', name: '菏泽市', lat: 35.2336, lng: 115.4806, provinceCode: '370000', provinceName: '山东省' },
+  // ========== 河南省 (41) ==========
   { code: '410100', name: '郑州市', lat: 34.7466, lng: 113.6253, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410200', name: '开封市', lat: 34.7973, lng: 114.3073, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410300', name: '洛阳市', lat: 34.6181, lng: 112.4539, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410400', name: '平顶山市', lat: 33.7662, lng: 113.1924, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410500', name: '安阳市', lat: 36.0977, lng: 114.3931, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410600', name: '鹤壁市', lat: 35.7470, lng: 114.2974, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410700', name: '新乡市', lat: 35.3030, lng: 113.9268, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410800', name: '焦作市', lat: 35.2156, lng: 113.2418, provinceCode: '410000', provinceName: '河南省' },
+  { code: '410900', name: '濮阳市', lat: 35.7618, lng: 115.0293, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411000', name: '许昌市', lat: 34.0355, lng: 113.8524, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411100', name: '漯河市', lat: 33.5814, lng: 114.0165, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411200', name: '三门峡市', lat: 34.7726, lng: 111.2003, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411300', name: '南阳市', lat: 32.9908, lng: 112.5285, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411400', name: '商丘市', lat: 34.4143, lng: 115.6563, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411500', name: '信阳市', lat: 32.1473, lng: 114.0910, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411600', name: '周口市', lat: 33.6258, lng: 114.6968, provinceCode: '410000', provinceName: '河南省' },
+  { code: '411700', name: '驻马店市', lat: 33.0114, lng: 114.0223, provinceCode: '410000', provinceName: '河南省' },
+  // ========== 湖北省 (42) ==========
   { code: '420100', name: '武汉市', lat: 30.5928, lng: 114.3052, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '420200', name: '黄石市', lat: 30.1995, lng: 115.0389, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '420300', name: '十堰市', lat: 32.6475, lng: 110.7980, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '420500', name: '宜昌市', lat: 30.6919, lng: 111.2865, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '420600', name: '襄阳市', lat: 32.0090, lng: 112.1224, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '420700', name: '鄂州市', lat: 30.3908, lng: 114.8906, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '420800', name: '荆门市', lat: 31.0354, lng: 112.1993, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '420900', name: '孝感市', lat: 30.9248, lng: 113.9165, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '421000', name: '荆州市', lat: 30.3352, lng: 112.2407, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '421100', name: '黄冈市', lat: 30.4536, lng: 114.8722, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '421200', name: '咸宁市', lat: 29.8412, lng: 114.3225, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '421300', name: '随州市', lat: 31.6902, lng: 113.3826, provinceCode: '420000', provinceName: '湖北省' },
+  { code: '422800', name: '恩施土家族苗族自治州', lat: 30.2831, lng: 109.4867, provinceCode: '420000', provinceName: '湖北省' },
+  // ========== 湖南省 (43) ==========
   { code: '430100', name: '长沙市', lat: 28.2282, lng: 112.9388, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430200', name: '株洲市', lat: 27.8274, lng: 113.1340, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430300', name: '湘潭市', lat: 27.8297, lng: 112.9441, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430400', name: '衡阳市', lat: 26.8932, lng: 112.5720, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430500', name: '邵阳市', lat: 27.2389, lng: 111.4677, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430600', name: '岳阳市', lat: 29.3573, lng: 113.1292, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430700', name: '常德市', lat: 29.0316, lng: 111.6985, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430800', name: '张家界市', lat: 29.1170, lng: 110.4784, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '430900', name: '益阳市', lat: 28.5539, lng: 112.3552, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '431000', name: '郴州市', lat: 25.7706, lng: 113.0148, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '431100', name: '永州市', lat: 26.4203, lng: 111.6134, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '431200', name: '怀化市', lat: 27.5695, lng: 110.0016, provinceCode: '430000', provinceName: '湖南省' },
+  { code: '431300', name: '娄底市', lat: 27.7001, lng: 111.9946, provinceCode: '430000', provinceName: '湖南省' },
+  // ========== 广东省 (44) ==========
   { code: '440100', name: '广州市', lat: 23.1292, lng: 113.2644, provinceCode: '440000', provinceName: '广东省' },
+  { code: '440200', name: '韶关市', lat: 24.8104, lng: 113.5972, provinceCode: '440000', provinceName: '广东省' },
   { code: '440300', name: '深圳市', lat: 22.5429, lng: 114.0596, provinceCode: '440000', provinceName: '广东省' },
   { code: '440400', name: '珠海市', lat: 22.2707, lng: 113.5767, provinceCode: '440000', provinceName: '广东省' },
+  { code: '440500', name: '汕头市', lat: 23.3535, lng: 116.6820, provinceCode: '440000', provinceName: '广东省' },
   { code: '440600', name: '佛山市', lat: 23.0219, lng: 113.1219, provinceCode: '440000', provinceName: '广东省' },
+  { code: '440700', name: '江门市', lat: 22.5787, lng: 113.0816, provinceCode: '440000', provinceName: '广东省' },
+  { code: '440800', name: '湛江市', lat: 21.2713, lng: 110.3589, provinceCode: '440000', provinceName: '广东省' },
+  { code: '440900', name: '茂名市', lat: 21.6630, lng: 110.9254, provinceCode: '440000', provinceName: '广东省' },
+  { code: '441200', name: '肇庆市', lat: 23.0469, lng: 112.4651, provinceCode: '440000', provinceName: '广东省' },
+  { code: '441300', name: '惠州市', lat: 23.1107, lng: 114.4168, provinceCode: '440000', provinceName: '广东省' },
+  { code: '441400', name: '梅州市', lat: 24.2886, lng: 116.1222, provinceCode: '440000', provinceName: '广东省' },
+  { code: '441500', name: '汕尾市', lat: 22.7853, lng: 115.3754, provinceCode: '440000', provinceName: '广东省' },
+  { code: '441600', name: '河源市', lat: 23.7437, lng: 114.7007, provinceCode: '440000', provinceName: '广东省' },
+  { code: '441700', name: '阳江市', lat: 21.8583, lng: 111.9826, provinceCode: '440000', provinceName: '广东省' },
+  { code: '441800', name: '清远市', lat: 23.6820, lng: 113.0561, provinceCode: '440000', provinceName: '广东省' },
   { code: '441900', name: '东莞市', lat: 23.0208, lng: 113.7518, provinceCode: '440000', provinceName: '广东省' },
+  { code: '442000', name: '中山市', lat: 22.5160, lng: 113.3926, provinceCode: '440000', provinceName: '广东省' },
+  { code: '445100', name: '潮州市', lat: 23.6567, lng: 116.6226, provinceCode: '440000', provinceName: '广东省' },
+  { code: '445200', name: '揭阳市', lat: 23.5497, lng: 116.3727, provinceCode: '440000', provinceName: '广东省' },
+  { code: '445300', name: '云浮市', lat: 22.9152, lng: 112.0445, provinceCode: '440000', provinceName: '广东省' },
+  // ========== 广西壮族自治区 (45) ==========
   { code: '450100', name: '南宁市', lat: 22.8170, lng: 108.3666, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450200', name: '柳州市', lat: 24.3264, lng: 109.4286, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450300', name: '桂林市', lat: 25.2736, lng: 110.2900, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450400', name: '梧州市', lat: 23.4769, lng: 111.2792, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450500', name: '北海市', lat: 21.4733, lng: 109.1202, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450600', name: '防城港市', lat: 21.6871, lng: 108.3547, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450700', name: '钦州市', lat: 21.9797, lng: 108.6543, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450800', name: '贵港市', lat: 23.1131, lng: 109.5976, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '450900', name: '玉林市', lat: 22.6364, lng: 110.1810, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '451000', name: '百色市', lat: 23.9022, lng: 106.6184, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '451100', name: '贺州市', lat: 24.4038, lng: 111.5669, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '451200', name: '河池市', lat: 24.6931, lng: 108.0854, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '451300', name: '来宾市', lat: 23.7502, lng: 109.2214, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  { code: '451400', name: '崇左市', lat: 22.3789, lng: 107.3649, provinceCode: '450000', provinceName: '广西壮族自治区' },
+  // ========== 海南省 (46) ==========
   { code: '460100', name: '海口市', lat: 20.0440, lng: 110.1999, provinceCode: '460000', provinceName: '海南省' },
   { code: '460200', name: '三亚市', lat: 18.2528, lng: 109.5119, provinceCode: '460000', provinceName: '海南省' },
+  { code: '460300', name: '三沙市', lat: 16.8310, lng: 112.3387, provinceCode: '460000', provinceName: '海南省' },
+  { code: '460400', name: '儋州市', lat: 19.5209, lng: 109.5807, provinceCode: '460000', provinceName: '海南省' },
+  // ========== 重庆市 (50) ==========
   { code: '500100', name: '重庆市', lat: 29.5647, lng: 106.5505, provinceCode: '500000', provinceName: '重庆市' },
+  // ========== 四川省 (51) ==========
   { code: '510100', name: '成都市', lat: 30.5728, lng: 104.0668, provinceCode: '510000', provinceName: '四川省' },
+  { code: '510300', name: '自贡市', lat: 29.3390, lng: 104.7784, provinceCode: '510000', provinceName: '四川省' },
+  { code: '510400', name: '攀枝花市', lat: 26.5823, lng: 101.7186, provinceCode: '510000', provinceName: '四川省' },
+  { code: '510500', name: '泸州市', lat: 28.8717, lng: 105.4423, provinceCode: '510000', provinceName: '四川省' },
+  { code: '510600', name: '德阳市', lat: 31.1268, lng: 104.3980, provinceCode: '510000', provinceName: '四川省' },
+  { code: '510700', name: '绵阳市', lat: 31.4675, lng: 104.6786, provinceCode: '510000', provinceName: '四川省' },
+  { code: '510800', name: '广元市', lat: 32.4355, lng: 105.8434, provinceCode: '510000', provinceName: '四川省' },
+  { code: '510900', name: '遂宁市', lat: 30.5326, lng: 105.5927, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511000', name: '内江市', lat: 29.5802, lng: 105.0584, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511100', name: '乐山市', lat: 29.5523, lng: 103.7656, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511300', name: '南充市', lat: 30.8378, lng: 106.1107, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511400', name: '眉山市', lat: 30.0773, lng: 103.8485, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511500', name: '宜宾市', lat: 28.7512, lng: 104.6433, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511600', name: '广安市', lat: 30.4560, lng: 106.6331, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511700', name: '达州市', lat: 31.2086, lng: 107.4678, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511800', name: '雅安市', lat: 29.9805, lng: 103.0133, provinceCode: '510000', provinceName: '四川省' },
+  { code: '511900', name: '巴中市', lat: 31.8672, lng: 106.7475, provinceCode: '510000', provinceName: '四川省' },
+  { code: '512000', name: '资阳市', lat: 30.1289, lng: 104.6270, provinceCode: '510000', provinceName: '四川省' },
+  // ========== 贵州省 (52) ==========
   { code: '520100', name: '贵阳市', lat: 26.6470, lng: 106.6302, provinceCode: '520000', provinceName: '贵州省' },
+  { code: '520200', name: '六盘水市', lat: 26.5924, lng: 104.8302, provinceCode: '520000', provinceName: '贵州省' },
+  { code: '520300', name: '遵义市', lat: 27.7257, lng: 106.9274, provinceCode: '520000', provinceName: '贵州省' },
+  { code: '520400', name: '安顺市', lat: 26.2531, lng: 105.9462, provinceCode: '520000', provinceName: '贵州省' },
+  { code: '520500', name: '毕节市', lat: 27.2839, lng: 105.3050, provinceCode: '520000', provinceName: '贵州省' },
+  { code: '520600', name: '铜仁市', lat: 27.7315, lng: 109.1896, provinceCode: '520000', provinceName: '贵州省' },
+  // ========== 云南省 (53) ==========
   { code: '530100', name: '昆明市', lat: 24.8801, lng: 102.8329, provinceCode: '530000', provinceName: '云南省' },
+  { code: '530300', name: '曲靖市', lat: 25.4900, lng: 103.7962, provinceCode: '530000', provinceName: '云南省' },
+  { code: '530400', name: '玉溪市', lat: 24.3518, lng: 102.5466, provinceCode: '530000', provinceName: '云南省' },
+  { code: '530500', name: '保山市', lat: 25.1120, lng: 99.1618, provinceCode: '530000', provinceName: '云南省' },
+  { code: '530600', name: '昭通市', lat: 27.3382, lng: 103.7168, provinceCode: '530000', provinceName: '云南省' },
+  { code: '530700', name: '丽江市', lat: 26.8567, lng: 100.2271, provinceCode: '530000', provinceName: '云南省' },
+  { code: '530800', name: '普洱市', lat: 22.8252, lng: 100.9665, provinceCode: '530000', provinceName: '云南省' },
+  { code: '530900', name: '临沧市', lat: 23.8843, lng: 100.0888, provinceCode: '530000', provinceName: '云南省' },
+  // ========== 西藏自治区 (54) ==========
   { code: '540100', name: '拉萨市', lat: 29.6507, lng: 91.1145, provinceCode: '540000', provinceName: '西藏自治区' },
+  { code: '540200', name: '日喀则市', lat: 29.2670, lng: 88.8812, provinceCode: '540000', provinceName: '西藏自治区' },
+  { code: '540300', name: '昌都市', lat: 31.1407, lng: 97.1720, provinceCode: '540000', provinceName: '西藏自治区' },
+  { code: '540400', name: '林芝市', lat: 29.6490, lng: 94.3615, provinceCode: '540000', provinceName: '西藏自治区' },
+  { code: '540500', name: '山南市', lat: 29.2371, lng: 91.7731, provinceCode: '540000', provinceName: '西藏自治区' },
+  { code: '540600', name: '那曲市', lat: 31.4762, lng: 92.0514, provinceCode: '540000', provinceName: '西藏自治区' },
+  // ========== 陕西省 (61) ==========
   { code: '610100', name: '西安市', lat: 34.3416, lng: 108.9402, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610200', name: '铜川市', lat: 34.8967, lng: 108.9451, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610300', name: '宝鸡市', lat: 34.3632, lng: 107.2377, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610400', name: '咸阳市', lat: 34.3293, lng: 108.7093, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610500', name: '渭南市', lat: 34.4996, lng: 109.5102, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610600', name: '延安市', lat: 36.5855, lng: 109.4898, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610700', name: '汉中市', lat: 33.0676, lng: 107.0238, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610800', name: '榆林市', lat: 38.2852, lng: 109.7346, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '610900', name: '安康市', lat: 32.6847, lng: 109.0291, provinceCode: '610000', provinceName: '陕西省' },
+  { code: '611000', name: '商洛市', lat: 33.8727, lng: 109.9186, provinceCode: '610000', provinceName: '陕西省' },
+  // ========== 甘肃省 (62) ==========
   { code: '620100', name: '兰州市', lat: 36.0614, lng: 103.8343, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620200', name: '嘉峪关市', lat: 39.7720, lng: 98.2901, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620300', name: '金昌市', lat: 38.5201, lng: 102.1876, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620400', name: '白银市', lat: 36.5448, lng: 104.1377, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620500', name: '天水市', lat: 34.5808, lng: 105.7249, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620600', name: '武威市', lat: 37.9282, lng: 102.6380, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620700', name: '张掖市', lat: 38.9255, lng: 100.4499, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620800', name: '平凉市', lat: 35.5430, lng: 106.6653, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '620900', name: '酒泉市', lat: 39.7324, lng: 98.4940, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '621000', name: '庆阳市', lat: 35.7098, lng: 107.6429, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '621100', name: '定西市', lat: 35.5806, lng: 104.5922, provinceCode: '620000', provinceName: '甘肃省' },
+  { code: '621200', name: '陇南市', lat: 33.4007, lng: 104.9218, provinceCode: '620000', provinceName: '甘肃省' },
+  // ========== 青海省 (63) ==========
   { code: '630100', name: '西宁市', lat: 36.6171, lng: 101.7785, provinceCode: '630000', provinceName: '青海省' },
+  { code: '630200', name: '海东市', lat: 36.5029, lng: 102.4017, provinceCode: '630000', provinceName: '青海省' },
+  // ========== 宁夏回族自治区 (64) ==========
   { code: '640100', name: '银川市', lat: 38.4872, lng: 106.2309, provinceCode: '640000', provinceName: '宁夏回族自治区' },
+  { code: '640200', name: '石嘴山市', lat: 38.9841, lng: 106.3832, provinceCode: '640000', provinceName: '宁夏回族自治区' },
+  { code: '640300', name: '吴忠市', lat: 37.9976, lng: 106.1983, provinceCode: '640000', provinceName: '宁夏回族自治区' },
+  { code: '640400', name: '固原市', lat: 36.0158, lng: 106.2426, provinceCode: '640000', provinceName: '宁夏回族自治区' },
+  { code: '640500', name: '中卫市', lat: 37.4999, lng: 105.1969, provinceCode: '640000', provinceName: '宁夏回族自治区' },
+  // ========== 新疆维吾尔自治区 (65) ==========
   { code: '650100', name: '乌鲁木齐市', lat: 43.8256, lng: 87.6168, provinceCode: '650000', provinceName: '新疆维吾尔自治区' },
+  { code: '650200', name: '克拉玛依市', lat: 45.5799, lng: 84.8893, provinceCode: '650000', provinceName: '新疆维吾尔自治区' },
+  { code: '650400', name: '吐鲁番市', lat: 42.9477, lng: 89.1897, provinceCode: '650000', provinceName: '新疆维吾尔自治区' },
+  { code: '650500', name: '哈密市', lat: 42.8184, lng: 93.5150, provinceCode: '650000', provinceName: '新疆维吾尔自治区' },
+  // ========== 台湾省 (71) ==========
+  { code: '710100', name: '台北市', lat: 25.0330, lng: 121.5654, provinceCode: '710000', provinceName: '台湾省' },
+  { code: '710200', name: '高雄市', lat: 22.6273, lng: 120.3014, provinceCode: '710000', provinceName: '台湾省' },
+  { code: '710300', name: '台中市', lat: 24.1477, lng: 120.6736, provinceCode: '710000', provinceName: '台湾省' },
+  { code: '710400', name: '台南市', lat: 22.9999, lng: 120.2269, provinceCode: '710000', provinceName: '台湾省' },
+  // ========== 香港特别行政区 (81) ==========
   { code: '810100', name: '香港', lat: 22.2793, lng: 114.1628, provinceCode: '810000', provinceName: '香港特别行政区' },
+  // ========== 澳门特别行政区 (82) ==========
   { code: '820100', name: '澳门', lat: 22.1987, lng: 113.5439, provinceCode: '820000', provinceName: '澳门特别行政区' },
 ]
 
 /**
+ * 使用 Haversine 公式计算两点间球面距离（单位：公里）
+ * 适用于中国范围内的精确城市匹配
+ */
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371 // 地球半径（公里）
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+function toRad(deg: number): number {
+  return (deg * Math.PI) / 180
+}
+
+/**
  * 根据经纬度找到最近的城市
- * 使用简单的欧几里得距离（对于中国范围内精度足够做粗略匹配）
+ * 使用 Haversine 公式计算球面距离，精度优于简单欧几里得距离
  */
 export function findNearestCity(lat: number, lng: number): CityCoordinate | null {
   let nearest: CityCoordinate | null = null
   let minDist = Infinity
   for (const city of cityCoordinates) {
-    const dLat = city.lat - lat
-    const dLng = city.lng - lng
-    const dist = dLat * dLat + dLng * dLng
+    const dist = haversineDistance(lat, lng, city.lat, city.lng)
     if (dist < minDist) {
       minDist = dist
       nearest = city
@@ -707,15 +1013,68 @@ export function matchRegionByCoord(lat: number, lng: number): { province: string
 }
 
 /**
- * 通过 IP 地址匹配到省/市信息
+ * 通过 GPS 坐标反向地理编码获取省/市/区（优先使用免费 Nominatim API）
+ */
+export async function reverseGeocode(lat: number, lng: number): Promise<{ province: string; city: string; district: string } | null> {
+  // 先尝试 Nominatim 反向地理编码（OpenStreetMap，免费）
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=zh&zoom=14`
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'ZhixunApp/1.0', 'Accept': 'application/json' },
+    })
+    clearTimeout(timeout)
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.address) {
+        const addr = data.address
+        // Nominatim 对中国行政区划的字段映射
+        const province = addr.state || addr.province || ''
+        const city = addr.city || addr.town || addr.county || addr.state_district || ''
+        const district = addr.county || addr.district || addr.suburb || addr.village || ''
+        if (province || city) {
+          return { province, city, district }
+        }
+      }
+    }
+  } catch {
+    // Nominatim 失败，继续其他尝试
+  }
+
+  // 退回到 IP 定位 + 坐标最近城市匹配
+  try {
+    const ipRegion = await getRegionByIP()
+    if (ipRegion) {
+      const coordMatch = matchRegionByCoord(lat, lng)
+      return {
+        province: ipRegion.province || coordMatch?.province || '',
+        city: ipRegion.city || coordMatch?.city || '',
+        district: ipRegion.district || '',
+      }
+    }
+  } catch {
+    // 忽略
+  }
+
+  // 最终退回本地城市坐标匹配
+  const coordMatch = matchRegionByCoord(lat, lng)
+  return coordMatch ? { ...coordMatch, district: '' } : null
+}
+
+/**
+ * 通过 IP 地址匹配到省/市/区信息
  * 将调用免费的 IP 定位 API
  */
-export async function getRegionByIP(): Promise<{ province: string; city: string } | null> {
+export async function getRegionByIP(): Promise<{ province: string; city: string; district: string } | null> {
   const endpoints = [
-    // 国内优先：腾讯地图 IP 定位（无需 Key 的公开接口）
-    'https://apis.map.qq.com/ws/location/v1/ip?output=json',
+    // 国内优先：腾讯地图 IP 定位
+    'https://apis.map.qq.com/ws/location/v1/ip?output=json&key=QKDBZ-I4NC7-3HMXP-HTIS6-QTRVH-WUF5X',
     // 国外备选
     'https://ipapi.co/json/',
+    // 另一个免费备选
+    'https://ipinfo.io/json',
   ]
 
   for (const url of endpoints) {
@@ -734,12 +1093,29 @@ export async function getRegionByIP(): Promise<{ province: string; city: string 
         // 腾讯地图 API 响应格式
         if (data.status === 0 && data.result?.ad_info) {
           const ad = data.result.ad_info
-          return { province: ad.province || '', city: ad.city || '' }
+          return {
+            province: ad.province || '',
+            city: ad.city || '',
+            district: ad.district || '',
+          }
         }
       } else if (url.includes('ipapi.co')) {
         // ipapi.co 响应格式
         if (data && data.city) {
-          return { province: data.region || '', city: data.city || '' }
+          return {
+            province: data.region || '',
+            city: data.city || '',
+            district: '',
+          }
+        }
+      } else if (url.includes('ipinfo.io')) {
+        // ipinfo.io 响应格式
+        if (data && data.city) {
+          return {
+            province: data.region || '',
+            city: data.city || '',
+            district: '',
+          }
         }
       }
     } catch {

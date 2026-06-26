@@ -57,6 +57,15 @@ export default defineNuxtPlugin(() => {
           }
           // 其他获取失败不影响当前缓存的用户信息
         }
+
+        // 同步服务端设置（主题、语言、通知偏好）到本地
+        try {
+          const { useUserSettings } = await import('~/composables/useUserSettings')
+          const { syncFromServer } = useUserSettings()
+          await syncFromServer()
+        } catch {
+          // 设置同步失败不影响主流程
+        }
       }
     }
 

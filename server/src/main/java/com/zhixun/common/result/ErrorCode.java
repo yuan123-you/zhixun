@@ -26,6 +26,9 @@ public enum ErrorCode {
     UNPROCESSABLE_ENTITY(422, "参数校验失败"),
     TOO_MANY_REQUESTS(429, "请求过于频繁"),
 
+    // ========== 服务端错误码 5xx ==========
+    SERVICE_UNAVAILABLE(503, "服务暂时不可用"),
+
     // ========== 认证相关 1xxx ==========
     AUTH_LOGIN_FAILED(1001, "用户名或密码错误"),
     AUTH_ACCOUNT_DISABLED(1002, "账号已被禁用"),

@@ -1,14 +1,14 @@
 ﻿<template>
-  <!-- 个人中心 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 个人资料卡 -->
-    <div class="card p-2.5 md:p-3 mb-3">
-      <div class="flex items-start gap-2 md:gap-3">
+  <!-- 个人中心 - 抖音风格 -->
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-0 md:px-2">
+    <!-- 个人资料卡 - 抖音紧凑居中布局 -->
+    <div class="pt-3 pb-2 px-3">
+      <div class="flex flex-col items-center">
         <!-- 头像（可点击编辑） -->
-        <div class="relative group cursor-pointer shrink-0" @click="triggerAvatarUpload">
-          <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" :size="isMobile ? 'md' : 'lg'" />
+        <div class="relative group cursor-pointer shrink-0 mb-2" @click="triggerAvatarUpload">
+          <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" :size="isMobile ? 'lg' : 'xl'" />
           <div class="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -16,50 +16,75 @@
         </div>
         <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
 
-        <div class="flex-1 min-w-0 overflow-hidden">
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg md:text-xl font-bold text-slate-900 truncate">{{ userStore.userInfo?.nickname }}</h2>
-            <NuxtLink to="/user/edit" class="btn-secondary text-xs md:text-sm shrink-0 ml-2">{{ '编辑资料' }}</NuxtLink>
-          </div>
-          <div class="flex flex-wrap items-center gap-1 mt-1">
-            <span class="text-[10px] md:text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-              ID: {{ userStore.userInfo?.uid }}
-            </span>
-            <span v-if="userStore.userInfo?.showGenderOnProfile && userStore.userInfo?.gender" class="text-[10px] md:text-xs text-slate-400 bg-pink-50 px-1.5 py-0.5 rounded shrink-0">
-              {{ userStore.userInfo.gender === 1 ? '男' : userStore.userInfo.gender === 2 ? '女' : '' }}
-            </span>
-            <span v-if="userStore.userInfo?.province" class="text-[10px] md:text-xs text-slate-400 bg-blue-50 px-1.5 py-0.5 rounded shrink-0">
-              {{ userStore.userInfo?.province }}
-            </span>
-            <span v-if="userStore.userInfo?.ipLocation" class="text-[10px] md:text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-              IP属地: {{ userStore.userInfo?.ipLocation }}
-            </span>
-          </div>
-          <p v-if="userStore.userInfo?.bio" class="text-xs md:text-sm text-slate-500 mt-1 line-clamp-2">{{ userStore.userInfo?.bio }}</p>
-          <div class="flex items-center gap-3 md:gap-4 mt-1.5 text-xs md:text-sm text-slate-500">
-            <NuxtLink to="/user/articles" class="cursor-pointer hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userStore.userInfo?.articleCount }}</strong> {{ '作品' }}
-            </NuxtLink>
-            <NuxtLink to="/user/following" class="cursor-pointer hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userStore.userInfo?.followCount }}</strong> {{ '关注' }}
-            </NuxtLink>
-            <NuxtLink to="/user/followers" class="cursor-pointer hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userStore.userInfo?.followerCount }}</strong> {{ '粉丝' }}
-            </NuxtLink>
-          </div>
+        <!-- 昵称 -->
+        <h2 class="text-base md:text-lg font-bold text-slate-900 mb-0.5">{{ userStore.userInfo?.nickname }}</h2>
+
+        <!-- ID 和标签 -->
+        <div class="flex flex-wrap items-center justify-center gap-1 mb-1.5">
+          <span class="text-[11px] text-slate-400">
+            知讯号: {{ userStore.userInfo?.uid }}
+          </span>
+          <span v-if="userStore.userInfo?.showGenderOnProfile && userStore.userInfo?.gender" class="text-[11px] text-slate-400">
+            · {{ userStore.userInfo.gender === 1 ? '男' : userStore.userInfo.gender === 2 ? '女' : '' }}
+          </span>
+          <span v-if="userStore.userInfo?.province" class="text-[11px] text-slate-400">
+            · {{ userStore.userInfo?.province }}
+          </span>
+          <span v-if="userStore.userInfo?.ipLocation" class="text-[11px] text-slate-400">
+            · IP: {{ userStore.userInfo?.ipLocation }}
+          </span>
         </div>
+
+        <!-- 简介 -->
+        <p v-if="userStore.userInfo?.bio" class="text-[11px] text-slate-500 text-center mb-2 max-w-[280px] line-clamp-2">{{ userStore.userInfo?.bio }}</p>
+
+        <!-- 统计数据行 -->
+        <div class="flex items-center justify-center gap-6 md:gap-8 mb-3">
+          <NuxtLink to="/user/articles" class="flex flex-col items-center cursor-pointer hover:text-primary transition-colors">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userStore.userInfo?.articleCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">作品</span>
+          </NuxtLink>
+          <div class="flex flex-col items-center">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userStore.userInfo?.totalLikeCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">获赞</span>
+          </div>
+          <NuxtLink to="/user/following" class="flex flex-col items-center cursor-pointer hover:text-primary transition-colors">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userStore.userInfo?.followCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">关注</span>
+          </NuxtLink>
+          <NuxtLink to="/user/followers" class="flex flex-col items-center cursor-pointer hover:text-primary transition-colors">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userStore.userInfo?.followerCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">粉丝</span>
+          </NuxtLink>
+        </div>
+
+        <!-- 编辑资料按钮 -->
+        <NuxtLink to="/user/edit" class="block w-[200px] mx-auto text-center py-1.5 text-[13px] font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors">
+          编辑资料
+        </NuxtLink>
+      </div>
+
+      <!-- 每日签到卡片 -->
+      <div class="mt-3 px-3">
+        <ClientOnly>
+          <CheckInCard
+            :status="incentiveStatus"
+            :loading="incentiveLoading"
+            @checkin="handleCheckIn"
+          />
+        </ClientOnly>
       </div>
     </div>
 
-    <!-- Tab切换 -->
-    <div class="flex items-center border-b border-slate-200 mb-3 overflow-x-auto no-scrollbar">
+    <!-- Tab切换 - 紧凑样式 -->
+    <div class="flex items-center border-b border-slate-100 overflow-x-auto no-scrollbar mt-2">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        class="px-3 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors shrink-0"
+        class="flex-1 md:flex-none px-2 md:px-4 py-2 text-[13px] md:text-sm font-medium border-b-2 whitespace-nowrap transition-colors"
         :class="activeTab === tab.key
-          ? 'border-primary text-primary'
-          : 'border-transparent text-slate-500 hover:text-slate-700'"
+          ? 'border-slate-900 text-slate-900'
+          : 'border-transparent text-slate-400 hover:text-slate-600'"
         @click="switchTab(tab.key)"
       >
         {{ tab.label }}
@@ -72,14 +97,14 @@
       <ErrorRetry v-if="activeTab === 'published' && tabError && !publishedArticles.length" :message="tabError" :on-retry="retryTabData" />
       <div v-if="activeTab === 'published' && !tabError">
         <!-- 骨架屏 -->
-        <div v-if="loading && publishedArticles.length === 0" class="grid grid-cols-3">
+        <div v-if="loading && publishedArticles.length === 0" class="grid grid-cols-3 gap-0">
           <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
         </div>
         <div v-else-if="!loading && publishedArticles.length === 0" class="text-center py-10 text-slate-400">
-          <p class="text-lg mb-2">还没有发布作品</p>
+          <p class="text-sm mb-2">还没有发布作品</p>
           <NuxtLink to="/editor" class="text-primary hover:underline text-sm">去创作</NuxtLink>
         </div>
-        <div v-else class="grid grid-cols-3">
+        <div v-else class="grid grid-cols-3 gap-0">
           <div v-for="article in publishedArticles" :key="article.id" class="relative group">
             <ArticleGridCard :article="article" />
             <!-- 悬浮操作层 -->
@@ -109,8 +134,8 @@
             </div>
           </div>
         </div>
-        <div v-if="hasMore" class="text-center py-4">
-          <button class="text-sm text-primary hover:underline" :disabled="loading" @click="loadMore">
+        <div v-if="hasMore" class="text-center py-3">
+          <button class="text-[13px] text-slate-400 hover:text-slate-600" :disabled="loading" @click="loadMore">
             {{ loading ? '加载中...' : '加载更多' }}
           </button>
         </div>
@@ -120,15 +145,15 @@
       <ErrorRetry v-if="activeTab === 'drafts' && tabError && !draftArticles.length" :message="tabError" :on-retry="retryTabData" />
       <div v-if="activeTab === 'drafts' && !tabError">
         <!-- 骨架屏 -->
-        <div v-if="loading && draftArticles.length === 0" class="grid grid-cols-3">
+        <div v-if="loading && draftArticles.length === 0" class="grid grid-cols-3 gap-0">
           <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
         </div>
         <div v-else-if="!loading && draftArticles.length === 0" class="text-center py-10 text-slate-400">
-          <p class="text-lg mb-2">草稿箱为空</p>
+          <p class="text-sm mb-2">草稿箱为空</p>
           <p class="text-xs">草稿保存30天后将自动清理</p>
           <NuxtLink to="/editor" class="text-primary hover:underline text-sm mt-2 inline-block">去创作</NuxtLink>
         </div>
-        <div v-else class="grid grid-cols-3">
+        <div v-else class="grid grid-cols-3 gap-0">
           <div v-for="article in draftArticles" :key="article.id" class="relative group">
             <ArticleGridCard :article="article" />
             <!-- 悬浮操作层 -->
@@ -147,8 +172,8 @@
             </div>
           </div>
         </div>
-        <div v-if="hasMore" class="text-center py-4">
-          <button class="text-sm text-primary hover:underline" :disabled="loading" @click="loadMore">
+        <div v-if="hasMore" class="text-center py-3">
+          <button class="text-[13px] text-slate-400 hover:text-slate-600" :disabled="loading" @click="loadMore">
             {{ loading ? '加载中...' : '加载更多' }}
           </button>
         </div>
@@ -157,17 +182,17 @@
       <!-- 收藏 -->
       <ErrorRetry v-if="activeTab === 'collected' && tabError && !collectedArticles.length" :message="tabError" :on-retry="retryTabData" />
       <div v-if="activeTab === 'collected' && !tabError">
-        <div v-if="loading && collectedArticles.length === 0" class="grid grid-cols-3">
+        <div v-if="loading && collectedArticles.length === 0" class="grid grid-cols-3 gap-0">
           <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
         </div>
         <div v-else-if="!loading && collectedArticles.length === 0" class="text-center py-10 text-slate-400">
-          <p class="text-lg">暂无收藏</p>
+          <p class="text-sm">暂无收藏</p>
         </div>
-        <div v-else class="grid grid-cols-3">
+        <div v-else class="grid grid-cols-3 gap-0">
           <ArticleGridCard v-for="article in collectedArticles" :key="article.id" :article="article" />
         </div>
-        <div v-if="hasMore" class="text-center py-4">
-          <button class="text-sm text-primary hover:underline" :disabled="loading" @click="loadMore">
+        <div v-if="hasMore" class="text-center py-3">
+          <button class="text-[13px] text-slate-400 hover:text-slate-600" :disabled="loading" @click="loadMore">
             {{ loading ? '加载中...' : '加载更多' }}
           </button>
         </div>
@@ -176,17 +201,17 @@
       <!-- 点赞 -->
       <ErrorRetry v-if="activeTab === 'liked' && tabError && !likedArticles.length" :message="tabError" :on-retry="retryTabData" />
       <div v-if="activeTab === 'liked' && !tabError">
-        <div v-if="loading && likedArticles.length === 0" class="grid grid-cols-3">
+        <div v-if="loading && likedArticles.length === 0" class="grid grid-cols-3 gap-0">
           <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
         </div>
         <div v-else-if="!loading && likedArticles.length === 0" class="text-center py-10 text-slate-400">
-          <p class="text-lg">暂无点赞</p>
+          <p class="text-sm">暂无点赞</p>
         </div>
-        <div v-else class="grid grid-cols-3">
+        <div v-else class="grid grid-cols-3 gap-0">
           <ArticleGridCard v-for="article in likedArticles" :key="article.id" :article="article" />
         </div>
-        <div v-if="hasMore" class="text-center py-4">
-          <button class="text-sm text-primary hover:underline" :disabled="loading" @click="loadMore">
+        <div v-if="hasMore" class="text-center py-3">
+          <button class="text-[13px] text-slate-400 hover:text-slate-600" :disabled="loading" @click="loadMore">
             {{ loading ? '加载中...' : '加载更多' }}
           </button>
         </div>
@@ -194,31 +219,33 @@
 
       <!-- 评论 -->
       <ErrorRetry v-if="activeTab === 'comments' && tabError && !myComments.length" :message="tabError" :on-retry="retryTabData" />
-      <div v-if="activeTab === 'comments' && !tabError" class="space-y-4">
-        <div v-for="comment in myComments" :key="comment.id" class="card p-2">
-          <p class="text-sm text-slate-700">{{ comment.content }}</p>
-          <div class="flex items-center justify-between mt-2">
-            <span class="text-xs text-gray-400">{{ formatDate(comment.createdAt) }}</span>
-            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-xs text-primary hover:text-primary-600">{{ '查看作品' }}</NuxtLink>
+      <div v-if="activeTab === 'comments' && !tabError" class="px-3">
+        <div v-for="comment in myComments" :key="comment.id" class="py-2.5 border-b border-slate-100">
+          <p class="text-[13px] text-slate-700 leading-snug">{{ comment.content }}</p>
+          <div class="flex items-center justify-between mt-1.5">
+            <span class="text-[11px] text-slate-400">{{ formatDate(comment.createdAt) }}</span>
+            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-[11px] text-primary hover:text-primary-600">{{ '查看作品' }}</NuxtLink>
           </div>
         </div>
-        <EmptyState v-if="!loading && myComments.length === 0" title="暂无评论" />
+        <div v-if="!loading && myComments.length === 0" class="text-center py-10 text-slate-400">
+          <p class="text-sm">暂无评论</p>
+        </div>
       </div>
 
       <!-- 历史 -->
       <ErrorRetry v-if="activeTab === 'history' && tabError && !historyArticles.length" :message="tabError" :on-retry="retryTabData" />
       <div v-if="activeTab === 'history' && !tabError">
-        <div v-if="loading && historyArticles.length === 0" class="grid grid-cols-3">
+        <div v-if="loading && historyArticles.length === 0" class="grid grid-cols-3 gap-0">
           <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
         </div>
         <div v-else-if="!loading && historyArticles.length === 0" class="text-center py-10 text-slate-400">
-          <p class="text-lg">暂无浏览历史</p>
+          <p class="text-sm">暂无浏览历史</p>
         </div>
-        <div v-else class="grid grid-cols-3">
+        <div v-else class="grid grid-cols-3 gap-0">
           <ArticleGridCard v-for="article in historyArticles" :key="article.id" :article="article" />
         </div>
-        <div v-if="hasMore" class="text-center py-4">
-          <button class="text-sm text-primary hover:underline" :disabled="loading" @click="loadMore">
+        <div v-if="hasMore" class="text-center py-3">
+          <button class="text-[13px] text-slate-400 hover:text-slate-600" :disabled="loading" @click="loadMore">
             {{ loading ? '加载中...' : '加载更多' }}
           </button>
         </div>
@@ -272,6 +299,7 @@
 /** 个人中心页 */
 import type { Article, Comment } from '~/types'
 import { userApi, articleApi } from '~/api'
+import { incentiveApi } from '~/api/incentive'
 
 definePageMeta({
   middleware: 'auth',
@@ -327,12 +355,12 @@ const handleAvatarChange = async (e: Event) => {
 }
 
 const tabs = [
-  { key: 'published', label: computed(() => '作品') },
-  { key: 'drafts', label: computed(() => '草稿') },
-  { key: 'collected', label: computed(() => '收藏') },
-  { key: 'liked', label: computed(() => '点赞') },
-  { key: 'comments', label: computed(() => '评论') },
-  { key: 'history', label: computed(() => '历史') },
+  { key: 'published', label: '作品' },
+  { key: 'drafts', label: '草稿' },
+  { key: 'collected', label: '收藏' },
+  { key: 'liked', label: '点赞' },
+  { key: 'comments', label: '评论' },
+  { key: 'history', label: '历史' },
 ]
 
 const activeTab = ref('published')
@@ -364,6 +392,29 @@ const scheduleTime = ref('')
 const showDeleteModal = ref(false)
 const deleteTarget = ref<Article | null>(null)
 const deletingId = ref<number | null>(null)
+
+// 签到激励
+const incentiveStatus = ref<any>(null)
+const incentiveLoading = ref(false)
+
+const fetchIncentiveStatus = async () => {
+  try {
+    const { data } = await incentiveApi.getCheckInStatus()
+    incentiveStatus.value = (data as any)?.data?.data || (data as any)?.data
+  } catch { incentiveStatus.value = null }
+}
+
+const handleCheckIn = async () => {
+  incentiveLoading.value = true
+  try {
+    const { data } = await incentiveApi.checkIn()
+    const result = (data as any)?.data?.data || (data as any)?.data
+    incentiveStatus.value = result
+    showToast(`签到成功！+${result?.todayPoints || 0} 积分`)
+  } catch (err: any) {
+    showToast(err?.response?.data?.message || '签到失败', 'error')
+  } finally { incentiveLoading.value = false }
+}
 
 // 最小可选时间
 const minScheduleTime = computed(() => {
@@ -642,6 +693,17 @@ const formatDate = (date: string) => {
 // 页面加载时获取默认Tab数据
 onMounted(async () => {
   loadTabData()
+  fetchIncentiveStatus()
+  // 获取完整个人资料（含统计数字）
+  try {
+    const { data: profileData } = await userApi.getProfile()
+    const profile = profileData?.data
+    if (profile) {
+      userStore.updateProfile(profile)
+    }
+  } catch {
+    // 静默失败，不影响主流程
+  }
   // 自动更新IP属地
   try {
     const { userApi } = await import('~/api')

@@ -28,10 +28,27 @@ minio:
 opensearch:
   enabled: false
 
+# JWT 测试环境密钥
+jwt:
+  access-secret: ${JWT_ACCESS_SECRET:test-access-secret-for-testing}
+  refresh-secret: ${JWT_REFRESH_SECRET:test-refresh-secret-for-testing}
+
+# AES 测试环境密钥
+aes:
+  secret-key: ${AES_SECRET_KEY:test-aes-32byte-key-not-prod}
+
+# SSR 测试环境密钥
+ssr:
+  secret: ${SSR_SECRET:test-ssr-secret}
+
 # MyBatis-Plus 配置
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# CORS 测试环境配置
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:3001,http://localhost:8080
 
 # 日志级别调整
 logging:

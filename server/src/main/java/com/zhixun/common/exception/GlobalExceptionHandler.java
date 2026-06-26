@@ -6,10 +6,12 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeException;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowException;
 import com.alibaba.csp.sentinel.slots.system.SystemBlockException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindException;
@@ -178,6 +180,24 @@ public class GlobalExceptionHandler {
     public R<Void> handleBlockException(BlockException e) {
         log.warn("请求被阻塞: {}", e.getMessage());
         return R.fail(ErrorCode.TOO_MANY_REQUESTS);
+    }
+
+    /**
+     * 处理请求体解析异常（JSON格式错误、类型不匹配等）
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        String message = "请求数据格式错误";
+        Throwable cause = e.getCause();
+        if (cause instanceof InvalidFormatException ife) {
+            message = "字段 '" + ife.getPath().stream()
+                    .map(ref -> ref.getFieldName() != null ? ref.getFieldName() : "[" + ref.getIndex() + "]")
+                    .collect(Collectors.joining("."))
+                    + "' 的值格式不正确";
+        }
+        log.warn("请求体解析异常: {}", e.getMessage());
+        return R.fail(ErrorCode.BAD_REQUEST, message);
     }
 
     /**

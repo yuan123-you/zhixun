@@ -1,43 +1,67 @@
 # 生产环境配置
+# ⚠️ 所有敏感凭据均通过环境变量注入，不在此文件中硬编码
 spring:
   data:
     redis:
-      host: ${REDIS_HOST:redis}
+      host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: ${REDIS_DATABASE:0}
   rabbitmq:
-    host: ${RABBITMQ_HOST:rabbitmq}
+    host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
     virtual-host: ${RABBITMQ_VHOST:/}
+
+# MyBatis-Plus 生产环境：关闭 SQL 日志到 stdout，改用 Slf4j（按需开启 DEBUG）
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
 # MinIO 生产环境
 minio:
   enabled: true
-  endpoint: ${MINIO_ENDPOINT:http://minio:9000}
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  endpoint: ${MINIO_ENDPOINT}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
   bucket-name: ${MINIO_BUCKET:zhixun}
 
 # OpenSearch 生产环境
 opensearch:
   enabled: true
-  hosts: ${OPENSEARCH_HOSTS:https://opensearch:9200}
-  username: ${OPENSEARCH_USERNAME:admin}
-  password: ${OPENSEARCH_PASSWORD:admin}
+  hosts: ${OPENSEARCH_HOSTS}
+  username: ${OPENSEARCH_USERNAME}
+  password: ${OPENSEARCH_PASSWORD}
   connect-timeout: 5000
   socket-timeout: 60000
   index-prefix: zhixun_
 
 # CORS 允许的来源
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://glint.novo.ccwu.cc,http://glint.novo.ccwu.cc,http://localhost:3000,http://localhost:3001}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
-# 日志级别
+# SSR 通信密钥（生产环境通过环境变量注入）
+ssr:
+  secret: ${SSR_SECRET}
+
+# 管理员账号配置（生产环境通过环境变量注入）
+# 如果未设置 ADMIN_PASSWORD，启动时将不会自动创建管理员
+# 首次部署请先通过环境变量设置 ADMIN_USERNAME 和 ADMIN_PASSWORD
+
+# 日志级别（生产：INFO，仅记录关键业务日志）
 logging:
   level:
-    root: INFO
+    root: WARN
     com.zhixun: INFO
     com.zhixun.mapper: WARN
+
+# Actuator 健康检查（生产环境仅暴露 health 端点）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: when-authorized

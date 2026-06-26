@@ -1,19 +1,12 @@
 <template>
   <!-- 用户主页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 返回导航 -->
-    <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors mb-2" @click="goBack">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
-      {{ '返回' }}
-    </button>
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-0 md:px-2 2xl:px-3 py-2">
 
-    <!-- 用户资料卡 -->
-    <div v-if="userInfo" class="card p-3 mb-3">
-      <div class="flex items-start space-x-3">
+    <!-- 用户资料卡 — 抖音风格居中布局 -->
+    <div v-if="userInfo" class="pt-3 pb-2 px-3">
+      <div class="flex flex-col items-center">
         <!-- 头像 -->
-        <div class="relative shrink-0">
+        <div class="relative shrink-0 mb-2">
           <UserAvatar :src="userInfo.avatar" alt="头像" size="xl" />
           <!-- 在线状态指示灯 -->
           <span
@@ -22,51 +15,56 @@
           ></span>
         </div>
 
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-bold text-slate-900">{{ userInfo.nickname }}</h2>
-              <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                  ID: {{ userInfo.uid }}
-                </span>
-                <span v-if="userInfo.showGenderOnProfile && userInfo.gender" class="text-xs text-slate-400 bg-pink-50 px-2 py-0.5 rounded">
-                  {{ userInfo.gender === 1 ? '男' : userInfo.gender === 2 ? '女' : '' }}
-                </span>
-                <span v-if="userInfo.province" class="text-xs text-slate-400 bg-blue-50 px-2 py-0.5 rounded">
-                  {{ userInfo.province }}
-                </span>
-                <span v-if="userInfo.ipLocation" class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                  IP属地: {{ userInfo.ipLocation }}
-                </span>
-              </div>
-            </div>
-            <!-- 关注按钮（非自己时显示） -->
-            <button
-              v-if="!isOwnProfile"
-              class="btn text-sm"
-              :class="userInfo.isFollowing ? 'btn-secondary' : 'btn-primary'"
-              @click="toggleFollow"
-            >
-              {{ userInfo.isFollowing ? '已关注' : '关注' }}
-            </button>
-          </div>
-          <p v-if="userInfo.bio" class="text-sm text-slate-500 mt-1">{{ userInfo.bio }}</p>
-          <div class="flex items-center space-x-4 mt-2 text-sm text-slate-500">
-            <NuxtLink :to="`/user/${userId}/following`" class="hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userInfo.followCount }}</strong> {{ '关注' }}
-            </NuxtLink>
-            <NuxtLink :to="`/user/${userId}/followers`" class="hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userInfo.followerCount }}</strong> {{ '粉丝' }}
-            </NuxtLink>
-            <span><strong class="text-slate-900">{{ userInfo.articleCount }}</strong> {{ '作品' }}</span>
-          </div>
+        <!-- 昵称 -->
+        <h2 class="text-base md:text-lg font-bold text-slate-900 mb-0.5">{{ userInfo.nickname }}</h2>
+
+        <!-- ID 和标签 -->
+        <div class="flex flex-wrap items-center justify-center gap-1 mb-1.5">
+          <span class="text-[11px] text-slate-400">知讯号: {{ userInfo.uid }}</span>
+          <span v-if="userInfo.showGenderOnProfile && userInfo.gender" class="text-[11px] text-slate-400">
+            · {{ userInfo.gender === 1 ? '男' : userInfo.gender === 2 ? '女' : '' }}
+          </span>
+          <span v-if="userInfo.province" class="text-[11px] text-slate-400">· {{ userInfo.province }}</span>
+          <span v-if="userInfo.ipLocation" class="text-[11px] text-slate-400">· IP: {{ userInfo.ipLocation }}</span>
         </div>
+
+        <!-- 简介 -->
+        <p v-if="userInfo.bio" class="text-[11px] text-slate-500 text-center mb-2 max-w-[280px] line-clamp-2">{{ userInfo.bio }}</p>
+
+        <!-- 统计数据行 -->
+        <div class="flex items-center justify-center gap-6 md:gap-8 mb-3">
+          <NuxtLink :to="`/user/${userId}`" class="flex flex-col items-center cursor-pointer hover:text-primary transition-colors">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userInfo.articleCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">作品</span>
+          </NuxtLink>
+          <div class="flex flex-col items-center">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userInfo.totalLikeCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">获赞</span>
+          </div>
+          <NuxtLink :to="`/user/${userId}/following`" class="flex flex-col items-center cursor-pointer hover:text-primary transition-colors">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userInfo.followCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">关注</span>
+          </NuxtLink>
+          <NuxtLink :to="`/user/${userId}/followers`" class="flex flex-col items-center cursor-pointer hover:text-primary transition-colors">
+            <span class="text-base md:text-lg font-bold text-slate-900">{{ userInfo.followerCount ?? 0 }}</span>
+            <span class="text-[10px] text-slate-400">粉丝</span>
+          </NuxtLink>
+        </div>
+
+        <!-- 关注按钮（非自己时显示） -->
+        <button
+          v-if="!isOwnProfile"
+          class="w-[200px] mx-auto text-center py-1.5 text-[13px] font-medium text-white rounded-md transition-colors"
+          :class="userInfo.isFollowing ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]'"
+          @click="toggleFollow"
+        >
+          {{ userInfo.isFollowing ? '已关注' : '+ 关注' }}
+        </button>
       </div>
     </div>
 
     <!-- 用户信息加载失败状态 -->
-    <div v-else-if="profileError" class="card p-6 mb-3 text-center">
+    <div v-else-if="profileError" class="pt-10 pb-6 px-3 text-center">
       <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
@@ -75,13 +73,17 @@
     </div>
 
     <!-- 用户信息加载中骨架屏 -->
-    <div v-else class="card p-3 mb-3 animate-pulse">
-      <div class="flex items-start space-x-3">
-        <div class="w-16 h-16 bg-slate-200 rounded-full shrink-0"></div>
-        <div class="flex-1 space-y-2">
-          <div class="h-5 bg-slate-200 rounded w-1/3"></div>
-          <div class="h-3 bg-slate-200 rounded w-1/4"></div>
-          <div class="h-3 bg-slate-200 rounded w-2/3"></div>
+    <div v-else class="pt-3 pb-2 px-3 animate-pulse">
+      <div class="flex flex-col items-center">
+        <div class="w-20 h-20 bg-slate-200 rounded-full mb-2"></div>
+        <div class="h-5 bg-slate-200 rounded w-24 mb-1"></div>
+        <div class="h-3 bg-slate-200 rounded w-32 mb-2"></div>
+        <div class="h-3 bg-slate-200 rounded w-48 mb-3"></div>
+        <div class="flex items-center gap-8">
+          <div v-for="i in 4" :key="i" class="flex flex-col items-center gap-1">
+            <div class="h-5 w-8 bg-slate-200 rounded"></div>
+            <div class="h-2 w-6 bg-slate-200 rounded"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -118,7 +120,6 @@
 import type { User, Article } from '~/types'
 
 const route = useRoute()
-const router = useRouter()
 const userStore = useUserStore()
 const userId = computed(() => Number(route.params.id))
 
@@ -149,15 +150,6 @@ const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     toast.style.transform = 'translateX(100%)'
     setTimeout(() => toast.remove(), 300)
   }, 2000)
-}
-
-// 返回上一页
-const goBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    navigateTo('/')
-  }
 }
 
 // 用户信息

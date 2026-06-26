@@ -2,8 +2,7 @@ package com.zhixun.service.impl;
 
 import com.zhixun.service.OpenSearchSyncService;
 import lombok.extern.slf4j.Slf4j;
-import org.opensearch.client.OpenSearchClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@ConditionalOnMissingBean(OpenSearchClient.class)
+@ConditionalOnProperty(name = "opensearch.enabled", havingValue = "false")
 public class NoOpOpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
     @Override

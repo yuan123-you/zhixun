@@ -1,0 +1,129 @@
+﻿[90m[[90mnuxt:tailwindcss[90m][39m [36mℹ[39m Using default Tailwind CSS file
+.nuxt/pwa-icons-plugin.ts(2,34): error TS2307: Cannot find module '#imports' or its corresponding type declarations.
+.nuxt/pwa-icons-plugin.ts(3,31): error TS2307: Cannot find module '#build/pwa-icons/pwa-icons' or its corresponding type declarations.
+api/ai.ts(13,46): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+api/ai.ts(17,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, any>'.
+components/DanmakuOverlay.vue(30,5): error TS2322: Type 'AxiosResponse<ApiResponse<Danmaku[]>, any, {}>' is not assignable to type 'Danmaku[] | { id: number; userId: number; userName: string; content: string; color: string; fontSize: string; position: number; timePoint: number; }[]'.
+components/GroupChatWindow.vue(68,21): error TS2322: Type 'AxiosResponse<ApiResponse<GroupMessage[]>, any, {}>' is not assignable to type 'GroupMessage[] | { id: number; groupId: number; senderId: number; senderName: string; senderAvatar: string; content: string; messageType: string; createdAt: string; }[]'.
+components/GroupChatWindow.vue(69,29): error TS2488: Type 'AxiosResponse<ApiResponse<GroupMessage[]>, any, {}>' must have a '[Symbol.iterator]()' method that returns an iterator.
+components/GroupChatWindow.vue(70,23): error TS2339: Property 'length' does not exist on type 'AxiosResponse<ApiResponse<GroupMessage[]>, any, {}>'.
+components/NotificationBell.vue(175,33): error TS2339: Property 'items' does not exist on type 'PageResult<Notification>'.
+components/RepostButton.vue(9,32): error TS18048: '__VLS_ctx.count' is possibly 'undefined'.
+components/SearchBar.vue(67,9): error TS2339: Property 'searchApi' does not exist on type '{ instance: AxiosInstance; get: <T = any>(url: string, params?: Record<string, any> | undefined, options?: AxiosRequestConfig<any> | undefined) => Promise<...>; post: <T = any>(url: string, data?: Record<...> | undefined, options?: AxiosRequestConfig<...> | undefined) => Promise<...>; put: <T = any>(url: string, dat...'.
+components/SearchBar.vue(153,29): error TS2339: Property 'cancel' does not exist on type 'PromisifyFn<(query: string) => Promise<void>>'.
+components/ShareDialog.vue(324,26): error TS2345: Argument of type '"link" | "weibo" | "qq"' is not assignable to parameter of type '"weibo" | "qq"'.
+  Type '"link"' is not assignable to type '"weibo" | "qq"'.
+components/ShareDialog.vue(406,33): error TS7016: Could not find a declaration file for module 'qrcode'. 'D:/zhixun/client/node_modules/qrcode/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/qrcode` if it exists or add a new declaration (.d.ts) file containing `declare module 'qrcode';`
+components/SharePoster.vue(110,33): error TS7016: Could not find a declaration file for module 'qrcode'. 'D:/zhixun/client/node_modules/qrcode/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/qrcode` if it exists or add a new declaration (.d.ts) file containing `declare module 'qrcode';`
+composables/useApi.ts(194,5): error TS2345: Argument of type '(response: AxiosResponse<ApiResponse>) => Promise<unknown> | AxiosResponse<ApiResponse<any>, any, {}>' is not assignable to parameter of type 'AxiosInterceptorFulfilled<AxiosResponse<any, any, {}>>'.
+  Type 'Promise<unknown> | AxiosResponse<ApiResponse<any>, any, {}>' is not assignable to type 'AxiosResponse<any, any, {}> | Promise<AxiosResponse<any, any, {}>>'.
+    Type 'Promise<unknown>' is not assignable to type 'AxiosResponse<any, any, {}> | Promise<AxiosResponse<any, any, {}>>'.
+      Type 'Promise<unknown>' is not assignable to type 'Promise<AxiosResponse<any, any, {}>>'.
+        Type 'unknown' is not assignable to type 'AxiosResponse<any, any, {}>'.
+composables/useAuth.ts(14,25): error TS2345: Argument of type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is not assignable to parameter of type 'User'.
+  Type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is missing the following properties from type 'User': bio, gender, birthday, followCount, and 5 more.
+composables/useAuth.ts(32,25): error TS2345: Argument of type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is not assignable to parameter of type 'User'.
+  Type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is missing the following properties from type 'User': bio, gender, birthday, followCount, and 5 more.
+composables/useDanmaku.ts(16,7): error TS2322: Type 'AxiosResponse<ApiResponse<Danmaku[]>, any, {}>' is not assignable to type 'Danmaku[] | { id: number; userId: number; userName: string; content: string; color: string; fontSize: string; position: number; timePoint: number; }[]'.
+composables/useOrientation.ts(40,34): error TS2339: Property 'lock' does not exist on type 'ScreenOrientation'.
+node_modules/@nuxt/image/dist/runtime/components/NuxtImg.vue(36,42): error TS2307: Cannot find module '#imports' or its corresponding type declarations.
+node_modules/@nuxt/image/dist/runtime/components/NuxtImg.vue(37,28): error TS2307: Cannot find module '#app/nuxt' or its corresponding type declarations.
+node_modules/@nuxt/image/dist/runtime/components/NuxtPicture.vue(37,42): error TS2307: Cannot find module '#imports' or its corresponding type declarations.
+node_modules/@nuxt/image/dist/runtime/components/NuxtPicture.vue(38,28): error TS2307: Cannot find module '#app/nuxt' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaAppleImage.vue(2,41): error TS2307: Cannot find module '#build/pwa-icons/PwaAppleImage' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaAppleImage.vue(3,33): error TS2307: Cannot find module '#pwa' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaAppleSplashScreenImage.vue(2,53): error TS2307: Cannot find module '#build/pwa-icons/PwaAppleSplashScreenImage' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaAppleSplashScreenImage.vue(3,45): error TS2307: Cannot find module '#pwa' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaFaviconImage.vue(2,43): error TS2307: Cannot find module '#build/pwa-icons/PwaFaviconImage' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaFaviconImage.vue(3,35): error TS2307: Cannot find module '#pwa' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaMaskableImage.vue(2,44): error TS2307: Cannot find module '#build/pwa-icons/PwaMaskableImage' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaMaskableImage.vue(3,36): error TS2307: Cannot find module '#pwa' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaTransparentImage.vue(2,47): error TS2307: Cannot find module '#build/pwa-icons/PwaTransparentImage' or its corresponding type declarations.
+node_modules/@vite-pwa/nuxt/dist/runtime/components/PwaTransparentImage.vue(3,39): error TS2307: Cannot find module '#pwa' or its corresponding type declarations.
+nuxt.config.ts(146,13): error TS2322: Type '{ manualChunks: { 'vendor-vue': string[]; 'vendor-utils': string[]; }; }' is not assignable to type 'OutputOptions | OutputOptions[] | undefined'.
+  Types of property 'manualChunks' are incompatible.
+    Object literal may only specify known properties, and ''vendor-vue'' does not exist in type 'ManualChunksFunction'.
+pages/discover/index.vue(6,21): error TS2322: Type '() => Promise<boolean>' is not assignable to type '() => Promise<void>'.
+  Type 'Promise<boolean>' is not assignable to type 'Promise<void>'.
+    Type 'boolean' is not assignable to type 'void'.
+pages/discover/index.vue(105,67): error TS2322: Type '() => Promise<User[]>' is not assignable to type '() => void | Promise<void>'.
+  Type 'Promise<User[]>' is not assignable to type 'void | Promise<void>'.
+    Type 'Promise<User[]>' is not assignable to type 'Promise<void>'.
+      Type 'User[]' is not assignable to type 'void'.
+pages/index.vue(3,21): error TS2322: Type '() => Promise<boolean>' is not assignable to type '() => Promise<void>'.
+  Type 'Promise<boolean>' is not assignable to type 'Promise<void>'.
+    Type 'boolean' is not assignable to type 'void'.
+pages/index.vue(33,12): error TS2345: Argument of type '{ disabled: boolean; class: string; onClick: (silent?: boolean) => Promise<boolean>; }' is not assignable to parameter of type 'ButtonHTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ disabled: boolean; class: string; onClick: (silent?: boolean) => Promise<boolean>; }' is not assignable to type 'ButtonHTMLAttributes'.
+    Types of property 'onClick' are incompatible.
+      Type '(silent?: boolean) => Promise<boolean>' is not assignable to type '(payload: PointerEvent) => void'.
+        Types of parameters 'silent' and 'payload' are incompatible.
+          Type 'PointerEvent' is not assignable to type 'boolean | undefined'.
+pages/index.vue(419,5): error TS2322: Type '{ 'X-SSR-Request': string; } | { 'X-SSR-Request'?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+  Type '{ 'X-SSR-Request'?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+    Type '{ 'X-SSR-Request'?: undefined; }' is not assignable to type 'Record<string, string>'.
+      Property ''X-SSR-Request'' is incompatible with index signature.
+        Type 'undefined' is not assignable to type 'string'.
+pages/messages/[id].vue(147,3): error TS2339: Property 'currentPage' does not exist on type 'ToRefs<Pick<{ conversations: Ref<{ id: number; user: { id: number; uid: string; uidUpdatedAt?: string | undefined; username: string; nickname: string; avatar: string; bio: string; email: string; phone: string; ... 14 more ...; createdAt: string; }; lastMessage: { ...; }; unreadCount: number; updatedAt: string; }[], ...'.
+pages/messages/index.vue(132,3): error TS2339: Property 'currentPage' does not exist on type 'ToRefs<Pick<{ conversations: Ref<{ id: number; user: { id: number; uid: string; uidUpdatedAt?: string | undefined; username: string; nickname: string; avatar: string; bio: string; email: string; phone: string; ... 14 more ...; createdAt: string; }; lastMessage: { ...; }; unreadCount: number; updatedAt: string; }[], ...'.
+pages/notifications/index.vue(249,50): error TS2339: Property 'items' does not exist on type 'PageResult<Message>'.
+pages/search/index.vue(15,10): error TS2345: Argument of type '{ placeholder: string; class: string; ref: string; value: string; type: "text"; onKeydown: (loadMore?: boolean) => Promise<void>; onInput: () => void; }' is not assignable to parameter of type 'InputHTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ placeholder: string; class: string; ref: string; value: string; type: "text"; onKeydown: (loadMore?: boolean) => Promise<void>; onInput: () => void; }' is not assignable to type 'InputHTMLAttributes'.
+    Types of property 'onKeydown' are incompatible.
+      Type '(loadMore?: boolean) => Promise<void>' is not assignable to type '(payload: KeyboardEvent) => void'.
+        Types of parameters 'loadMore' and 'payload' are incompatible.
+          Type 'KeyboardEvent' is not assignable to type 'boolean | undefined'.
+pages/search/index.vue(32,10): error TS2345: Argument of type '{ class: string; onClick: (loadMore?: boolean) => Promise<void>; }' is not assignable to parameter of type 'ButtonHTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ class: string; onClick: (loadMore?: boolean) => Promise<void>; }' is not assignable to type 'ButtonHTMLAttributes'.
+    Types of property 'onClick' are incompatible.
+      Type '(loadMore?: boolean) => Promise<void>' is not assignable to type '(payload: PointerEvent) => void'.
+        Types of parameters 'loadMore' and 'payload' are incompatible.
+          Type 'PointerEvent' is not assignable to type 'boolean | undefined'.
+pages/topics/[id]/index.vue(61,5): error TS2322: Type 'AxiosResponse<ApiResponse<Topic>, any, {}>' is not assignable to type 'Topic | { id: number; name: string; description: string; coverImage: string; articleCount: number; followCount: number; hotScore: number; isOfficial: number; isFollowed: boolean; } | null'.
+pages/topics/[id]/index.vue(63,26): error TS2339: Property 'list' does not exist on type 'AxiosResponse<ApiResponse<PageResult<Article>>, any, {}>'.
+pages/topics/index.vue(118,24): error TS2339: Property 'list' does not exist on type 'AxiosResponse<ApiResponse<PageResult<Topic>>, any, {}>'.
+pages/topics/index.vue(119,38): error TS2339: Property 'total' does not exist on type 'AxiosResponse<ApiResponse<PageResult<Topic>>, any, {}>'.
+pages/user/[id].vue(204,64): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/[id].vue(254,39): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/[id].vue(275,42): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/[id]/followers.vue(58,48): error TS2339: Property 'items' does not exist on type 'PageResult<FollowUser>'.
+pages/user/[id]/following.vue(55,48): error TS2339: Property 'items' does not exist on type 'PageResult<FollowUser>'.
+pages/user/followers.vue(66,11): error TS2430: Interface 'FollowUser' incorrectly extends interface 'User'.
+  Types of property 'isFollowing' are incompatible.
+    Type 'boolean | undefined' is not assignable to type 'boolean'.
+      Type 'undefined' is not assignable to type 'boolean'.
+pages/user/following.vue(62,11): error TS2430: Interface 'FollowUser' incorrectly extends interface 'User'.
+  Types of property 'isFollowing' are incompatible.
+    Type 'boolean | undefined' is not assignable to type 'boolean'.
+      Type 'undefined' is not assignable to type 'boolean'.
+pages/user/index.vue(9,73): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+pages/user/index.vue(419,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(427,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(435,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(443,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(451,48): error TS2339: Property 'items' does not exist on type 'PageResult<Comment>'.
+pages/user/index.vue(459,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(485,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(493,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(501,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(509,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/index.vue(517,48): error TS2339: Property 'items' does not exist on type 'PageResult<Comment>'.
+pages/user/index.vue(525,48): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+pages/user/settings.vue(257,11): error TS2322: Type 'string' is not assignable to type '"small" | "medium" | "large"'.
+plugins/api.ts(36,29): error TS2345: Argument of type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is not assignable to parameter of type 'User'.
+  Type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is missing the following properties from type 'User': bio, gender, birthday, followCount, and 5 more.
+plugins/api.ts(88,12): error TS2352: Conversion of type '{ get: <T = any>(url: string, params?: Record<string, any>, options?: AxiosRequestConfig) => Promise<AxiosResponse<ApiResponse<T>, any, {}>>; post: <T = any>(url: string, data?: Record<string, any>, options?: AxiosRequestConfig) => Promise<...>; put: <T = any>(url: string, data?: Record<string, any>, options?: Axios...' to type 'Record<string, <T = any>(url: string, data?: any, options?: any) => Promise<ApiResponse<T>>>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'get' is incompatible with index signature.
+    Type '<T = any>(url: string, params?: Record<string, any>, options?: AxiosRequestConfig) => Promise<AxiosResponse<ApiResponse<T>, any, {}>>' is not comparable to type '<T = any>(url: string, data?: any, options?: any) => Promise<ApiResponse<T>>'.
+      Type 'Promise<AxiosResponse<ApiResponse<any>, any, {}>>' is not comparable to type 'Promise<ApiResponse<any>>'.
+        Type 'AxiosResponse<ApiResponse<any>, any, {}>' is missing the following properties from type 'ApiResponse<any>': code, message
+stores/group.ts(15,26): error TS2339: Property 'list' does not exist on type 'AxiosResponse<ApiResponse<PageResult<GroupInfo>>, any, {}>'.
+stores/group.ts(22,7): error TS2322: Type 'AxiosResponse<ApiResponse<GroupInfo>, any, {}>' is not assignable to type 'GroupInfo | { id: number; name: string; avatar: string; description: string; ownerId: number; ownerName: string; memberCount: number; maxMembers: number; isPublic: number; myRole: number; joinedAt: string; } | null'.
+stores/group.ts(30,25): error TS2322: Type 'AxiosResponse<ApiResponse<GroupMessage[]>, any, {}>' is not assignable to type 'GroupMessage[] | { id: number; groupId: number; senderId: number; senderName: string; senderAvatar: string; content: string; messageType: string; createdAt: string; }[]'.
+stores/group.ts(31,33): error TS2488: Type 'AxiosResponse<ApiResponse<GroupMessage[]>, any, {}>' must have a '[Symbol.iterator]()' method that returns an iterator.
+stores/incentive.ts(20,7): error TS2322: Type 'AxiosResponse<ApiResponse<CheckInStatus>, any, {}>' is not assignable to type 'CheckInStatus | { hasCheckedIn: boolean; consecutiveDays: number; todayPoints: number; totalExp: number; level: number; levelName: string; } | null'.
+stores/incentive.ts(28,7): error TS2322: Type 'AxiosResponse<ApiResponse<CheckInStatus>, any, {}>' is not assignable to type 'CheckInStatus | { hasCheckedIn: boolean; consecutiveDays: number; todayPoints: number; totalExp: number; level: number; levelName: string; } | null'.
+stores/incentive.ts(38,7): error TS2322: Type 'AxiosResponse<ApiResponse<Badge[]>, any, {}>' is not assignable to type 'Badge[] | { id: number; name: string; description: string; icon: string; category: string; isOwned: boolean; earnedAt?: string | undefined; }[]'.
+stores/incentive.ts(45,7): error TS2322: Type 'AxiosResponse<ApiResponse<Badge[]>, any, {}>' is not assignable to type 'Badge[] | { id: number; name: string; description: string; icon: string; category: string; isOwned: boolean; earnedAt?: string | undefined; }[]'.

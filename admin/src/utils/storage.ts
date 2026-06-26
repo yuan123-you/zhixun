@@ -170,6 +170,8 @@ export const TTL = {
   DAY_1: 24 * 60 * 60 * 1000,
   DAY_7: 7 * 24 * 60 * 60 * 1000,
   DAY_30: 30 * 24 * 60 * 60 * 1000,
+  /** 永不过期（语义化常量，实际传入时不设 TTL） */
+  PERMANENT: undefined as unknown as number,
 } as const
 
 /** 管理端本地存储键名常量 */
@@ -180,6 +182,8 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   /** Token 过期时间戳（毫秒），用于判断是否需要提前刷新 */
   TOKEN_EXPIRES_AT: 'token_expires_at',
+  /** 用户信息摘要，用于刷新后快速恢复登录态 */
+  USER_INFO: 'user_info',
   /** 用户权限 */
   USER_PERMISSIONS: 'user_permissions',
   /** 侧边栏折叠状态 */

@@ -130,6 +130,16 @@ public class UserServiceImpl implements UserService {
             user.setBio(request.getBio());
         }
 
+        // 更新性别
+        if (request.getGender() != null) {
+            user.setGender(request.getGender());
+        }
+
+        // 更新性别展示开关
+        if (request.getShowGenderOnProfile() != null) {
+            user.setShowGenderOnProfile(request.getShowGenderOnProfile() ? 1 : 0);
+        }
+
         // 更新所属省份
         if (request.getProvince() != null) {
             user.setProvince(request.getProvince());
@@ -557,6 +567,8 @@ public class UserServiceImpl implements UserService {
         vo.setFollowerCount(user.getFollowerCount());
         vo.setArticleCount(user.getArticleCount());
         vo.setBio(user.getBio());
+        vo.setGender(user.getGender());
+        vo.setShowGenderOnProfile(user.getShowGenderOnProfile() != null && user.getShowGenderOnProfile() == 1);
         vo.setProvince(user.getProvince());
         vo.setIpLocation(user.getIpLocation());
 

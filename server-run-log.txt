@@ -1,0 +1,115 @@
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective settings
+[WARNING] Unrecognised tag: 'url' (position: START_TAG seen ...</mirror>\n    -->\n    <url>... @160:10)  @ D:\apache-maven-3.9.14-bin\apache-maven-3.9.14\conf\settings.xml, line 160, column 10
+[WARNING] 
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.zhixun:zhixun-server >----------------------
+[INFO] Building zhixun-server 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.5:run (default-cli) > test-compile @ zhixun-server >>>
+[INFO] 
+[INFO] --- jacoco:0.8.11:prepare-agent (default) @ zhixun-server ---
+[INFO] argLine set to -javaagent:C:\\Users\\��Դ\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.11\\org.jacoco.agent-0.8.11-runtime.jar=destfile=d:\\zhixun\\server\\target\\jacoco.exec
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ zhixun-server ---
+[INFO] Copying 5 resources from src\main\resources to target\classes
+[INFO] Copying 20 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ zhixun-server ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ zhixun-server ---
+[INFO] skip non existing resourceDirectory d:\zhixun\server\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ zhixun-server ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.2.5:run (default-cli) < test-compile @ zhixun-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.5:run (default-cli) @ zhixun-server ---
+[INFO] Attaching agents: []
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2026-06-26 14:31:59.759  INFO 9964 --- [zhixun-server] [           main] com.zhixun.ZhixunApplication             : Starting ZhixunApplication using Java 21.0.1 with PID 9964 (D:\zhixun\server\target\classes started by youyuan in d:\zhixun\server)
+2026-06-26 14:31:59.760 DEBUG 9964 --- [zhixun-server] [           main] com.zhixun.ZhixunApplication             : Running with Spring Boot v3.2.5, Spring v6.1.6
+2026-06-26 14:31:59.760  INFO 9964 --- [zhixun-server] [           main] com.zhixun.ZhixunApplication             : The following 1 profile is active: "dev"
+2026-06-26 14:32:01.082  INFO 9964 --- [zhixun-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-06-26 14:32:01.085  INFO 9964 --- [zhixun-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-06-26 14:32:01.142  INFO 9964 --- [zhixun-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 45 ms. Found 0 Redis repository interfaces.
+2026-06-26 14:32:02.229  INFO 9964 --- [zhixun-server] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-06-26 14:32:02.241  INFO 9964 --- [zhixun-server] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-26 14:32:02.242  INFO 9964 --- [zhixun-server] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20]
+2026-06-26 14:32:02.353  INFO 9964 --- [zhixun-server] [           main] o.a.c.c.C.[Tomcat].[localhost].[/api]    : Initializing Spring embedded WebApplicationContext
+2026-06-26 14:32:02.354  INFO 9964 --- [zhixun-server] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2554 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+2026-06-26 14:32:02.524  INFO 9964 --- [zhixun-server] [           main] com.zhixun.common.util.JwtUtil           : JWT Access Secret 验证通过，密钥长度：44 字节（352 位）
+2026-06-26 14:32:02.525  INFO 9964 --- [zhixun-server] [           main] com.zhixun.common.util.JwtUtil           : JWT Refresh Secret 验证通过，密钥长度：45 字节（360 位）
+2026-06-26 14:32:02.907 DEBUG 9964 --- [zhixun-server] [           main] c.z.security.JwtAuthenticationFilter     : Filter 'jwtAuthenticationFilter' configured for use
+2026-06-26 14:32:02.908 DEBUG 9964 --- [zhixun-server] [           main] com.zhixun.security.XssFilter            : Filter 'xssFilter' configured for use
+2026-06-26 14:32:02.908 DEBUG 9964 --- [zhixun-server] [           main] c.zhixun.security.SecurityHeadersFilter  : Filter 'securityHeadersFilter' configured for use
+2026-06-26 14:32:02.908 DEBUG 9964 --- [zhixun-server] [           main] com.zhixun.security.CsrfFilter           : Filter 'csrfFilter' configured for use
+2026-06-26 14:32:02.931  INFO 9964 --- [zhixun-server] [           main] com.zhixun.common.util.AesUtil           : AES 密钥配置验证通过，密钥字符串长度：31 字节，哈希后长度：32 字节（256 位）
+2026-06-26 14:32:02.969  INFO 9964 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 初始化主库数据源
+2026-06-26 14:32:02.995  INFO 9964 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 初始化从库数据源
+2026-06-26 14:32:03.009  INFO 9964 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 动态数据源配置完成 - 主从读写分离已启用
+2026-06-26 14:32:03.035 DEBUG 9964 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 14:32:03.035  INFO 9964 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-26 14:32:03.184  INFO 9964 --- [zhixun-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2fb70301
+2026-06-26 14:32:03.186  INFO 9964 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+Logging initialized using 'class org.apache.ibatis.logging.stdout.StdOutImpl' adapter.
+Initialization Sequence datacenterId:0 workerId:14
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.5.5 
+INFO: Sentinel log output type is: file
+INFO: Sentinel log charset is: utf-8
+INFO: Sentinel log base directory is: C:\Users\��Դ\logs\csp\
+INFO: Sentinel log name use pid is: false
+INFO: Sentinel log level is: INFO
+2026-06-26 14:32:04.386  INFO 9964 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : 加载限流规则 10 条
+2026-06-26 14:32:04.394  INFO 9964 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : 加载熔断规则 7 条
+2026-06-26 14:32:04.398  INFO 9964 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : 加载系统保护规则 5 条
+2026-06-26 14:32:04.398  INFO 9964 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : Sentinel 限流熔断规则初始化完成
+2026-06-26 14:32:04.901  WARN 9964 --- [zhixun-server] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'adminController' defined in file [D:\zhixun\server\target\classes\com\zhixun\controller\AdminController.class]: Unsatisfied dependency expressed through constructor parameter 3: No qualifying bean of type 'com.zhixun.service.OpenSearchSyncService' available: expected single matching bean but found 2: noOpOpenSearchSyncServiceImpl,openSearchSyncServiceImpl
+2026-06-26 14:32:04.906  INFO 9964 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-06-26 14:32:04.912  INFO 9964 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-06-26 14:32:04.923  INFO 9964 --- [zhixun-server] [           main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+2026-06-26 14:32:04.935  INFO 9964 --- [zhixun-server] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-06-26 14:32:04.953 ERROR 9964 --- [zhixun-server] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 3 of constructor in com.zhixun.controller.AdminController required a single bean, but 2 were found:
+	- noOpOpenSearchSyncServiceImpl: defined in file [D:\zhixun\server\target\classes\com\zhixun\service\impl\NoOpOpenSearchSyncServiceImpl.class]
+	- openSearchSyncServiceImpl: defined in file [D:\zhixun\server\target\classes\com\zhixun\service\impl\OpenSearchSyncServiceImpl.class]
+
+This may be due to missing parameter name information
+
+Action:
+
+Consider marking one of the beans as @Primary, updating the consumer to accept multiple beans, or using @Qualifier to identify the bean that should be consumed
+
+Ensure that your compiler is configured to use the '-parameters' flag.
+You may need to update both your build tool settings as well as your IDE.
+(See https://github.com/spring-projects/spring-framework/wiki/Upgrading-to-Spring-Framework-6.x#parameter-name-retention)
+
+

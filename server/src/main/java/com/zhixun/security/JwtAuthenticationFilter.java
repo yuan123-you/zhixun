@@ -6,7 +6,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,10 +44,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Value("${jwt.blacklist-prefix:jwt:blacklist:}")
     private String blacklistPrefix;
 
+    /**
+     * 公开认证端点：JWT 认证过滤器不应在这些端点上设置已认证的 SecurityContext。
+     * 原因：用户可能携带旧的 JWT Token 访问登录/注册接口，
+     * 若 JWT 过滤器将其认证，Spring Security 的内部授权逻辑可能拒绝已认证用户访问 permitAll() 端点，
+     * 导致返回 403 而非正常的登录/注册响应。
+     */
+    private static final String[] AUTH_PUBLIC_PATHS = {
+            "/v1/auth/login",
+            "/v1/auth/register",
+            "/v1/auth/refresh",
+            "/v1/auth/send-code",
+            "/v1/auth/graph-captcha",
+            "/v1/auth/forgot-password",
+    };
+
     public JwtAuthenticationFilter(JwtUtil jwtUtil,
                                    @Autowired(required = false) StringRedisTemplate stringRedisTemplate) {
         this.jwtUtil = jwtUtil;
         this.stringRedisTemplate = stringRedisTemplate;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        // 对于公开认证端点，跳过 JWT 认证处理
+        // 这样已登录用户的旧 Token 不会干扰登录/注册流程
+        String servletPath = request.getServletPath();
+        for (String authPath : AUTH_PUBLIC_PATHS) {
+            if (authPath.equals(servletPath)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

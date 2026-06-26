@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - img [ref=e9]
+      - textbox "搜索作品、用户..." [ref=e11]
+      - button "搜索" [ref=e13] [cursor=pointer]
+  - generic [ref=e16]:
+    - img [ref=e18]:
+      - generic [ref=e20]: 知
+    - generic [ref=e21]: 知讯
+    - generic [ref=e22]: 发现优质内容，分享知识与见解

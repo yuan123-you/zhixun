@@ -33,4 +33,10 @@ public class LoginUserVO implements Serializable {
 
     /** 权限列表 */
     private List<String> permissions;
+
+    /** 邮箱（解密后明文） */
+    private String email;
+
+    /** 手机号（解密后明文） */
+    private String phone;
 }

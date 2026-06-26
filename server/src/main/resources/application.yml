@@ -108,6 +108,9 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
     default-property-inclusion: non_null
+    deserialization:
+      # 将空字符串视为 null，避免 Long/String 类型反序列化失败
+      ACCEPT_EMPTY_STRING_AS_NULL_OBJECT: true
 
   # 文件上传配置
   servlet:
@@ -115,19 +118,19 @@ spring:
       max-file-size: 10MB
       max-request-size: 20MB
 
-# MyBatis-Plus 配置
+# MyBatis-Plus 配置（具体环境的 log-impl 请在对应 profile 中覆盖）
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.zhixun.entity
   configuration:
     # 驼峰映射
     map-underscore-to-camel-case: true
-    # 开启二级缓存
-    cache-enabled: true
+    # 关闭二级缓存（项目使用 Spring Cache 多级缓存体系，MyBatis 二级缓存未启用且易造成数据不一致）
+    cache-enabled: false
     # 复用预处理语句
     default-executor-type: REUSE
-    # 日志输出（开发环境使用 StdOutImpl，生产环境请改为 NoLoggingImpl 或 Slf4jImpl）
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # SQL 日志：各 profile 自行覆盖；基配置默认关闭（生产安全）
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     db-config:
       # 主键策略 - 自增
@@ -136,11 +139,13 @@ mybatis-plus:
       # table-prefix: t_
 
 # JWT 配置
+# ⚠️ 生产环境必须通过环境变量注入密钥，禁止使用默认值
 jwt:
   # 访问令牌密钥（至少32字节，Base64编码）
-  access-secret: ${JWT_ACCESS_SECRET:sdOJgjRUoN/+6k2rJMlZOilv1uTKJfQJ9uoG/8fmPok=}
+  # 生成命令：openssl rand -base64 32
+  access-secret: ${JWT_ACCESS_SECRET:}
   # 刷新令牌密钥（至少32字节，Base64编码）
-  refresh-secret: ${JWT_REFRESH_SECRET:STApEN/Ne/o9C+g7A8CnMM31+ChzquUR8GFXH97l7v4=}
+  refresh-secret: ${JWT_REFRESH_SECRET:}
   # 访问令牌过期时间（秒）- 2小时
   access-expiration: ${JWT_ACCESS_EXPIRATION:7200}
   # 刷新令牌过期时间（秒）- 7天
@@ -151,14 +156,17 @@ jwt:
   header-string: Authorization
 
 # AES 加密配置（密钥必须精确 32 字节，Base64 编码）
+# ⚠️ 生产环境必须通过环境变量注入密钥，禁止使用默认值
+# 生成命令：openssl rand -base64 32
 aes:
-  secret-key: ${AES_SECRET_KEY:AMF+MWnL9m0KZLx8b5rV778ntzrsQ7pnBzf4kF94py0=}
+  secret-key: ${AES_SECRET_KEY:}
 
 # SSR 服务端通信配置
 ssr:
   # SSR 服务端通信密钥：用于 Nuxt SSR 发起 POST 等状态变更请求时替代 CSRF Token
   # 仅在服务端环境变量中配置，不暴露给浏览器端，防止 CSRF 攻击
   # Nuxt SSR 请求时通过 X-SSR-Secret 请求头携带此密钥
+  # ⚠️ 生产环境必须通过环境变量注入，禁止为空
   secret: ${SSR_SECRET:}
 
 # OAuth 第三方登录配置
@@ -207,6 +215,15 @@ sentinel:
 # 应用配置
 app:
   data-version: ${APP_DATA_VERSION:20250625}
+  # 知讯官方账号ID（新用户注册后将自动关注该账号并接收欢迎消息）
+  official-account-id: ${OFFICIAL_ACCOUNT_ID:0}
+# 智谱AI 配置 (ZhiPuAI glm-4.7-flash)
+zhixun:
+  ai:
+    api-key: ${ZHIPU_API_KEY:}
+    base-url: ${ZHIPU_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
+    model: ${ZHIPU_MODEL:glm-4.7-flash}
+
 logging:
   level:
     root: INFO

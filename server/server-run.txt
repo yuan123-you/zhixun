@@ -1,0 +1,530 @@
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective settings
+[WARNING] Unrecognised tag: 'url' (position: START_TAG seen ...</mirror>\n    -->\n    <url>... @160:10)  @ D:\apache-maven-3.9.14-bin\apache-maven-3.9.14\conf\settings.xml, line 160, column 10
+[WARNING] 
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.zhixun:zhixun-server >----------------------
+[INFO] Building zhixun-server 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.5:run (default-cli) > test-compile @ zhixun-server >>>
+[INFO] 
+[INFO] --- jacoco:0.8.11:prepare-agent (default) @ zhixun-server ---
+[INFO] argLine set to -javaagent:C:\\Users\\��Դ\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.11\\org.jacoco.agent-0.8.11-runtime.jar=destfile=d:\\zhixun\\server\\target\\jacoco.exec
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ zhixun-server ---
+[INFO] Copying 5 resources from src\main\resources to target\classes
+[INFO] Copying 20 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ zhixun-server ---
+[INFO] Changes detected - recompiling the module! :input tree
+[INFO] Compiling 358 source files with javac [debug release 17] to target\classes
+[INFO] ��������·���з�����һ�����������������������
+  ��ע������δ�����а�� javac ���ܻ������ע������
+  �������ٰ�����ָ����һ���������� (-processor)��
+  ��ָ��������·�� (--processor-path, --processor-module-path)��
+  ����ʽ��������ע���� (-proc:only, -proc:full)��
+  ��ʹ�� -Xlint:-options ���ش���Ϣ��
+  ��ʹ�� -proc:none ������ע������
+[INFO] /d:/zhixun/server/src/main/java/com/zhixun/service/impl/AIServiceImpl.java: ĳЩ�����ļ�ʹ����δ�����򲻰�ȫ�Ĳ�����
+[INFO] /d:/zhixun/server/src/main/java/com/zhixun/service/impl/AIServiceImpl.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:unchecked ���±��롣
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ zhixun-server ---
+[INFO] skip non existing resourceDirectory d:\zhixun\server\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ zhixun-server ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.2.5:run (default-cli) < test-compile @ zhixun-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.5:run (default-cli) @ zhixun-server ---
+[INFO] Attaching agents: []
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2026-06-26 22:18:59.518  INFO 26516 --- [zhixun-server] [           main] com.zhixun.ZhixunApplication             : Starting ZhixunApplication using Java 21.0.1 with PID 26516 (D:\zhixun\server\target\classes started by youyuan in d:\zhixun\server)
+2026-06-26 22:18:59.520 DEBUG 26516 --- [zhixun-server] [           main] com.zhixun.ZhixunApplication             : Running with Spring Boot v3.2.5, Spring v6.1.6
+2026-06-26 22:18:59.520  INFO 26516 --- [zhixun-server] [           main] com.zhixun.ZhixunApplication             : The following 1 profile is active: "local"
+2026-06-26 22:19:01.051  INFO 26516 --- [zhixun-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-06-26 22:19:01.053  INFO 26516 --- [zhixun-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-06-26 22:19:01.111  INFO 26516 --- [zhixun-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 45 ms. Found 0 Redis repository interfaces.
+2026-06-26 22:19:02.337  INFO 26516 --- [zhixun-server] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-06-26 22:19:02.352  INFO 26516 --- [zhixun-server] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-26 22:19:02.352  INFO 26516 --- [zhixun-server] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20]
+2026-06-26 22:19:02.484  INFO 26516 --- [zhixun-server] [           main] o.a.c.c.C.[Tomcat].[localhost].[/api]    : Initializing Spring embedded WebApplicationContext
+2026-06-26 22:19:02.485  INFO 26516 --- [zhixun-server] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2918 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+2026-06-26 22:19:02.676  INFO 26516 --- [zhixun-server] [           main] com.zhixun.common.util.JwtUtil           : JWT Access Secret 验证通过，密钥长度：35 字节（280 位）
+2026-06-26 22:19:02.677  INFO 26516 --- [zhixun-server] [           main] com.zhixun.common.util.JwtUtil           : JWT Refresh Secret 验证通过，密钥长度：36 字节（288 位）
+2026-06-26 22:19:03.084 DEBUG 26516 --- [zhixun-server] [           main] c.z.security.JwtAuthenticationFilter     : Filter 'jwtAuthenticationFilter' configured for use
+2026-06-26 22:19:03.085 DEBUG 26516 --- [zhixun-server] [           main] com.zhixun.security.XssFilter            : Filter 'xssFilter' configured for use
+2026-06-26 22:19:03.086 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.security.SecurityHeadersFilter  : Filter 'securityHeadersFilter' configured for use
+2026-06-26 22:19:03.086 DEBUG 26516 --- [zhixun-server] [           main] com.zhixun.security.CsrfFilter           : Filter 'csrfFilter' configured for use
+2026-06-26 22:19:03.110  INFO 26516 --- [zhixun-server] [           main] com.zhixun.common.util.AesUtil           : AES 密钥配置验证通过，密钥字符串长度：29 字节，哈希后长度：32 字节（256 位）
+2026-06-26 22:19:03.148  INFO 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 初始化主库数据源
+2026-06-26 22:19:03.174  INFO 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 初始化从库数据源
+2026-06-26 22:19:03.184  INFO 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 动态数据源配置完成 - 主从读写分离已启用
+2026-06-26 22:19:03.204 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:03.205  INFO 26516 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-26 22:19:03.361  INFO 26516 --- [zhixun-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@247dcbba
+2026-06-26 22:19:03.363  INFO 26516 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.5.5 
+INFO: Sentinel log output type is: file
+INFO: Sentinel log charset is: utf-8
+INFO: Sentinel log base directory is: C:\Users\��Դ\logs\csp\
+INFO: Sentinel log name use pid is: false
+INFO: Sentinel log level is: INFO
+2026-06-26 22:19:04.405  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : 加载限流规则 10 条
+2026-06-26 22:19:04.412  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : 加载熔断规则 7 条
+2026-06-26 22:19:04.416  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : 加载系统保护规则 5 条
+2026-06-26 22:19:04.416  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.SentinelConfig         : Sentinel 限流熔断规则初始化完成
+2026-06-26 22:19:06.688  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.LocalResourceConfig    : 已配置本地文件存储静态资源映射: /uploads/** -> ./uploads/
+2026-06-26 22:19:06.856  INFO 26516 --- [zhixun-server] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint(s) beneath base path '/actuator'
+2026-06-26 22:19:06.965  INFO 26516 --- [zhixun-server] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1df60140, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@62d4dac4, org.springframework.security.web.context.SecurityContextHolderFilter@502dc93a, org.springframework.security.web.header.HeaderWriterFilter@5653429e, org.springframework.web.filter.CorsFilter@31dbf5bb, org.springframework.security.web.authentication.logout.LogoutFilter@318ca53a, com.zhixun.security.SecurityHeadersFilter@34fc315d, com.zhixun.security.JwtAuthenticationFilter@2cebf82f, com.zhixun.security.CsrfFilter@6697f3d, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@3dc5eb8f, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@68fec965, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@11efa76e, org.springframework.security.web.session.SessionManagementFilter@1a9e2c3b, org.springframework.security.web.access.ExceptionTranslationFilter@1b4bc7b9, org.springframework.security.web.access.intercept.AuthorizationFilter@58df431e]
+2026-06-26 22:19:07.863 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:07.863 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:07.868 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:07.868 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:07.895  INFO 26516 --- [zhixun-server] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/api'
+2026-06-26 22:19:07.897  INFO 26516 --- [zhixun-server] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-06-26 22:19:07.897  INFO 26516 --- [zhixun-server] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@6bc45472]]
+2026-06-26 22:19:07.897  INFO 26516 --- [zhixun-server] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-06-26 22:19:07.898  INFO 26516 --- [zhixun-server] [           main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-06-26 22:19:07.948  INFO 26516 --- [zhixun-server] [           main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#1bc1aa9e:0/SimpleConnection@69a8191e [delegate=amqp://guest@127.0.0.1:5672/, localPort=60573]
+2026-06-26 22:19:08.010  INFO 26516 --- [zhixun-server] [           main] com.zhixun.ZhixunApplication             : Started ZhixunApplication in 8.965 seconds (process running for 9.612)
+2026-06-26 22:19:08.155 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:08.188  INFO 26516 --- [zhixun-server] [           main] c.z.config.DefaultUserDataInitializer    : 管理员账号 admin 已存在，跳过初始化
+2026-06-26 22:19:08.188  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : 开始缓存预热...
+2026-06-26 22:19:08.189  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [同步预热] 开始加载核心元数据缓存...
+2026-06-26 22:19:08.192 DEBUG 26516 --- [zhixun-server] [           main] com.zhixun.config.DataSourceAspect       : 方法 tree 为读操作，自动切换到从库
+2026-06-26 22:19:08.196 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:08.212  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [预热] 分类树缓存加载完成
+2026-06-26 22:19:08.213 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:08.216  INFO 26516 --- [zhixun-server] [           main] c.zhixun.common.util.SensitiveWordUtil   : 从数据库加载敏感词库，共 20 个敏感词
+2026-06-26 22:19:08.216 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:08.217  INFO 26516 --- [zhixun-server] [           main] c.zhixun.common.util.SensitiveWordUtil   : 从数据库加载敏感词库，共 20 个敏感词
+2026-06-26 22:19:08.218  INFO 26516 --- [zhixun-server] [           main] c.zhixun.common.util.SensitiveWordUtil   : DFA 字典树构建完成，共 20 个敏感词
+2026-06-26 22:19:08.218  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [预热] 敏感词库缓存及 DFA 字典树加载完成
+2026-06-26 22:19:08.218  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [同步预热] 核心元数据缓存加载完成，耗时: 29ms
+2026-06-26 22:19:08.218  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : 缓存已就绪，开始接收流量
+2026-06-26 22:19:08.218 DEBUG 26516 --- [zhixun-server] [           main] com.zhixun.config.DataSourceAspect       : 方法 hot 为读操作，自动切换到从库
+2026-06-26 22:19:08.219 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:08.221  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [异步预热] 热门标签缓存加载完成
+2026-06-26 22:19:08.221  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [异步预热] 热门作品缓存区域已初始化
+2026-06-26 22:19:08.221  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [异步预热] 热门作品缓存加载完成
+2026-06-26 22:19:08.546 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:08.556 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 1
+2026-06-26 22:19:08.559 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 2
+2026-06-26 22:19:08.562 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 3
+2026-06-26 22:19:08.565 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 4
+2026-06-26 22:19:08.567 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 5
+2026-06-26 22:19:08.570 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 6
+2026-06-26 22:19:08.572 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 7
+2026-06-26 22:19:08.574 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 8
+2026-06-26 22:19:08.577 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 9
+2026-06-26 22:19:08.579 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 10
+2026-06-26 22:19:08.581 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 11
+2026-06-26 22:19:08.583 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 12
+2026-06-26 22:19:08.585 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 13
+2026-06-26 22:19:08.588 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 14
+2026-06-26 22:19:08.589 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 15
+2026-06-26 22:19:08.593 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 16
+2026-06-26 22:19:08.595 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 17
+2026-06-26 22:19:08.598 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 18
+2026-06-26 22:19:08.600 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 19
+2026-06-26 22:19:08.604 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 20
+2026-06-26 22:19:08.606 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 21
+2026-06-26 22:19:08.608 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 22
+2026-06-26 22:19:08.609 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 23
+2026-06-26 22:19:08.611 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 24
+2026-06-26 22:19:08.613 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 25
+2026-06-26 22:19:08.615 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 26
+2026-06-26 22:19:08.618 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 27
+2026-06-26 22:19:08.620 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 28
+2026-06-26 22:19:08.622 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 29
+2026-06-26 22:19:08.623 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 30
+2026-06-26 22:19:08.625 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 31
+2026-06-26 22:19:08.627 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 32
+2026-06-26 22:19:08.628 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 33
+2026-06-26 22:19:08.630 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 34
+2026-06-26 22:19:08.633 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 35
+2026-06-26 22:19:08.636 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 36
+2026-06-26 22:19:08.638 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 37
+2026-06-26 22:19:08.640 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 38
+2026-06-26 22:19:08.642 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 39
+2026-06-26 22:19:08.643 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 40
+2026-06-26 22:19:08.645 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 41
+2026-06-26 22:19:08.647 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 42
+2026-06-26 22:19:08.648 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 43
+2026-06-26 22:19:08.650 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 44
+2026-06-26 22:19:08.652 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 45
+2026-06-26 22:19:08.654 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 46
+2026-06-26 22:19:08.655 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 47
+2026-06-26 22:19:08.657 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 48
+2026-06-26 22:19:08.659 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 49
+2026-06-26 22:19:08.661 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 50
+2026-06-26 22:19:08.663 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 51
+2026-06-26 22:19:08.664 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 52
+2026-06-26 22:19:08.666 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 53
+2026-06-26 22:19:08.668 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 54
+2026-06-26 22:19:08.670 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 55
+2026-06-26 22:19:08.672 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 56
+2026-06-26 22:19:08.673 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 57
+2026-06-26 22:19:08.674 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 58
+2026-06-26 22:19:08.676 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 59
+2026-06-26 22:19:08.677 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 60
+2026-06-26 22:19:08.680 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 61
+2026-06-26 22:19:08.682 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 62
+2026-06-26 22:19:08.683 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 63
+2026-06-26 22:19:08.685 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 64
+2026-06-26 22:19:08.686 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 65
+2026-06-26 22:19:08.688 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 66
+2026-06-26 22:19:08.689 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 67
+2026-06-26 22:19:08.691 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 68
+2026-06-26 22:19:08.692 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 69
+2026-06-26 22:19:08.693 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 70
+2026-06-26 22:19:08.695 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 71
+2026-06-26 22:19:08.697 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 72
+2026-06-26 22:19:08.698 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 73
+2026-06-26 22:19:08.701 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 74
+2026-06-26 22:19:08.702 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 75
+2026-06-26 22:19:08.704 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 76
+2026-06-26 22:19:08.705 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 77
+2026-06-26 22:19:08.706 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 78
+2026-06-26 22:19:08.708 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 79
+2026-06-26 22:19:08.709 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 80
+2026-06-26 22:19:08.711 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 81
+2026-06-26 22:19:08.712 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 82
+2026-06-26 22:19:08.714 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 83
+2026-06-26 22:19:08.715 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 84
+2026-06-26 22:19:08.716 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 85
+2026-06-26 22:19:08.717 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 86
+2026-06-26 22:19:08.718 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 87
+2026-06-26 22:19:08.719 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 88
+2026-06-26 22:19:08.721 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 89
+2026-06-26 22:19:08.722 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 90
+2026-06-26 22:19:08.724 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 91
+2026-06-26 22:19:08.726 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 92
+2026-06-26 22:19:08.728 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 93
+2026-06-26 22:19:08.730 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 94
+2026-06-26 22:19:08.731 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 95
+2026-06-26 22:19:08.732 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 96
+2026-06-26 22:19:08.733 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 97
+2026-06-26 22:19:08.735 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 98
+2026-06-26 22:19:08.736 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 99
+2026-06-26 22:19:08.737 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 100
+2026-06-26 22:19:08.738 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 101
+2026-06-26 22:19:08.740 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 102
+2026-06-26 22:19:08.741 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 103
+2026-06-26 22:19:08.743 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 104
+2026-06-26 22:19:08.744 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 105
+2026-06-26 22:19:08.745 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 106
+2026-06-26 22:19:08.746 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 107
+2026-06-26 22:19:08.747 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 108
+2026-06-26 22:19:08.749 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 109
+2026-06-26 22:19:08.751 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 110
+2026-06-26 22:19:08.753 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 111
+2026-06-26 22:19:08.754 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 112
+2026-06-26 22:19:08.755 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 113
+2026-06-26 22:19:08.757 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 114
+2026-06-26 22:19:08.758 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 115
+2026-06-26 22:19:08.759 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 116
+2026-06-26 22:19:08.760 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 117
+2026-06-26 22:19:08.761 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 118
+2026-06-26 22:19:08.763 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 119
+2026-06-26 22:19:08.764 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 120
+2026-06-26 22:19:08.765 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 121
+2026-06-26 22:19:08.766 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 122
+2026-06-26 22:19:08.767 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 123
+2026-06-26 22:19:08.768 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 124
+2026-06-26 22:19:08.769 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 125
+2026-06-26 22:19:08.771 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 126
+2026-06-26 22:19:08.772 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 127
+2026-06-26 22:19:08.774 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 128
+2026-06-26 22:19:08.775 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 129
+2026-06-26 22:19:08.777 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 130
+2026-06-26 22:19:08.779 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 131
+2026-06-26 22:19:08.780 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 132
+2026-06-26 22:19:08.781 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 133
+2026-06-26 22:19:08.781 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 134
+2026-06-26 22:19:08.784 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 135
+2026-06-26 22:19:08.785 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 136
+2026-06-26 22:19:08.785 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 137
+2026-06-26 22:19:08.787 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 138
+2026-06-26 22:19:08.788 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 139
+2026-06-26 22:19:08.789 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 140
+2026-06-26 22:19:08.790 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 141
+2026-06-26 22:19:08.792 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 142
+2026-06-26 22:19:08.792 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 143
+2026-06-26 22:19:08.793 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 144
+2026-06-26 22:19:08.794 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 145
+2026-06-26 22:19:08.795 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 146
+2026-06-26 22:19:08.797 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 147
+2026-06-26 22:19:08.798 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 148
+2026-06-26 22:19:08.799 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 149
+2026-06-26 22:19:08.800 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 150
+2026-06-26 22:19:08.801 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 151
+2026-06-26 22:19:08.802 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 152
+2026-06-26 22:19:08.803 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 153
+2026-06-26 22:19:08.804 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 154
+2026-06-26 22:19:08.806 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 155
+2026-06-26 22:19:08.807 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 156
+2026-06-26 22:19:08.807 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 157
+2026-06-26 22:19:08.808 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 158
+2026-06-26 22:19:08.809 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 159
+2026-06-26 22:19:08.810 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 160
+2026-06-26 22:19:08.811 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 161
+2026-06-26 22:19:08.812 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 162
+2026-06-26 22:19:08.813 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 163
+2026-06-26 22:19:08.814 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 164
+2026-06-26 22:19:08.815 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 165
+2026-06-26 22:19:08.816 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 166
+2026-06-26 22:19:08.817 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 167
+2026-06-26 22:19:08.819 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 168
+2026-06-26 22:19:08.820 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 169
+2026-06-26 22:19:08.821 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 170
+2026-06-26 22:19:08.822 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 171
+2026-06-26 22:19:08.823 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 172
+2026-06-26 22:19:08.824 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 173
+2026-06-26 22:19:08.825 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 174
+2026-06-26 22:19:08.826 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 175
+2026-06-26 22:19:08.827 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 176
+2026-06-26 22:19:08.828 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 177
+2026-06-26 22:19:08.829 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 178
+2026-06-26 22:19:08.830 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 179
+2026-06-26 22:19:08.831 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 180
+2026-06-26 22:19:08.832 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 181
+2026-06-26 22:19:08.833 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 182
+2026-06-26 22:19:08.834 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 183
+2026-06-26 22:19:08.836 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 184
+2026-06-26 22:19:08.837 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 185
+2026-06-26 22:19:08.837 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 186
+2026-06-26 22:19:08.838 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 187
+2026-06-26 22:19:08.840 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 188
+2026-06-26 22:19:08.841 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 189
+2026-06-26 22:19:08.842 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 190
+2026-06-26 22:19:08.843 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 191
+2026-06-26 22:19:08.844 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 192
+2026-06-26 22:19:08.845 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 193
+2026-06-26 22:19:08.846 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 194
+2026-06-26 22:19:08.847 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 195
+2026-06-26 22:19:08.848 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 196
+2026-06-26 22:19:08.848 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 197
+2026-06-26 22:19:08.849 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 198
+2026-06-26 22:19:08.850 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 199
+2026-06-26 22:19:08.851 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 200
+2026-06-26 22:19:08.852 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 201
+2026-06-26 22:19:08.853 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 202
+2026-06-26 22:19:08.854 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 203
+2026-06-26 22:19:08.855 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 204
+2026-06-26 22:19:08.856 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 205
+2026-06-26 22:19:08.857 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 206
+2026-06-26 22:19:08.858 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 207
+2026-06-26 22:19:08.858 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 208
+2026-06-26 22:19:08.859 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 209
+2026-06-26 22:19:08.860 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 210
+2026-06-26 22:19:08.861 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 211
+2026-06-26 22:19:08.862 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 212
+2026-06-26 22:19:08.863 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 213
+2026-06-26 22:19:08.864 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 214
+2026-06-26 22:19:08.864 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 215
+2026-06-26 22:19:08.865 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 216
+2026-06-26 22:19:08.867 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 217
+2026-06-26 22:19:08.868 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 218
+2026-06-26 22:19:08.869 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 219
+2026-06-26 22:19:08.870 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 220
+2026-06-26 22:19:08.871 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 221
+2026-06-26 22:19:08.872 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 222
+2026-06-26 22:19:08.873 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 223
+2026-06-26 22:19:08.874 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 224
+2026-06-26 22:19:08.875 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 225
+2026-06-26 22:19:08.876 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 226
+2026-06-26 22:19:08.877 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 227
+2026-06-26 22:19:08.878 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 228
+2026-06-26 22:19:08.879 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 229
+2026-06-26 22:19:08.880 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 230
+2026-06-26 22:19:08.881 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 231
+2026-06-26 22:19:08.882 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 232
+2026-06-26 22:19:08.883 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 233
+2026-06-26 22:19:08.884 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 234
+2026-06-26 22:19:08.885 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 235
+2026-06-26 22:19:08.886 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 236
+2026-06-26 22:19:08.887 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 237
+2026-06-26 22:19:08.888 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 238
+2026-06-26 22:19:08.889 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 239
+2026-06-26 22:19:08.890 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 240
+2026-06-26 22:19:08.891 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 241
+2026-06-26 22:19:08.892 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 242
+2026-06-26 22:19:08.893 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 243
+2026-06-26 22:19:08.894 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 244
+2026-06-26 22:19:08.895 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 245
+2026-06-26 22:19:08.896 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 246
+2026-06-26 22:19:08.898 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 247
+2026-06-26 22:19:08.899 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 248
+2026-06-26 22:19:08.899 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 249
+2026-06-26 22:19:08.900 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 250
+2026-06-26 22:19:08.901 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 251
+2026-06-26 22:19:08.903 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 252
+2026-06-26 22:19:08.904 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 253
+2026-06-26 22:19:08.905 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 254
+2026-06-26 22:19:08.906 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 255
+2026-06-26 22:19:08.907 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 256
+2026-06-26 22:19:08.907 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 257
+2026-06-26 22:19:08.909 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 258
+2026-06-26 22:19:08.910 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 259
+2026-06-26 22:19:08.911 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 260
+2026-06-26 22:19:08.912 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 261
+2026-06-26 22:19:08.913 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 262
+2026-06-26 22:19:08.914 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 263
+2026-06-26 22:19:08.915 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 264
+2026-06-26 22:19:08.916 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 265
+2026-06-26 22:19:08.917 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 266
+2026-06-26 22:19:08.918 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 267
+2026-06-26 22:19:08.919 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 268
+2026-06-26 22:19:08.920 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 269
+2026-06-26 22:19:08.921 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 270
+2026-06-26 22:19:08.922 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 271
+2026-06-26 22:19:08.923 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 272
+2026-06-26 22:19:08.924 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 273
+2026-06-26 22:19:08.925 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 274
+2026-06-26 22:19:08.926 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 275
+2026-06-26 22:19:08.926 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 276
+2026-06-26 22:19:08.928 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 277
+2026-06-26 22:19:08.929 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 278
+2026-06-26 22:19:08.930 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 279
+2026-06-26 22:19:08.931 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 280
+2026-06-26 22:19:08.932 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 281
+2026-06-26 22:19:08.933 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 282
+2026-06-26 22:19:08.934 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 283
+2026-06-26 22:19:08.934 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 284
+2026-06-26 22:19:08.935 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 285
+2026-06-26 22:19:08.936 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 286
+2026-06-26 22:19:08.937 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 287
+2026-06-26 22:19:08.938 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 288
+2026-06-26 22:19:08.939 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 289
+2026-06-26 22:19:08.940 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 290
+2026-06-26 22:19:08.941 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 291
+2026-06-26 22:19:08.942 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 292
+2026-06-26 22:19:08.943 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 293
+2026-06-26 22:19:08.944 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 294
+2026-06-26 22:19:08.945 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 295
+2026-06-26 22:19:08.946 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 296
+2026-06-26 22:19:08.947 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 297
+2026-06-26 22:19:08.948 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 298
+2026-06-26 22:19:08.949 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 299
+2026-06-26 22:19:08.950 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 300
+2026-06-26 22:19:08.951 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 301
+2026-06-26 22:19:08.952 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 302
+2026-06-26 22:19:08.953 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 303
+2026-06-26 22:19:08.954 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 304
+2026-06-26 22:19:08.954 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 305
+2026-06-26 22:19:08.955 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 306
+2026-06-26 22:19:08.956 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 307
+2026-06-26 22:19:08.957 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 308
+2026-06-26 22:19:08.959 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 309
+2026-06-26 22:19:08.960 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 310
+2026-06-26 22:19:08.961 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 311
+2026-06-26 22:19:08.962 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 312
+2026-06-26 22:19:08.963 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 313
+2026-06-26 22:19:08.964 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 314
+2026-06-26 22:19:08.965 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 315
+2026-06-26 22:19:08.966 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 316
+2026-06-26 22:19:08.967 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 317
+2026-06-26 22:19:08.968 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 318
+2026-06-26 22:19:08.969 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 319
+2026-06-26 22:19:08.970 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 320
+2026-06-26 22:19:08.971 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 321
+2026-06-26 22:19:08.972 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 322
+2026-06-26 22:19:08.973 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 323
+2026-06-26 22:19:08.975 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 324
+2026-06-26 22:19:08.976 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 325
+2026-06-26 22:19:08.976 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 326
+2026-06-26 22:19:08.978 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 327
+2026-06-26 22:19:08.979 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 328
+2026-06-26 22:19:08.980 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 329
+2026-06-26 22:19:08.981 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 330
+2026-06-26 22:19:08.982 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 331
+2026-06-26 22:19:08.982 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 332
+2026-06-26 22:19:08.983 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 333
+2026-06-26 22:19:08.984 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 334
+2026-06-26 22:19:08.985 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 335
+2026-06-26 22:19:08.986 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 336
+2026-06-26 22:19:08.987 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 337
+2026-06-26 22:19:08.988 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 338
+2026-06-26 22:19:08.989 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 339
+2026-06-26 22:19:08.990 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 340
+2026-06-26 22:19:08.991 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 341
+2026-06-26 22:19:08.992 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 342
+2026-06-26 22:19:08.993 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 343
+2026-06-26 22:19:08.994 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 344
+2026-06-26 22:19:08.995 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 345
+2026-06-26 22:19:08.996 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 346
+2026-06-26 22:19:08.997 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 347
+2026-06-26 22:19:08.997 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 348
+2026-06-26 22:19:08.999 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 349
+2026-06-26 22:19:09.000 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 350
+2026-06-26 22:19:09.000 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 351
+2026-06-26 22:19:09.001 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 352
+2026-06-26 22:19:09.002 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 353
+2026-06-26 22:19:09.003 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 354
+2026-06-26 22:19:09.004 DEBUG 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器添加元素: 355
+2026-06-26 22:19:09.004  INFO 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器批量添加元素: count=355
+2026-06-26 22:19:09.010  INFO 26516 --- [zhixun-server] [           main] c.z.config.CachePenetrationProtection    : 布隆过滤器标记为已初始化
+2026-06-26 22:19:09.010  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [异步预热] 布隆过滤器初始化完成, 作品数=355
+2026-06-26 22:19:09.011 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:09.019  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [异步预热] 热门作品缓存加载完成, count=50
+2026-06-26 22:19:09.020 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:19:09.023  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : [异步预热] 活跃用户资料缓存加载完成, count=20
+2026-06-26 22:19:09.023  INFO 26516 --- [zhixun-server] [           main] com.zhixun.config.CacheWarmUpRunner      : 缓存预热完成，耗时: 834ms
+2026-06-26 22:19:09.023  INFO 26516 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-06-26 22:19:09.027  INFO 26516 --- [zhixun-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection com.mysql.cj.jdbc.ConnectionImpl@780ccdc9
+2026-06-26 22:19:09.027  INFO 26516 --- [zhixun-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-06-26 22:19:09.032  INFO 26516 --- [zhixun-server] [           main] c.zhixun.config.DatabaseMigrationRunner  : Database migration: current latest version = 2
+2026-06-26 22:19:09.032 DEBUG 26516 --- [zhixun-server] [           main] c.zhixun.config.DatabaseMigrationRunner  : Skipping already applied migration: V2__new_features.sql
+2026-06-26 22:19:09.032  INFO 26516 --- [zhixun-server] [           main] c.zhixun.config.DatabaseMigrationRunner  : Database migration check complete
+2026-06-26 22:20:00.023  INFO 26516 --- [zhixun-server] [MessageBroker-2] com.zhixun.task.ScheduledTasks           : ===== 定时任务：检查定时发布作品 =====
+2026-06-26 22:20:00.023  INFO 26516 --- [zhixun-server] [MessageBroker-1] com.zhixun.task.ScheduledTasks           : ===== 定时任务：更新在线状态 =====
+2026-06-26 22:20:00.023 DEBUG 26516 --- [zhixun-server] [MessageBroker-2] com.zhixun.config.DataSourceAspect       : 方法 publishScheduledArticles 为写操作，自动切换到主库
+2026-06-26 22:20:00.027 DEBUG 26516 --- [zhixun-server] [MessageBroker-2] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: master
+2026-06-26 22:20:07.834  INFO 26516 --- [zhixun-server] [MessageBroker-3] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 12, active threads = 1, queued tasks = 11, completed tasks = 2]
+2026-06-26 22:20:58.220  INFO 26516 --- [zhixun-server] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/api]    : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-26 22:20:58.220  INFO 26516 --- [zhixun-server] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-06-26 22:20:58.222  INFO 26516 --- [zhixun-server] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-06-26 22:20:58.279 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-1] com.zhixun.config.DataSourceAspect       : 方法 generate 为读操作，自动切换到从库
+2026-06-26 22:21:00.014  INFO 26516 --- [zhixun-server] [MessageBroker-4] com.zhixun.task.ScheduledTasks           : ===== 定时任务：检查定时发布作品 =====
+2026-06-26 22:21:00.014 DEBUG 26516 --- [zhixun-server] [MessageBroker-4] com.zhixun.config.DataSourceAspect       : 方法 publishScheduledArticles 为写操作，自动切换到主库
+2026-06-26 22:21:00.015 DEBUG 26516 --- [zhixun-server] [MessageBroker-4] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: master
+2026-06-26 22:21:16.196 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-6] com.zhixun.config.DataSourceAspect       : 方法 login 为写操作，自动切换到主库
+2026-06-26 22:21:16.197 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-6] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: master
+2026-06-26 22:21:16.287 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-6] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: master
+2026-06-26 22:21:16.305  INFO 26516 --- [zhixun-server] [nio-8080-exec-6] .s.a.AnnotationAsyncExecutionInterceptor : More than one TaskExecutor bean found within the context, and none is named 'taskExecutor'. Mark one of them as primary or name it 'taskExecutor' (possibly as an alias) in order to use it for async processing: [clientInboundChannelExecutor, clientOutboundChannelExecutor, brokerChannelExecutor]
+2026-06-26 22:21:16.306 DEBUG 26516 --- [zhixun-server] [cTaskExecutor-1] com.zhixun.config.DataSourceAspect       : 方法 saveAsync 为写操作，自动切换到主库
+2026-06-26 22:21:16.307 DEBUG 26516 --- [zhixun-server] [cTaskExecutor-1] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: master
+2026-06-26 22:21:16.380 ERROR 26516 --- [zhixun-server] [nio-8080-exec-6] com.zhixun.common.util.AesUtil           : AES 解密失败: Illegal base64 character 40
+2026-06-26 22:21:16.381  WARN 26516 --- [zhixun-server] [nio-8080-exec-6] c.zhixun.service.impl.AuthServiceImpl    : 解密用户敏感信息失败（将返回 null）: 解密失败
+2026-06-26 22:21:16.382 ERROR 26516 --- [zhixun-server] [nio-8080-exec-6] com.zhixun.config.OperationLogAspect     : AOP记录操作日志失败: 未登录或登录已过期
+2026-06-26 22:21:16.402 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-3] com.zhixun.config.DataSourceAspect       : 方法 refreshToken 为读操作，自动切换到从库
+2026-06-26 22:21:16.442 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-3] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:21:16.446 ERROR 26516 --- [zhixun-server] [nio-8080-exec-3] com.zhixun.common.util.AesUtil           : AES 解密失败: Illegal base64 character 40
+2026-06-26 22:21:16.446  WARN 26516 --- [zhixun-server] [nio-8080-exec-3] c.zhixun.service.impl.AuthServiceImpl    : 解密用户敏感信息失败（将返回 null）: 解密失败
+2026-06-26 22:21:16.453 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-5] com.zhixun.config.DataSourceAspect       : 方法 refreshToken 为读操作，自动切换到从库
+2026-06-26 22:21:16.455 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-5] c.zhixun.config.DynamicDataSourceConfig  : 当前数据源: slave
+2026-06-26 22:21:16.458 ERROR 26516 --- [zhixun-server] [nio-8080-exec-5] com.zhixun.common.util.AesUtil           : AES 解密失败: Illegal base64 character 40
+2026-06-26 22:21:16.458  WARN 26516 --- [zhixun-server] [nio-8080-exec-5] c.zhixun.service.impl.AuthServiceImpl    : 解密用户敏感信息失败（将返回 null）: 解密失败
+2026-06-26 22:21:16.467 DEBUG 26516 --- [zhixun-server] [io-8080-exec-10] com.zhixun.security.CsrfFilter           : 内网请求跳过 CSRF 校验: URI=/api/v1/auth/logout, RemoteAddr=0:0:0:0:0:0:0:1
+2026-06-26 22:21:16.469 DEBUG 26516 --- [zhixun-server] [io-8080-exec-10] com.zhixun.config.DataSourceAspect       : 方法 logout 为读操作，自动切换到从库
+2026-06-26 22:21:16.478 DEBUG 26516 --- [zhixun-server] [nio-8080-exec-8] c.z.security.JwtAuthenticationFilter     : 令牌已在黑名单中，拒绝访问
+2026-06-26 22:21:16.481  WARN 26516 --- [zhixun-server] [nio-8080-exec-8] c.z.security.JwtUnauthorizedHandler      : 未认证访问: /api/v1/user/profile - Full authentication is required to access this resource

@@ -1,0 +1,182 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - checkbox [ref=e6]
+      - generic "Light mode" [ref=e8] [cursor=pointer]:
+        - img [ref=e9]
+  - generic [ref=e13]:
+    - heading "TypeError" [level=4] [ref=e14]
+    - heading "An error has occurred" [level=1] [ref=e15]
+  - 'heading "Could not load `@vite-pwa/nuxt`. Is it installed? Copy error with stack trace to clipboard" [level=2] [ref=e19]':
+    - img [ref=e21]
+    - generic [ref=e23]: "Could not load `@vite-pwa/nuxt`. Is it installed?"
+    - button "Copy error with stack trace to clipboard" [ref=e24] [cursor=pointer]:
+      - img [ref=e25]
+  - generic [ref=e30]:
+    - heading "Stack Trace" [level=3] [ref=e33]
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - generic [ref=e38]:
+          - checkbox "View All Frames" [ref=e39]
+          - generic [ref=e40]: View All Frames
+        - generic [ref=e42]:
+          - button "Pretty" [ref=e43]
+          - button "Raw" [ref=e44]
+      - list [ref=e47]:
+        - listitem [ref=e48]:
+          - generic [ref=e49]:
+            - button "D:/zhixun/client/node_modules/@nuxt/kit/dist/index.mjs in loadNuxtModuleInstance at line 2774:9" [ref=e50]:
+              - link "D:/zhixun/client/node_modules/@nuxt/kit/dist/index.mjs" [ref=e51] [cursor=pointer]:
+                - /url: vscode://file/D:/zhixun/client/node_modules/@nuxt/kit/dist/index.mjs:2774
+              - generic [ref=e52]:
+                - text: in
+                - code [ref=e53]: loadNuxtModuleInstance
+              - generic [ref=e54]:
+                - text: at line
+                - code [ref=e55]: 2774:9
+            - button [ref=e57]:
+              - img [ref=e58]
+          - code [ref=e62]:
+            - generic [ref=e76]: "if (module && !module.includes(nuxtModule)) { throw new TypeError(`Error while importing module \\`${nuxtModule}\\`: ${error}`); } } } throw new TypeError(`Could not load \\`${nuxtModule}\\`. Is it installed?`); } function getDirectory(p) { try { return isAbsolute(p) && lstatSync(p).isFile() ? dirname(p) : p; } catch {"
+        - listitem [ref=e77]:
+          - generic [ref=e78]:
+            - button "D:/zhixun/client/node_modules/@nuxt/kit/dist/index.mjs in installModules at line 2571:23" [ref=e79]:
+              - link "D:/zhixun/client/node_modules/@nuxt/kit/dist/index.mjs" [ref=e80] [cursor=pointer]:
+                - /url: vscode://file/D:/zhixun/client/node_modules/@nuxt/kit/dist/index.mjs:2571
+              - generic [ref=e81]:
+                - text: in
+                - code [ref=e82]: installModules
+              - generic [ref=e83]:
+                - text: at line
+                - code [ref=e84]: 2571:23
+            - button [ref=e86]:
+              - img [ref=e87]
+        - listitem [ref=e89]:
+          - generic [ref=e90]:
+            - button "D:/zhixun/client/node_modules/nuxt/dist/index.mjs in async initNuxt at line 6210:3" [ref=e91]:
+              - link "D:/zhixun/client/node_modules/nuxt/dist/index.mjs" [ref=e92] [cursor=pointer]:
+                - /url: vscode://file/D:/zhixun/client/node_modules/nuxt/dist/index.mjs:6210
+              - generic [ref=e93]:
+                - text: in
+                - code [ref=e94]: async initNuxt
+              - generic [ref=e95]:
+                - text: at line
+                - code [ref=e96]: 6210:3
+            - button [ref=e98]:
+              - img [ref=e99]
+        - listitem [ref=e101]:
+          - generic [ref=e102]:
+            - 'button "D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs in async #initializeNuxt at line 494:3" [ref=e103]':
+              - link "D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs" [ref=e104] [cursor=pointer]:
+                - /url: vscode://file/D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs:494
+              - generic [ref=e105]:
+                - text: in
+                - code [ref=e106]: "async #initializeNuxt"
+              - generic [ref=e107]:
+                - text: at line
+                - code [ref=e108]: 494:3
+            - button [ref=e110]:
+              - img [ref=e111]
+        - listitem [ref=e113]:
+          - generic [ref=e114]:
+            - 'button "D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs in async #load at line 585:3" [ref=e115]':
+              - link "D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs" [ref=e116] [cursor=pointer]:
+                - /url: vscode://file/D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs:585
+              - generic [ref=e117]:
+                - text: in
+                - code [ref=e118]: "async #load"
+              - generic [ref=e119]:
+                - text: at line
+                - code [ref=e120]: 585:3
+            - button [ref=e122]:
+              - img [ref=e123]
+        - listitem [ref=e125]:
+          - generic [ref=e126]:
+            - button "D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs in async NuxtDevServer.load at line 396:4" [ref=e127]:
+              - link "D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs" [ref=e128] [cursor=pointer]:
+                - /url: vscode://file/D:/zhixun/client/node_modules/@nuxt/cli/dist/dev-s3BvI4tz.mjs:396
+              - generic [ref=e129]:
+                - text: in
+                - code [ref=e130]: async NuxtDevServer.load
+              - generic [ref=e131]:
+                - text: at line
+                - code [ref=e132]: 396:4
+            - button [ref=e134]:
+              - img [ref=e135]
+        - listitem [ref=e137]:
+          - generic [ref=e138]:
+            - button "D:/zhixun/client/node_modules/perfect-debounce/dist/index.mjs in async _applyPromised at line 85:9" [ref=e139]:
+              - link "D:/zhixun/client/node_modules/perfect-debounce/dist/index.mjs" [ref=e140] [cursor=pointer]:
+                - /url: vscode://file/D:/zhixun/client/node_modules/perfect-debounce/dist/index.mjs:85
+              - generic [ref=e141]:
+                - text: in
+                - code [ref=e142]: async _applyPromised
+              - generic [ref=e143]:
+                - text: at line
+                - code [ref=e144]: 85:9
+            - button [ref=e146]:
+              - img [ref=e147]
+  - generic [ref=e150]:
+    - heading "Request" [level=3] [ref=e152]
+    - generic [ref=e153]:
+      - generic [ref=e154]:
+        - heading "url" [level=4] [ref=e155]
+        - text: /editor
+      - generic [ref=e156]:
+        - heading "method" [level=4] [ref=e157]
+        - text: GET
+      - generic [ref=e158]:
+        - heading "headers" [level=4] [ref=e159]
+        - table [ref=e160]:
+          - rowgroup [ref=e161]:
+            - row "host localhost:3000" [ref=e162]:
+              - cell "host" [ref=e163]
+              - cell "localhost:3000" [ref=e164]
+            - row "connection keep-alive" [ref=e165]:
+              - cell "connection" [ref=e166]
+              - cell "keep-alive" [ref=e167]
+            - row "sec-ch-ua \"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"" [ref=e168]:
+              - cell "sec-ch-ua" [ref=e169]
+              - cell "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"" [ref=e170]
+            - row "sec-ch-ua-mobile ?0" [ref=e171]:
+              - cell "sec-ch-ua-mobile" [ref=e172]
+              - cell "?0" [ref=e173]
+            - row "sec-ch-ua-platform \"Windows\"" [ref=e174]:
+              - cell "sec-ch-ua-platform" [ref=e175]
+              - cell "\"Windows\"" [ref=e176]
+            - row "upgrade-insecure-requests 1" [ref=e177]:
+              - cell "upgrade-insecure-requests" [ref=e178]
+              - cell "1" [ref=e179]
+            - row "user-agent Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36" [ref=e180]:
+              - cell "user-agent" [ref=e181]
+              - cell "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36" [ref=e182]
+            - row "accept text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" [ref=e183]:
+              - cell "accept" [ref=e184]
+              - cell "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" [ref=e185]
+            - row "sec-fetch-site none" [ref=e186]:
+              - cell "sec-fetch-site" [ref=e187]
+              - cell "none" [ref=e188]
+            - row "sec-fetch-mode navigate" [ref=e189]:
+              - cell "sec-fetch-mode" [ref=e190]
+              - cell "navigate" [ref=e191]
+            - row "sec-fetch-user ?1" [ref=e192]:
+              - cell "sec-fetch-user" [ref=e193]
+              - cell "?1" [ref=e194]
+            - row "sec-fetch-dest document" [ref=e195]:
+              - cell "sec-fetch-dest" [ref=e196]
+              - cell "document" [ref=e197]
+            - row "accept-encoding gzip, deflate, br, zstd" [ref=e198]:
+              - cell "accept-encoding" [ref=e199]
+              - cell "gzip, deflate, br, zstd" [ref=e200]
+            - row "accept-language zh-CN,zh;q=0.9" [ref=e201]:
+              - cell "accept-language" [ref=e202]
+              - cell "zh-CN,zh;q=0.9" [ref=e203]
+            - 'row "cookie Object { ▼ }" [ref=e204]':
+              - cell "cookie" [ref=e205]
+              - 'cell "Object { ▼ }" [ref=e206]':
+                - code [ref=e209]:
+                  - generic [ref=e210]:
+                    - text: "Object {"
+                    - button "▼" [ref=e211]:
+                      - generic [ref=e212]: ▼
+                    - text: "}"

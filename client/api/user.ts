@@ -5,7 +5,7 @@ export const userApi = {
   /** 获取用户资料（当前登录用户或指定用户） */
   getProfile: (userId?: number) => {
     const { get } = useApi()
-    return get<User>(userId ? `/users/${userId}` : '/users/me')
+    return get<User>(userId ? `/users/${userId}` : '/user/profile')
   },
 
   /** 更新用户资料 */

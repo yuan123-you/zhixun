@@ -5,11 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.config.Slave;
 import com.zhixun.entity.Article;
+import com.zhixun.entity.User;
 import com.zhixun.enums.ArticleStatusEnum;
 import com.zhixun.mapper.ArticleMapper;
+import com.zhixun.mapper.UserMapper;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.HotArticleVO;
 import com.zhixun.vo.SearchResultVO;
+import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,6 +34,7 @@ import java.util.stream.Collectors;
 public class FallbackService {
 
     private final ArticleMapper articleMapper;
+    private final UserMapper userMapper;
     private final StringRedisTemplate stringRedisTemplate;
 
     /** 热门作品降级缓存 Key */
@@ -146,6 +150,62 @@ public class FallbackService {
         }).collect(Collectors.toList());
 
         result.setArticles(voList);
+        result.setTotal(total);
+        return result;
+    }
+
+    /**
+     * 用户搜索服务降级：使用数据库 LIKE 查询
+     * 当 OpenSearch 用户搜索不可用时使用
+     *
+     * @param keyword  搜索关键词
+     * @param page     页码
+     * @param pageSize 每页大小
+     * @return 搜索结果（仅包含用户列表）
+     */
+    @Slave
+    public SearchResultVO getUserSearchFallback(String keyword, Integer page, Integer pageSize) {
+        log.warn("用户搜索服务降级：使用数据库 LIKE 查询, keyword={}", keyword);
+
+        SearchResultVO result = new SearchResultVO();
+        result.setKeyword(keyword);
+        result.setType("user");
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            result.setUsers(Collections.emptyList());
+            result.setTotal(0L);
+            return result;
+        }
+
+        // 多字段模糊搜索：昵称、用户名、UID
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w
+                .like(User::getNickname, keyword)
+                .or().like(User::getUsername, keyword)
+                .or().like(User::getUid, keyword)
+        );
+
+        long total = userMapper.selectCount(wrapper);
+
+        // MyBatis-Plus 分页
+        Page<User> userPage = new Page<>(page, pageSize);
+        List<User> users = userMapper.selectPage(userPage, wrapper).getRecords();
+
+        List<UserVO> userVOs = users.stream().map(u -> {
+            UserVO vo = new UserVO();
+            vo.setId(u.getId());
+            vo.setUid(u.getUid());
+            vo.setUsername(u.getUsername());
+            vo.setNickname(u.getNickname());
+            vo.setAvatar(u.getAvatar());
+            vo.setBio(u.getBio());
+            vo.setArticleCount(u.getArticleCount());
+            vo.setFollowerCount(u.getFollowerCount());
+            vo.setCreatedAt(u.getCreatedAt());
+            return vo;
+        }).collect(Collectors.toList());
+
+        result.setUsers(userVOs);
         result.setTotal(total);
         return result;
     }

@@ -1,6 +1,7 @@
 package com.zhixun.config;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zhixun.common.util.AesUtil;
 import com.zhixun.entity.User;
 import com.zhixun.enums.RoleEnum;
 import com.zhixun.mapper.UserMapper;
@@ -25,6 +26,7 @@ public class DefaultUserDataInitializer implements CommandLineRunner {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final AesUtil aesUtil;
 
     @Override
     public void run(String... args) {
@@ -54,7 +56,7 @@ public class DefaultUserDataInitializer implements CommandLineRunner {
         admin.setUsername(adminUsername);
         admin.setPasswordHash(passwordEncoder.encode(adminPassword));
         admin.setNickname("知讯管理员");
-        admin.setEmail("admin@zhixun.com");
+        admin.setEmail(aesUtil.encrypt("admin@zhixun.com"));
         admin.setUid(generateDefaultUid());
         admin.setRole(RoleEnum.SUPER_ADMIN);
         admin.setStatus(User.STATUS_NORMAL);
@@ -62,7 +64,7 @@ public class DefaultUserDataInitializer implements CommandLineRunner {
         admin.setIsOnline(0);
 
         userMapper.insert(admin);
-        log.info("默认管理员账号已创建: username={}, uid={}, password={}", adminUsername, admin.getUid(), adminPassword);
+        log.info("默认管理员账号已创建: username={}, uid={}", adminUsername, admin.getUid());
     }
 
     /**

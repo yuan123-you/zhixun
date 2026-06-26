@@ -46,7 +46,7 @@
     <div class="mb-3">
       <div class="border border-slate-300 rounded-lg overflow-hidden">
         <!-- 工具栏 -->
-        <div class="flex items-center space-x-1 p-2 bg-slate-50 border-b border-slate-300">
+        <div class="flex items-center gap-0.5 p-2 bg-slate-50 border-b border-slate-300 flex-wrap">
           <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="加粗" @click="insertMarkdown('**', '**')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" /></svg>
           </button>
@@ -65,6 +65,17 @@
           <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="代码" @click="insertMarkdown('`', '`')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
           </button>
+          <span class="mx-1 w-px h-5 bg-slate-300"></span>
+          <EmojiPicker @select="(emoji: string) => insertAtCursor(emoji)" />
+          <VoiceRecorderButton @send="(blob: Blob) => handleEditorVoice(blob)" />
+          <span class="mx-1 w-px h-5 bg-slate-300"></span>
+          <button class="px-2 py-1.5 text-xs text-purple-600 hover:bg-purple-50 rounded transition font-medium" :disabled="aiLoading" @click="handleAIWrite('expand')" title="AI 扩写">
+            <svg class="w-4 h-4 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            AI扩写
+          </button>
+          <button class="px-2 py-1.5 text-xs text-indigo-600 hover:bg-indigo-50 rounded transition font-medium" :disabled="aiLoading" @click="handleAIWrite('polish')" title="AI 润色">润色</button>
+          <button class="px-2 py-1.5 text-xs text-cyan-600 hover:bg-cyan-50 rounded transition font-medium" :disabled="aiLoading" @click="handleAIWrite('summarize')" title="AI 摘要">摘要</button>
+          <button class="px-2 py-1.5 text-xs text-orange-600 hover:bg-orange-50 rounded transition font-medium" :disabled="aiLoading" @click="handleAIWrite('review')" title="AI 审核">审核</button>
         </div>
 
         <!-- 桌面端：双栏布局 -->
@@ -74,12 +85,13 @@
             <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-medium">
               {{ '编辑' }}
             </div>
-            <textarea
+            <MentionInput
               ref="editorRef"
               v-model="form.content"
-              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
               placeholder="开始写作..."
-            ></textarea>
+              :rows="18"
+              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
+            />
           </div>
           <!-- 右侧预览区 -->
           <div class="w-1/2">
@@ -96,12 +108,13 @@
         <!-- 移动端/平板端：Tab切换 -->
         <div class="md:hidden">
           <div v-show="activeTab === 'edit'">
-            <textarea
+            <MentionInput
               ref="editorRef"
               v-model="form.content"
-              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
               placeholder="开始写作..."
-            ></textarea>
+              :rows="18"
+              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
+            />
           </div>
           <div v-show="activeTab === 'preview'">
             <div
@@ -114,11 +127,11 @@
     </div>
 
     <!-- 分类和标签选择 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3 mb-3">
       <!-- 分类选择 -->
       <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '分类' }}</label>
-        <select v-model="form.categoryId" class="input">
+        <label class="block text-xs md:text-sm font-medium text-slate-700 mb-1">{{ '分类' }}</label>
+        <select v-model="form.categoryId" class="input !h-9 !text-sm !px-3">
           <option value="">{{ '请选择分类' }}</option>
           <option v-for="category in categories" :key="category.id" :value="category.id">
             {{ category.name }}
@@ -128,16 +141,16 @@
 
       <!-- 标签选择 -->
       <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '标签' }}</label>
+        <label class="block text-xs md:text-sm font-medium text-slate-700 mb-1">{{ '标签' }}</label>
         <input
           v-model="tagInput"
           type="text"
-          class="input"
+          class="input !h-9 !text-sm !px-3"
           placeholder="添加标签"
           @keydown.enter.prevent="addTag"
         />
-        <div v-if="form.tags.length" class="flex flex-wrap gap-2 mt-2">
-          <span v-for="tag in form.tags" :key="tag" class="badge-primary flex items-center space-x-1">
+        <div v-if="form.tags.length" class="flex flex-wrap gap-1.5 mt-1.5">
+          <span v-for="tag in form.tags" :key="tag" class="badge-primary flex items-center space-x-1 !text-xs !px-2 !py-0.5">
             <span>{{ tag }}</span>
             <button class="hover:text-danger" @click="removeTag(tag)">×</button>
           </span>
@@ -207,7 +220,8 @@
 <script setup lang="ts">
 /** 作品编辑器页 */
 import type { Category } from '~/types'
-import { matchRegionByCoord, getRegionByIP } from '~/utils/regions'
+import { matchRegionByCoord, getRegionByIP, reverseGeocode } from '~/utils/regions'
+import { aiApi } from '~/api/ai'
 
 definePageMeta({
   middleware: 'auth',
@@ -231,7 +245,7 @@ const form = reactive({
 
 const tagInput = ref('')
 const categories = ref<Category[]>([])
-const editorRef = ref<HTMLTextAreaElement | null>(null)
+const editorRef = ref<any>(null)
 const locating = ref(false)
 
 // 自动定位
@@ -294,10 +308,27 @@ function renderMarkdown(text: string): string {
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
 
   // 图片
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-lg my-2" />')
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_full: string, alt: string, src: string) => {
+    // 防止 javascript: URL 注入
+    if (/^\s*javascript:/i.test(src.trim())) {
+      return `<img src="" alt="${escapeHtml(alt)}" class="max-w-full rounded-lg my-2" />`
+    }
+    const safeSrc = escapeHtml(src)
+    const safeAlt = escapeHtml(alt)
+    return `<img src="${safeSrc}" alt="${safeAlt}" class="max-w-full rounded-lg my-2" />`
+  })
 
   // 链接
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary hover:underline" target="_blank" rel="noopener">$1</a>')
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_full: string, text: string, href: string) => {
+    // 防止 javascript: / data: URL 注入
+    const trimmedHref = href.trim()
+    if (/^\s*(javascript|data):/i.test(trimmedHref)) {
+      return escapeHtml(text)
+    }
+    const safeText = escapeHtml(text)
+    const safeHref = escapeHtml(trimmedHref)
+    return `<a href="${safeHref}" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">${safeText}</a>`
+  })
 
   // 无序列表
   html = html.replace(/^[-*]\s+(.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
@@ -366,11 +397,13 @@ const removeTag = (tag: string) => {
 
 // 插入Markdown语法
 const insertMarkdown = (prefix: string, suffix: string) => {
-  const textarea = editorRef.value
-  if (!textarea) return
-
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
+  // MentionInput 内部包含 textarea，支持 ref
+  const el = editorRef.value
+  if (!el) return
+  // 尝试获取内部 textarea（MentionInput 包装的组件）
+  const textarea = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+  const start = textarea.selectionStart ?? 0
+  const end = textarea.selectionEnd ?? 0
   const selectedText = form.content.substring(start, end)
 
   form.content =
@@ -380,9 +413,60 @@ const insertMarkdown = (prefix: string, suffix: string) => {
 
   // 恢复光标位置
   nextTick(() => {
-    textarea.focus()
-    textarea.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length)
+    const ta = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+    ta?.focus()
+    ta?.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length)
   })
+}
+
+// 在光标处插入文本
+const insertAtCursor = (text: string) => {
+  const el = editorRef.value
+  if (!el) return
+  const textarea = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+  const pos = textarea?.selectionStart ?? form.content.length
+  form.content = form.content.substring(0, pos) + text + form.content.substring(pos)
+  nextTick(() => {
+    const ta = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+    ta?.focus()
+    ta?.setSelectionRange(pos + text.length, pos + text.length)
+  })
+}
+
+// AI 写作
+const aiLoading = ref(false)
+const handleAIWrite = async (mode: string) => {
+  const selectedText = window.getSelection()?.toString() || form.content
+  if (!selectedText.trim()) {
+    showToast('请先输入或选中文本', 'error')
+    return
+  }
+  aiLoading.value = true
+  try {
+    const { data } = await aiApi.generateText(selectedText, form.title.trim() || undefined, mode)
+    const result = data?.data?.content || data?.data?.text || ''
+    if (result) {
+      form.content = result
+      showToast(`AI ${mode === 'expand' ? '扩写' : mode === 'polish' ? '润色' : mode === 'summarize' ? '摘要' : '审核'}完成`)
+    }
+  } catch (err: any) {
+    showToast(err?.response?.data?.message || 'AI 处理失败', 'error')
+  } finally { aiLoading.value = false }
+}
+
+// 语音转文字
+const handleEditorVoice = async (blob: Blob) => {
+  try {
+    const formData = new FormData()
+    formData.append('file', blob, 'voice.webm')
+    const { post } = useApi()
+    const uploadRes = await post<any>('/files/upload/voice', formData)
+    const voiceUrl = uploadRes.data?.data
+    if (voiceUrl) {
+      insertAtCursor(`\n[语音消息: ${voiceUrl}]\n`)
+      showToast('语音已插入')
+    }
+  } catch { showToast('语音上传失败', 'error') }
 }
 
 /** 地区选择器引用 */
@@ -393,7 +477,7 @@ const onRegionChange = (location: string) => {
   form.location = location
 }
 
-// 自动获取位置（优先浏览器GPS，失败后用IP定位）
+// 自动获取位置（优先浏览器GPS + 反向地理编码，实现区县级精确匹配）
 const autoLocate = async () => {
   if (!import.meta.client) return
   locating.value = true
@@ -404,41 +488,59 @@ const autoLocate = async () => {
 
     // 1. 优先使用浏览器 Geolocation API 获取高精度坐标
     let hasCoords = false
+    let gpsLat = 0
+    let gpsLng = 0
     if ('geolocation' in navigator) {
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
-            timeout: 8000,
-            maximumAge: 300000,
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 120000,
           })
         })
-        const { latitude, longitude } = position.coords
+        gpsLat = position.coords.latitude
+        gpsLng = position.coords.longitude
         hasCoords = true
-        // 用本地城市坐标数据库匹配最近的城市
-        const matched = matchRegionByCoord(latitude, longitude)
-        if (matched) {
-          province = matched.province
-          city = matched.city
+
+        // 2. 使用反向地理编码获取精确的省/市/区
+        const geocodeResult = await reverseGeocode(gpsLat, gpsLng)
+        if (geocodeResult && geocodeResult.province) {
+          province = geocodeResult.province
+          city = geocodeResult.city
+          district = geocodeResult.district
         }
       } catch {
         // GPS 定位失败/被拒绝，继续尝试IP定位
       }
     }
 
-    // 2. 如果没有GPS坐标或匹配失败，尝试IP定位
+    // 3. 如果反向地理编码未获得完整结果，补充 IP 定位
     if (!hasCoords || !province) {
       const ipRegion = await getRegionByIP()
       if (ipRegion) {
-        province = ipRegion.province
-        city = ipRegion.city
+        province = province || ipRegion.province
+        city = city || ipRegion.city
+        district = district || ipRegion.district
       }
     }
 
-    // 3. 如果获得了位置信息，设置到选择器中
+    // 4. 如果仍未获得结果，用本地坐标数据库做最后兜底
+    if (!province && hasCoords) {
+      const matched = matchRegionByCoord(gpsLat, gpsLng)
+      if (matched) {
+        province = matched.province
+        city = matched.city
+      }
+    }
+
+    // 5. 如果获得了位置信息，设置到选择器中
     if (province && regionSelectorRef.value) {
       regionSelectorRef.value.setRegion({ province, city, district })
-      showToast(`已定位到：${province}${city ? ' · ' + city : ''}`)
+      const locationDisplay = district
+        ? `${province}·${city}·${district}`
+        : `${province}${city ? ' · ' + city : ''}`
+      showToast(`已定位到：${locationDisplay}`)
     } else {
       showToast('定位失败，请手动选择位置', 'error')
     }
@@ -464,12 +566,22 @@ const handleCoverUpload = (event: Event) => {
 
 // 保存草稿
 const saveDraft = async () => {
+  if (!form.title.trim()) {
+    showToast('请输入作品标题', 'error')
+    return
+  }
   try {
     const { articleApi } = await import('~/api')
-    await articleApi.createArticle({ ...form, status: 0 } as any)
+    const requestData = buildArticleRequest(0)
+    await articleApi.createArticle(requestData)
     showToast('草稿已保存')
   } catch (error: any) {
-    showToast(error.message || '保存失败，请稍后重试', 'error')
+    const msg = error.message || ''
+    if (msg.includes('敏感词') || msg.includes('禁止')) {
+      showToast(msg, 'error')
+    } else {
+      showToast(error.message || '保存失败，请稍后重试', 'error')
+    }
   }
 }
 
@@ -495,12 +607,35 @@ const getDeviceInfo = (): string | undefined => {
   return undefined
 }
 
+/**
+ * 构建发送给后端的创建文章请求数据
+ * 确保字段名和类型与后端 ArticleCreateRequest 完全匹配
+ */
+function buildArticleRequest(status: number): Record<string, any> {
+  const data: Record<string, any> = {
+    title: form.title.trim(),
+    content: form.content,
+    summary: form.summary.trim() || undefined,
+    categoryId: form.categoryId ? Number(form.categoryId) : undefined,
+    tagIds: [], // 标签通过 tagIds (Long[]) 传递，当前暂不支持自由标签
+    coverImage: form.coverImage || undefined,
+    location: form.location || undefined,
+    status,
+  }
+  // 清除 undefined 字段，避免发送多余的空值
+  Object.keys(data).forEach((key) => {
+    if (data[key] === undefined) delete data[key]
+  })
+  return data
+}
+
 // 发布作品
 const publishArticle = async () => {
   if (!canPublish.value) return
   try {
     const { articleApi } = await import('~/api')
-    const data: any = { ...form, status: 1, deviceInfo: getDeviceInfo() }
+    const data = buildArticleRequest(1)
+    data.deviceInfo = getDeviceInfo()
     // 定时发布：传递 publishAt 字段
     if (scheduledPublish.value && publishAt.value) {
       data.publishAt = new Date(publishAt.value).toISOString()
@@ -513,7 +648,12 @@ const publishArticle = async () => {
       navigateTo(`/articles/${response.data.data.id}`)
     }
   } catch (error: any) {
-    showToast(error.message || '发布失败，请稍后重试', 'error')
+    const msg = error.message || ''
+    if (msg.includes('敏感词') || msg.includes('禁止')) {
+      showToast(msg, 'error')
+    } else {
+      showToast(error.message || '发布失败，请稍后重试', 'error')
+    }
   }
 }
 

@@ -14,6 +14,8 @@ export interface OrientationState {
   isOrientationApiSupported: Ref<boolean>
   /** 是否正在显示方向锁定提示 */
   showOrientationPrompt: Ref<boolean>
+  /** 期望的方向 */
+  desiredOrientation: Ref<'portrait' | 'landscape' | null>
   /** 显示方向锁定提示 */
   promptOrientationLock: (desiredOrientation: 'portrait' | 'landscape') => void
   /** 关闭方向锁定提示 */
@@ -28,8 +30,7 @@ export const useOrientation = (): OrientationState => {
   const isPortrait = computed(() => orientation.value === 'portrait')
   const isOrientationApiSupported = ref(false)
   const showOrientationPrompt = ref(false)
-
-  let desiredOrientation: 'portrait' | 'landscape' | null = null
+  const desiredOrientation = ref<'portrait' | 'landscape' | null>(null)
 
   // 检测是否支持屏幕方向 API
   if (import.meta.client) {
@@ -78,7 +79,7 @@ export const useOrientation = (): OrientationState => {
 
   // 显示方向锁定提示
   const promptOrientationLock = (desired: 'portrait' | 'landscape') => {
-    desiredOrientation = desired
+    desiredOrientation.value = desired
 
     // 如果当前方向已经是期望方向，不需要提示
     if (orientation.value === desired) return
@@ -89,7 +90,7 @@ export const useOrientation = (): OrientationState => {
   // 关闭方向锁定提示
   const dismissOrientationPrompt = () => {
     showOrientationPrompt.value = false
-    desiredOrientation = null
+    desiredOrientation.value = null
   }
 
   return {
@@ -98,6 +99,7 @@ export const useOrientation = (): OrientationState => {
     isPortrait,
     isOrientationApiSupported,
     showOrientationPrompt,
+    desiredOrientation,
     promptOrientationLock,
     dismissOrientationPrompt,
   }

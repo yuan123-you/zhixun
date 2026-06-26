@@ -2,14 +2,14 @@
   <!-- 作品卡片组件 - 微博风格布局 -->
   <article class="card px-2.5 py-2 md:px-4 md:py-3 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer no-tap-highlight touch-feedback" @click="navigateToDetail">
     <!-- 作者信息栏（标题上方） -->
-    <div class="flex items-center gap-1.5 mb-1">
+    <div class="flex items-center gap-1.5 mb-0.5">
       <!-- 作者头像 -->
-      <NuxtLink :to="`/user/${article.author?.id}`" class="shrink-0 flex items-center" @click.stop>
+      <NuxtLink :to="`/user/${article.authorId || article.author?.id}`" class="shrink-0 flex items-center" @click.stop>
         <UserAvatar :src="article.authorAvatar || article.author?.avatar" :alt="article.authorName || article.author?.nickname" size="sm" />
       </NuxtLink>
       <div class="flex-1 min-w-0 flex items-center gap-1">
         <!-- 作者姓名 + 发布时间 -->
-        <NuxtLink :to="`/user/${article.author?.id}`" class="text-xs md:text-sm font-medium text-slate-900 hover:text-primary transition-colors truncate max-w-[120px]" @click.stop>
+        <NuxtLink :to="`/user/${article.authorId || article.author?.id}`" class="text-xs md:text-sm font-medium text-slate-900 hover:text-primary transition-colors truncate max-w-[120px]" @click.stop>
           {{ article.authorName || article.author?.nickname }}
         </NuxtLink>
         <span class="text-[10px] md:text-xs text-slate-400 shrink-0">·</span>
@@ -33,7 +33,7 @@
     </div>
 
     <!-- 作品内容区 -->
-    <div class="flex gap-2">
+    <div class="flex gap-1.5">
       <div class="flex-1 min-w-0">
         <!-- 标题（支持高亮HTML） -->
         <h3 v-if="article.matchType === 'title'" class="text-sm md:text-base font-semibold text-slate-900 line-clamp-2 mb-0.5" v-html="article.title" />
@@ -75,8 +75,13 @@
       </div>
     </div>
 
+    <!-- 话题标签 -->
+    <div v-if="article.topicTags?.length" class="flex flex-wrap gap-1 mt-1">
+      <TopicBadge v-for="t in article.topicTags" :key="t.id" :id="t.id" :name="t.name" :is-official="t.isOfficial" />
+    </div>
+
     <!-- 作品互动部分（内容下方） -->
-    <div class="flex items-center mt-1">
+    <div class="flex items-center mt-0.5">
       <!-- 点赞 -->
       <button
         class="flex items-center gap-1 px-1.5 py-1 rounded-full text-xs transition-colors hover:bg-slate-50 active:scale-95"
@@ -267,8 +272,11 @@ const handleToggleLike = async () => {
   }
 }
 
-// 获取作品链接
-const getArticleUrl = () => `${window.location.origin}/articles/${props.article.id}`
+// 获取作品链接（SSR 安全：仅在客户端事件处理器中调用）
+const getArticleUrl = () => {
+  if (import.meta.server) return `/articles/${props.article.id}`
+  return `${window.location.origin}/articles/${props.article.id}`
+}
 
 // 复制链接
 const shareCopyLink = async () => {
@@ -325,13 +333,18 @@ const shareToQQ = async () => {
 </script>
 
 <style scoped>
-/* 作品正文 - 溢出省略6行 */
+/* 作品正文 - 溢出省略6行，max-height作为后备确保移动端正确截断 */
 .article-text {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 6;
+  line-clamp: 6;
   overflow: hidden;
   word-break: break-word;
+  /* 后备方案：6行 × 1.5行高 × 字号 ≈ 9em */
+  max-height: 9em;
+  /* 防止v-html中的块级元素破坏line-clamp计数 */
+  text-overflow: ellipsis;
 }
 
 /* 搜索结果高亮样式 */
@@ -364,6 +377,16 @@ h3 :deep(em) {
   padding: 0 2px;
 }
 
+/* v-html内容中所有元素转为inline，确保line-clamp正确计数 */
+.article-text :deep(*) {
+  display: inline;
+}
+
+/* 确保br标签不产生额外行高 */
+.article-text :deep(br) {
+  display: none;
+}
+
 /* 分享菜单动画 */
 .share-menu-enter-active,
 .share-menu-leave-active {
@@ -373,5 +396,24 @@ h3 :deep(em) {
 .share-menu-leave-to {
   opacity: 0;
   transform: translateY(4px);
+}
+
+/* ===== 移动端紧凑对齐 (与 Tailwind md:768px 断点一致) ===== */
+@media (max-width: 767.98px) {
+  /* 覆盖全局.card padding，确保移动端ArticleCard使用精确的紧凑间距 */
+  .card {
+    padding: 6px 10px;
+  }
+
+  /* 移动端缩小标题与正文间距 */
+  h3 {
+    margin-bottom: 2px;
+  }
+
+  /* 移动端互动按钮紧凑间距 */
+  .flex.items-center.mt-0\.5 {
+    margin-top: 2px;
+    padding-top: 2px;
+  }
 }
 </style>

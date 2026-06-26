@@ -117,6 +117,34 @@ public class MultiLevelCacheManager implements CacheManager {
     }
 
     /**
+     * 应用启动时清空所有缓存的 L2 层（Redis），避免旧服务残留的数据污染
+     * L1 (Caffeine) 无需清理（新进程内存已为空）
+     */
+    public void clearAllCachesOnStartup() {
+        String pattern = l2KeyPrefix + "*";
+        try {
+            java.util.Set<String> keys = new java.util.HashSet<>();
+            org.springframework.data.redis.core.Cursor<String> cursor = redisTemplate.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(pattern)
+                            .count(100)
+                            .build());
+            while (cursor.hasNext()) {
+                keys.add(cursor.next());
+            }
+            cursor.close();
+            if (!keys.isEmpty()) {
+                redisTemplate.delete(keys);
+                log.info("启动时清理缓存: 清除 L2 (Redis) 残留缓存 {} 条", keys.size());
+            } else {
+                log.info("启动时清理缓存: 无残留缓存");
+            }
+        } catch (Exception e) {
+            log.warn("启动时清理缓存失败: {}", e.getMessage());
+        }
+    }
+
+    /**
      * 缓存配置
      */
     private static class CacheConfig {

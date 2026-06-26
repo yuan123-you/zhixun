@@ -16,7 +16,7 @@ public interface UserMapper extends BaseMapper<User> {
      * 需要单独方法是因为 User 实体中 passwordHash 标注了 @TableField(select = false)，
      * MyBatis-Plus 的 LambdaQueryWrapper.select() 无法覆盖该限制
      */
-    @Select("SELECT id, username, password_hash, nickname, avatar, email, phone, " +
+    @Select("SELECT id, uid, username, password_hash, nickname, avatar, email, phone, " +
             "status, role, last_login_at, created_at, updated_at " +
             "FROM sys_user WHERE username = #{username}")
     User selectByUsernameWithPassword(String username);

@@ -27,7 +27,8 @@ import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreMode;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.HighlightField;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -47,8 +48,9 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@Primary
 @RequiredArgsConstructor
-@ConditionalOnBean(OpenSearchClient.class)
+@ConditionalOnProperty(name = "opensearch.enabled", havingValue = "true")
 public class SearchServiceImpl implements SearchService {
 
     private final OpenSearchClient openSearchClient;
@@ -95,7 +97,13 @@ public class SearchServiceImpl implements SearchService {
 
         long total = 0L;
 
-        switch (type != null ? type : "all") {
+        // 规范化 type：兼容前端复数形式
+        String normalizedType = type != null ? type : "all";
+        if ("articles".equals(normalizedType)) normalizedType = "article";
+        if ("users".equals(normalizedType)) normalizedType = "user";
+        if ("images".equals(normalizedType)) normalizedType = "image";
+
+        switch (normalizedType) {
             case "article":
                 total = searchArticles(keyword, categoryId, tagId, timeRange, startDate, endDate, sort, page, pageSize, result);
                 result.setArticleTotal(total);
@@ -580,9 +588,16 @@ public class SearchServiceImpl implements SearchService {
             result.setUsers(voList);
             return response.hits().total().value();
         } catch (Exception e) {
-            log.error("OpenSearch 搜索用户失败: {}", e.getMessage());
-            result.setUsers(Collections.emptyList());
-            return 0L;
+            log.warn("OpenSearch 用户搜索不可用，降级到 MySQL: {}", e.getMessage());
+            try {
+                SearchResultVO fallbackResult = fallbackService.getUserSearchFallback(keyword, page, pageSize);
+                result.setUsers(fallbackResult.getUsers());
+                return fallbackResult.getTotal();
+            } catch (Exception ex) {
+                log.error("MySQL 降级用户搜索也失败: {}", ex.getMessage());
+                result.setUsers(Collections.emptyList());
+                return 0L;
+            }
         }
     }
 

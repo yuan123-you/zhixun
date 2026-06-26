@@ -60,6 +60,8 @@ public class SecurityConfig implements WebMvcConfigurer {
             "/ws/**",
             // 静态资源
             "/static/**",
+            // 本地文件上传目录（MinIO 不可用时的降级方案）
+            "/uploads/**",
             "/favicon.ico",
             // 健康检查
             "/actuator/**"

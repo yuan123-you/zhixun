@@ -344,18 +344,21 @@
   }
 }
 
-/* ==================== 移动端紧凑布局优化 ==================== */
-@media (max-width: 767px) {
+/* ==================== 移动端紧凑布局优化 (>=0px, <768px) ==================== */
+/* 统一使用 768px 与 Tailwind 的 md 断点对齐，避免与 md:min-width 冲突 */
+@media (max-width: 767.98px) {
   /* 移动端减小标题字号 */
-  h1 { font-size: 1.25rem !important; line-height: 1.4 !important; }
-  h2 { font-size: 1.125rem !important; line-height: 1.4 !important; }
-  h3 { font-size: 1rem !important; line-height: 1.5 !important; }
+  h1 { font-size: 1.25rem; line-height: 1.4; }
+  h2 { font-size: 1.125rem; line-height: 1.4; }
+  h3 { font-size: 1rem; line-height: 1.5; }
 
   /* 移动端紧凑行高 */
-  p, li { line-height: 1.5 !important; }
+  p, li { line-height: 1.5; }
 
-  /* 移动端紧凑卡片内边距 */
-  .card { padding: 0.5rem !important; }
+  /* 移动端紧凑卡片内边距 - 左10px 右10px 上6px 下6px 确保各组件对齐 */
+  .card {
+    padding: 0.375rem 0.625rem;
+  }
 
   /* 移动端按钮紧凑化但保持可点击性 */
   .btn {
@@ -377,8 +380,8 @@
     font-size: 0.6875rem;
   }
 
-  /* 移动端减少section间距 */
-  .card + .card { margin-top: 0.375rem; }
+  /* 移动端减少卡片间间距 */
+  .card + .card { margin-top: 0.25rem; }
 }
 
 /* ==================== 平板端适配 ==================== */
@@ -706,14 +709,42 @@
 /* ==================== 页面初始加载过渡控制 ==================== */
 
 /*
- * 防止 SSR 水合期间布局属性（padding、margin 等）产生过渡动画。
- * 页面加载完成后由 JS 移除该类名，恢复正常过渡效果。
+ * 防止 SSR 水合期间布局属性（padding、margin、backdrop-filter、transform 等）
+ * 产生过渡动画导致布局停留在中间帧。
+ *
+ * 由 server/plugins/pre-hydration.ts 在 SSR 阶段将 pre-hydration 写入 <html class="pre-hydration">；
+ * 客户端水合完成且 useBreakpoints/color-mode 稳定后，由 plugins/hydration.client.ts
+ * 在双 rAF + 50ms 延时后移除该类，恢复正常过渡效果。
+ *
  * 这是解决"DevTools 检查元素时布局正常、正常浏览时错位"的关键修复：
  * DevTools 打开时会强制同步重排（reflow），将过渡"快进"到最终状态，
  * 而正常浏览时过渡可能停留在中间状态导致布局错位。
+ *
+ * 选择器要点：
+ * 1. html.pre-hydration 覆盖根 html 元素；
+ * 2. html.pre-hydration * 覆盖所有后代节点（包括 <Teleport to="body"> 渲染出的节点）；
+ * 3. 同时禁用 ::before/::after 伪元素上的 transition（backdrop-blur、装饰动画常用）；
+ * 4. transition-* / duration-* / ease-* 全部屏蔽，避免被优先级更高的过渡声明绕过；
+ * 5. 显式禁用 backdrop-filter，防止合成层在过渡中停留在错误状态。
  */
-.pre-hydration,
-.pre-hydration * {
+html.pre-hydration,
+html.pre-hydration *,
+html.pre-hydration *::before,
+html.pre-hydration *::after {
   transition: none !important;
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
   animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  -webkit-transition: none !important;
+  -webkit-transition-property: none !important;
+  -webkit-transition-duration: 0s !important;
+  -webkit-transition-delay: 0s !important;
+  -webkit-animation-duration: 0s !important;
+  -webkit-animation-delay: 0s !important;
+  /* 防止 backdrop-filter 合成层在过渡中停留在错误状态 */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }

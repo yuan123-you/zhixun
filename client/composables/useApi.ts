@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiResponse } from '~/types'
+import { storage, STORAGE_KEYS } from '~/utils/storage'
 
 /** Token即将过期的提前量（5分钟，单位毫秒） */
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000
@@ -11,6 +12,8 @@ const globalPendingRequests: Array<(token: string) => void> = []
 
 /** 全局 axios 实例（单例模式，避免重复创建） */
 let globalInstance: AxiosInstance | null = null
+/** 记录全局实例对应的 baseURL，防止 SSR 和客户端环境实例错配 */
+let globalInstanceBaseURL: string | null = null
 
 /** API请求封装组合式函数 */
 export const useApi = () => {
@@ -22,8 +25,8 @@ export const useApi = () => {
     ? `${config.apiBase}/api/v1`
     : (config.public.apiBase as string)
 
-  // 复用全局实例（仅当 baseURL 一致时）
-  if (globalInstance) {
+  // 复用全局实例（仅当 baseURL 一致时，防止 SSR 和客户端环境实例错配）
+  if (globalInstance && globalInstanceBaseURL === baseURL) {
     return {
       instance: globalInstance,
       get: <T = any>(url: string, params?: Record<string, any>, options?: AxiosRequestConfig) => {
@@ -92,11 +95,19 @@ export const useApi = () => {
         userStore.setToken(accessToken, newRefreshToken, expiresIn)
 
         // 重试所有挂起的请求
-        globalPendingRequests.forEach((callback) => callback(accessToken))
+        const pendingCallbacks = [...globalPendingRequests]
         globalPendingRequests.length = 0
+        pendingCallbacks.forEach((callback) => callback(accessToken))
 
         return accessToken
       } catch {
+        // 刷新失败，拒绝所有挂起的请求
+        const pendingCallbacks = [...globalPendingRequests]
+        globalPendingRequests.length = 0
+        pendingCallbacks.forEach((callback) => {
+          // 每个 pending 请求的 reject 已在 handleTokenRefresh 中通过 globalRefreshPromise.catch 处理
+        })
+
         if (import.meta.client) showAuthExpiredToast()
         userStore.logout()
         navigateTo('/login')
@@ -113,19 +124,32 @@ export const useApi = () => {
   // 请求拦截器：自动携带Token和CSRF Token，Token即将过期时主动刷新
   instance.interceptors.request.use(
     async (requestConfig) => {
-      const token = userStore.token
+      const requestUrl = requestConfig.url || ''
 
-      // 如果有Token且即将过期（但未完全过期），先刷新Token再发送请求
-      if (token && isTokenExpiringSoon() && !isTokenExpired()) {
-        try {
-          const newToken = await refreshAccessToken()
-          requestConfig.headers.Authorization = `Bearer ${newToken}`
-        } catch {
-          // 刷新失败，仍然使用旧Token发送请求，由响应拦截器处理401
+      // 认证端点（登录/注册/刷新Token/验证码）不携带旧Token，
+      // 避免过期Token触发后端403或干扰认证流程
+      const isAuthEndpoint = requestUrl.includes('/auth/login')
+        || requestUrl.includes('/auth/register')
+        || requestUrl.includes('/auth/refresh')
+        || requestUrl.includes('/auth/send-code')
+        || requestUrl.includes('/auth/graph-captcha')
+        || requestUrl.includes('/auth/forgot-password')
+
+      if (!isAuthEndpoint) {
+        const token = userStore.token
+
+        // 如果有Token且即将过期（但未完全过期），先刷新Token再发送请求
+        if (token && isTokenExpiringSoon() && !isTokenExpired()) {
+          try {
+            const newToken = await refreshAccessToken()
+            requestConfig.headers.Authorization = `Bearer ${newToken}`
+          } catch {
+            // 刷新失败，不再用旧Token发送请求
+            return Promise.reject(new Error('Token刷新失败，请重新登录'))
+          }
+        } else if (token) {
           requestConfig.headers.Authorization = `Bearer ${token}`
         }
-      } else if (token) {
-        requestConfig.headers.Authorization = `Bearer ${token}`
       }
 
       // SSR 请求标识：服务端渲染时无法携带浏览器 Cookie，需要告知后端跳过 CSRF 校验
@@ -155,13 +179,18 @@ export const useApi = () => {
   const showForbiddenDialog = (message?: string) => {
     if (!import.meta.client || forbiddenDialogVisible) return
     forbiddenDialogVisible = true
+    // 安全的文本转义，防止后端错误消息中的 HTML 注入
+    const safeMessage = (message || '暂无权限访问')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
     const overlay = document.createElement('div')
     overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/30'
-    overlay.innerHTML = `
-      <div class="bg-white rounded-xl shadow-[var(--shadow-lg)] px-5 py-3 mx-4 text-center text-sm text-slate-700">
-        ${message || '暂无权限访问'}
-      </div>
-    `
+    const dialogDiv = document.createElement('div')
+    dialogDiv.className = 'bg-white rounded-xl shadow-[var(--shadow-lg)] px-5 py-3 mx-4 text-center text-sm text-slate-700'
+    dialogDiv.textContent = safeMessage
+    overlay.appendChild(dialogDiv)
     document.body.appendChild(overlay)
     const close = () => {
       overlay.style.opacity = '0'
@@ -180,13 +209,13 @@ export const useApi = () => {
       // 检查数据版本号，版本号变化时清除请求缓存
       const serverVersion = response.headers['x-data-version']
       if (serverVersion && import.meta.client) {
-        const storedVersion = localStorage.getItem('data-version')
+        const storedVersion = storage.get<string>(STORAGE_KEYS.DATA_VERSION)
         if (storedVersion && serverVersion !== storedVersion) {
           // 版本号变化，清除所有请求缓存
           const { clearAll } = useRequestCache()
           clearAll()
         }
-        localStorage.setItem('data-version', String(serverVersion))
+        storage.set(STORAGE_KEYS.DATA_VERSION, String(serverVersion))
       }
 
       // 业务错误码处理
@@ -303,6 +332,7 @@ export const useApi = () => {
 
   // 保存到全局实例
   globalInstance = instance
+  globalInstanceBaseURL = baseURL
 
   return {
     instance,
@@ -323,12 +353,15 @@ function showAuthExpiredToast() {
 
   const toast = document.createElement('div')
   toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium transition-all duration-300 transform bg-amber-500 flex items-center gap-2'
+  // 使用 textContent 替代 innerHTML 防止潜在 XSS
+  const span = document.createElement('span')
+  span.textContent = '登录已过期，请重新登录'
   toast.innerHTML = `
     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
-    <span>登录已过期，请重新登录</span>
   `
+  toast.appendChild(span)
   document.body.appendChild(toast)
 
   setTimeout(() => {

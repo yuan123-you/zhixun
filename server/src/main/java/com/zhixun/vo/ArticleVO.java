@@ -56,6 +56,9 @@ public class ArticleVO {
     /** 发布IP属地 */
     private String ipAddress;
 
+    /** 作者ID */
+    private Long authorId;
+
     /** 作者昵称 */
     private String authorName;
 

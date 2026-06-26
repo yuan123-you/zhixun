@@ -24,6 +24,8 @@ export interface Article {
   categoryId: number
   categoryName: string
   tags: Tag[]
+  /** 作者ID */
+  authorId?: number
   /** 作者对象（部分接口返回） */
   author?: User
   /** 作者昵称（后端ArticleVO扁平字段） */
@@ -51,6 +53,8 @@ export interface Article {
   contentSnippet?: string
   /** 搜索匹配类型：title=标题匹配, content=正文匹配, summary=摘要匹配 */
   matchType?: string
+  /** 关联的话题标签 */
+  topicTags?: { id: number; name: string; isOfficial?: boolean }[]
   createdAt: string
   updatedAt: string
 }
@@ -300,6 +304,8 @@ export interface AuthResponse {
     nickname: string
     avatar: string
     role: string
+    email: string
+    phone: string
   }
 }
 
@@ -365,3 +371,92 @@ export interface UserSettingsLocal {
 
 /** 用户设置接口（合并服务器和本地设置） */
 export interface UserSettings extends UserSettingsServer, UserSettingsLocal {}
+
+// === New Feature Types ===
+export interface TopicData {
+  id: number
+  name: string
+  description: string
+  coverImage: string
+  articleCount: number
+  followCount: number
+  hotScore: number
+  isOfficial: number
+  isFollowed: boolean
+}
+
+export interface GroupData {
+  id: number
+  name: string
+  avatar: string
+  description: string
+  ownerId: number
+  ownerName: string
+  memberCount: number
+  maxMembers: number
+  isPublic: number
+  myRole: number
+  joinedAt: string
+}
+
+export interface GroupMessageData {
+  id: number
+  groupId: number
+  senderId: number
+  senderName: string
+  senderAvatar: string
+  content: string
+  messageType: string
+  createdAt: string
+}
+
+export interface CheckInData {
+  hasCheckedIn: boolean
+  consecutiveDays: number
+  todayPoints: number
+  totalExp: number
+  level: number
+  levelName: string
+}
+
+export interface BadgeData {
+  id: number
+  name: string
+  description: string
+  icon: string
+  category: string
+  isOwned: boolean
+  earnedAt?: string
+}
+
+export interface TemplateData {
+  id: number
+  name: string
+  description: string
+  coverImage: string
+  category: string
+  content: string
+  tags: string
+  useCount: number
+  creatorName: string
+}
+
+export interface ProfileThemeData {
+  themeColor: string
+  backgroundImage: string | null
+  backgroundStyle: string
+  fontFamily: string | null
+  bioBgColor: string | null
+  cardStyle: string
+}
+
+export interface CollaboratorData {
+  id: number
+  articleId: number
+  userId: number
+  userName: string
+  userAvatar: string
+  permission: string
+  status: number
+  createdAt: string
+}

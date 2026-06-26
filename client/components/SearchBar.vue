@@ -65,14 +65,17 @@
 
 const router = useRouter()
 const { searchApi } = useApi()
+const { getHistory, addHistory, clearHistory: clearSearchHistory } = useSearchHistory()
 
 const keyword = ref('')
 const suggestions = ref<string[]>([])
 const hotSearches = ref<string[]>([])
-const searchHistory = ref<string[]>([])
 const showSuggestions = ref(false)
 const searchRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
+
+// 从统一的搜索历史 composable 读取，提取关键词列表用于显示
+const searchHistory = computed(() => getHistory().map((e) => e.keyword))
 
 // 获取搜索建议
 const fetchSuggestions = async (query: string) => {
@@ -98,8 +101,8 @@ const handleInput = () => {
 // 执行搜索
 const handleSearch = () => {
   if (!keyword.value.trim()) return
-  // 保存搜索历史
-  saveHistory(keyword.value.trim())
+  // 保存搜索历史（使用统一 composable）
+  addHistory(keyword.value.trim())
   showSuggestions.value = false
   router.push(`/search?keyword=${encodeURIComponent(keyword.value.trim())}`)
 }
@@ -116,22 +119,9 @@ const clearKeyword = () => {
   suggestions.value = []
 }
 
-// 保存搜索历史
-const saveHistory = (kw: string) => {
-  const history = searchHistory.value.filter((h) => h !== kw)
-  history.unshift(kw)
-  searchHistory.value = history.slice(0, 10)
-  if (import.meta.client) {
-    localStorage.setItem('searchHistory', JSON.stringify(searchHistory.value))
-  }
-}
-
-// 清除搜索历史
+// 清除搜索历史（使用统一 composable + 同步服务端）
 const clearHistory = async () => {
-  searchHistory.value = []
-  if (import.meta.client) {
-    localStorage.removeItem('searchHistory')
-  }
+  clearSearchHistory()
   try {
     await searchApi.clearHistory()
   } catch {
@@ -146,21 +136,8 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-// 加载热门搜索和搜索历史
+// 加载热门搜索
 onMounted(async () => {
-  // 从 localStorage 恢复搜索历史
-  if (import.meta.client) {
-    const saved = localStorage.getItem('searchHistory')
-    if (saved) {
-      try {
-        searchHistory.value = JSON.parse(saved)
-      } catch {
-        searchHistory.value = []
-      }
-    }
-  }
-
-  // 获取热门搜索
   try {
     const response = await searchApi.getHotSearches()
     hotSearches.value = response.data.data

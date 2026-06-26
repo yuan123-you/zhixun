@@ -1,0 +1,40 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - main [ref=e5]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - heading "话题广场" [level=1] [ref=e9]
+          - paragraph [ref=e10]: 发现热门话题，参与讨论
+        - generic [ref=e12]:
+          - textbox "搜索话题..." [ref=e13]
+          - img [ref=e14]
+        - generic [ref=e16]:
+          - button "热门话题" [ref=e17] [cursor=pointer]
+          - button "最新话题" [ref=e18] [cursor=pointer]
+    - navigation [ref=e25]:
+      - generic [ref=e26]:
+        - link "首页" [ref=e27] [cursor=pointer]:
+          - /url: /
+          - img [ref=e28]
+          - generic [ref=e30]: 首页
+        - link "发现" [ref=e31] [cursor=pointer]:
+          - /url: /discover
+          - img [ref=e32]
+          - generic [ref=e34]: 发现
+        - link "发布" [ref=e35] [cursor=pointer]:
+          - /url: /editor
+          - img [ref=e37]
+          - generic [ref=e39]: 发布
+        - link "消息" [ref=e40] [cursor=pointer]:
+          - /url: /notifications
+          - img [ref=e41]
+          - generic [ref=e43]: 消息
+        - link "我的" [ref=e44] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e45]
+          - generic [ref=e47]: 我的
+  - generic [ref=e50]:
+    - img [ref=e52]:
+      - generic [ref=e54]: 知
+    - generic [ref=e55]: 知讯
+    - generic [ref=e56]: 发现优质内容，分享知识与见解
