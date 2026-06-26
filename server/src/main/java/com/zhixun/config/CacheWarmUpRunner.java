@@ -109,17 +109,17 @@ public class CacheWarmUpRunner implements CommandLineRunner {
         try {
             Cache articleHotCache = cacheManager.getCache("articleHot");
             if (articleHotCache != null) {
-                log.info("[异步预热] 热门文章缓存区域已初始化");
+                log.info("[异步预热] 热门作品缓存区域已初始化");
             }
-            log.info("[异步预热] 热门文章缓存加载完成");
+            log.info("[异步预热] 热门作品缓存加载完成");
         } catch (Exception e) {
-            log.warn("[异步预热] 热门文章缓存加载失败: {}", e.getMessage());
+            log.warn("[异步预热] 热门作品缓存加载失败: {}", e.getMessage());
         }
     }
 
     /**
-     * 预热热门文章数据到多级缓存
-     * 按浏览量取 Top 50 的已发布文章
+     * 预热热门作品数据到多级缓存
+     * 按浏览量取 Top 50 的已发布作品
      */
     @Async
     public void warmUpHotArticles() {
@@ -137,10 +137,10 @@ public class CacheWarmUpRunner implements CommandLineRunner {
                         articleHotCache.put(article.getId(), article);
                     }
                 }
-                log.info("[异步预热] 热门文章缓存加载完成, count={}", hotArticles.size());
+                log.info("[异步预热] 热门作品缓存加载完成, count={}", hotArticles.size());
             }
         } catch (Exception e) {
-            log.warn("[异步预热] 热门文章缓存加载失败: {}", e.getMessage());
+            log.warn("[异步预热] 热门作品缓存加载失败: {}", e.getMessage());
         }
     }
 
@@ -175,7 +175,7 @@ public class CacheWarmUpRunner implements CommandLineRunner {
 
     /**
      * 初始化布隆过滤器
-     * 将所有已发布文章的 ID 加入布隆过滤器，防止缓存穿透
+     * 将所有已发布作品的 ID 加入布隆过滤器，防止缓存穿透
      */
     @Async
     public void warmUpBloomFilter() {
@@ -185,7 +185,7 @@ public class CacheWarmUpRunner implements CommandLineRunner {
                 return;
             }
 
-            // 分批加载文章 ID，避免一次性加载过多数据
+            // 分批加载作品 ID，避免一次性加载过多数据
             long offset = 0;
             int batchSize = 1000;
             int totalCount = 0;
@@ -214,7 +214,7 @@ public class CacheWarmUpRunner implements CommandLineRunner {
             }
 
             cachePenetrationProtection.markBloomInitialized();
-            log.info("[异步预热] 布隆过滤器初始化完成, 文章数={}", totalCount);
+            log.info("[异步预热] 布隆过滤器初始化完成, 作品数={}", totalCount);
         } catch (Exception e) {
             log.warn("[异步预热] 布隆过滤器初始化失败: {}", e.getMessage());
         }

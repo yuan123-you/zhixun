@@ -26,7 +26,7 @@ public class Tag implements Serializable {
     /** 标签名称 */
     private String name;
 
-    /** 关联文章数，对应 article_count */
+    /** 关联作品数，对应 article_count */
     private Long articleCount;
 
     /** 创建时间 */

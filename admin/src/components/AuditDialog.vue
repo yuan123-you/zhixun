@@ -1,5 +1,5 @@
-<template>
-  <el-dialog v-model="visible" title="文章审核" width="500px" @close="handleClose">
+﻿<template>
+  <el-dialog v-model="visible" title="作品审核" width="500px" @close="handleClose">
     <p class="audit-tip">请选择审核结果：</p>
     <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
       <el-form-item label="审核结果" prop="action">
@@ -41,7 +41,7 @@ import { auditArticle } from '@/api/article'
 const props = defineProps<{
   /** 是否显示 */
   modelValue: boolean
-  /** 文章ID */
+  /** 作品ID */
   articleId?: number
 }>()
 

@@ -1,4 +1,4 @@
-// 共享类型（来自 @zhixun/shared-types 统一类型包）
+﻿// 共享类型（来自 @zhixun/shared-types 统一类型包）
 // 注：ApiResponse / PageResult / UserInfo 与本地定义有差异，本地版本保留现有字段名，不在此处重导出
 export {
   ErrorCode,
@@ -81,7 +81,7 @@ export enum UserStatus {
   Banned = 'banned',
 }
 
-/** 文章状态枚举 */
+/** 作品状态枚举 */
 export enum ArticleStatus {
   /** 草稿 */
   Draft = 'draft',
@@ -95,7 +95,7 @@ export enum ArticleStatus {
   Rejected = 'rejected',
 }
 
-/** 文章信息 */
+/** 作品信息 */
 export interface Article {
   id: number
   title: string
@@ -120,7 +120,7 @@ export interface Article {
   updatedAt: string
 }
 
-/** 文章查询参数 */
+/** 作品查询参数 */
 export interface ArticleQuery extends PageParams {
   keyword?: string
   status?: ArticleStatus
@@ -261,7 +261,7 @@ export interface TrendData {
   viewCount: number
 }
 
-/** 热门文章 */
+/** 热门作品 */
 export interface HotArticle {
   id: number
   title: string

@@ -87,11 +87,11 @@ public class ScheduledTasks {
                             .lt(ViewHistory::getCreatedAt, viewHistoryCutoff));
             log.info("清理浏览记录 {} 条", viewHistoryDeleted);
 
-            // 清理90天前的文章浏览记录
+            // 清理90天前的作品浏览记录
             int articleViewHistoryDeleted = articleViewHistoryMapper.delete(
                     new LambdaQueryWrapper<ArticleViewHistory>()
                             .lt(ArticleViewHistory::getCreateTime, viewHistoryCutoff));
-            log.info("清理文章浏览记录 {} 条", articleViewHistoryDeleted);
+            log.info("清理作品浏览记录 {} 条", articleViewHistoryDeleted);
 
             // 清理180天前的操作日志
             LocalDateTime operationLogCutoff = LocalDateTime.now().minusDays(180);
@@ -149,12 +149,12 @@ public class ScheduledTasks {
     }
 
     /**
-     * 每分钟：检查定时发布文章
-     * 查询所有 status=PENDING 且 publish_at <= now() 的文章，将其状态更新为 PUBLISHED
+     * 每分钟：检查定时发布作品
+     * 查询所有 status=PENDING 且 publish_at <= now() 的作品，将其状态更新为 PUBLISHED
      */
     @Scheduled(cron = "0 * * * * ?")
     public void checkScheduledPublish() {
-        log.info("===== 定时任务：检查定时发布文章 =====");
+        log.info("===== 定时任务：检查定时发布作品 =====");
         try {
             articleService.publishScheduledArticles();
         } catch (Exception e) {
@@ -178,7 +178,7 @@ public class ScheduledTasks {
 
     /**
      * 每30分钟：检查缓存一致性
-     * 对比 Redis 缓存中的文章详情与数据库最新数据，
+     * 对比 Redis 缓存中的作品详情与数据库最新数据，
      * 发现不一致时自动清除过期缓存
      */
     @Scheduled(cron = "0 */30 * * * ?")
@@ -192,8 +192,8 @@ public class ScheduledTasks {
     }
 
     /**
-     * 检查文章详情缓存一致性
-     * 对比 Redis 缓存中的文章详情与数据库最新数据，发现不一致时自动清除过期缓存
+     * 检查作品详情缓存一致性
+     * 对比 Redis 缓存中的作品详情与数据库最新数据，发现不一致时自动清除过期缓存
      */
     private void checkArticleDetailConsistency() {
         Map<String, Object> result = articleService.checkArticleDetailConsistency();

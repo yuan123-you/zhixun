@@ -1,4 +1,4 @@
-import { get, post, put, del } from './request'
+﻿import { get, post, put, del } from './request'
 import type { Tag, PageResult, PageParams } from '@/types'
 
 /** 获取标签列表 */
@@ -36,7 +36,7 @@ export function mergeTag(sourceTagId: number, targetTagId: number) {
   return post<void>('/tags/merge', { sourceTagId, targetTagId } as unknown as Record<string, unknown>)
 }
 
-/** 同步标签文章数 */
+/** 同步标签作品数 */
 export function syncArticleCount(tagId?: number) {
   const params = tagId ? { tagId } as unknown as Record<string, unknown> : undefined
   return post<void>('/tags/sync-article-count', params)

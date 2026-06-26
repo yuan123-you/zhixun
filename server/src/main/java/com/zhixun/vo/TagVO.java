@@ -16,7 +16,7 @@ public class TagVO {
     /** 标签名称 */
     private String name;
 
-    /** 关联文章数 */
+    /** 关联作品数 */
     private Long articleCount;
 
     /** 创建时间 */

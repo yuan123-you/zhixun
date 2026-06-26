@@ -1,5 +1,5 @@
--- 07-add-location-ip.sql
--- 文章表添加发布位置和IP属地字段
+﻿-- 07-add-location-ip.sql
+-- 作品表添加发布位置和IP属地字段
 -- 执行前请确保数据库已备份
 
 ALTER TABLE `cms_article`

@@ -1,5 +1,5 @@
-<template>
-  <!-- 文章详情页 -->
+﻿<template>
+  <!-- 作品详情页 -->
   <div class="max-w-[800px] md:max-w-[900px] 2xl:max-w-[1200px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 返回导航 -->
     <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors mb-2" @click="goBack">
@@ -12,12 +12,12 @@
     <!-- 加载状态 -->
     <LoadingSkeleton v-if="pending" type="article" />
 
-    <!-- 文章内容 -->
+    <!-- 作品内容 -->
     <SwipeArticle v-else-if="article" :prev-id="prevArticleId" :next-id="nextArticleId">
     <article class="animate-fade-in 2xl:flex 2xl:gap-8">
-      <!-- 文章主体 -->
+      <!-- 作品主体 -->
       <div class="2xl:flex-1 2xl:min-w-0 2xl:max-w-[800px]">
-      <!-- 文章标题 -->
+      <!-- 作品标题 -->
       <h1 class="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
         {{ article.title }}
       </h1>
@@ -66,7 +66,7 @@
         <img :src="resolveUrl(article.coverImage) || ''" :alt="article.title" class="w-full max-h-96 object-cover" />
       </div>
 
-      <!-- 文章内容（富文本渲染） -->
+      <!-- 作品内容（富文本渲染） -->
       <div ref="contentRef" class="prose prose-slate max-w-none mb-4" v-html="article.content" @click="handleContentClick"></div>
 
       <!-- 标签 -->
@@ -277,7 +277,7 @@
 </template>
 
 <script setup lang="ts">
-/** 文章详情页：SSR渲染 */
+/** 作品详情页：SSR渲染 */
 import type { Article, Comment } from '~/types'
 
 const route = useRoute()
@@ -299,14 +299,14 @@ const { isTablet, isLandscape } = useBreakpoints()
 const { promptOrientationLock, dismissOrientationPrompt, showOrientationPrompt } = useOrientation()
 const articleId = computed(() => Number(route.params.id))
 
-// 文章数据
+// 作品数据
 const comments = ref<Comment[]>([])
 const hasMoreComments = ref(true)
 const commentTotal = ref(0)
 const commentSort = ref('latest')
 const relatedArticles = ref<Article[]>([])
 
-// 上一篇/下一篇文章ID（从相关推荐中取）
+// 上一篇/下一篇作品ID（从相关推荐中取）
 const prevArticleId = computed(() => {
   if (!relatedArticles.value.length) return null
   const idx = relatedArticles.value.findIndex(a => a.id === articleId.value)
@@ -328,7 +328,7 @@ interface TocItem {
 }
 const tocItems = ref<TocItem[]>([])
 
-// 从文章内容中提取目录
+// 从作品内容中提取目录
 const extractToc = (html: string) => {
   const items: TocItem[] = []
   const regex = /<h([1-3])[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h\1>/gi
@@ -374,7 +374,7 @@ const handleContentClick = (e: MouseEvent) => {
   }
 }
 
-// SSR获取文章详情
+// SSR获取作品详情
 const { data: article, pending } = await useAsyncData(
   `article-${articleId.value}`,
   async () => {
@@ -395,7 +395,7 @@ const toggleLike = async () => {
   const response = await interactionApi.toggleLike(article.value.id)
   article.value.isLiked = response.data.data.isLiked
   article.value.likeCount = response.data.data.likeCount
-  // 失效文章列表缓存，确保列表页数据一致
+  // 失效作品列表缓存，确保列表页数据一致
   invalidateArticle()
 }
 
@@ -410,7 +410,7 @@ const toggleCollect = async () => {
   const response = await interactionApi.toggleCollect(article.value.id)
   article.value.isCollected = response.data.data.isCollected
   article.value.collectCount = response.data.data.collectCount
-  // 失效文章列表缓存，确保列表页数据一致
+  // 失效作品列表缓存，确保列表页数据一致
   invalidateArticle()
 }
 
@@ -443,7 +443,7 @@ const submitComment = async (data: { content: string; parentId?: number; replyUs
   const response = await interactionApi.createComment(article.value.id, data)
   comments.value.unshift(response.data.data)
   article.value.commentCount++
-  // 失效文章列表缓存，确保列表页数据一致
+  // 失效作品列表缓存，确保列表页数据一致
   invalidateArticle()
 }
 
@@ -749,6 +749,6 @@ onUnmounted(() => {
 
 // 页面元信息
 useHead({
-  title: () => article.value ? `${article.value.title} - 知讯` : '文章加载失败，请稍后重试' + ' - 知讯',
+  title: () => article.value ? `${article.value.title} - 知讯` : '作品加载失败，请稍后重试' + ' - 知讯',
 })
 </script>

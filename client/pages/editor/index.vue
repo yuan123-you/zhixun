@@ -1,23 +1,12 @@
-<template>
-  <!-- 文章编辑器 -->
+﻿<template>
+  <!-- 作品编辑器 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 返回导航 -->
-    <div>
-      <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-primary-600 transition-colors" @click="goBack">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-        {{ '返回' }}
-      </button>
-      <h1 class="text-2xl font-bold text-slate-900">{{ '写文章' }}</h1>
-    </div>
-
     <!-- 标题输入 -->
     <input
       v-model="form.title"
       type="text"
       class="input text-2xl font-bold mb-3"
-      placeholder="请输入文章标题..."
+      placeholder="请输入作品标题..."
     />
 
     <!-- 摘要输入 -->
@@ -27,7 +16,7 @@
         v-model="form.summary"
         class="input resize-none"
         rows="2"
-        placeholder="请输入文章摘要（选填，不超过200字）..."
+        placeholder="请输入作品摘要（选填，不超过200字）..."
         maxlength="200"
       ></textarea>
       <p class="text-xs text-gray-400 mt-1 text-right">{{ form.summary.length }}/200</p>
@@ -162,31 +151,13 @@
         <span>{{ '发布位置' }}</span>
         <span class="text-xs text-slate-400 font-normal ml-1">(选填)</span>
       </label>
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <input
-            v-model="form.location"
-            type="text"
-            class="input pl-9"
-            placeholder='输入位置，如"北京·朝阳区"'
-          />
-        </div>
-        <button
-          class="flex items-center gap-1 px-3 py-2 text-sm text-primary border border-primary rounded-lg hover:bg-primary-50 transition-colors shrink-0"
-          :disabled="locating"
-          title="自动获取位置"
-          @click="autoLocate"
-        >
-          <svg class="w-4 h-4" :class="{ 'animate-spin': locating }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{{ locating ? '获取中...' : '自动定位' }}</span>
-        </button>
-      </div>
+      <RegionSelector
+        ref="regionSelectorRef"
+        :locating="locating"
+        :show-auto-locate="true"
+        @change="onRegionChange"
+        @auto-locate="autoLocate"
+      />
     </div>
 
     <!-- 封面图上传 -->
@@ -207,7 +178,7 @@
     <!-- 操作按钮 -->
     <div class="flex items-center justify-end space-x-3">
       <button class="btn-ghost" @click="saveDraft">{{ '保存草稿' }}</button>
-      <button class="btn-primary" :disabled="!canPublish" @click="publishArticle">{{ '发布文章' }}</button>
+      <button class="btn-primary" :disabled="!canPublish" @click="publishArticle">{{ '发布作品' }}</button>
     </div>
 
     <!-- 定时发布选项 -->
@@ -227,31 +198,22 @@
           class="input"
           :min="minPublishAt"
         />
-        <p class="text-xs text-gray-400 mt-1">{{ '文章将在指定时间自动发布' }}</p>
+        <p class="text-xs text-gray-400 mt-1">{{ '作品将在指定时间自动发布' }}</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-/** 文章编辑器页 */
+/** 作品编辑器页 */
 import type { Category } from '~/types'
+import { matchRegionByCoord, getRegionByIP } from '~/utils/regions'
 
 definePageMeta({
   middleware: 'auth',
 })
 
-const router = useRouter()
 const { resolveUrl } = useResourceUrl()
-
-// 返回上一页
-const goBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    navigateTo('/')
-  }
-}
 
 // 移动端Tab状态
 const activeTab = ref<'edit' | 'preview'>('edit')
@@ -423,55 +385,65 @@ const insertMarkdown = (prefix: string, suffix: string) => {
   })
 }
 
-// 自动获取位置
+/** 地区选择器引用 */
+const regionSelectorRef = ref<InstanceType<typeof import('~/components/RegionSelector.vue')['default']> | null>(null)
+
+/** 地区选择变化回调 */
+const onRegionChange = (location: string) => {
+  form.location = location
+}
+
+// 自动获取位置（优先浏览器GPS，失败后用IP定位）
 const autoLocate = async () => {
   if (!import.meta.client) return
   locating.value = true
   try {
-    // 优先使用浏览器 Geolocation API
+    let province = ''
+    let city = ''
+    let district = ''
+
+    // 1. 优先使用浏览器 Geolocation API 获取高精度坐标
+    let hasCoords = false
     if ('geolocation' in navigator) {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000,
-        })
-      })
-      const { latitude, longitude } = position.coords
-      // 使用反向地理编码获取地名，这里用免费API
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&accept-language=zh`,
-          { headers: { 'User-Agent': 'ZhixunEditor/1.0' } }
-        )
-        const data = await res.json()
-        if (data && data.display_name) {
-          // 取城市+区级信息
-          const addr = data.address || {}
-          const city = addr.city || addr.town || addr.county || ''
-          const district = addr.suburb || addr.city_district || addr.district || ''
-          if (city) {
-            form.location = district ? `${city}·${district}` : city
-          } else if (addr.state) {
-            form.location = addr.state
-          }
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 8000,
+            maximumAge: 300000,
+          })
+        })
+        const { latitude, longitude } = position.coords
+        hasCoords = true
+        // 用本地城市坐标数据库匹配最近的城市
+        const matched = matchRegionByCoord(latitude, longitude)
+        if (matched) {
+          province = matched.province
+          city = matched.city
         }
       } catch {
-        // 反向地理编码失败，使用坐标
-        form.location = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
+        // GPS 定位失败/被拒绝，继续尝试IP定位
       }
     }
-  } catch (geoErr: any) {
-    // 浏览器定位失败，尝试IP定位
-    try {
-      const res = await fetch('https://ipapi.co/json/')
-      const data = await res.json()
-      if (data && data.city) {
-        form.location = data.region ? `${data.city}·${data.region}` : data.city
+
+    // 2. 如果没有GPS坐标或匹配失败，尝试IP定位
+    if (!hasCoords || !province) {
+      const ipRegion = await getRegionByIP()
+      if (ipRegion) {
+        province = ipRegion.province
+        city = ipRegion.city
       }
-    } catch {
-      // 定位失败，静默处理
     }
+
+    // 3. 如果获得了位置信息，设置到选择器中
+    if (province && regionSelectorRef.value) {
+      regionSelectorRef.value.setRegion({ province, city, district })
+      showToast(`已定位到：${province}${city ? ' · ' + city : ''}`)
+    } else {
+      showToast('定位失败，请手动选择位置', 'error')
+    }
+  } catch {
+    showToast('定位失败，请手动选择位置', 'error')
   } finally {
     locating.value = false
   }
@@ -523,7 +495,7 @@ const getDeviceInfo = (): string | undefined => {
   return undefined
 }
 
-// 发布文章
+// 发布作品
 const publishArticle = async () => {
   if (!canPublish.value) return
   try {
@@ -535,7 +507,7 @@ const publishArticle = async () => {
     }
     const response = await articleApi.createArticle(data)
     if (scheduledPublish.value && publishAt.value) {
-      showToast('文章已设置为定时发布')
+      showToast('作品已设置为定时发布')
       navigateTo('/user')
     } else {
       navigateTo(`/articles/${response.data.data.id}`)
@@ -552,6 +524,6 @@ onMounted(() => {
 
 // 页面元信息
 useHead({
-  title: () => '写文章' + ' - 知讯',
+  title: () => '创作' + ' - 知讯',
 })
 </script>

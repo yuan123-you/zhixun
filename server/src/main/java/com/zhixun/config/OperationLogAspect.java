@@ -126,7 +126,7 @@ public class OperationLogAspect {
      */
     private String resolveTargetTypeFromAnnotation(OperationLog annotation) {
         String module = annotation.module();
-        if (module.contains("文章")) return "ARTICLE";
+        if (module.contains("作品")) return "ARTICLE";
         if (module.contains("评论")) return "COMMENT";
         if (module.contains("关注")) return "FOLLOW";
         if (module.contains("点赞")) return "LIKE";
@@ -147,7 +147,7 @@ public class OperationLogAspect {
         String methodName = method.getName();
 
         if (methodName.contains("Article") || methodName.contains("article")) {
-            return "文章管理";
+            return "作品管理";
         } else if (methodName.contains("User") || methodName.contains("user")) {
             return "用户管理";
         } else if (methodName.contains("SensitiveWord") || methodName.contains("sensitive")) {

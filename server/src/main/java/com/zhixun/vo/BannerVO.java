@@ -22,7 +22,7 @@ public class BannerVO {
     /** 链接地址 */
     private String linkUrl;
 
-    /** 链接类型：1-文章，2-外链 */
+    /** 链接类型：1-作品，2-外链 */
     private Integer linkType;
 
     /** 排序值 */

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 文章创建请求
+ * 作品创建请求
  */
 @Data
 public class ArticleCreateRequest {
@@ -35,7 +35,7 @@ public class ArticleCreateRequest {
     /** 封面图 */
     private String coverImage;
 
-    /** 文章状态：0-草稿，1-待审核 */
+    /** 作品状态：0-草稿，1-待审核 */
     private Integer status;
 
     /** 可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己 */

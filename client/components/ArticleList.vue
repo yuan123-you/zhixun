@@ -1,5 +1,5 @@
-<template>
-  <!-- 文章列表组件：支持无限滚动、骨架屏、平板双列布局、错误重试 -->
+﻿<template>
+  <!-- 作品列表组件：支持无限滚动、骨架屏、平板双列布局、错误重试 -->
   <div>
     <!-- 骨架屏加载状态 -->
     <template v-if="loading && articles.length === 0">
@@ -13,7 +13,7 @@
       <ErrorRetry :message="error" :on-retry="handleRetry" />
     </template>
 
-    <!-- 文章列表 -->
+    <!-- 作品列表 -->
     <template v-else>
       <!-- 平板端双列网格，移动端单列 -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -36,7 +36,7 @@
       </div>
 
       <!-- 空状态 -->
-      <EmptyState v-if="!loading && !error && articles.length === 0" title="暂无文章" description="快去发现精彩内容吧" />
+      <EmptyState v-if="!loading && !error && articles.length === 0" title="暂无作品" description="快去发现精彩内容吧" />
     </template>
 
     <!-- 无限滚动触发器 -->
@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-/** 文章列表组件：支持无限滚动、骨架屏、平板双列布局、错误重试 */
+/** 作品列表组件：支持无限滚动、骨架屏、平板双列布局、错误重试 */
 import type { Article } from '~/types'
 
 const props = withDefaults(defineProps<{

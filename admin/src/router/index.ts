@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+﻿import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { setupGuards } from './guards'
 
 // 静态路由
@@ -25,13 +25,13 @@ const routes: RouteRecordRaw[] = [
         path: 'articles',
         name: 'Articles',
         component: () => import('@/views/articles/index.vue'),
-        meta: { title: '文章管理', icon: 'Document' },
+        meta: { title: '作品管理', icon: 'Document' },
       },
       {
         path: 'articles/pending',
         name: 'PendingArticles',
         component: () => import('@/views/articles/pending.vue'),
-        meta: { title: '待审核文章', icon: 'EditPen' },
+        meta: { title: '待审核作品', icon: 'EditPen' },
       },
       {
         path: 'categories',

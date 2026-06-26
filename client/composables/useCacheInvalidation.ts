@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useCacheInvalidation - 缓存失效管理
  *
  * 在数据变更操作（点赞、收藏、评论等）后，自动失效相关缓存，
@@ -7,7 +7,7 @@
 
 /** 需要失效的缓存 URL 前缀映射 */
 const INVALIDATION_MAP = {
-  /** 文章相关操作后需要失效的缓存前缀 */
+  /** 作品相关操作后需要失效的缓存前缀 */
   article: [
     '/feed/recommend',
     '/feed/latest',
@@ -59,7 +59,7 @@ export function useCacheInvalidation() {
   }
 
   /**
-   * 失效文章相关缓存（点赞/收藏/评论后调用）
+   * 失效作品相关缓存（点赞/收藏/评论后调用）
    */
   const invalidateArticle = () => {
     invalidate('article')

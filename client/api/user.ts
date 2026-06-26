@@ -1,4 +1,4 @@
-import type { User, UserSettings, Article, Comment, PaginationParams, PageResult } from '~/types'
+﻿import type { User, UserSettings, Article, Comment, PaginationParams, PageResult } from '~/types'
 
 /** 用户API */
 export const userApi = {
@@ -44,25 +44,25 @@ export const userApi = {
     return get<PageResult<Article>>('/user/view-history', params)
   },
 
-  /** 获取用户发布的文章（他人） - 使用文章列表接口按userId筛选 */
+  /** 获取用户发布的作品（他人） - 使用作品列表接口按userId筛选 */
   getUserArticles: (userId: number, params?: PaginationParams) => {
     const { get } = useApi()
     return get<PageResult<Article>>('/articles', { ...params, userId })
   },
 
-  /** 获取我发布的文章 */
+  /** 获取我发布的作品 */
   getMyArticles: (params?: PaginationParams) => {
     const { get } = useApi()
     return get<PageResult<Article>>('/user/articles', params)
   },
 
-  /** 获取我收藏的文章 */
+  /** 获取我收藏的作品 */
   getMyCollections: (params?: PaginationParams) => {
     const { get } = useApi()
     return get<PageResult<Article>>('/user/collects', params)
   },
 
-  /** 获取我点赞的文章 */
+  /** 获取我点赞的作品 */
   getMyLikes: (params?: PaginationParams) => {
     const { get } = useApi()
     return get<PageResult<Article>>('/user/likes', params)

@@ -1,38 +1,38 @@
-import type { Article, PaginationParams, PageResult } from '~/types'
+﻿import type { Article, PaginationParams, PageResult } from '~/types'
 
-/** 文章API */
+/** 作品API */
 export const articleApi = {
-  /** 获取文章列表 */
+  /** 获取作品列表 */
   getArticles: (params?: PaginationParams & { categoryId?: number; tagId?: number }) => {
     const { get } = useApi()
     return get<PageResult<Article>>('/articles', params)
   },
 
-  /** 获取文章详情 */
+  /** 获取作品详情 */
   getArticleDetail: (id: number) => {
     const { get } = useApi()
     return get<Article>(`/articles/${id}`)
   },
 
-  /** 创建文章 */
+  /** 创建作品 */
   createArticle: (data: Partial<Article>) => {
     const { post } = useApi()
     return post<Article>('/articles', data)
   },
 
-  /** 更新文章 */
+  /** 更新作品 */
   updateArticle: (id: number, data: Partial<Article>) => {
     const { put } = useApi()
     return put<Article>(`/articles/${id}`, data)
   },
 
-  /** 删除文章 */
+  /** 删除作品 */
   deleteArticle: (id: number) => {
     const { delete: del } = useApi()
     return del(`/articles/${id}`)
   },
 
-  /** 修改文章可见性 */
+  /** 修改作品可见性 */
   updateVisibility: (id: number, visibility: number) => {
     const { put } = useApi()
     return put(`/articles/${id}/visibility`, { visibility })

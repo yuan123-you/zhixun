@@ -2,18 +2,22 @@
   <!-- 用户卡片组件 -->
   <div class="card p-4 flex items-center space-x-3">
     <!-- 用户头像 -->
-    <NuxtLink :to="`/user/${user.id}`">
+    <NuxtLink v-if="user.id" :to="`/user/${user.id}`">
       <UserAvatar :src="user.avatar" :alt="user.nickname" size="lg" />
     </NuxtLink>
+    <div v-else class="shrink-0">
+      <UserAvatar :src="user.avatar" :alt="user.nickname" size="lg" />
+    </div>
 
     <!-- 用户信息 -->
     <div class="flex-1 min-w-0">
-      <NuxtLink :to="`/user/${user.id}`" class="text-sm font-semibold text-slate-900 hover:text-primary transition-colors">
+      <NuxtLink v-if="user.id" :to="`/user/${user.id}`" class="text-sm font-semibold text-slate-900 hover:text-primary transition-colors">
         {{ user.nickname }}
       </NuxtLink>
+      <span v-else class="text-sm font-semibold text-slate-900">{{ user.nickname }}</span>
       <p v-if="user.bio" class="text-xs text-slate-500 line-clamp-1 mt-0.5">{{ user.bio }}</p>
       <div class="flex items-center space-x-2 text-xs text-slate-400 mt-1">
-        <span>{{ user.articleCount }} 文章</span>
+        <span>{{ user.articleCount }} 作品</span>
         <span>{{ user.followerCount }} 粉丝</span>
       </div>
     </div>

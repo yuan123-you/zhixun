@@ -25,11 +25,11 @@ public class LikeController {
     private final SecurityUtil securityUtil;
 
     /**
-     * 点赞/取消点赞文章
+     * 点赞/取消点赞作品
      */
     @PostMapping("/articles/{id}/like")
     @PreAuthorize("isAuthenticated()")
-    @OperationLog(module = "点赞", action = "点赞/取消点赞文章")
+    @OperationLog(module = "点赞", action = "点赞/取消点赞作品")
     public R<Map<String, Object>> toggleArticleLike(@PathVariable Long id) {
         Long userId = securityUtil.getCurrentUserId();
         Map<String, Object> result = likeService.toggleLike(userId, id, 1);

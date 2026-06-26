@@ -1,6 +1,6 @@
-import { storage, STORAGE_KEYS, TTL } from '~/utils/storage'
+﻿import { storage, STORAGE_KEYS, TTL } from '~/utils/storage'
 
-/** 文章草稿 */
+/** 作品草稿 */
 export interface ArticleDraft {
   /** 唯一标识（时间戳） */
   id: string
@@ -28,8 +28,8 @@ const MAX_DRAFT_SIZE = 500 * 1024 // 500KB
 const AUTO_SAVE_INTERVAL = 30 * 1000 // 30 秒
 
 /**
- * 文章草稿本地存储
- * - 自动保存编辑中的文章
+ * 作品草稿本地存储
+ * - 自动保存编辑中的作品
  * - 支持多份草稿
  * - 提交成功后自动清理
  */

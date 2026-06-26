@@ -1,11 +1,11 @@
--- 知讯平台数据库索引优化迁移脚本
+﻿-- 知讯平台数据库索引优化迁移脚本
 -- 执行前提：01-schema.sql 已执行
 
 -- ============================================================
 -- 1. 复合索引优化
 -- ============================================================
 
--- 文章列表查询：按状态+发布时间筛选（最频繁的查询场景）
+-- 作品列表查询：按状态+发布时间筛选（最频繁的查询场景）
 CREATE INDEX idx_cms_article_status_publish ON cms_article(status, publish_at);
 
 -- 用户浏览历史查询：按用户+时间范围查询
@@ -50,7 +50,7 @@ CREATE INDEX idx_sys_notification_user_read_time ON sys_notification(user_id, is
 -- 5. 评论系统索引优化
 -- ============================================================
 
--- 评论列表查询：按文章+状态+时间排序（最频繁的评论查询场景）
+-- 评论列表查询：按作品+状态+时间排序（最频繁的评论查询场景）
 CREATE INDEX idx_cms_comment_article_status ON cms_comment(article_id, status, created_at);
 
 -- 评论审核查询：按状态+时间排序（管理员审核场景）

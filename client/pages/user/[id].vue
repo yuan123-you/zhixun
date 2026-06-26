@@ -10,11 +10,11 @@
     </button>
 
     <!-- 用户资料卡 -->
-    <div class="card p-3 mb-3">
+    <div v-if="userInfo" class="card p-3 mb-3">
       <div class="flex items-start space-x-3">
         <!-- 头像 -->
         <div class="relative shrink-0">
-          <UserAvatar :src="userInfo?.avatar" alt="头像" size="xl" />
+          <UserAvatar :src="userInfo.avatar" alt="头像" size="xl" />
           <!-- 在线状态指示灯 -->
           <span
             class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white"
@@ -25,19 +25,19 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-xl font-bold text-slate-900">{{ userInfo?.nickname }}</h2>
+              <h2 class="text-xl font-bold text-slate-900">{{ userInfo.nickname }}</h2>
               <div class="flex flex-wrap items-center gap-1.5 mt-1">
                 <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                  ID: {{ userInfo?.uid }}
+                  ID: {{ userInfo.uid }}
                 </span>
-                <span v-if="userInfo?.showGenderOnProfile && userInfo?.gender" class="text-xs text-slate-400 bg-pink-50 px-2 py-0.5 rounded">
+                <span v-if="userInfo.showGenderOnProfile && userInfo.gender" class="text-xs text-slate-400 bg-pink-50 px-2 py-0.5 rounded">
                   {{ userInfo.gender === 1 ? '男' : userInfo.gender === 2 ? '女' : '' }}
                 </span>
-                <span v-if="userInfo?.province" class="text-xs text-slate-400 bg-blue-50 px-2 py-0.5 rounded">
-                  {{ userInfo?.province }}
+                <span v-if="userInfo.province" class="text-xs text-slate-400 bg-blue-50 px-2 py-0.5 rounded">
+                  {{ userInfo.province }}
                 </span>
-                <span v-if="userInfo?.ipLocation" class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                  IP属地: {{ userInfo?.ipLocation }}
+                <span v-if="userInfo.ipLocation" class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                  IP属地: {{ userInfo.ipLocation }}
                 </span>
               </div>
             </div>
@@ -45,28 +45,49 @@
             <button
               v-if="!isOwnProfile"
               class="btn text-sm"
-              :class="userInfo?.isFollowing ? 'btn-secondary' : 'btn-primary'"
+              :class="userInfo.isFollowing ? 'btn-secondary' : 'btn-primary'"
               @click="toggleFollow"
             >
-              {{ userInfo?.isFollowing ? '已关注' : '关注' }}
+              {{ userInfo.isFollowing ? '已关注' : '关注' }}
             </button>
           </div>
-          <p v-if="userInfo?.bio" class="text-sm text-slate-500 mt-1">{{ userInfo?.bio }}</p>
+          <p v-if="userInfo.bio" class="text-sm text-slate-500 mt-1">{{ userInfo.bio }}</p>
           <div class="flex items-center space-x-4 mt-2 text-sm text-slate-500">
             <NuxtLink :to="`/user/${userId}/following`" class="hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userInfo?.followCount }}</strong> {{ '关注' }}
+              <strong class="text-slate-900">{{ userInfo.followCount }}</strong> {{ '关注' }}
             </NuxtLink>
             <NuxtLink :to="`/user/${userId}/followers`" class="hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userInfo?.followerCount }}</strong> {{ '粉丝' }}
+              <strong class="text-slate-900">{{ userInfo.followerCount }}</strong> {{ '粉丝' }}
             </NuxtLink>
-            <span><strong class="text-slate-900">{{ userInfo?.articleCount }}</strong> {{ '作品' }}</span>
+            <span><strong class="text-slate-900">{{ userInfo.articleCount }}</strong> {{ '作品' }}</span>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- 用户信息加载失败状态 -->
+    <div v-else-if="profileError" class="card p-6 mb-3 text-center">
+      <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+      <p class="text-slate-500 text-sm">{{ profileError }}</p>
+      <button class="btn-primary text-sm mt-3 px-4 py-2" @click="retryProfile">重新加载</button>
+    </div>
+
+    <!-- 用户信息加载中骨架屏 -->
+    <div v-else class="card p-3 mb-3 animate-pulse">
+      <div class="flex items-start space-x-3">
+        <div class="w-16 h-16 bg-slate-200 rounded-full shrink-0"></div>
+        <div class="flex-1 space-y-2">
+          <div class="h-5 bg-slate-200 rounded w-1/3"></div>
+          <div class="h-3 bg-slate-200 rounded w-1/4"></div>
+          <div class="h-3 bg-slate-200 rounded w-2/3"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Ta的作品列表 -->
-    <div class="mt-3">
+    <div v-if="userInfo" class="mt-3">
       <h3 class="text-lg font-semibold text-slate-900 mb-2">{{ isOwnProfile ? '我的作品' : '作品' }}</h3>
       <!-- 骨架屏 -->
       <div v-if="loading && articles.length === 0" class="grid grid-cols-3">
@@ -101,9 +122,11 @@ const router = useRouter()
 const userStore = useUserStore()
 const userId = computed(() => Number(route.params.id))
 
-/** 无效用户ID保护 */
-if (isNaN(userId.value)) {
-  throw createError({ statusCode: 404, message: '用户不存在' })
+/** 无效用户ID保护 — 显示友好提示而非直接抛错 */
+const isValidUserId = computed(() => !isNaN(userId.value) && userId.value > 0)
+
+if (!isValidUserId.value) {
+  throw createError({ statusCode: 404, message: '用户不存在', fatal: false })
 }
 
 /** 是否为自己的主页 */
@@ -144,6 +167,7 @@ const loading = ref(false)
 const hasMore = ref(true)
 const onlineStatus = ref(false)
 const articlesError = ref<string | null>(null)
+const profileError = ref<string | null>(null)
 
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
 
@@ -157,14 +181,19 @@ const { data: userData, error: userError } = await useAsyncData(`user-info-${use
   return response.data.data
 })
 
-if (userError.value || !userData.value) {
-  throw createError({ statusCode: 404, message: '用户不存在' })
+if (userError.value) {
+  profileError.value = userError.value.message || '用户信息加载失败'
+} else if (!userData.value) {
+  profileError.value = '用户不存在或已被删除'
 }
 
-userInfo.value = userData.value
+if (userData.value) {
+  userInfo.value = userData.value
+}
 
-// 获取用户作品
+// 获取用户作品（仅当用户信息加载成功后）
 const { data: articleData } = await useAsyncData(`user-works-${userId.value}`, async () => {
+  if (!userData.value) return null
   try {
     const { userApi } = await import('~/api')
     const response = await cachedRequest(
@@ -257,6 +286,26 @@ const retryArticles = async () => {
     articlesError.value = error.message || '作品加载失败，请稍后重试'
   } finally {
     loading.value = false
+  }
+}
+
+/** 重新加载用户信息 */
+const retryProfile = async () => {
+  profileError.value = null
+  try {
+    const { userApi } = await import('~/api')
+    const response = await cachedRequest(
+      () => userApi.getProfile(userId.value),
+      `/user/profile/${userId.value}`
+    )
+    if (response.data.data) {
+      userInfo.value = response.data.data
+      profileError.value = null
+    } else {
+      profileError.value = '用户不存在或已被删除'
+    }
+  } catch (error: any) {
+    profileError.value = error.message || '用户信息加载失败'
   }
 }
 

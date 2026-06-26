@@ -122,12 +122,12 @@ public class AdminServiceImpl implements AdminService {
     public void auditArticle(Long adminId, Long articleId, AuditRequest request) {
         Article article = articleMapper.selectById(articleId);
         if (article == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
 
         // 审核状态只能从待审核变更
         if (article.getStatus() != ArticleStatusEnum.PENDING) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "文章当前状态不允许审核");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "作品当前状态不允许审核");
         }
 
         String action;
@@ -154,7 +154,7 @@ public class AdminServiceImpl implements AdminService {
 
         // 记录操作日志（异步）
         String ip = getClientIp();
-        operationLogService.log(adminId, "文章审核", action, "article", articleId, detail, ip);
+        operationLogService.log(adminId, "作品审核", action, "article", articleId, detail, ip);
 
         // 发送通知给作者
         sendAuditNotification(article.getAuthorId(), articleId, action, request.getReason());
@@ -180,7 +180,7 @@ public class AdminServiceImpl implements AdminService {
         vo.setUserTotal(userMapper.selectCount(
                 new LambdaQueryWrapper<>()));
 
-        // 文章总量
+        // 作品总量
         vo.setArticleTotal(articleMapper.selectCount(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)));
 
@@ -241,10 +241,10 @@ public class AdminServiceImpl implements AdminService {
         // 增长趋势数据（按时间维度）
         vo.setGrowthTrends(getGrowthTrends(period));
 
-        // 分类文章分布
+        // 分类作品分布
         vo.setCategoryDistributions(getCategoryDistributions());
 
-        // 热门文章排行
+        // 热门作品排行
         vo.setHotArticleRanks(getHotArticleRanks());
 
         // 创作者排行
@@ -381,7 +381,7 @@ public class AdminServiceImpl implements AdminService {
     public PageResult<CommentVO> getCommentList(Long articleId, Integer status, Integer page, Integer pageSize) {
         LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
 
-        // 文章ID筛选
+        // 作品ID筛选
         if (articleId != null) {
             wrapper.eq(Comment::getArticleId, articleId);
         }
@@ -457,7 +457,7 @@ public class AdminServiceImpl implements AdminService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "评论不存在");
         }
 
-        // 减少文章评论数（仅当评论之前是正常状态时才减少）
+        // 减少作品评论数（仅当评论之前是正常状态时才减少）
         CommentStatusEnum originalStatus = comment.getStatus();
         if (originalStatus == CommentStatusEnum.NORMAL) {
             articleMapper.update(null, new LambdaUpdateWrapper<Article>()
@@ -660,11 +660,11 @@ public class AdminServiceImpl implements AdminService {
             String title;
             String content;
             if ("approve".equals(action)) {
-                title = "文章审核通过";
-                content = "您的文章已通过审核，现已发布";
+                title = "作品审核通过";
+                content = "您的作品已通过审核，现已发布";
             } else {
-                title = "文章审核驳回";
-                content = "您的文章未通过审核，原因：" + (reason != null ? reason : "无");
+                title = "作品审核驳回";
+                content = "您的作品未通过审核，原因：" + (reason != null ? reason : "无");
             }
             notificationService.createNotification(
                     authorId,
@@ -703,7 +703,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     /**
-     * 批量将文章实体列表转换为 VO 列表
+     * 批量将作品实体列表转换为 VO 列表
      */
     private List<ArticleVO> convertToVOList(List<Article> articles) {
         if (CollectionUtils.isEmpty(articles)) {
@@ -898,7 +898,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     /**
-     * 按日/周/月统计用户、文章、浏览量增长
+     * 按日/周/月统计用户、作品、浏览量增长
      */
     private List<DashboardVO.GrowthTrend> getGrowthTrends(String period) {
         List<DashboardVO.GrowthTrend> trends = new ArrayList<>();
@@ -941,7 +941,7 @@ public class AdminServiceImpl implements AdminService {
                             .ge(User::getCreatedAt, periodStart)
                             .lt(User::getCreatedAt, periodEnd));
 
-            // 新增文章数
+            // 新增作品数
             long newArticleCount = articleMapper.selectCount(
                     new LambdaQueryWrapper<Article>()
                             .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
@@ -967,7 +967,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     /**
-     * 按分类统计文章数量
+     * 按分类统计作品数量
      */
     private List<DashboardVO.CategoryDistribution> getCategoryDistributions() {
         List<DashboardVO.CategoryDistribution> distributions = new ArrayList<>();
@@ -976,7 +976,7 @@ public class AdminServiceImpl implements AdminService {
         List<Category> categories = categoryMapper.selectList(
                 new LambdaQueryWrapper<Category>().eq(Category::getStatus, 1));
 
-        // 查询已发布文章按分类统计
+        // 查询已发布作品按分类统计
         List<Article> publishedArticles = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED));
 
@@ -1000,14 +1000,14 @@ public class AdminServiceImpl implements AdminService {
             distributions.add(dist);
         }
 
-        // 按文章数降序排列
+        // 按作品数降序排列
         distributions.sort(Comparator.comparingLong(DashboardVO.CategoryDistribution::getArticleCount).reversed());
 
         return distributions;
     }
 
     /**
-     * 按浏览量排序的热门文章（Top 10）
+     * 按浏览量排序的热门作品（Top 10）
      */
     private List<DashboardVO.HotArticleRank> getHotArticleRanks() {
         List<Article> hotArticles = articleMapper.selectList(
@@ -1045,14 +1045,14 @@ public class AdminServiceImpl implements AdminService {
     }
 
     /**
-     * 按文章数排序的创作者（Top 10）
+     * 按作品数排序的创作者（Top 10）
      */
     private List<DashboardVO.CreatorRank> getCreatorRanks() {
-        // 查询已发布文章按作者统计
+        // 查询已发布作品按作者统计
         List<Article> publishedArticles = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED));
 
-        // 按作者分组统计文章数、总浏览量、总点赞数
+        // 按作者分组统计作品数、总浏览量、总点赞数
         Map<Long, Long> authorArticleCount = publishedArticles.stream()
                 .collect(Collectors.groupingBy(Article::getAuthorId, Collectors.counting()));
         Map<Long, Long> authorTotalViews = publishedArticles.stream()
@@ -1062,7 +1062,7 @@ public class AdminServiceImpl implements AdminService {
                 .collect(Collectors.groupingBy(Article::getAuthorId,
                         Collectors.summingLong(a -> a.getLikeCount() != null ? a.getLikeCount() : 0L)));
 
-        // 按文章数排序取前10
+        // 按作品数排序取前10
         List<Long> topAuthorIds = authorArticleCount.entrySet().stream()
                 .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
                 .limit(10)

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="comment-management">
     <!-- 搜索筛选 -->
     <el-card shadow="never" class="search-card">
@@ -31,7 +31,7 @@
         <el-table v-loading="loading" :data="commentList" stripe>
           <el-table-column prop="id" label="ID" width="80" />
           <el-table-column prop="content" label="评论内容" min-width="250" show-overflow-tooltip />
-          <el-table-column prop="articleTitle" label="所属文章" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="articleTitle" label="所属作品" min-width="180" show-overflow-tooltip />
           <el-table-column prop="username" label="评论者" width="120" />
           <el-table-column label="状态" width="100">
             <template #default="{ row }">

@@ -69,7 +69,7 @@ public class RankServiceImpl implements RankService {
         // 构建缓存 Key
         String cacheKey = RANK_KEY_PREFIX + period + ":" + (categoryId != null ? categoryId : "all");
 
-        // 尝试从缓存获取文章ID列表
+        // 尝试从缓存获取作品ID列表
         try {
             if (stringRedisTemplate != null) {
                 String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
@@ -85,9 +85,9 @@ public class RankServiceImpl implements RankService {
         // 缓存未命中，查询数据库
         List<Article> articles = queryHotArticles(period, categoryId, limit);
 
-        // 如果指定周期内没有文章，回退到全时段查询
+        // 如果指定周期内没有作品，回退到全时段查询
         if (articles.isEmpty() && period != null) {
-            log.info("周期[{}]内无文章，回退到全时段查询", period);
+            log.info("周期[{}]内无作品，回退到全时段查询", period);
             articles = queryHotArticles(null, categoryId, limit);
         }
 
@@ -139,7 +139,7 @@ public class RankServiceImpl implements RankService {
                 }
             }
         } catch (Exception e) {
-            log.warn("从Redis获取热门文章缓存失败，将从数据库查询: {}", e.getMessage());
+            log.warn("从Redis获取热门作品缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
@@ -169,18 +169,18 @@ public class RankServiceImpl implements RankService {
             limit = 6;
         }
 
-        // 获取当前文章
+        // 获取当前作品
         Article currentArticle = articleMapper.selectById(articleId);
         if (currentArticle == null) {
             return Collections.emptyList();
         }
 
-        // 获取当前文章的标签ID列表
+        // 获取当前作品的标签ID列表
         List<ArticleTag> articleTags = articleTagMapper.selectList(
                 new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleId));
         List<Long> tagIds = articleTags.stream().map(ArticleTag::getTagId).collect(Collectors.toList());
 
-        // 查询同标签的文章
+        // 查询同标签的作品
         List<Long> relatedArticleIds = new ArrayList<>();
         if (!CollectionUtils.isEmpty(tagIds)) {
             List<ArticleTag> relatedTags = articleTagMapper.selectList(
@@ -193,7 +193,7 @@ public class RankServiceImpl implements RankService {
                     .collect(Collectors.toList());
         }
 
-        // 查询同分类的文章
+        // 查询同分类的作品
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .ne(Article::getId, articleId);
@@ -202,7 +202,7 @@ public class RankServiceImpl implements RankService {
             wrapper.eq(Article::getCategoryId, currentArticle.getCategoryId());
         }
 
-        // 优先同标签文章
+        // 优先同标签作品
         if (!relatedArticleIds.isEmpty()) {
             // 先查同标签的
             LambdaQueryWrapper<Article> tagWrapper = new LambdaQueryWrapper<>();
@@ -213,7 +213,7 @@ public class RankServiceImpl implements RankService {
             List<Article> tagArticles = articleMapper.selectList(tagWrapper);
 
             if (tagArticles.size() < limit) {
-                // 不足则补充同分类文章
+                // 不足则补充同分类作品
                 List<Long> existIds = tagArticles.stream().map(Article::getId).collect(Collectors.toList());
                 existIds.add(articleId);
                 wrapper.notIn(Article::getId, existIds)
@@ -226,7 +226,7 @@ public class RankServiceImpl implements RankService {
             return convertToHotArticleVOList(tagArticles.stream().limit(limit).collect(Collectors.toList()));
         }
 
-        // 没有同标签文章，返回同分类文章
+        // 没有同标签作品，返回同分类作品
         wrapper.orderByDesc(Article::getViewCount).last("LIMIT " + limit);
         List<Article> articles = articleMapper.selectList(wrapper);
         return convertToHotArticleVOList(articles);
@@ -254,7 +254,7 @@ public class RankServiceImpl implements RankService {
             log.warn("从Redis获取热门标签缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
-        // 查询最近7天已发布的文章
+        // 查询最近7天已发布的作品
         LocalDateTime since = LocalDateTime.now().minusDays(7);
         List<Article> recentArticles = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>()
@@ -262,9 +262,9 @@ public class RankServiceImpl implements RankService {
                         .ge(Article::getCreatedAt, since)
                         .select(Article::getId));
 
-        // 如果最近7天无文章，回退到全时段查询
+        // 如果最近7天无作品，回退到全时段查询
         if (CollectionUtils.isEmpty(recentArticles)) {
-            log.info("最近7天无文章，回退到全时段热门标签查询");
+            log.info("最近7天无作品，回退到全时段热门标签查询");
             List<TagVO> result = getAllTimeHotTags(limit);
             cacheResult(cacheKey, result);
             return result;
@@ -274,22 +274,22 @@ public class RankServiceImpl implements RankService {
                 .map(Article::getId)
                 .collect(Collectors.toList());
 
-        // 查询这些文章的标签关联
+        // 查询这些作品的标签关联
         List<ArticleTag> articleTags = articleTagMapper.selectList(
                 new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
 
         if (CollectionUtils.isEmpty(articleTags)) {
-            // 近期文章无标签关联，回退到全时段
+            // 近期作品无标签关联，回退到全时段
             List<TagVO> result = getAllTimeHotTags(limit);
             cacheResult(cacheKey, result);
             return result;
         }
 
-        // 按标签分组统计文章数
+        // 按标签分组统计作品数
         Map<Long, Long> tagCount = articleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getTagId, Collectors.counting()));
 
-        // 按文章数降序排序，取前 limit 个
+        // 按作品数降序排序，取前 limit 个
         List<Long> hotTagIds = tagCount.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
                 .limit(limit)
@@ -357,7 +357,7 @@ public class RankServiceImpl implements RankService {
             log.warn("从Redis获取热门用户缓存失败，将从数据库查询: {}", e.getMessage());
         }
 
-        // 查询最近7天已发布的文章
+        // 查询最近7天已发布的作品
         LocalDateTime since = LocalDateTime.now().minusDays(7);
         List<Article> recentArticles = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>()
@@ -366,9 +366,9 @@ public class RankServiceImpl implements RankService {
                         .select(Article::getId, Article::getAuthorId,
                                 Article::getViewCount, Article::getLikeCount));
 
-        // 如果最近7天无文章，回退到全时段查询
+        // 如果最近7天无作品，回退到全时段查询
         if (CollectionUtils.isEmpty(recentArticles)) {
-            log.info("最近7天无文章，回退到全时段热门用户查询");
+            log.info("最近7天无作品，回退到全时段热门用户查询");
             List<UserVO> result = getAllTimeHotUsers(limit);
             cacheResult(cacheKey, result);
             return result;
@@ -441,7 +441,7 @@ public class RankServiceImpl implements RankService {
             limit = 20;
         }
 
-        // 从 Redis Sorted Set 获取热门文章（按分数降序，滑动窗口由热度分时间衰减实现）
+        // 从 Redis Sorted Set 获取热门作品（按分数降序，滑动窗口由热度分时间衰减实现）
         Set<ZSetOperations.TypedTuple<String>> tuples = stringRedisTemplate.opsForZSet()
                 .reverseRangeWithScores(HOT_RANK_KEY, 0, limit - 1);
 
@@ -449,7 +449,7 @@ public class RankServiceImpl implements RankService {
             return Collections.emptyList();
         }
 
-        // 提取文章ID和分数
+        // 提取作品ID和分数
         List<Long> articleIds = new ArrayList<>();
         Map<Long, Double> scoreMap = new HashMap<>();
         for (ZSetOperations.TypedTuple<String> tuple : tuples) {
@@ -459,7 +459,7 @@ public class RankServiceImpl implements RankService {
                     articleIds.add(articleId);
                     scoreMap.put(articleId, tuple.getScore());
                 } catch (NumberFormatException e) {
-                    log.warn("解析实时热榜文章ID失败: {}", tuple.getValue());
+                    log.warn("解析实时热榜作品ID失败: {}", tuple.getValue());
                 }
             }
         }
@@ -468,7 +468,7 @@ public class RankServiceImpl implements RankService {
             return Collections.emptyList();
         }
 
-        // 查询文章详情并保持 Sorted Set 顺序
+        // 查询作品详情并保持 Sorted Set 顺序
         List<Article> articles = articleMapper.selectBatchIds(articleIds);
         Map<Long, Article> articleMap = articles.stream()
                 .collect(Collectors.toMap(Article::getId, a -> a));
@@ -508,7 +508,7 @@ public class RankServiceImpl implements RankService {
     }
 
     /**
-     * 查询热门文章（按周期和分类筛选）
+     * 查询热门作品（按周期和分类筛选）
      */
     private List<Article> queryHotArticles(String period, Long categoryId, Integer limit) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
@@ -536,7 +536,7 @@ public class RankServiceImpl implements RankService {
     }
 
     /**
-     * 全时段热门标签（按文章数降序）
+     * 全时段热门标签（按作品数降序）
      */
     private List<TagVO> getAllTimeHotTags(int limit) {
         List<Tag> tags = tagMapper.selectList(
@@ -578,7 +578,7 @@ public class RankServiceImpl implements RankService {
     }
 
     /**
-     * 全时段热门用户（按文章数降序）
+     * 全时段热门用户（按作品数降序）
      */
     private List<UserVO> getAllTimeHotUsers(int limit) {
         List<User> users = userMapper.selectList(
@@ -668,14 +668,14 @@ public class RankServiceImpl implements RankService {
             try {
                 ids.add(Long.parseLong(id.trim()));
             } catch (NumberFormatException e) {
-                log.warn("解析文章ID失败: {}", id);
+                log.warn("解析作品ID失败: {}", id);
             }
         }
         return ids;
     }
 
     /**
-     * 根据文章ID列表构建 HotArticleVO 列表
+     * 根据作品ID列表构建 HotArticleVO 列表
      */
     private List<HotArticleVO> buildHotArticleVOList(List<Long> articleIds, Integer limit) {
         if (CollectionUtils.isEmpty(articleIds)) {
@@ -709,7 +709,7 @@ public class RankServiceImpl implements RankService {
     }
 
     /**
-     * 批量将文章列表转换为 HotArticleVO 列表
+     * 批量将作品列表转换为 HotArticleVO 列表
      */
     private List<HotArticleVO> convertToHotArticleVOList(List<Article> articles) {
         if (CollectionUtils.isEmpty(articles)) {
@@ -732,7 +732,7 @@ public class RankServiceImpl implements RankService {
     }
 
     /**
-     * 将文章实体转换为 HotArticleVO
+     * 将作品实体转换为 HotArticleVO
      */
     private HotArticleVO convertToHotArticleVO(Article article) {
         HotArticleVO vo = new HotArticleVO();

@@ -32,10 +32,10 @@ import java.util.stream.Collectors;
  * 搜索服务Fallback实现（基于数据库，当OpenSearch不可用时使用）
  * <p>
  * 增强功能：
- * - 文章搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
+ * - 作品搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
  * - 用户搜索：昵称 + 用户名 + UID 多字段模糊匹配
- * - 图片搜索：按文章标题匹配
- * - 搜索建议：文章标题 + 用户昵称 + 标签名
+ * - 图片搜索：按作品标题匹配
+ * - 搜索建议：作品标题 + 用户昵称 + 标签名
  */
 @Slf4j
 @Service
@@ -96,7 +96,7 @@ public class DatabaseSearchServiceImpl implements SearchService {
     }
 
     /**
-     * 文章搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
+     * 作品搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
      * MyBatis-Plus 的 .like() 自动添加 %keyword% 实现模糊搜索
      */
     private long searchArticles(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
@@ -215,7 +215,7 @@ public class DatabaseSearchServiceImpl implements SearchService {
     }
 
     private long searchImages(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
-        // 先搜索文章标题匹配的文章ID
+        // 先搜索作品标题匹配的作品ID
         LambdaQueryWrapper<Article> articleWrapper = new LambdaQueryWrapper<>();
         articleWrapper.like(Article::getTitle, keyword)
                 .eq(Article::getStatus, 1)
@@ -230,7 +230,7 @@ public class DatabaseSearchServiceImpl implements SearchService {
 
         List<Long> articleIds = matchedArticles.stream().map(Article::getId).collect(Collectors.toList());
 
-        // 查询这些文章的图片
+        // 查询这些作品的图片
         LambdaQueryWrapper<ArticleImage> imageWrapper = new LambdaQueryWrapper<>();
         imageWrapper.in(ArticleImage::getArticleId, articleIds);
 
@@ -238,7 +238,7 @@ public class DatabaseSearchServiceImpl implements SearchService {
         imageWrapper.last("LIMIT " + (page - 1) * pageSize + ", " + pageSize);
         List<ArticleImage> images = articleImageMapper.selectList(imageWrapper);
 
-        // 构建文章ID到标题的映射
+        // 构建作品ID到标题的映射
         var articleMap = matchedArticles.stream()
                 .collect(Collectors.toMap(Article::getId, a -> a));
 
@@ -261,7 +261,7 @@ public class DatabaseSearchServiceImpl implements SearchService {
         List<SuggestionVO> completions = new ArrayList<>();
 
         if (StringUtils.hasText(keyword)) {
-            // 搜索文章标题
+            // 搜索作品标题
             LambdaQueryWrapper<Article> articleWrapper = new LambdaQueryWrapper<>();
             articleWrapper.like(Article::getTitle, keyword)
                     .eq(Article::getStatus, 1)

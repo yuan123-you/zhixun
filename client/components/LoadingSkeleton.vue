@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <!-- 骨架屏组件 -->
   <div class="animate-pulse">
-    <!-- 文章类型骨架屏 -->
+    <!-- 作品类型骨架屏 -->
     <template v-if="type === 'article'">
       <div class="card p-4">
         <div class="flex gap-4">

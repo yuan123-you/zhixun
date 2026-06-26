@@ -17,19 +17,19 @@ import com.zhixun.vo.UserVO;
 public interface AdminService {
 
     /**
-     * 待审核文章列表
+     * 待审核作品列表
      *
      * @param page     页码
      * @param pageSize 每页大小
-     * @return 待审核文章分页结果
+     * @return 待审核作品分页结果
      */
     PageResult<ArticleVO> getPendingArticles(Integer page, Integer pageSize);
 
     /**
-     * 审核文章
+     * 审核作品
      *
      * @param adminId   管理员ID
-     * @param articleId 文章ID
+     * @param articleId 作品ID
      * @param request   审核请求
      */
     void auditArticle(Long adminId, Long articleId, AuditRequest request);
@@ -98,7 +98,7 @@ public interface AdminService {
     /**
      * 评论列表（管理员）
      *
-     * @param articleId 文章ID（可选）
+     * @param articleId 作品ID（可选）
      * @param status    评论状态（可选）
      * @param page      页码
      * @param pageSize  每页大小

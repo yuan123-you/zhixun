@@ -61,7 +61,7 @@ public class UserVO {
     /** 粉丝数 */
     private Integer followerCount;
 
-    /** 文章数 */
+    /** 作品数 */
     private Integer articleCount;
 
     /** 是否已关注（当前用户是否关注了此用户） */

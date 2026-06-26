@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # ============================================================
 # 知讯系统 - 安全测试自动化执行脚本
 # 使用 curl 执行所有安全测试用例
@@ -131,12 +131,12 @@ fi
 echo ""
 echo "--- 越权访问测试 ---"
 
-# TC-AUTH-002: 水平越权 - 修改他人文章
+# TC-AUTH-002: 水平越权 - 修改他人作品
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "${BASE_URL}/v1/articles/1" \
     -H "Authorization: Bearer ${USER_B_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{"title":"hacked","content":"hacked content"}')
-assert_not_status "TC-AUTH-002: 水平越权修改他人文章" "200" "$RESPONSE"
+assert_not_status "TC-AUTH-002: 水平越权修改他人作品" "200" "$RESPONSE"
 
 # TC-AUTH-004: 垂直越权 - 普通用户访问管理接口
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${BASE_URL}/v1/admin/users" \
@@ -164,7 +164,7 @@ assert_not_contains "TC-AUTH-006: 用户信息不泄露手机号明文" "$RESPON
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/v1/articles" \
     -H "Content-Type: application/json" \
     -d '{"title":"test","content":"test"}')
-assert_not_status "TC-PERM-005: 未认证用户发布文章" "200" "$RESPONSE"
+assert_not_status "TC-PERM-005: 未认证用户发布作品" "200" "$RESPONSE"
 
 # ============================================================
 # 二、登录校验安全测试
@@ -265,12 +265,12 @@ assert_not_contains "TC-DATA-006: 错误响应无SQL信息" "$RESPONSE" "SELECT"
 echo ""
 echo "--- 权限控制测试 ---"
 
-# TC-PERM-001: 管理员权限 - 文章审核
+# TC-PERM-001: 管理员权限 - 作品审核
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/v1/admin/articles/1/audit" \
     -H "Authorization: Bearer ${USER_A_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{"status":"APPROVED","reason":"ok"}')
-assert_not_status "TC-PERM-001: 普通用户审核文章" "200" "$RESPONSE"
+assert_not_status "TC-PERM-001: 普通用户审核作品" "200" "$RESPONSE"
 
 # TC-PERM-002: 管理员权限 - 用户封禁
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/v1/admin/users/2/status" \
@@ -279,12 +279,12 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/v1/admin/
     -d '{"status":"BANNED","reason":"test"}')
 assert_not_status "TC-PERM-002: 普通用户封禁其他用户" "200" "$RESPONSE"
 
-# TC-PERM-004: 资源所有权 - 文章编辑权限
+# TC-PERM-004: 资源所有权 - 作品编辑权限
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "${BASE_URL}/v1/articles/1" \
     -H "Authorization: Bearer ${USER_B_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{"title":"unauthorized edit","content":"hacked"}')
-assert_not_status "TC-PERM-004: 非作者编辑文章" "200" "$RESPONSE"
+assert_not_status "TC-PERM-004: 非作者编辑作品" "200" "$RESPONSE"
 
 # ============================================================
 # 测试结果汇总

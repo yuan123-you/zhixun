@@ -1,4 +1,4 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+﻿// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   // 项目名称
   name: 'zhixun-web',
@@ -50,7 +50,7 @@ export default defineNuxtConfig({
     '/discover': { swr: 120 },
     // 标签页SSR + SWR缓存5分钟
     '/tags': { swr: 300 },
-    // 文章详情页SSR渲染
+    // 作品详情页SSR渲染
     '/articles/**': { ssr: true },
     // 管理页CSR渲染
     '/user/**': { ssr: false },

@@ -20,7 +20,7 @@ import java.util.Map;
  * <p>
  * 对请求参数和请求体中的字符串值进行 XSS 过滤：
  * - 普通字段（标题、摘要、昵称等）：HTML 转义
- * - 富文本字段（文章内容等）：由 HtmlWhitelistFilter 在业务层单独处理
+ * - 富文本字段（作品内容等）：由 HtmlWhitelistFilter 在业务层单独处理
  * <p>
  * 注意：富文本内容字段（content）不在此处过滤，而是在 ArticleServiceImpl 中
  * 通过 HtmlWhitelistFilter.filterRichText() 进行白名单过滤

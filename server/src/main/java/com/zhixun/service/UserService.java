@@ -32,13 +32,13 @@ public interface UserService {
     void updateProfile(Long userId, ProfileUpdateRequest request);
 
     /**
-     * 获取我发布的文章
+     * 获取我发布的作品
      *
      * @param userId   用户ID
-     * @param status   文章状态（可选）
+     * @param status   作品状态（可选）
      * @param page     页码
      * @param pageSize 每页大小
-     * @return 文章分页列表
+     * @return 作品分页列表
      */
     PageResult<ArticleVO> getUserArticles(Long userId, Integer status, Integer page, Integer pageSize);
 
@@ -48,7 +48,7 @@ public interface UserService {
      * @param userId   用户ID
      * @param page     页码
      * @param pageSize 每页大小
-     * @return 文章分页列表
+     * @return 作品分页列表
      */
     PageResult<ArticleVO> getUserLikes(Long userId, Integer page, Integer pageSize);
 
@@ -60,7 +60,7 @@ public interface UserService {
      * @param endDate   结束日期
      * @param page      页码
      * @param pageSize  每页大小
-     * @return 文章分页列表
+     * @return 作品分页列表
      */
     PageResult<ArticleVO> getViewHistory(Long userId, String startDate, String endDate, Integer page, Integer pageSize);
 

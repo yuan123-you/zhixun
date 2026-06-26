@@ -18,17 +18,17 @@ public class NoOpOpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
     @Override
     public void syncArticle(Long articleId) {
-        log.debug("OpenSearch不可用，跳过文章同步: {}", articleId);
+        log.debug("OpenSearch不可用，跳过作品同步: {}", articleId);
     }
 
     @Override
     public void syncArticles(List<Long> articleIds) {
-        log.debug("OpenSearch不可用，跳过文章批量同步");
+        log.debug("OpenSearch不可用，跳过作品批量同步");
     }
 
     @Override
     public void deleteArticle(Long articleId) {
-        log.debug("OpenSearch不可用，跳过文章删除: {}", articleId);
+        log.debug("OpenSearch不可用，跳过作品删除: {}", articleId);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class NoOpOpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
     @Override
     public void fullSyncArticles() {
-        log.debug("OpenSearch不可用，跳过文章全量同步");
+        log.debug("OpenSearch不可用，跳过作品全量同步");
     }
 
     @Override

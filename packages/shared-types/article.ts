@@ -1,4 +1,4 @@
-/** 文章视图对象 */
+﻿/** 作品视图对象 */
 export interface ArticleVO {
   id: number
   title: string
@@ -38,7 +38,7 @@ export interface TagVO {
   articleCount?: number
 }
 
-/** 文章创建参数 */
+/** 作品创建参数 */
 export interface ArticleCreateParams {
   title: string
   content: string
@@ -49,7 +49,7 @@ export interface ArticleCreateParams {
   status?: 'published' | 'draft'
 }
 
-/** 文章查询参数 */
+/** 作品查询参数 */
 export interface ArticleQueryParams {
   keyword?: string
   categoryId?: number

@@ -23,7 +23,7 @@ public class Collect {
     /** 用户ID，对应 user_id */
     private Long userId;
 
-    /** 文章ID，对应 article_id */
+    /** 作品ID，对应 article_id */
     private Long articleId;
 
     /** 分组名称，对应 group_name */

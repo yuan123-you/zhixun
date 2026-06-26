@@ -139,7 +139,7 @@ public class TagController {
     }
 
     /**
-     * 同步标签文章数（需管理员）
+     * 同步标签作品数（需管理员）
      */
     @PostMapping("/sync-article-count")
     @PreAuthorize("hasRole('ADMIN')")

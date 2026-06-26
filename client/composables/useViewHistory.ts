@@ -1,10 +1,10 @@
-import { storage, STORAGE_KEYS, TTL } from '~/utils/storage'
+﻿import { storage, STORAGE_KEYS, TTL } from '~/utils/storage'
 
 /** 本地浏览记录条目 */
 interface ViewHistoryEntry {
-  /** 文章ID */
+  /** 作品ID */
   articleId: number
-  /** 文章标题 */
+  /** 作品标题 */
   title: string
   /** 浏览时长（秒） */
   viewDuration: number
@@ -40,15 +40,15 @@ export const useViewHistory = () => {
 
   /**
    * 记录一次浏览
-   * @param articleId 文章ID
-   * @param title 文章标题
+   * @param articleId 作品ID
+   * @param title 作品标题
    */
   const recordView = (articleId: number, title: string) => {
     if (!import.meta.client) return
 
     const entries = getLocalHistory()
 
-    // 移除同一文章的旧记录（保留最新一次）
+    // 移除同一作品的旧记录（保留最新一次）
     const filtered = entries.filter((e) => e.articleId !== articleId)
 
     // 新增记录
@@ -73,7 +73,7 @@ export const useViewHistory = () => {
 
   /**
    * 更新浏览时长
-   * @param articleId 文章ID
+   * @param articleId 作品ID
    * @param durationSeconds 浏览时长（秒）
    */
   const updateDuration = (articleId: number, durationSeconds: number) => {

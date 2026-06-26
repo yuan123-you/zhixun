@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * 文章状态变更请求
+ * 作品状态变更请求
  */
 @Data
 public class ArticleStatusRequest {

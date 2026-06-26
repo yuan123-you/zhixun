@@ -1,4 +1,4 @@
-import http from 'k6/http';
+﻿import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend, Counter, Gauge } from 'k6/metrics';
 
@@ -78,7 +78,7 @@ function login() {
   return null;
 }
 
-// 公开接口测试 - 文章列表
+// 公开接口测试 - 作品列表
 function testArticleList() {
   const res = http.get(`${BASE_URL}/v1/articles?page=1&pageSize=10`, { timeout: '10s' });
   const success = check(res, {
@@ -146,7 +146,7 @@ function testTags() {
   return success;
 }
 
-// 认证接口测试 - 文章详情
+// 认证接口测试 - 作品详情
 function testArticleDetail(token, articleId) {
   const params = {
     headers: { Authorization: `Bearer ${token}` },
@@ -194,7 +194,7 @@ function testNotifications(token) {
   return success;
 }
 
-// 数据库TPS测试 - 文章列表（直接查询数据库的接口）
+// 数据库TPS测试 - 作品列表（直接查询数据库的接口）
 function testDbTps() {
   const start = Date.now();
   const res = http.get(`${BASE_URL}/v1/articles?page=1&pageSize=20`, { timeout: '10s' });

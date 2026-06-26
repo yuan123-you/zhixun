@@ -45,15 +45,15 @@ public class RabbitMQConfig {
     /** 私信路由键 */
     public static final String CHAT_ROUTING_KEY = "zhixun.chat.#";
 
-    // ========== 文章事件相关 ==========
+    // ========== 作品事件相关 ==========
 
-    /** 文章事件交换机 */
+    /** 作品事件交换机 */
     public static final String ARTICLE_EVENT_EXCHANGE = "zhixun.article.exchange";
 
-    /** 文章事件队列 */
+    /** 作品事件队列 */
     public static final String ARTICLE_EVENT_QUEUE = "zhixun.article.queue";
 
-    /** 文章事件路由键 */
+    /** 作品事件路由键 */
     public static final String ARTICLE_EVENT_ROUTING_KEY = "zhixun.article.#";
 
     // ========== 通用配置 ==========
@@ -118,7 +118,7 @@ public class RabbitMQConfig {
                 .with(CHAT_ROUTING_KEY);
     }
 
-    // ========== 文章事件交换机和队列 ==========
+    // ========== 作品事件交换机和队列 ==========
 
     @Bean
     public TopicExchange articleEventExchange() {

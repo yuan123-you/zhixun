@@ -74,7 +74,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * 文章服务实现
+ * 作品服务实现
  */
 @Slf4j
 @Service
@@ -108,16 +108,16 @@ public class ArticleServiceImpl implements ArticleService {
     /** 相关推荐缓存时间（30分钟） */
     private static final long RELATED_CACHE_MINUTES = 30;
 
-    /** 文章列表缓存 Key 前缀 */
+    /** 作品列表缓存 Key 前缀 */
     private static final String ARTICLE_LIST_PREFIX = "article:list:";
 
-    /** 文章列表缓存时间（2分钟） */
+    /** 作品列表缓存时间（2分钟） */
     private static final long ARTICLE_LIST_CACHE_MINUTES = 2;
 
-    /** 文章详情缓存 Key 前缀 */
+    /** 作品详情缓存 Key 前缀 */
     private static final String ARTICLE_DETAIL_PREFIX = "article:detail:";
 
-    /** 文章详情缓存时间（5分钟） */
+    /** 作品详情缓存时间（5分钟） */
     private static final long ARTICLE_DETAIL_CACHE_MINUTES = 5;
 
     @Override
@@ -177,10 +177,10 @@ public class ArticleServiceImpl implements ArticleService {
             article.setPublishAt(LocalDateTime.now());
         }
 
-        // 创建文章记录
+        // 创建作品记录
         articleMapper.insert(article);
 
-        // 更新用户文章数 +1
+        // 更新用户作品数 +1
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, userId)
                 .setSql("article_count = article_count + 1"));
@@ -193,7 +193,7 @@ public class ArticleServiceImpl implements ArticleService {
             try {
                 openSearchSyncService.syncArticle(article.getId());
             } catch (Exception e) {
-                log.error("创建文章同步到OpenSearch失败, articleId={}: {}", article.getId(), e.getMessage());
+                log.error("创建作品同步到OpenSearch失败, articleId={}: {}", article.getId(), e.getMessage());
             }
             // Fan-out on write：推送到粉丝时间线
             try {
@@ -213,10 +213,10 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 权限校验：仅作者或管理员可编辑
         if (!securityUtil.isOwnerOrAdmin(article.getAuthorId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "无权编辑此文章");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权编辑此作品");
         }
 
-        // 更新文章内容
+        // 更新作品内容
         article.setTitle(sanitize(request.getTitle()));
         // 先过滤敏感词，再做HTML白名单过滤
         String filteredContent = sensitiveWordUtil.filter(request.getContent());
@@ -255,17 +255,17 @@ public class ArticleServiceImpl implements ArticleService {
         try {
             openSearchSyncService.syncArticle(articleId);
         } catch (Exception e) {
-            log.error("更新文章同步到OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
+            log.error("更新作品同步到OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
         }
 
-        // 清除文章相关缓存
+        // 清除作品相关缓存
         clearArticleCache(articleId);
     }
 
     @Override
     @Slave
     public ArticleDetailVO getArticleDetail(Long articleId, Long currentUserId) {
-        // 尝试从 Redis 缓存获取（仅未登录用户且文章已发布时使用缓存）
+        // 尝试从 Redis 缓存获取（仅未登录用户且作品已发布时使用缓存）
         if (currentUserId == null) {
             ArticleDetailVO cached = getArticleDetailFromCache(articleId);
             if (cached != null) {
@@ -279,17 +279,17 @@ public class ArticleServiceImpl implements ArticleService {
 
         Article article = getArticleOrThrow(articleId);
 
-        // 未登录用户只能查看已发布的文章
+        // 未登录用户只能查看已发布的作品
         if (currentUserId == null && article.getStatus() != ArticleStatusEnum.PUBLISHED) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
 
-        // 已登录非作者/管理员只能查看已发布的文章
+        // 已登录非作者/管理员只能查看已发布的作品
         if (currentUserId != null
                 && article.getStatus() != ArticleStatusEnum.PUBLISHED
                 && !article.getAuthorId().equals(currentUserId)
                 && !securityUtil.isAdmin()) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
 
         // 构建详情 VO
@@ -388,7 +388,7 @@ public class ArticleServiceImpl implements ArticleService {
             log.warn("获取Redis浏览量失败，使用数据库浏览量: {}", e.getMessage());
         }
 
-        // 缓存文章详情（仅已发布文章）
+        // 缓存作品详情（仅已发布作品）
         if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
             cacheArticleDetail(articleId, vo);
         }
@@ -443,7 +443,7 @@ public class ArticleServiceImpl implements ArticleService {
                     .or().like(Article::getSummary, request.getKeyword()));
         }
 
-        // 按标签筛选（需要先查询该标签下的文章ID）
+        // 按标签筛选（需要先查询该标签下的作品ID）
         if (request.getTagId() != null) {
             List<ArticleTag> articleTags = articleTagMapper.selectList(
                     new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getTagId, request.getTagId()));
@@ -497,16 +497,16 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 权限校验：仅作者或管理员可删除
         if (!securityUtil.isOwnerOrAdmin(article.getAuthorId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "无权删除此文章");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权删除此作品");
         }
 
-        // 软删除文章
+        // 软删除作品
         Article softDelete = new Article();
         softDelete.setId(articleId);
         softDelete.setDeletedAt(LocalDateTime.now());
         articleMapper.updateById(softDelete);
 
-        // 更新用户文章数 -1
+        // 更新用户作品数 -1
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, article.getAuthorId())
                 .gt(User::getArticleCount, 0)
@@ -515,15 +515,15 @@ public class ArticleServiceImpl implements ArticleService {
         // 删除标签关联
         articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleId));
 
-        // 从 OpenSearch 删除文章和关联图片索引（非关键操作，失败不影响主事务）
+        // 从 OpenSearch 删除作品和关联图片索引（非关键操作，失败不影响主事务）
         try {
             openSearchSyncService.deleteArticle(articleId);
             openSearchSyncService.deleteImagesByArticle(articleId);
         } catch (Exception e) {
-            log.error("删除文章OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
+            log.error("删除作品OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
         }
 
-        // 清除文章相关缓存
+        // 清除作品相关缓存
         clearArticleCache(articleId);
     }
 
@@ -532,7 +532,7 @@ public class ArticleServiceImpl implements ArticleService {
     public void updateArticleStatus(Long userId, Long articleId, ArticleStatusRequest request) {
         // 仅管理员可操作
         if (!securityUtil.isAdmin()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "仅管理员可变更文章状态");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "仅管理员可变更作品状态");
         }
 
         Article article = getArticleOrThrow(articleId);
@@ -590,8 +590,8 @@ public class ArticleServiceImpl implements ArticleService {
                     "data", Map.of(
                             "userId", article.getAuthorId(),
                             "type", "ARTICLE_STATUS",
-                            "title", "文章状态变更",
-                            "content", "您的文章「" + article.getTitle() + "」状态已变更为：" + targetStatus.getDescription()
+                            "title", "作品状态变更",
+                            "content", "您的作品「" + article.getTitle() + "」状态已变更为：" + targetStatus.getDescription()
                     )
             );
             rabbitTemplate.convertAndSend(
@@ -599,7 +599,7 @@ public class ArticleServiceImpl implements ArticleService {
                     "zhixun.article.status",
                     mqMessage);
         } catch (Exception e) {
-            log.warn("RabbitMQ 推送文章状态变更通知失败: {}", e.getMessage());
+            log.warn("RabbitMQ 推送作品状态变更通知失败: {}", e.getMessage());
         }
 
         // 同步到 OpenSearch（非关键操作，失败不影响主事务）
@@ -608,7 +608,7 @@ public class ArticleServiceImpl implements ArticleService {
                 openSearchSyncService.syncArticle(articleId);
                 openSearchSyncService.syncImagesByArticle(articleId);
             } catch (Exception e) {
-                log.error("更新文章状态同步OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
+                log.error("更新作品状态同步OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
             }
             // Fan-out on write：推送到粉丝时间线
             try {
@@ -622,11 +622,11 @@ public class ArticleServiceImpl implements ArticleService {
                 openSearchSyncService.deleteArticle(articleId);
                 openSearchSyncService.deleteImagesByArticle(articleId);
             } catch (Exception e) {
-                log.error("删除文章OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
+                log.error("删除作品OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
             }
         }
 
-        // 清除文章相关缓存
+        // 清除作品相关缓存
         clearArticleCache(articleId);
     }
 
@@ -664,14 +664,14 @@ public class ArticleServiceImpl implements ArticleService {
             return Collections.emptyList();
         }
 
-        // 获取当前文章的标签
+        // 获取当前作品的标签
         List<ArticleTag> articleTags = articleTagMapper.selectList(
                 new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleId));
         Set<Long> currentTagIds = articleTags.stream()
                 .map(ArticleTag::getTagId)
                 .collect(Collectors.toSet());
 
-        // 查询同标签的文章，统计每个文章匹配的标签数
+        // 查询同标签的作品，统计每个作品匹配的标签数
         Map<Long, Long> tagMatchCount = new HashMap<>();
         if (!currentTagIds.isEmpty()) {
             List<ArticleTag> relatedTags = articleTagMapper.selectList(
@@ -682,7 +682,7 @@ public class ArticleServiceImpl implements ArticleService {
                     .collect(Collectors.groupingBy(ArticleTag::getArticleId, Collectors.counting()));
         }
 
-        // 构建查询：同标签或同分类的已发布文章
+        // 构建查询：同标签或同分类的已发布作品
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .ne(Article::getId, articleId);
@@ -718,7 +718,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .limit(limit)
                 .collect(Collectors.toList());
 
-        // 缓存结果（文章ID列表）
+        // 缓存结果（作品ID列表）
         List<Long> resultIds = result.stream()
                 .map(Article::getId)
                 .collect(Collectors.toList());
@@ -738,7 +738,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public void incrementShareCount(Long articleId) {
-        // 校验文章是否存在
+        // 校验作品是否存在
         getArticleOrThrow(articleId);
         // 使用 SQL 增量更新分享次数
         articleMapper.update(null, new LambdaUpdateWrapper<Article>()
@@ -751,7 +751,7 @@ public class ArticleServiceImpl implements ArticleService {
     public void publishScheduledArticles() {
         LocalDateTime now = LocalDateTime.now();
 
-        // 查询所有 status=PENDING 且 publishAt <= now() 且 publishAt IS NOT NULL 的文章
+        // 查询所有 status=PENDING 且 publishAt <= now() 且 publishAt IS NOT NULL 的作品
         List<Article> articles = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>()
                         .eq(Article::getStatus, ArticleStatusEnum.PENDING)
@@ -763,7 +763,7 @@ public class ArticleServiceImpl implements ArticleService {
             return;
         }
 
-        log.info("定时发布：找到 {} 篇到期文章", articles.size());
+        log.info("定时发布：找到 {} 篇到期作品", articles.size());
 
         for (Article article : articles) {
             try {
@@ -788,9 +788,9 @@ public class ArticleServiceImpl implements ArticleService {
                 // 清除相关 Redis 缓存
                 clearArticleCache(article.getId());
 
-                log.info("定时发布：文章 {} 已发布", article.getId());
+                log.info("定时发布：作品 {} 已发布", article.getId());
             } catch (Exception e) {
-                log.error("定时发布：文章 {} 发布失败: {}", article.getId(), e.getMessage());
+                log.error("定时发布：作品 {} 发布失败: {}", article.getId(), e.getMessage());
             }
         }
     }
@@ -802,13 +802,13 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 权限校验：仅作者可修改可见性
         if (!article.getAuthorId().equals(userId) && !securityUtil.isAdmin()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "无权修改此文章的可见性");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权修改此作品的可见性");
         }
 
         article.setVisibility(request.getVisibility());
         articleMapper.updateById(article);
 
-        // 清除文章缓存
+        // 清除作品缓存
         clearArticleCache(articleId);
     }
 
@@ -819,12 +819,12 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 权限校验：仅作者可操作
         if (!article.getAuthorId().equals(userId) && !securityUtil.isAdmin()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作此文章");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作此作品");
         }
 
         // 仅草稿状态可发布
         if (article.getStatus() != ArticleStatusEnum.DRAFT) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "仅草稿状态的文章可以发布");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "仅草稿状态的作品可以发布");
         }
 
         // 处理定时发布
@@ -845,7 +845,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         articleMapper.updateById(article);
 
-        // 立即发布的文章同步到 OpenSearch 并推送到粉丝时间线
+        // 立即发布的作品同步到 OpenSearch 并推送到粉丝时间线
         if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
             try {
                 openSearchSyncService.syncArticle(articleId);
@@ -859,7 +859,7 @@ public class ArticleServiceImpl implements ArticleService {
             }
         }
 
-        // 清除文章缓存
+        // 清除作品缓存
         clearArticleCache(articleId);
     }
 
@@ -867,7 +867,7 @@ public class ArticleServiceImpl implements ArticleService {
     public int cleanExpiredDrafts() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(30);
 
-        // 查询30天前创建的草稿文章（未更新过的）
+        // 查询30天前创建的草稿作品（未更新过的）
         List<Article> expiredDrafts = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>()
                         .eq(Article::getStatus, ArticleStatusEnum.DRAFT)
@@ -887,7 +887,7 @@ public class ArticleServiceImpl implements ArticleService {
                 softDelete.setDeletedAt(LocalDateTime.now());
                 articleMapper.updateById(softDelete);
 
-                // 更新用户文章数 -1
+                // 更新用户作品数 -1
                 userMapper.update(null, new LambdaUpdateWrapper<User>()
                         .eq(User::getId, article.getAuthorId())
                         .gt(User::getArticleCount, 0)
@@ -897,7 +897,7 @@ public class ArticleServiceImpl implements ArticleService {
                 articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>()
                         .eq(ArticleTag::getArticleId, article.getId()));
 
-                // 清除文章缓存
+                // 清除作品缓存
                 clearArticleCache(article.getId());
 
                 count++;
@@ -916,14 +916,14 @@ public class ArticleServiceImpl implements ArticleService {
     // ========== 内部方法 ==========
 
     /**
-     * 清除文章相关 Redis 缓存
+     * 清除作品相关 Redis 缓存
      */
     private void clearArticleCache(Long articleId) {
         try {
             stringRedisTemplate.delete(VIEW_COUNT_PREFIX + articleId);
             stringRedisTemplate.delete(RELATED_ARTICLES_PREFIX + articleId);
             stringRedisTemplate.delete(ARTICLE_DETAIL_PREFIX + articleId);
-            // 清除文章列表缓存（使用 SCAN 安全扫描删除所有列表缓存）
+            // 清除作品列表缓存（使用 SCAN 安全扫描删除所有列表缓存）
             Set<String> listKeys = new java.util.HashSet<>();
             try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
                     org.springframework.data.redis.core.ScanOptions.scanOptions()
@@ -938,7 +938,7 @@ public class ArticleServiceImpl implements ArticleService {
                 stringRedisTemplate.delete(listKeys);
             }
         } catch (Exception e) {
-            log.warn("清除文章 {} 缓存失败: {}", articleId, e.getMessage());
+            log.warn("清除作品 {} 缓存失败: {}", articleId, e.getMessage());
         }
         // 递增数据版本号，通知客户端数据已变更
         try {
@@ -949,21 +949,21 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 获取文章或抛出异常
+     * 获取作品或抛出异常
      */
     private Article getArticleOrThrow(Long articleId) {
         Article article = articleMapper.selectById(articleId);
         if (article == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
         if (article.getDeletedAt() != null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
         return article;
     }
 
     /**
-     * 解析缓存的相关推荐文章ID字符串
+     * 解析缓存的相关推荐作品ID字符串
      */
     private List<Long> parseRelatedIds(String idsStr) {
         List<Long> ids = new ArrayList<>();
@@ -971,7 +971,7 @@ public class ArticleServiceImpl implements ArticleService {
             try {
                 ids.add(Long.parseLong(id.trim()));
             } catch (NumberFormatException e) {
-                log.warn("解析相关推荐文章ID失败: {}", id);
+                log.warn("解析相关推荐作品ID失败: {}", id);
             }
         }
         return ids;
@@ -1014,7 +1014,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 获取文章的标签列表
+     * 获取作品的标签列表
      */
     private List<TagVO> getArticleTags(Long articleId) {
         List<ArticleTag> articleTags = articleTagMapper.selectList(
@@ -1035,14 +1035,14 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 批量将文章实体列表转换为 VO 列表
+     * 批量将作品实体列表转换为 VO 列表
      */
     private List<ArticleVO> convertToVOList(List<Article> articles) {
         return convertToVOList(articles, null);
     }
 
     /**
-     * 批量将文章实体列表转换为 VO 列表（含当前用户点赞/收藏状态）
+     * 批量将作品实体列表转换为 VO 列表（含当前用户点赞/收藏状态）
      */
     private List<ArticleVO> convertToVOList(List<Article> articles, Long currentUserId) {
         if (CollectionUtils.isEmpty(articles)) {
@@ -1077,7 +1077,7 @@ public class ArticleServiceImpl implements ArticleService {
                 : tagMapper.selectBatchIds(tagIds).stream()
                 .collect(Collectors.toMap(Tag::getId, t -> t));
 
-        // 按文章ID分组标签
+        // 按作品ID分组标签
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getArticleId));
 
@@ -1238,7 +1238,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 批量获取文章的 Redis 浏览量增量（使用 multiGet 替代 N 次单独查询）
+     * 批量获取作品的 Redis 浏览量增量（使用 multiGet 替代 N 次单独查询）
      */
     private Map<Long, Long> batchGetViewCounts(List<Long> articleIds) {
         Map<Long, Long> result = new HashMap<>();
@@ -1269,7 +1269,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 构建文章列表缓存 Key（基于查询参数的哈希值）
+     * 构建作品列表缓存 Key（基于查询参数的哈希值）
      */
     private String buildArticleListCacheKey(ArticleQueryRequest request) {
         String raw = String.format("%s:%s:%s:%s:%s:%s",
@@ -1284,7 +1284,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 从缓存获取文章列表
+     * 从缓存获取作品列表
      */
     private PageResult<ArticleVO> getArticleListFromCache(String cacheKey) {
         try {
@@ -1296,13 +1296,13 @@ public class ArticleServiceImpl implements ArticleService {
                         .constructParametricType(PageResult.class, ArticleVO.class));
             }
         } catch (Exception e) {
-            log.warn("获取文章列表缓存失败: {}", e.getMessage());
+            log.warn("获取作品列表缓存失败: {}", e.getMessage());
         }
         return null;
     }
 
     /**
-     * 缓存文章列表
+     * 缓存作品列表
      */
     private void cacheArticleList(String cacheKey, PageResult<ArticleVO> pageResult) {
         try {
@@ -1312,12 +1312,12 @@ public class ArticleServiceImpl implements ArticleService {
             long ttl = RedisConfig.jitteredTTLFromMinutes(ARTICLE_LIST_CACHE_MINUTES);
             stringRedisTemplate.opsForValue().set(cacheKey, json, ttl, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.warn("缓存文章列表失败: {}", e.getMessage());
+            log.warn("缓存作品列表失败: {}", e.getMessage());
         }
     }
 
     /**
-     * 从缓存获取文章详情
+     * 从缓存获取作品详情
      */
     private ArticleDetailVO getArticleDetailFromCache(Long articleId) {
         try {
@@ -1328,13 +1328,13 @@ public class ArticleServiceImpl implements ArticleService {
                 return mapper.readValue(json, ArticleDetailVO.class);
             }
         } catch (Exception e) {
-            log.warn("获取文章详情缓存失败, articleId={}: {}", articleId, e.getMessage());
+            log.warn("获取作品详情缓存失败, articleId={}: {}", articleId, e.getMessage());
         }
         return null;
     }
 
     /**
-     * 缓存文章详情
+     * 缓存作品详情
      */
     private void cacheArticleDetail(Long articleId, ArticleDetailVO vo) {
         try {
@@ -1344,7 +1344,7 @@ public class ArticleServiceImpl implements ArticleService {
             long ttl = RedisConfig.jitteredTTLFromMinutes(ARTICLE_DETAIL_CACHE_MINUTES);
             stringRedisTemplate.opsForValue().set(ARTICLE_DETAIL_PREFIX + articleId, json, ttl, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.warn("缓存文章详情失败, articleId={}: {}", articleId, e.getMessage());
+            log.warn("缓存作品详情失败, articleId={}: {}", articleId, e.getMessage());
         }
     }
 
@@ -1356,7 +1356,7 @@ public class ArticleServiceImpl implements ArticleService {
         int fixedCount = 0;
 
         try {
-            // 扫描所有文章详情缓存 Key
+            // 扫描所有作品详情缓存 Key
             Set<String> detailKeys = new java.util.HashSet<>();
             try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
                     org.springframework.data.redis.core.ScanOptions.scanOptions()
@@ -1388,7 +1388,7 @@ public class ArticleServiceImpl implements ArticleService {
                     // 从数据库获取最新数据
                     Article dbArticle = articleMapper.selectById(articleId);
                     if (dbArticle == null || dbArticle.getDeletedAt() != null) {
-                        // 数据库中文章已删除，清除缓存
+                        // 数据库中作品已删除，清除缓存
                         stringRedisTemplate.delete(key);
                         inconsistentIds.add(articleId);
                         fixedCount++;
@@ -1428,14 +1428,14 @@ public class ArticleServiceImpl implements ArticleService {
                         stringRedisTemplate.delete(key);
                         inconsistentIds.add(articleId);
                         fixedCount++;
-                        log.info("缓存不一致：文章 {} 缓存已过期，已清除", articleId);
+                        log.info("缓存不一致：作品 {} 缓存已过期，已清除", articleId);
                     }
                 } catch (Exception e) {
                     log.warn("检查缓存 Key {} 一致性失败: {}", key, e.getMessage());
                 }
             }
         } catch (Exception e) {
-            log.error("扫描文章详情缓存失败: {}", e.getMessage());
+            log.error("扫描作品详情缓存失败: {}", e.getMessage());
         }
 
         result.put("checkedCount", checkedCount);

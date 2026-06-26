@@ -16,7 +16,7 @@ public class DashboardVO {
     @JsonProperty("user_total")
     private Long userTotal;
 
-    /** 文章总数 */
+    /** 作品总数 */
     @JsonProperty("article_total")
     private Long articleTotal;
 
@@ -52,11 +52,11 @@ public class DashboardVO {
     @JsonProperty("growth_trends")
     private List<GrowthTrend> growthTrends;
 
-    /** 分类文章分布 */
+    /** 分类作品分布 */
     @JsonProperty("category_distributions")
     private List<CategoryDistribution> categoryDistributions;
 
-    /** 热门文章排行 */
+    /** 热门作品排行 */
     @JsonProperty("hot_article_ranks")
     private List<HotArticleRank> hotArticleRanks;
 
@@ -124,7 +124,7 @@ public class DashboardVO {
         /** 新增用户数 */
         private Long newUserCount;
 
-        /** 新增文章数 */
+        /** 新增作品数 */
         private Long newArticleCount;
 
         /** 浏览量 */
@@ -143,7 +143,7 @@ public class DashboardVO {
         /** 分类名称 */
         private String categoryName;
 
-        /** 文章数量 */
+        /** 作品数量 */
         private Long articleCount;
 
         /** 占比百分比 */
@@ -151,15 +151,15 @@ public class DashboardVO {
     }
 
     /**
-     * 热门文章排行
+     * 热门作品排行
      */
     @Data
     public static class HotArticleRank {
 
-        /** 文章ID */
+        /** 作品ID */
         private Long articleId;
 
-        /** 文章标题 */
+        /** 作品标题 */
         private String title;
 
         /** 作者昵称 */
@@ -193,7 +193,7 @@ public class DashboardVO {
         /** 头像 */
         private String avatar;
 
-        /** 文章总数 */
+        /** 作品总数 */
         private Long articleCount;
 
         /** 总浏览量 */

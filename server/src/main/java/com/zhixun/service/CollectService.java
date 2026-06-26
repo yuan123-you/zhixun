@@ -15,7 +15,7 @@ public interface CollectService {
      * 收藏/取消收藏（切换逻辑）
      *
      * @param userId    用户ID
-     * @param articleId 文章ID
+     * @param articleId 作品ID
      * @param groupName 收藏夹分组名（可选）
      * @return 包含 collected 和 collect_count 的结果
      */
@@ -28,7 +28,7 @@ public interface CollectService {
      * @param groupName 收藏夹分组名（可选）
      * @param page      页码
      * @param pageSize  每页大小
-     * @return 收藏的文章分页列表
+     * @return 收藏的作品分页列表
      */
     PageResult<ArticleVO> getUserCollects(Long userId, String groupName, Integer page, Integer pageSize);
 

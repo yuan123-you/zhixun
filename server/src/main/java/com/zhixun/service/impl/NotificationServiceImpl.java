@@ -58,6 +58,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void createNotification(Long userId, Integer type, String title, String content, Long relatedId, String groupKey) {
+        // 参数校验：type 必须在有效范围内
+        if (type == null || type < 1 || type > NotificationTypeEnum.values().length) {
+            log.warn("无效的通知类型参数: type={}, userId={}", type, userId);
+            return;
+        }
         NotificationTypeEnum typeEnum = NotificationTypeEnum.values()[type - 1];
 
         // 检查用户通知偏好设置
@@ -121,6 +126,12 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public PageResult<NotificationVO> getNotifications(Long userId, Integer type, Integer page, Integer pageSize) {
+        // 参数校验：type 为空时返回所有类型，非空时必须在有效范围内
+        if (type != null && (type < 1 || type > NotificationTypeEnum.values().length)) {
+            log.warn("无效的通知类型参数: type={}, userId={}", type, userId);
+            return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
+        }
+
         // 构建缓存 Key
         String cacheKey = NOTIFICATION_LIST_PREFIX + userId + ":" + (type != null ? type : "all") + ":" + page + ":" + pageSize;
 
@@ -129,55 +140,86 @@ public class NotificationServiceImpl implements NotificationService {
         List<Notification> notifications;
         long total;
 
-        if (cachedIds != null) {
-            // 缓存命中，解析ID列表并批量查询
-            List<Long> ids = Arrays.stream(cachedIds.split(","))
-                    .map(Long::parseLong)
-                    .collect(Collectors.toList());
-
-            if (ids.isEmpty()) {
+        if (cachedIds != null && !cachedIds.isEmpty()) {
+            // "-" 占位符表示空列表缓存，直接返回空结果
+            if ("-".equals(cachedIds)) {
                 return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
             }
 
-            // 从缓存中获取 total 值
-            String totalKey = cacheKey + ":total";
-            String totalStr = stringRedisTemplate.opsForValue().get(totalKey);
-            total = totalStr != null ? Long.parseLong(totalStr) : ids.size();
+            try {
+                // 缓存命中，解析ID列表并批量查询
+                List<Long> ids = Arrays.stream(cachedIds.split(","))
+                        .map(Long::parseLong)
+                        .collect(Collectors.toList());
 
-            // 批量查询通知详情，保持缓存中的顺序
-            List<Notification> fetched = notificationMapper.selectBatchIds(ids);
-            Map<Long, Notification> notificationMap = fetched.stream()
-                    .collect(Collectors.toMap(Notification::getId, n -> n));
-            notifications = ids.stream()
-                    .map(notificationMap::get)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-        } else {
-            // 缓存未命中，查数据库
-            LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(Notification::getUserId, userId);
+                if (ids.isEmpty()) {
+                    return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
+                }
 
-            if (type != null) {
-                NotificationTypeEnum typeEnum = NotificationTypeEnum.values()[type - 1];
-                wrapper.eq(Notification::getType, typeEnum);
+                // 从缓存中获取 total 值
+                String totalKey = cacheKey + ":total";
+                String totalStr = stringRedisTemplate.opsForValue().get(totalKey);
+                total = totalStr != null && !totalStr.isEmpty() ? Long.parseLong(totalStr) : ids.size();
+
+                // 批量查询通知详情，保持缓存中的顺序
+                List<Notification> fetched = notificationMapper.selectBatchIds(ids);
+                Map<Long, Notification> notificationMap = fetched.stream()
+                        .collect(Collectors.toMap(Notification::getId, n -> n));
+                notifications = ids.stream()
+                        .map(notificationMap::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+            } catch (NumberFormatException e) {
+                // 缓存数据损坏，清除缓存并回退到数据库查询
+                log.warn("通知列表缓存数据损坏，清除缓存: cacheKey={}, error={}", cacheKey, e.getMessage());
+                stringRedisTemplate.delete(cacheKey);
+                stringRedisTemplate.delete(cacheKey + ":total");
+                return getNotificationsFromDb(userId, type, page, pageSize, cacheKey);
             }
-
-            wrapper.orderByDesc(Notification::getCreatedAt);
-
-            Page<Notification> notificationPage = new Page<>(page, pageSize);
-            Page<Notification> result = notificationMapper.selectPage(notificationPage, wrapper);
-            notifications = result.getRecords();
-            total = result.getTotal();
-
-            // 缓存通知ID列表（逗号分隔），2分钟TTL
-            String idsStr = notifications.stream()
-                    .map(n -> String.valueOf(n.getId()))
-                    .collect(Collectors.joining(","));
-            stringRedisTemplate.opsForValue().set(cacheKey, idsStr, 2, TimeUnit.MINUTES);
-            // 缓存 total 值
-            String totalKey = cacheKey + ":total";
-            stringRedisTemplate.opsForValue().set(totalKey, String.valueOf(total), 2, TimeUnit.MINUTES);
+        } else {
+            return getNotificationsFromDb(userId, type, page, pageSize, cacheKey);
         }
+
+        // 批量查询分组计数，解决 N+1 问题
+        Map<String, Integer> groupCountMap = batchQueryGroupCounts(notifications);
+
+        List<NotificationVO> voList = notifications.stream()
+                .map(notification -> buildNotificationVO(notification, groupCountMap))
+                .collect(Collectors.toList());
+
+        return new PageResult<>(voList, total, page, pageSize);
+    }
+
+    /**
+     * 从数据库查询通知列表并缓存结果
+     */
+    private PageResult<NotificationVO> getNotificationsFromDb(Long userId, Integer type, Integer page, Integer pageSize, String cacheKey) {
+        LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Notification::getUserId, userId);
+
+        if (type != null) {
+            NotificationTypeEnum typeEnum = NotificationTypeEnum.values()[type - 1];
+            wrapper.eq(Notification::getType, typeEnum);
+        }
+
+        wrapper.orderByDesc(Notification::getCreatedAt);
+
+        Page<Notification> notificationPage = new Page<>(page, pageSize);
+        Page<Notification> result = notificationMapper.selectPage(notificationPage, wrapper);
+        List<Notification> notifications = result.getRecords();
+        long total = result.getTotal();
+
+        // 缓存通知ID列表（逗号分隔），2分钟TTL
+        // 使用占位符 "-" 标记空列表，避免缓存空字符串导致后续 NumberFormatException
+        String idsStr = notifications.isEmpty()
+                ? "-"
+                : notifications.stream()
+                        .map(n -> String.valueOf(n.getId()))
+                        .collect(Collectors.joining(","));
+        stringRedisTemplate.opsForValue().set(cacheKey, idsStr, 2, TimeUnit.MINUTES);
+        // 缓存 total 值
+        String totalKey = cacheKey + ":total";
+        stringRedisTemplate.opsForValue().set(totalKey, String.valueOf(total), 2, TimeUnit.MINUTES);
 
         // 批量查询分组计数，解决 N+1 问题
         Map<String, Integer> groupCountMap = batchQueryGroupCounts(notifications);

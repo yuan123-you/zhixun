@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="dashboard">
     <!-- 核心指标卡片 -->
     <el-row :gutter="20" class="stat-cards">
@@ -17,7 +17,7 @@
         <el-card shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-info">
-              <p class="stat-label">文章总量</p>
+              <p class="stat-label">作品总量</p>
               <p class="stat-value">{{ formatNumber(dashboardData.articleCount) }}</p>
             </div>
             <el-icon class="stat-icon" style="color: #67c23a"><Document /></el-icon>
@@ -48,7 +48,7 @@
       </el-col>
     </el-row>
 
-    <!-- 趋势图和热门文章 -->
+    <!-- 趋势图和热门作品 -->
     <el-row :gutter="20" class="chart-section">
       <el-col :xs="24" :lg="16">
         <el-card shadow="hover">
@@ -61,7 +61,7 @@
       <el-col :xs="24" :lg="8">
         <el-card shadow="hover">
           <template #header>
-            <span>热门文章排行</span>
+            <span>热门作品排行</span>
           </template>
           <div class="hot-articles">
             <div
@@ -83,14 +83,14 @@
     <el-card shadow="hover" class="pending-section">
       <template #header>
         <div class="card-header">
-          <span>最新待审核文章</span>
+          <span>最新待审核作品</span>
           <el-button type="primary" link @click="$router.push('/articles/pending')">
             查看全部
           </el-button>
         </div>
       </template>
       <el-table :data="dashboardData.pendingArticles" stripe style="width: 100%">
-        <el-table-column prop="title" label="文章标题" min-width="200" />
+        <el-table-column prop="title" label="作品标题" min-width="200" />
         <el-table-column prop="authorName" label="作者" width="120" />
         <el-table-column prop="categoryName" label="分类" width="120" />
         <el-table-column prop="createdAt" label="提交时间" width="180" />
@@ -102,7 +102,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-empty v-if="!dashboardData.pendingArticles?.length" description="暂无待审核文章" />
+      <el-empty v-if="!dashboardData.pendingArticles?.length" description="暂无待审核作品" />
     </el-card>
   </div>
 </template>
@@ -161,7 +161,7 @@ const trendChartOption = computed(() => ({
     trigger: 'axis',
   },
   legend: {
-    data: ['新增用户', '新增文章', '浏览量'],
+    data: ['新增用户', '新增作品', '浏览量'],
   },
   grid: {
     left: '3%',
@@ -186,7 +186,7 @@ const trendChartOption = computed(() => ({
       itemStyle: { color: '#409eff' },
     },
     {
-      name: '新增文章',
+      name: '新增作品',
       type: 'line',
       smooth: true,
       data: dashboardData.value.trendData.map((item) => item.articleCount),

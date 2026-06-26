@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 文章操作日志实体，对应 article_operate_log 表
+ * 作品操作日志实体，对应 article_operate_log 表
  */
 @Data
 @TableName("article_operate_log")
@@ -23,7 +23,7 @@ public class ArticleOperateLog implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 文章ID，对应 article_id */
+    /** 作品ID，对应 article_id */
     private Long articleId;
 
     /** 操作人ID，对应 operator_id */

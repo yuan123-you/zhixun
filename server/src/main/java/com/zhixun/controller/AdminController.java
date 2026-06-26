@@ -67,7 +67,7 @@ public class AdminController {
     private SynonymService synonymService;
 
     /**
-     * 待审核文章列表
+     * 待审核作品列表
      */
     @GetMapping("/articles/pending")
     public R<PageResult<ArticleVO>> pendingArticles(
@@ -77,7 +77,7 @@ public class AdminController {
     }
 
     /**
-     * 审核文章
+     * 审核作品
      */
     @PutMapping("/articles/{id}/audit")
     public R<Void> auditArticle(@PathVariable Long id, @Valid @RequestBody AuditRequest request) {

@@ -67,8 +67,8 @@ public class MessageConsumer {
     }
 
     /**
-     * 消费文章事件消息
-     * 文章状态变更等事件的处理
+     * 消费作品事件消息
+     * 作品状态变更等事件的处理
      */
     @RabbitListener(queues = RabbitMQConfig.ARTICLE_EVENT_QUEUE)
     public void handleArticleEvent(Map<String, Object> message) {
@@ -77,24 +77,24 @@ public class MessageConsumer {
             Long articleId = message.get("articleId") != null ? Long.valueOf(message.get("articleId").toString()) : null;
             Long authorId = message.get("authorId") != null ? Long.valueOf(message.get("authorId").toString()) : null;
 
-            log.info("处理文章事件: action={}, articleId={}, authorId={}", action, articleId, authorId);
+            log.info("处理作品事件: action={}, articleId={}, authorId={}", action, articleId, authorId);
 
-            // 文章状态变更通知作者
+            // 作品状态变更通知作者
             if (authorId != null && ChatWebSocketHandler.isUserOnline(authorId)) {
                 Map<String, Object> wsMessage = Map.of(
                         "type", "NOTIFICATION",
                         "data", Map.of(
                                 "userId", authorId,
                                 "type", 1,
-                                "title", "文章状态变更",
-                                "content", "您的文章状态已更新"
+                                "title", "作品状态变更",
+                                "content", "您的作品状态已更新"
                         )
                 );
                 String json = objectMapper.writeValueAsString(wsMessage);
                 ChatWebSocketHandler.sendToUser(authorId, new TextMessage(json));
             }
         } catch (Exception e) {
-            log.error("处理文章事件失败: {}", e.getMessage());
+            log.error("处理作品事件失败: {}", e.getMessage());
         }
     }
 }

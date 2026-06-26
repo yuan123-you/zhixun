@@ -1,4 +1,4 @@
--- 知讯平台数据库建表脚本 (MySQL 8.0+)
+﻿-- 知讯平台数据库建表脚本 (MySQL 8.0+)
 
 -- 1. sys_user 用户表
 CREATE TABLE IF NOT EXISTS sys_user (
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS cms_tag (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. cms_article 文章表
+-- 4. cms_article 作品表
 CREATE TABLE IF NOT EXISTS cms_article (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   author_id BIGINT NOT NULL,
@@ -85,7 +85,7 @@ CREATE INDEX idx_cms_article_publish ON cms_article(publish_at);
 CREATE INDEX idx_cms_article_hot ON cms_article(hot_score DESC);
 CREATE INDEX idx_cms_article_deleted ON cms_article(deleted_at);
 
--- 5. cms_article_tag 文章标签关联表
+-- 5. cms_article_tag 作品标签关联表
 CREATE TABLE IF NOT EXISTS cms_article_tag (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   article_id BIGINT NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS cms_article_tag (
 CREATE INDEX idx_cms_article_tag_article ON cms_article_tag(article_id);
 CREATE INDEX idx_cms_article_tag_tag ON cms_article_tag(tag_id);
 
--- 6. cms_article_image 文章图片表
+-- 6. cms_article_image 作品图片表
 CREATE TABLE IF NOT EXISTS cms_article_image (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   article_id BIGINT NOT NULL,
@@ -387,7 +387,7 @@ CREATE TABLE IF NOT EXISTS sys_announcement (
 CREATE INDEX idx_sys_announcement_status ON sys_announcement(status);
 CREATE INDEX idx_sys_announcement_time ON sys_announcement(start_time, end_time);
 
--- 24. article_view_history 文章浏览历史表（用于推荐算法和数据分析）
+-- 24. article_view_history 作品浏览历史表（用于推荐算法和数据分析）
 CREATE TABLE IF NOT EXISTS article_view_history (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   article_id BIGINT NOT NULL,

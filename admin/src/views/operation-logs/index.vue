@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="operation-logs">
     <!-- 筛选条件 -->
     <el-card shadow="never" class="search-card">
@@ -8,7 +8,7 @@
         </el-form-item>
         <el-form-item label="操作模块">
           <el-select v-model="queryParams.module" placeholder="全部模块" clearable>
-            <el-option label="文章" value="article" />
+            <el-option label="作品" value="article" />
             <el-option label="评论" value="comment" />
             <el-option label="用户" value="user" />
             <el-option label="分类" value="category" />
@@ -106,7 +106,7 @@ const dateRange = ref<string[]>([])
 
 /** 模块名称映射 */
 const moduleNameMap: Record<string, string> = {
-  article: '文章',
+  article: '作品',
   comment: '评论',
   user: '用户',
   category: '分类',

@@ -82,7 +82,7 @@ public class User implements Serializable {
     /** 粉丝数，对应 follower_count */
     private Integer followerCount;
 
-    /** 文章数，对应 article_count */
+    /** 作品数，对应 article_count */
     private Integer articleCount;
 
     /** 微信OpenID，对应 wechat_openid */

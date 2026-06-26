@@ -14,7 +14,7 @@ public class CommentVO {
     /** 评论ID */
     private Long id;
 
-    /** 文章ID */
+    /** 作品ID */
     private Long articleId;
 
     /** 评论内容 */

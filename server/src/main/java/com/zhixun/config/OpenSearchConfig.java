@@ -51,7 +51,7 @@ public class OpenSearchConfig {
     private String synonymFilePath = "opensearch/synonyms.txt";
 
     /**
-     * 文章索引名
+     * 作品索引名
      */
     public String getArticleIndex() {
         return indexPrefix + "article";

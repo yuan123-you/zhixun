@@ -7,7 +7,7 @@ import lombok.Getter;
 import java.util.Arrays;
 
 /**
- * 文章状态枚举
+ * 作品状态枚举
  */
 @Getter
 @AllArgsConstructor

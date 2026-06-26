@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * 每个缓存名称对应一个 MultiLevelCache 实例。
  * <p>
  * 缓存配置说明：
- * - articleHot: 热门文章缓存，L1=5min/500条，L2=30min
+ * - articleHot: 热门作品缓存，L1=5min/500条，L2=30min
  * - userProfile: 用户资料缓存，L1=10min/200条，L2=20min
  * - categoryTree: 分类树缓存，L1=10min/10条，L2=30min
  * - tagList: 标签列表缓存，L1=10min/50条，L2=30min

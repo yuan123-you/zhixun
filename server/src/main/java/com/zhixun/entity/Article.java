@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 文章实体，对应 cms_article 表
+ * 作品实体，对应 cms_article 表
  */
 @Data
 @NoArgsConstructor
@@ -43,7 +43,7 @@ public class Article implements Serializable {
     /** 封面图，对应 cover_image */
     private String coverImage;
 
-    /** 文章状态 */
+    /** 作品状态 */
     private ArticleStatusEnum status;
 
     /** 是否置顶：0-否，1-是，对应 is_top */

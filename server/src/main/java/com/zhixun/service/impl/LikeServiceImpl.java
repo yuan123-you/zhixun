@@ -64,9 +64,9 @@ public class LikeServiceImpl implements LikeService {
     private static final String LIKE_COUNT_PREFIX = "like:count:";
     /** 浏览量 Redis Key 前缀 */
     private static final String VIEW_COUNT_PREFIX = "article:view:";
-    /** 文章详情缓存 Key 前缀 */
+    /** 作品详情缓存 Key 前缀 */
     private static final String ARTICLE_DETAIL_PREFIX = "article:detail:";
-    /** 文章列表缓存 Key 前缀 */
+    /** 作品列表缓存 Key 前缀 */
     private static final String ARTICLE_LIST_PREFIX = "article:list:";
     /** 相关推荐缓存 Key 前缀 */
     private static final String RELATED_ARTICLES_PREFIX = "article:related:";
@@ -120,7 +120,7 @@ public class LikeServiceImpl implements LikeService {
         String countKey = LIKE_COUNT_PREFIX + targetId + ":" + targetType;
         stringRedisTemplate.opsForValue().set(countKey, String.valueOf(likeCount), 1, TimeUnit.HOURS);
 
-        // 清除文章相关缓存，确保列表和详情页数据一致
+        // 清除作品相关缓存，确保列表和详情页数据一致
         if (targetTypeEnum == LikeTargetTypeEnum.ARTICLE) {
             clearArticleCache(targetId);
         }
@@ -158,7 +158,7 @@ public class LikeServiceImpl implements LikeService {
     @Override
     @Slave
     public PageResult<ArticleVO> getUserLikes(Long userId, Integer page, Integer pageSize) {
-        // 查询用户点赞的文章类型记录
+        // 查询用户点赞的作品类型记录
         LambdaQueryWrapper<ArticleLike> likeWrapper = new LambdaQueryWrapper<>();
         likeWrapper.eq(ArticleLike::getUserId, userId)
                 .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
@@ -170,12 +170,12 @@ public class LikeServiceImpl implements LikeService {
             return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
         }
 
-        // 获取点赞的文章ID列表
+        // 获取点赞的作品ID列表
         List<Long> articleIds = likeResult.getRecords().stream()
                 .map(ArticleLike::getTargetId)
                 .collect(Collectors.toList());
 
-        // 批量查询文章
+        // 批量查询作品
         List<Article> articles = articleMapper.selectBatchIds(articleIds);
         List<ArticleVO> voList = convertToVOList(articles);
 
@@ -191,7 +191,7 @@ public class LikeServiceImpl implements LikeService {
         if (targetType == LikeTargetTypeEnum.ARTICLE) {
             Article article = articleMapper.selectById(targetId);
             if (article == null) {
-                throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在");
+                throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
             }
         } else if (targetType == LikeTargetTypeEnum.COMMENT) {
             Comment comment = commentMapper.selectById(targetId);
@@ -248,7 +248,7 @@ public class LikeServiceImpl implements LikeService {
     }
 
     /**
-     * 批量将文章实体列表转换为 VO 列表
+     * 批量将作品实体列表转换为 VO 列表
      */
     private List<ArticleVO> convertToVOList(List<Article> articles) {
         if (CollectionUtils.isEmpty(articles)) {
@@ -333,13 +333,13 @@ public class LikeServiceImpl implements LikeService {
     }
 
     /**
-     * 清除文章相关缓存
+     * 清除作品相关缓存
      */
     private void clearArticleCache(Long articleId) {
         try {
             stringRedisTemplate.delete(ARTICLE_DETAIL_PREFIX + articleId);
             stringRedisTemplate.delete(RELATED_ARTICLES_PREFIX + articleId);
-            // 清除文章列表缓存（使用 SCAN 替代 KEYS）
+            // 清除作品列表缓存（使用 SCAN 替代 KEYS）
             Set<String> listKeys = new java.util.HashSet<>();
             try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
                     org.springframework.data.redis.core.ScanOptions.scanOptions()
@@ -396,7 +396,7 @@ public class LikeServiceImpl implements LikeService {
                 stringRedisTemplate.delete(recommendKeys);
             }
         } catch (Exception e) {
-            log.warn("清除文章相关缓存失败, articleId={}: {}", articleId, e.getMessage());
+            log.warn("清除作品相关缓存失败, articleId={}: {}", articleId, e.getMessage());
         }
         // 递增数据版本号，通知客户端数据已变更
         try {

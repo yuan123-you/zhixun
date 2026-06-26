@@ -1,5 +1,5 @@
-<template>
-  <!-- 文章网格卡片：无内边距/间隔的 3 列 grid 布局用 -->
+﻿<template>
+  <!-- 作品网格卡片：无内边距/间隔的 3 列 grid 布局用 -->
   <NuxtLink
     :to="`/articles/${article.id}`"
     class="relative block overflow-hidden group cursor-pointer"
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-/** 文章网格卡片：封面图/纯色背景 + 标题 + 点赞信息 */
+/** 作品网格卡片：封面图/纯色背景 + 标题 + 点赞信息 */
 import type { Article } from '~/types'
 
 const props = defineProps<{
@@ -64,7 +64,7 @@ const props = defineProps<{
 
 const { resolveUrl } = useResourceUrl()
 
-// 无图时从 ID 取色，保证同一文章颜色稳定
+// 无图时从 ID 取色，保证同一作品颜色稳定
 const palette = [
   '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
   '#ec4899', '#f43f5e', '#f97316', '#eab308',

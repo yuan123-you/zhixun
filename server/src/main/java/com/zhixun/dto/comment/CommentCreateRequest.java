@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 public class CommentCreateRequest {
 
-    /** 文章ID（由Controller从路径参数自动设置） */
+    /** 作品ID（由Controller从路径参数自动设置） */
     private Long articleId;
 
     /** 父评论ID */

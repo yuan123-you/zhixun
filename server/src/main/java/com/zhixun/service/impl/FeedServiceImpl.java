@@ -50,9 +50,9 @@ import java.util.stream.Collectors;
  * 信息流服务实现
  * <p>
  * 增强功能：
- * - 冷启动处理：新用户使用偏好分类热门文章 + 全局热门 + 随机探索
+ * - 冷启动处理：新用户使用偏好分类热门作品 + 全局热门 + 随机探索
  * - 多样性重排：MMR 启发的重排，避免推荐结果同质化
- * - 时效性提升：近期发布文章获得额外加分
+ * - 时效性提升：近期发布作品获得额外加分
  */
 @Slf4j
 @Service
@@ -95,7 +95,7 @@ public class FeedServiceImpl implements FeedService {
     /** 关注动态时间线 Key 前缀（Redis Sorted Set，score = 发布时间戳） */
     private static final String TIMELINE_KEY_PREFIX = "timeline:user:";
 
-    /** 时效性加分：7天内发布的文章获得加分 */
+    /** 时效性加分：7天内发布的作品获得加分 */
     private static final long RECENCY_BOOST_DAYS = 7;
     /** 时效性加分值 */
     private static final double RECENCY_BOOST_SCORE = 0.15;
@@ -109,7 +109,7 @@ public class FeedServiceImpl implements FeedService {
     @Override
     @Slave
     public PageResult<ArticleVO> getRecommendFeed(Long userId, Integer refresh, Integer page, Integer pageSize) {
-        // 未登录用户返回热门文章
+        // 未登录用户返回热门作品
         if (userId == null) {
             return getHotFeed(page, pageSize);
         }
@@ -163,7 +163,7 @@ public class FeedServiceImpl implements FeedService {
 
         // 缓存推荐结果（带 TTL 抖动防雪崩）
         if (!recommendedArticleIds.isEmpty()) {
-            // 将文章ID列表以逗号分隔存入 Redis
+            // 将作品ID列表以逗号分隔存入 Redis
             String idsStr = recommendedArticleIds.stream()
                     .map(String::valueOf)
                     .collect(Collectors.joining(","));
@@ -204,7 +204,7 @@ public class FeedServiceImpl implements FeedService {
 
         List<ArticleVO> voList = convertToVOList(result.getRecords());
 
-        // 缓存文章ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
+        // 缓存作品ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
         if (!CollectionUtils.isEmpty(voList)) {
             String idsStr = voList.stream()
                     .map(vo -> String.valueOf(vo.getId()))
@@ -286,7 +286,7 @@ public class FeedServiceImpl implements FeedService {
                 .map(UserFollow::getFollowingId)
                 .collect(Collectors.toList());
 
-        // 查询关注用户的已发布文章（游标分页）
+        // 查询关注用户的已发布作品（游标分页）
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .in(Article::getAuthorId, followUserIds);
@@ -332,7 +332,7 @@ public class FeedServiceImpl implements FeedService {
 
         List<ArticleVO> voList = convertToVOList(result.getRecords());
 
-        // 缓存文章ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
+        // 缓存作品ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
         if (!CollectionUtils.isEmpty(voList)) {
             String idsStr = voList.stream()
                     .map(vo -> String.valueOf(vo.getId()))
@@ -401,7 +401,7 @@ public class FeedServiceImpl implements FeedService {
                 .map(UserFollow::getFollowingId)
                 .collect(Collectors.toList());
 
-        // 查询关注用户的已发布文章
+        // 查询关注用户的已发布作品
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .in(Article::getAuthorId, followUserIds)
@@ -448,9 +448,9 @@ public class FeedServiceImpl implements FeedService {
                 .map(Long::parseLong)
                 .collect(Collectors.toList());
 
-        // 批量查询文章
+        // 批量查询作品
         List<Article> articles = articleMapper.selectBatchIds(articleIds);
-        // 过滤已发布状态的文章
+        // 过滤已发布状态的作品
         articles = articles.stream()
                 .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED && a.getDeletedAt() == null)
                 .collect(Collectors.toList());
@@ -499,7 +499,7 @@ public class FeedServiceImpl implements FeedService {
                 .map(Long::parseLong)
                 .collect(Collectors.toList());
 
-        // 批量查询文章
+        // 批量查询作品
         List<Article> articles = articleMapper.selectBatchIds(articleIds);
         articles = articles.stream()
                 .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED && a.getDeletedAt() == null)
@@ -551,7 +551,7 @@ public class FeedServiceImpl implements FeedService {
                     .map(UserFollow::getFollowingId)
                     .collect(Collectors.toList());
 
-            // 查询关注用户的已发布文章（最近500条）
+            // 查询关注用户的已发布作品（最近500条）
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                     .in(Article::getAuthorId, followUserIds)
@@ -574,19 +574,19 @@ public class FeedServiceImpl implements FeedService {
             // 设置过期时间（7天）
             stringRedisTemplate.expire(timelineKey, 7, TimeUnit.DAYS);
 
-            log.info("重建时间线完成: userId={}, 文章数={}", userId, articles.size());
+            log.info("重建时间线完成: userId={}, 作品数={}", userId, articles.size());
         } catch (Exception e) {
             log.error("重建时间线失败: userId={}, error={}", userId, e.getMessage());
         }
     }
 
     /**
-     * 基于协同过滤 + Bandit冷启动 + 内容相似度 + 偏好推荐生成推荐文章ID列表
+     * 基于协同过滤 + Bandit冷启动 + 内容相似度 + 偏好推荐生成推荐作品ID列表
      * <p>
      * 增强功能：
-     * - 冷启动处理：新用户使用偏好分类热门文章 + 全局热门 + 随机探索
+     * - 冷启动处理：新用户使用偏好分类热门作品 + 全局热门 + 随机探索
      * - 多样性重排：MMR 启发的重排，避免推荐结果同质化
-     * - 时效性提升：近期发布文章获得额外加分
+     * - 时效性提升：近期发布作品获得额外加分
      */
     private List<Long> generateRecommendedIds(Long userId) {
         List<Long> articleIds = new ArrayList<>();
@@ -597,7 +597,7 @@ public class FeedServiceImpl implements FeedService {
             List<Long> cfArticleIds = collaborativeFilterService.recommendArticles(userId, 80);
             if (!CollectionUtils.isEmpty(cfArticleIds)) {
                 articleIds.addAll(cfArticleIds);
-                log.debug("协同过滤推荐文章数: {}", cfArticleIds.size());
+                log.debug("协同过滤推荐作品数: {}", cfArticleIds.size());
             }
         } catch (Exception e) {
             log.warn("协同过滤推荐异常，降级到偏好推荐: {}", e.getMessage());
@@ -605,10 +605,10 @@ public class FeedServiceImpl implements FeedService {
 
         // ========== 第二阶段：冷启动处理 ==========
         if (isColdStart) {
-            // 冷启动用户：使用偏好分类热门文章 + 全局热门 + 随机探索
+            // 冷启动用户：使用偏好分类热门作品 + 全局热门 + 随机探索
             List<Long> coldStartIds = getColdStartArticleIds(userId, articleIds);
             articleIds.addAll(coldStartIds);
-            log.debug("冷启动推荐文章数: {}", coldStartIds.size());
+            log.debug("冷启动推荐作品数: {}", coldStartIds.size());
         } else if (articleIds.size() < 20) {
             // Bandit冷启动推荐
             try {
@@ -625,7 +625,7 @@ public class FeedServiceImpl implements FeedService {
                     List<Long> banditArticleIds = banditArticles.stream()
                             .map(Article::getId).collect(Collectors.toList());
                     articleIds.addAll(banditArticleIds);
-                    log.debug("Bandit冷启动推荐文章数: {}", banditArticleIds.size());
+                    log.debug("Bandit冷启动推荐作品数: {}", banditArticleIds.size());
                 }
             } catch (Exception e) {
                 log.warn("Bandit冷启动推荐异常: {}", e.getMessage());
@@ -641,7 +641,7 @@ public class FeedServiceImpl implements FeedService {
                         .filter(id -> !excludeIds.contains(id))
                         .collect(Collectors.toList());
                 articleIds.addAll(cbArticleIds);
-                log.debug("内容相似度推荐文章数: {}", cbArticleIds.size());
+                log.debug("内容相似度推荐作品数: {}", cbArticleIds.size());
             } catch (Exception e) {
                 log.warn("内容相似度推荐异常: {}", e.getMessage());
             }
@@ -653,7 +653,7 @@ public class FeedServiceImpl implements FeedService {
             articleIds.addAll(preferenceIds);
         }
 
-        // ========== 第五阶段：热门文章补充 ==========
+        // ========== 第五阶段：热门作品补充 ==========
         if (articleIds.size() < 20) {
             LambdaQueryWrapper<Article> hotWrapper = new LambdaQueryWrapper<>();
             hotWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
@@ -674,15 +674,15 @@ public class FeedServiceImpl implements FeedService {
      * 冷启动用户的推荐逻辑
      * <p>
      * 策略：
-     * 1. 用户注册时选择的偏好分类下的热门文章（50%）
-     * 2. 全局热门文章（30%）
-     * 3. 随机探索文章，来自不同分类（20%）
+     * 1. 用户注册时选择的偏好分类下的热门作品（50%）
+     * 2. 全局热门作品（30%）
+     * 3. 随机探索作品，来自不同分类（20%）
      */
     private List<Long> getColdStartArticleIds(Long userId, List<Long> excludeIds) {
         List<Long> result = new ArrayList<>();
         Set<Long> allExcludeIds = new HashSet<>(excludeIds);
 
-        // 1. 偏好分类下的热门文章
+        // 1. 偏好分类下的热门作品
         List<UserPreferredCategory> preferredCategories = userPreferredCategoryMapper.selectList(
                 new LambdaQueryWrapper<UserPreferredCategory>().eq(UserPreferredCategory::getUserId, userId));
         List<Long> categoryIds = preferredCategories.stream()
@@ -705,7 +705,7 @@ public class FeedServiceImpl implements FeedService {
             allExcludeIds.addAll(categoryArticleIds);
         }
 
-        // 2. 全局热门文章
+        // 2. 全局热门作品
         LambdaQueryWrapper<Article> hotWrapper = new LambdaQueryWrapper<>();
         hotWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
@@ -719,7 +719,7 @@ public class FeedServiceImpl implements FeedService {
         result.addAll(hotArticleIds);
         allExcludeIds.addAll(hotArticleIds);
 
-        // 3. 随机探索文章（来自不同分类）
+        // 3. 随机探索作品（来自不同分类）
         int explorationCount = (int) (result.size() * COLD_START_EXPLORATION_RATIO / (1 - COLD_START_EXPLORATION_RATIO));
         explorationCount = Math.max(5, explorationCount);
         LambdaQueryWrapper<Article> exploreWrapper = new LambdaQueryWrapper<>();
@@ -743,17 +743,17 @@ public class FeedServiceImpl implements FeedService {
     /**
      * 应用多样性重排和时效性提升
      * <p>
-     * 1. 时效性提升：7天内发布的文章获得额外加分
+     * 1. 时效性提升：7天内发布的作品获得额外加分
      * 2. 多样性重排：MMR（Maximal Marginal Relevance）启发的重排
-     * - 对同一分类的文章进行惩罚，避免推荐结果同质化
-     * - 确保推荐列表中不同分类的文章比例合理
+     * - 对同一分类的作品进行惩罚，避免推荐结果同质化
+     * - 确保推荐列表中不同分类的作品比例合理
      */
     private List<Long> applyDiversityAndRecency(List<Long> articleIds) {
         if (CollectionUtils.isEmpty(articleIds)) {
             return articleIds;
         }
 
-        // 批量查询文章信息（用于获取分类和发布时间）
+        // 批量查询作品信息（用于获取分类和发布时间）
         List<Article> articles = articleMapper.selectBatchIds(articleIds);
         if (CollectionUtils.isEmpty(articles)) {
             return articleIds;
@@ -762,7 +762,7 @@ public class FeedServiceImpl implements FeedService {
         Map<Long, Article> articleMap = articles.stream()
                 .collect(Collectors.toMap(Article::getId, a -> a, (a, b) -> a));
 
-        // 1. 计算每篇文章的综合分数（基础分 + 时效性加分）
+        // 1. 计算每篇作品的综合分数（基础分 + 时效性加分）
         Map<Long, Double> scoreMap = new HashMap<>();
         for (Long articleId : articleIds) {
             Article article = articleMap.get(articleId);
@@ -810,7 +810,7 @@ public class FeedServiceImpl implements FeedService {
                 }
             }
 
-            // 分数太低的文章跳过（但保证至少有结果）
+            // 分数太低的作品跳过（但保证至少有结果）
             if (score < 0 && result.size() >= 20) {
                 continue;
             }
@@ -827,10 +827,10 @@ public class FeedServiceImpl implements FeedService {
     }
 
     /**
-     * 计算文章的时效性加分
-     * 7天内发布的文章获得加分，越新加分越高
+     * 计算作品的时效性加分
+     * 7天内发布的作品获得加分，越新加分越高
      *
-     * @param article 文章实体
+     * @param article 作品实体
      * @return 时效性加分 [0, RECENCY_BOOST_SCORE]
      */
     private double calculateRecencyBoost(Article article) {
@@ -853,7 +853,7 @@ public class FeedServiceImpl implements FeedService {
     }
 
     /**
-     * 基于用户偏好的文章推荐（兜底策略）
+     * 基于用户偏好的作品推荐（兜底策略）
      */
     private List<Long> getPreferenceBasedArticleIds(Long userId, List<Long> excludeIds) {
         List<Long> result = new ArrayList<>();
@@ -872,7 +872,7 @@ public class FeedServiceImpl implements FeedService {
                 .map(UserPreferredTag::getTagId)
                 .collect(Collectors.toList());
 
-        // 查询偏好分类下的文章
+        // 查询偏好分类下的作品
         if (!CollectionUtils.isEmpty(categoryIds)) {
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
@@ -885,7 +885,7 @@ public class FeedServiceImpl implements FeedService {
             result.addAll(preferredArticles.stream().map(Article::getId).collect(Collectors.toList()));
         }
 
-        // 如果偏好标签不为空，查询包含这些标签的文章并追加
+        // 如果偏好标签不为空，查询包含这些标签的作品并追加
         if (!CollectionUtils.isEmpty(tagIds)) {
             List<ArticleTag> articleTags = articleTagMapper.selectList(
                     new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getTagId, tagIds));
@@ -934,13 +934,13 @@ public class FeedServiceImpl implements FeedService {
             return new PageResult<>(Collections.emptyList(), (long) total, page, pageSize);
         }
 
-        // 获取当前页的文章ID
+        // 获取当前页的作品ID
         List<Long> pageIds = new ArrayList<>();
         for (int i = fromIndex; i < toIndex; i++) {
             pageIds.add(Long.parseLong(idArray[i]));
         }
 
-        // 批量查询文章
+        // 批量查询作品
         List<Article> articles = articleMapper.selectBatchIds(pageIds);
         // 保持缓存中的顺序
         Map<Long, Article> articleMap = articles.stream()
@@ -955,7 +955,7 @@ public class FeedServiceImpl implements FeedService {
     }
 
     /**
-     * 批量将文章实体列表转换为 VO 列表
+     * 批量将作品实体列表转换为 VO 列表
      */
     private List<ArticleVO> convertToVOList(List<Article> articles) {
         if (CollectionUtils.isEmpty(articles)) {
@@ -988,7 +988,7 @@ public class FeedServiceImpl implements FeedService {
                 : safeToList(tagMapper.selectBatchIds(tagIds)).stream()
                 .collect(Collectors.toMap(Tag::getId, t -> t, (existing, replacement) -> existing));
 
-        // 按文章ID分组标签
+        // 按作品ID分组标签
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getArticleId));
 

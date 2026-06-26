@@ -23,7 +23,7 @@ public interface CommentService {
     /**
      * 获取评论列表（树形结构）
      *
-     * @param articleId 文章ID
+     * @param articleId 作品ID
      * @param sort      排序方式（latest/hot）
      * @param page      页码
      * @param pageSize  每页大小

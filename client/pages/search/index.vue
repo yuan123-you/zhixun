@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- 搜索页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 搜索框（自动聚焦 + 自动搜索） -->
@@ -17,7 +17,7 @@
           v-model="keyword"
           type="text"
           class="flex-1 bg-transparent border-none outline-none ml-2 text-slate-900 placeholder-gray-400"
-          placeholder="搜索文章、用户..."
+          placeholder="搜索作品、用户..."
           @input="handleInput"
           @keydown.enter="doSearch"
         />
@@ -59,7 +59,7 @@
             <!-- 用户头像 -->
             <UserAvatar v-if="item.type === 'user'" :src="item.avatar" :alt="item.text" size="xs" class="mr-2" />
             <span v-html="highlightKeyword(item.text)"></span>
-            <span class="ml-auto text-xs text-gray-400">{{ item.type === 'user' ? '用户' : item.type === 'article' ? '文章' : '标签' }}</span>
+            <span class="ml-auto text-xs text-gray-400">{{ item.type === 'user' ? '用户' : item.type === 'article' ? '作品' : '标签' }}</span>
           </button>
         </div>
       </div>
@@ -154,7 +154,7 @@
             </div>
           </div>
         </template>
-        <!-- 文章Tab骨架屏 -->
+        <!-- 作品Tab骨架屏 -->
         <template v-else-if="activeTab === 'articles'">
           <div class="space-y-3">
             <LoadingSkeleton v-for="i in 5" :key="i" type="article" />
@@ -192,10 +192,10 @@
             </div>
           </div>
 
-          <!-- 文章区块 -->
+          <!-- 作品区块 -->
           <div v-if="allArticleResults.length > 0" class="mb-3">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-slate-500">{{ '相关文章' }}</h3>
+              <h3 class="text-sm font-medium text-slate-500">{{ '相关作品' }}</h3>
               <button v-if="tabCounts.articles > 5" class="text-xs text-primary hover:underline" @click="switchTab('articles')">{{ '查看全部' }} ({{ tabCounts.articles }})</button>
             </div>
             <div class="space-y-2">
@@ -213,7 +213,7 @@
           </div>
         </template>
 
-        <!-- ===== 文章Tab ===== -->
+        <!-- ===== 作品Tab ===== -->
         <template v-if="activeTab === 'articles'">
           <div class="space-y-2">
             <ArticleCard v-for="item in articleResults" :key="item.id" :article="item" />
@@ -286,7 +286,7 @@ const { cachedRequest: cachedRequestLong } = useRequestCache({ ttl: 10 * 60 * 10
 // 搜索Tab
 const searchTabs = [
   { key: 'all', label: computed(() => '综合') },
-  { key: 'articles', label: computed(() => '文章') },
+  { key: 'articles', label: computed(() => '作品') },
   { key: 'users', label: computed(() => '用户') },
   { key: 'images', label: computed(() => '图片') },
 ]
@@ -782,7 +782,7 @@ const toggleFollow = async (userId: number) => {
 
 // 图片点击
 const handleImageClick = (image: any) => {
-  // 可根据需要跳转到文章详情
+  // 可根据需要跳转到作品详情
 }
 
 // 页面元信息

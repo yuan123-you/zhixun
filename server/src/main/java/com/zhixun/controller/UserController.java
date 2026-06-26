@@ -65,7 +65,7 @@ public class UserController {
     }
 
     /**
-     * 我发布的文章
+     * 我发布的作品
      */
     @GetMapping("/articles")
     @PreAuthorize("isAuthenticated()")

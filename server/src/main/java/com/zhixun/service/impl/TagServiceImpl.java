@@ -119,31 +119,31 @@ public class TagServiceImpl implements TagService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "目标标签不存在");
         }
 
-        // 查询源标签下所有文章关联
+        // 查询源标签下所有作品关联
         List<ArticleTag> sourceArticleTags = articleTagMapper.selectList(
                 new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getTagId, sourceTagId));
 
         if (!sourceArticleTags.isEmpty()) {
-            // 收集受影响的文章ID，用于后续同步OpenSearch
+            // 收集受影响的作品ID，用于后续同步OpenSearch
             List<Long> affectedArticleIds = sourceArticleTags.stream()
                     .map(ArticleTag::getArticleId)
                     .distinct()
                     .collect(Collectors.toList());
 
-            // 查询目标标签下已有的文章ID，避免重复关联
+            // 查询目标标签下已有的作品ID，避免重复关联
             List<ArticleTag> targetArticleTags = articleTagMapper.selectList(
                     new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getTagId, targetTagId));
             List<Long> targetArticleIds = targetArticleTags.stream()
                     .map(ArticleTag::getArticleId)
                     .collect(Collectors.toList());
 
-            // 将源标签的文章关联转移到目标标签（跳过已存在的关联）
+            // 将源标签的作品关联转移到目标标签（跳过已存在的关联）
             for (ArticleTag at : sourceArticleTags) {
                 if (!targetArticleIds.contains(at.getArticleId())) {
                     at.setTagId(targetTagId);
                     articleTagMapper.updateById(at);
                 } else {
-                    // 目标标签已有该文章关联，直接删除源标签的关联
+                    // 目标标签已有该作品关联，直接删除源标签的关联
                     articleTagMapper.deleteById(at.getId());
                 }
             }
@@ -264,7 +264,7 @@ public class TagServiceImpl implements TagService {
                 tag.setArticleCount(count);
                 tagMapper.updateById(tag);
             }
-            log.info("同步标签{}文章数：{}", tagId, count);
+            log.info("同步标签{}作品数：{}", tagId, count);
         } else {
             // 同步所有标签
             List<Tag> allTags = tagMapper.selectList(null);
@@ -274,7 +274,7 @@ public class TagServiceImpl implements TagService {
                 tag.setArticleCount(count);
                 tagMapper.updateById(tag);
             }
-            log.info("同步所有标签文章数完成，共{}个标签", allTags.size());
+            log.info("同步所有标签作品数完成，共{}个标签", allTags.size());
         }
     }
 

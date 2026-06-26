@@ -12,7 +12,7 @@ import java.lang.annotation.*;
 public @interface OperationLog {
 
     /**
-     * 操作模块（如：文章、评论、关注、点赞、收藏、用户设置）
+     * 操作模块（如：作品、评论、关注、点赞、收藏、用户设置）
      */
     String module();
 

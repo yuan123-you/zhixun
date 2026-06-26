@@ -5,7 +5,7 @@ import com.zhixun.entity.Article;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 文章 Mapper
+ * 作品 Mapper
  */
 @Mapper
 public interface ArticleMapper extends BaseMapper<Article> {

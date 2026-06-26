@@ -86,7 +86,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 公开接口放行
                         .requestMatchers(PUBLIC_URLS).permitAll()
-                        // 文章列表和详情（公开）
+                        // 作品列表和详情（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/articles", "/v1/articles/**").permitAll()
                         // 分类列表和分类树（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/categories", "/v1/categories/tree").permitAll()

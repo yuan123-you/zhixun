@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 文章更新请求
+ * 作品更新请求
  */
 @Data
 public class ArticleUpdateRequest {
@@ -31,7 +31,7 @@ public class ArticleUpdateRequest {
     /** 封面图 */
     private String coverImage;
 
-    /** 文章状态：0-草稿，1-待审核，2-已发布 */
+    /** 作品状态：0-草稿，1-待审核，2-已发布 */
     private Integer status;
 
     /** 可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己 */

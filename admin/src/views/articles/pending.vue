@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="pending-articles">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
@@ -6,7 +6,7 @@
         <el-form-item label="关键词">
           <el-input
             v-model="queryParams.keyword"
-            placeholder="搜索文章标题"
+            placeholder="搜索作品标题"
             clearable
             @keyup.enter="handleSearch"
           />
@@ -55,8 +55,8 @@
       </div>
     </el-card>
 
-    <!-- 文章预览对话框 -->
-    <el-dialog v-model="previewVisible" title="文章预览" width="700px" top="5vh">
+    <!-- 作品预览对话框 -->
+    <el-dialog v-model="previewVisible" title="作品预览" width="700px" top="5vh">
       <div v-if="previewArticle" class="article-preview">
         <h2>{{ previewArticle.title }}</h2>
         <div class="meta">
@@ -70,7 +70,7 @@
     </el-dialog>
 
     <!-- 驳回原因对话框 -->
-    <el-dialog v-model="rejectDialogVisible" title="驳回文章" width="500px">
+    <el-dialog v-model="rejectDialogVisible" title="驳回作品" width="500px">
       <el-form :model="rejectForm" :rules="rejectRules" ref="rejectFormRef">
         <el-form-item label="驳回原因" prop="reason">
           <el-input
@@ -101,7 +101,7 @@ import { getPendingArticles, auditArticle } from '@/api/article'
 /** 加载状态 */
 const loading = ref(false)
 
-/** 文章列表 */
+/** 作品列表 */
 const articleList = ref<Article[]>([])
 
 /** 总数 */
@@ -142,7 +142,7 @@ function handleReset() {
   loadPendingArticles()
 }
 
-/** 预览文章 */
+/** 预览作品 */
 function handlePreview(article: Article) {
   previewArticle.value = article
   previewVisible.value = true
@@ -159,7 +159,7 @@ async function handleApprove(article: Article) {
   }
 }
 
-/** 驳回文章 */
+/** 驳回作品 */
 function handleReject(article: Article) {
   currentRejectId.value = article.id
   rejectForm.reason = ''
@@ -188,7 +188,7 @@ async function confirmReject() {
   }
 }
 
-/** 加载待审核文章 */
+/** 加载待审核作品 */
 async function loadPendingArticles() {
   loading.value = true
   try {

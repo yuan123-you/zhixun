@@ -168,7 +168,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Slave
     public PageResult<ArticleVO> getUserLikes(Long userId, Integer page, Integer pageSize) {
-        // 查询用户点赞的文章类型记录
+        // 查询用户点赞的作品类型记录
         LambdaQueryWrapper<ArticleLike> likeWrapper = new LambdaQueryWrapper<>();
         likeWrapper.eq(ArticleLike::getUserId, userId)
                 .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
@@ -593,7 +593,7 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 批量将文章实体列表转换为 VO 列表
+     * 批量将作品实体列表转换为 VO 列表
      */
     private List<ArticleVO> convertToVOList(List<Article> articles) {
         if (CollectionUtils.isEmpty(articles)) {

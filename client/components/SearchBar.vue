@@ -13,7 +13,7 @@
         v-model="keyword"
         type="text"
         class="flex-1 bg-transparent border-none outline-none ml-2 text-sm text-slate-900 placeholder-slate-400"
-        placeholder="搜索文章、用户..."
+        placeholder="搜索作品、用户..."
         @input="handleInput"
         @focus="showSuggestions = true"
         @keydown.enter="handleSearch"

@@ -65,7 +65,7 @@ public interface TagService {
     void mergeTag(Long sourceTagId, Long targetTagId);
 
     /**
-     * 获取标签云（所有标签及其文章数）
+     * 获取标签云（所有标签及其作品数）
      *
      * @return 标签列表
      */
@@ -113,7 +113,7 @@ public interface TagService {
     List<TagVO> searchTags(String keyword);
 
     /**
-     * 同步标签文章数（从 cms_article_tag 重新计算 article_count）
+     * 同步标签作品数（从 cms_article_tag 重新计算 article_count）
      *
      * @param tagId 标签ID，为null时同步所有标签
      */

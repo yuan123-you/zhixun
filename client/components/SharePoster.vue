@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- 分享海报组件 -->
   <Teleport to="body">
     <Transition name="fade">
@@ -11,12 +11,12 @@
               <img :src="resolveUrl(article?.coverImage) || ''" :alt="article?.title" class="w-full h-40 object-cover" crossorigin="anonymous" />
             </div>
 
-            <!-- 文章标题 -->
+            <!-- 作品标题 -->
             <h3 class="text-lg font-bold text-gray-900 line-clamp-2 mb-2">
               {{ article?.title }}
             </h3>
 
-            <!-- 文章正文 -->
+            <!-- 作品正文 -->
             <p class="text-sm text-gray-500 line-clamp-3 mb-4">
               {{ posterContent }}
             </p>

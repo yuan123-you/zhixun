@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- 排行榜页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <h1 class="text-2xl font-bold text-slate-900 mb-3">{{ '热榜' }}</h1>
@@ -31,7 +31,7 @@
           {{ index + 1 }}
         </div>
 
-        <!-- 文章信息 -->
+        <!-- 作品信息 -->
         <div class="flex-1 min-w-0">
           <h3 class="text-sm font-semibold text-slate-900 line-clamp-1">{{ item.title }}</h3>
           <div class="flex items-center space-x-4 mt-1 text-xs text-gray-400">

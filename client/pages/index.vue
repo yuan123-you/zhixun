@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- 首页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <PullToRefresh :on-refresh="() => handleRefresh()" :error="error || undefined">
@@ -39,7 +39,7 @@
           </button>
         </div>
 
-        <!-- 文章列表 - 平板端双列 -->
+        <!-- 作品列表 - 平板端双列 -->
         <ArticleList
           :articles="articles"
           :loading="loading"
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-/** 首页：推荐/热门/最新/关注四个Tab，文章卡片列表 */
+/** 首页：推荐/热门/最新/关注四个Tab，作品卡片列表 */
 
 import type { Article, PageResult, ApiResponse } from '~/types'
 
@@ -160,7 +160,7 @@ const { loading: refreshing, refresh: handleRefresh } = useRefresh({
   },
 })
 
-// 获取文章列表
+// 获取作品列表
 const fetchArticles = async () => {
   if (loading.value) return
 

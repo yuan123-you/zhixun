@@ -8,23 +8,23 @@ import java.util.List;
 public interface OpenSearchSyncService {
 
     /**
-     * 同步单篇文章到 OpenSearch
+     * 同步单篇作品到 OpenSearch
      *
-     * @param articleId 文章ID
+     * @param articleId 作品ID
      */
     void syncArticle(Long articleId);
 
     /**
-     * 批量同步文章到 OpenSearch
+     * 批量同步作品到 OpenSearch
      *
-     * @param articleIds 文章ID列表
+     * @param articleIds 作品ID列表
      */
     void syncArticles(List<Long> articleIds);
 
     /**
-     * 从 OpenSearch 删除文章索引
+     * 从 OpenSearch 删除作品索引
      *
-     * @param articleId 文章ID
+     * @param articleId 作品ID
      */
     void deleteArticle(Long articleId);
 
@@ -59,7 +59,7 @@ public interface OpenSearchSyncService {
     /**
      * 批量同步图片到 OpenSearch
      *
-     * @param articleId 文章ID（同步该文章下所有图片）
+     * @param articleId 作品ID（同步该作品下所有图片）
      */
     void syncImagesByArticle(Long articleId);
 
@@ -71,19 +71,19 @@ public interface OpenSearchSyncService {
     void deleteImage(Long imageId);
 
     /**
-     * 删除文章关联的所有图片索引
+     * 删除作品关联的所有图片索引
      *
-     * @param articleId 文章ID
+     * @param articleId 作品ID
      */
     void deleteImagesByArticle(Long articleId);
 
     /**
-     * 全量同步所有数据（文章+用户+图片）
+     * 全量同步所有数据（作品+用户+图片）
      */
     void fullSync();
 
     /**
-     * 全量同步文章数据
+     * 全量同步作品数据
      */
     void fullSyncArticles();
 

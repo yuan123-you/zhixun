@@ -187,7 +187,7 @@ public class SearchServiceImpl implements SearchService {
                 }
             }
 
-            // 匹配文章标题（4条）
+            // 匹配作品标题（4条）
             SearchResponse<Map> articleResponse = openSearchClient.search(s -> s
                             .index(openSearchConfig.getArticleIndex())
                             .size(4)
@@ -279,12 +279,12 @@ public class SearchServiceImpl implements SearchService {
     // ========== 内部方法 ==========
 
     /**
-     * 使用 OpenSearch 搜索文章（带相关性评分公式 + 正文内容高亮 + 模糊匹配）
+     * 使用 OpenSearch 搜索作品（带相关性评分公式 + 正文内容高亮 + 模糊匹配）
      * 评分公式：
      * - field_weight: 标题匹配×3, 摘要×2, 正文×1
      * - hot_score_boost: log(1 + hot_score / 100) 加权
      * - time_decay: 1 / (1 + hours_since_publish / 168) 时间衰减
-     * - personal_boost: 用户偏好分类的文章提升1.5倍
+     * - personal_boost: 用户偏好分类的作品提升1.5倍
      * 增强功能：
      * - 正文内容高亮：content字段高亮并截取匹配片段
      * - 模糊匹配：对短关键词添加fuzzy查询支持部分匹配
@@ -360,7 +360,7 @@ public class SearchServiceImpl implements SearchService {
                                     )
                             );
 
-                            // time_decay: 基于文章发布时间与当前时间差的动态衰减
+                            // time_decay: 基于作品发布时间与当前时间差的动态衰减
                             // score = 1 / (1 + (now - createdAt) / 604800000)
                             // 发布时间越近分值越高，7天后衰减到原来的50%
                             fs.functions(f -> f
@@ -374,7 +374,7 @@ public class SearchServiceImpl implements SearchService {
                                     )
                             );
 
-                            // personal_boost: 用户偏好分类的文章提升1.5倍
+                            // personal_boost: 用户偏好分类的作品提升1.5倍
                             if (!preferredCategoryIds.isEmpty()) {
                                 for (Long prefCategoryId : preferredCategoryIds) {
                                     fs.functions(f -> f
@@ -588,7 +588,7 @@ public class SearchServiceImpl implements SearchService {
 
     /**
      * 使用 OpenSearch 搜索图片
-     * 支持按文章标题、文章标题拼音搜索，按时间倒序排列
+     * 支持按作品标题、作品标题拼音搜索，按时间倒序排列
      */
     private long searchImages(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
         try {

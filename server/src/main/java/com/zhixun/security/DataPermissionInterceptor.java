@@ -65,11 +65,11 @@ public class DataPermissionInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            // 文章编辑/删除权限校验
+            // 作品编辑/删除权限校验
             if (isArticleModify(uri, method)) {
                 Long articleId = extractIdFromPath(uri, "/v1/articles/");
                 if (articleId != null && !checkArticlePermission(articleId)) {
-                    handlePermissionDenied(request, response, "文章操作越权", "articleId=" + articleId, "无权操作该文章");
+                    handlePermissionDenied(request, response, "作品操作越权", "articleId=" + articleId, "无权操作该作品");
                     return false;
                 }
             }
@@ -188,7 +188,7 @@ public class DataPermissionInterceptor implements HandlerInterceptor {
     // ========== URL匹配方法 ==========
 
     /**
-     * 判断是否为文章编辑/删除请求
+     * 判断是否为作品编辑/删除请求
      */
     private boolean isArticleModify(String uri, String method) {
         return ("PUT".equals(method) || "DELETE".equals(method))
@@ -237,7 +237,7 @@ public class DataPermissionInterceptor implements HandlerInterceptor {
     // ========== 权限校验方法 ==========
 
     /**
-     * 校验文章操作权限：当前用户是文章作者或管理员
+     * 校验作品操作权限：当前用户是作品作者或管理员
      */
     private boolean checkArticlePermission(Long articleId) {
         if (securityUtil.isAdmin()) {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="banner-management">
     <el-card shadow="never">
       <template #header>
@@ -26,7 +26,7 @@
         <el-table-column label="链接类型" width="100">
           <template #default="{ row }">
             <el-tag :type="row.linkType === 1 ? 'primary' : 'success'" size="small">
-              {{ row.linkType === 1 ? '文章' : '外链' }}
+              {{ row.linkType === 1 ? '作品' : '外链' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -72,7 +72,7 @@
         </el-form-item>
         <el-form-item label="链接类型" prop="linkType">
           <el-select v-model="bannerForm.linkType" placeholder="请选择链接类型">
-            <el-option :value="1" label="文章" />
+            <el-option :value="1" label="作品" />
             <el-option :value="2" label="外链" />
           </el-select>
         </el-form-item>

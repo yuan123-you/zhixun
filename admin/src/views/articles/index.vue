@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="article-management">
     <!-- 搜索筛选栏 -->
     <el-card shadow="never" class="search-card">
@@ -6,7 +6,7 @@
         <el-form-item label="关键词">
           <el-input
             v-model="queryParams.keyword"
-            placeholder="搜索文章标题/内容"
+            placeholder="搜索作品标题/内容"
             clearable
             @keyup.enter="handleSearch"
           />
@@ -37,7 +37,7 @@
       </el-form>
     </el-card>
 
-    <!-- 文章列表 -->
+    <!-- 作品列表 -->
     <el-card shadow="never" class="table-card">
       <!-- 骨架屏：首次加载时展示 -->
       <template v-if="isFirstLoad">
@@ -104,7 +104,7 @@
                 <el-button type="primary" size="small" @click="loadArticles()">重新加载</el-button>
               </template>
               <template v-else>
-                <el-empty description="暂无文章数据" />
+                <el-empty description="暂无作品数据" />
               </template>
             </div>
           </template>
@@ -168,7 +168,7 @@ const isFirstLoad = ref(true)
 /** 是否有错误 */
 const hasError = ref(false)
 
-/** 文章列表 */
+/** 作品列表 */
 const articleList = ref<Article[]>([])
 
 /** 分类列表 */
@@ -205,12 +205,12 @@ function handleReset() {
   loadArticles()
 }
 
-/** 查看文章 */
+/** 查看作品 */
 function handleView(article: Article) {
-  ElMessage.info(`查看文章: ${article.title}`)
+  ElMessage.info(`查看作品: ${article.title}`)
 }
 
-/** 审核文章 */
+/** 审核作品 */
 function handleAudit(article: Article) {
   currentArticle.value = article
   auditDialogVisible.value = true
@@ -222,10 +222,10 @@ function handleAuditSuccess() {
   loadArticles()
 }
 
-/** 下架文章 */
+/** 下架作品 */
 async function handleOffline(article: Article) {
   try {
-    await ElMessageBox.confirm('确定要下架该文章吗？', '提示', {
+    await ElMessageBox.confirm('确定要下架该作品吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
@@ -239,10 +239,10 @@ async function handleOffline(article: Article) {
   }
 }
 
-/** 删除文章 */
+/** 删除作品 */
 async function handleDelete(article: Article) {
   try {
-    await ElMessageBox.confirm('确定要删除该文章吗？此操作不可恢复', '警告', {
+    await ElMessageBox.confirm('确定要删除该作品吗？此操作不可恢复', '警告', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
@@ -256,7 +256,7 @@ async function handleDelete(article: Article) {
   }
 }
 
-/** 加载文章列表 */
+/** 加载作品列表 */
 async function loadArticles(force = false) {
   loading.value = true
   hasError.value = false
@@ -266,7 +266,7 @@ async function loadArticles(force = false) {
     total.value = result.total
   } catch {
     hasError.value = true
-    ElMessage.error('文章列表加载失败，请稍后重试')
+    ElMessage.error('作品列表加载失败，请稍后重试')
   } finally {
     loading.value = false
     isFirstLoad.value = false

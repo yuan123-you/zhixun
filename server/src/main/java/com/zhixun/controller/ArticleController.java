@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 文章控制器
+ * 作品控制器
  */
 @RestController
 @RequestMapping("/v1/articles")
@@ -45,11 +45,11 @@ public class ArticleController {
     private final SecurityUtil securityUtil;
 
     /**
-     * 发布文章（需认证）
+     * 发布作品（需认证）
      */
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    @OperationLog(module = "文章", action = "发布")
+    @OperationLog(module = "作品", action = "发布")
     @SentinelResource(value = "article-create", blockHandler = "createBlockHandler", blockHandlerClass = ArticleController.BlockHandlers.class)
     public R<Long> create(@Valid @RequestBody ArticleCreateRequest request,
                           HttpServletRequest httpRequest) {
@@ -60,11 +60,11 @@ public class ArticleController {
     }
 
     /**
-     * 编辑文章（需认证）
+     * 编辑作品（需认证）
      */
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    @OperationLog(module = "文章", action = "编辑")
+    @OperationLog(module = "作品", action = "编辑")
     public R<Void> update(@PathVariable Long id, @Valid @RequestBody ArticleUpdateRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         articleService.updateArticle(userId, id, request);
@@ -72,7 +72,7 @@ public class ArticleController {
     }
 
     /**
-     * 文章列表（公开）
+     * 作品列表（公开）
      */
     @GetMapping
     public ResponseEntity<R<PageResult<ArticleVO>>> list(ArticleQueryRequest request,
@@ -83,7 +83,7 @@ public class ArticleController {
     }
 
     /**
-     * 文章详情（公开）
+     * 作品详情（公开）
      */
     @GetMapping("/{id}")
     public ResponseEntity<R<ArticleDetailVO>> detail(@PathVariable Long id,
@@ -101,11 +101,11 @@ public class ArticleController {
     }
 
     /**
-     * 删除文章（需认证）
+     * 删除作品（需认证）
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    @OperationLog(module = "文章", action = "删除")
+    @OperationLog(module = "作品", action = "删除")
     public R<Void> delete(@PathVariable Long id) {
         Long userId = securityUtil.getCurrentUserId();
         articleService.deleteArticle(userId, id);
@@ -137,11 +137,11 @@ public class ArticleController {
     }
 
     /**
-     * 修改文章可见性（需认证，仅作者）
+     * 修改作品可见性（需认证，仅作者）
      */
     @PutMapping("/{id}/visibility")
     @PreAuthorize("isAuthenticated()")
-    @OperationLog(module = "文章", action = "修改可见性")
+    @OperationLog(module = "作品", action = "修改可见性")
     public R<Void> updateVisibility(@PathVariable Long id, @Valid @RequestBody ArticleVisibilityRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         articleService.updateArticleVisibility(userId, id, request);
@@ -153,7 +153,7 @@ public class ArticleController {
      */
     @PutMapping("/{id}/publish")
     @PreAuthorize("isAuthenticated()")
-    @OperationLog(module = "文章", action = "发布草稿")
+    @OperationLog(module = "作品", action = "发布草稿")
     public R<Void> publishDraft(@PathVariable Long id, @RequestBody ArticlePublishRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         articleService.publishDraft(userId, id, request != null ? request : new ArticlePublishRequest());

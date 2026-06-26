@@ -32,11 +32,11 @@ import java.util.stream.Collectors;
  * 协同过滤服务
  * <p>
  * 基于用户的协同过滤（User-based CF），使用 Jaccard 相似度计算用户相似度。
- * 通过用户行为数据（点赞、收藏、浏览）构建用户-文章交互矩阵，
- * 找到与当前用户兴趣相似的用户，推荐相似用户喜欢但当前用户未看过的文章。
+ * 通过用户行为数据（点赞、收藏、浏览）构建用户-作品交互矩阵，
+ * 找到与当前用户兴趣相似的用户，推荐相似用户喜欢但当前用户未看过的作品。
  * <p>
  * 增强功能：
- * - 探索因子：20% 概率推荐随机文章，增加内容发现
+ * - 探索因子：20% 概率推荐随机作品，增加内容发现
  * - 冷启动处理：新用户无行为数据时返回空列表，由上层 FeedService 处理
  */
 @Slf4j
@@ -80,7 +80,7 @@ public class CollaborativeFilterService {
             return parseIdList(cached);
         }
 
-        // 2. 获取目标用户的交互文章集合
+        // 2. 获取目标用户的交互作品集合
         Map<Long, Double> targetUserVector = getUserArticleVector(userId);
         if (targetUserVector.isEmpty()) {
             return Collections.emptyList();
@@ -119,14 +119,14 @@ public class CollaborativeFilterService {
     }
 
     /**
-     * 基于协同过滤为指定用户推荐文章
+     * 基于协同过滤为指定用户推荐作品
      * <p>
      * 增强功能：
-     * - 探索因子：20% 的推荐位用于随机文章，增加内容发现
+     * - 探索因子：20% 的推荐位用于随机作品，增加内容发现
      *
      * @param userId 目标用户ID
-     * @param count  推荐文章数量
-     * @return 推荐的文章ID列表
+     * @param count  推荐作品数量
+     * @return 推荐的作品ID列表
      */
     public List<Long> recommendArticles(Long userId, int count) {
         // 1. 尝试从缓存获取
@@ -143,10 +143,10 @@ public class CollaborativeFilterService {
             return Collections.emptyList();
         }
 
-        // 3. 获取目标用户已交互的文章集合（排除这些）
+        // 3. 获取目标用户已交互的作品集合（排除这些）
         Set<Long> targetArticleIds = getUserArticleVector(userId).keySet();
 
-        // 4. 收集相似用户喜欢但目标用户未看过的文章，按推荐分数排序
+        // 4. 收集相似用户喜欢但目标用户未看过的作品，按推荐分数排序
         Map<Long, Double> recommendScores = new HashMap<>();
         List<Long> similarUsers = similarUserIds;
 
@@ -158,7 +158,7 @@ public class CollaborativeFilterService {
 
             for (Map.Entry<Long, Double> entry : similarUserVector.entrySet()) {
                 Long articleId = entry.getKey();
-                // 排除目标用户已看过的文章
+                // 排除目标用户已看过的作品
                 if (!targetArticleIds.contains(articleId)) {
                     recommendScores.merge(articleId, entry.getValue() * userWeight, Double::sum);
                 }
@@ -173,7 +173,7 @@ public class CollaborativeFilterService {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
 
-        // 6. 探索因子：随机推荐不同分类的文章
+        // 6. 探索因子：随机推荐不同分类的作品
         List<Long> explorationResult = getExplorationArticles(userId, targetArticleIds, cfResult, count - cfResult.size());
         List<Long> result = new ArrayList<>(cfResult);
         result.addAll(explorationResult);
@@ -191,14 +191,14 @@ public class CollaborativeFilterService {
     }
 
     /**
-     * 获取探索性推荐文章（随机从不同分类中选取）
+     * 获取探索性推荐作品（随机从不同分类中选取）
      * 用于增加内容发现，避免推荐结果过于同质化
      *
      * @param userId          目标用户ID
-     * @param targetArticleIds 目标用户已交互的文章ID
-     * @param excludeIds      已推荐的文章ID
-     * @param count           需要的探索文章数量
-     * @return 探索文章ID列表
+     * @param targetArticleIds 目标用户已交互的作品ID
+     * @param excludeIds      已推荐的作品ID
+     * @param count           需要的探索作品数量
+     * @return 探索作品ID列表
      */
     private List<Long> getExplorationArticles(Long userId, Set<Long> targetArticleIds, List<Long> excludeIds, int count) {
         if (count <= 0) {
@@ -209,7 +209,7 @@ public class CollaborativeFilterService {
             Set<Long> allExcludeIds = new HashSet<>(targetArticleIds);
             allExcludeIds.addAll(excludeIds);
 
-            // 随机获取不同分类的已发布文章
+            // 随机获取不同分类的已发布作品
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                     .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
@@ -228,7 +228,7 @@ public class CollaborativeFilterService {
                     .map(Article::getId)
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            log.warn("获取探索文章失败: userId={}, error={}", userId, e.getMessage());
+            log.warn("获取探索作品失败: userId={}, error={}", userId, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -238,8 +238,8 @@ public class CollaborativeFilterService {
      * Jaccard(A, B) = |A ∩ B| / |A ∪ B|
      * 这里使用加权版本，考虑行为权重
      *
-     * @param vectorA 用户A的文章交互向量
-     * @param vectorB 用户B的文章交互向量
+     * @param vectorA 用户A的作品交互向量
+     * @param vectorB 用户B的作品交互向量
      * @return Jaccard 相似度 [0, 1]
      */
     public double calculateUserSimilarity(Map<Long, Double> vectorA, Map<Long, Double> vectorB) {
@@ -285,8 +285,8 @@ public class CollaborativeFilterService {
     }
 
     /**
-     * 获取用户的文章交互向量（加权）
-     * key=文章ID, value=交互权重
+     * 获取用户的作品交互向量（加权）
+     * key=作品ID, value=交互权重
      */
     private Map<Long, Double> getUserArticleVector(Long userId) {
         Map<Long, Double> vector = new HashMap<>();
@@ -309,7 +309,7 @@ public class CollaborativeFilterService {
             vector.merge(c.getArticleId(), WEIGHT_COLLECT, Double::sum);
         }
 
-        // 点赞记录（仅文章类型）
+        // 点赞记录（仅作品类型）
         List<ArticleLike> likes = articleLikeMapper.selectList(
                 new LambdaQueryWrapper<ArticleLike>()
                         .eq(ArticleLike::getUserId, userId)
@@ -323,7 +323,7 @@ public class CollaborativeFilterService {
     }
 
     /**
-     * 获取与目标用户有文章交集的候选用户
+     * 获取与目标用户有作品交集的候选用户
      */
     private Set<Long> getCandidateUsers(Long userId, Set<Long> articleIds) {
         Set<Long> candidateUserIds = new HashSet<>();

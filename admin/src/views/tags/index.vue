@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <div class="tag-management">
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
           <span>标签管理</span>
           <div class="flex gap-2">
-            <el-button @click="handleSyncArticleCount" :loading="syncLoading">同步文章数</el-button>
+            <el-button @click="handleSyncArticleCount" :loading="syncLoading">同步作品数</el-button>
             <el-button type="warning" @click="showMergeDialog">合并标签</el-button>
             <el-button type="primary" @click="handleAdd">新增标签</el-button>
           </div>
@@ -20,8 +20,8 @@
         <el-form-item label="排序">
           <el-select v-model="queryParams.sortBy" placeholder="排序方式" clearable style="width: 140px" @change="loadTags">
             <el-option label="创建时间" value="createdAt" />
-            <el-option label="文章数降序" value="articleCountDesc" />
-            <el-option label="文章数升序" value="articleCountAsc" />
+            <el-option label="作品数降序" value="articleCountDesc" />
+            <el-option label="作品数升序" value="articleCountAsc" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -38,7 +38,7 @@
             <el-color-picker v-model="row.color" disabled />
           </template>
         </el-table-column>
-        <el-table-column prop="articleCount" label="文章数" width="120" sortable="custom">
+        <el-table-column prop="articleCount" label="作品数" width="120" sortable="custom">
           <template #default="{ row }">
             <el-tag :type="row.articleCount > 0 ? 'success' : 'info'" size="small">
               {{ row.articleCount }}
@@ -103,7 +103,7 @@
     <!-- 合并标签对话框 -->
     <el-dialog v-model="mergeDialogVisible" title="合并标签" width="500px">
       <el-alert type="warning" :closable="false" class="mb-4">
-        合并后，源标签下的所有文章将转移至目标标签，源标签将被删除。此操作不可逆，请谨慎操作。
+        合并后，源标签下的所有作品将转移至目标标签，源标签将被删除。此操作不可逆，请谨慎操作。
       </el-alert>
       <el-form :model="mergeForm" :rules="mergeRules" ref="mergeFormRef" label-width="100px">
         <el-form-item label="源标签" prop="sourceTagId">
@@ -119,7 +119,7 @@
             <el-option
               v-for="tag in sourceTagOptions"
               :key="tag.id"
-              :label="`${tag.name}（${tag.articleCount}篇文章）`"
+              :label="`${tag.name}（${tag.articleCount}篇作品）`"
               :value="tag.id"
             />
           </el-select>
@@ -137,7 +137,7 @@
             <el-option
               v-for="tag in targetTagOptions"
               :key="tag.id"
-              :label="`${tag.name}（${tag.articleCount}篇文章）`"
+              :label="`${tag.name}（${tag.articleCount}篇作品）`"
               :value="tag.id"
             />
           </el-select>
@@ -270,7 +270,7 @@ async function handleDelete(tag: Tag) {
 
 async function handleSyncArticleCount() {
   try {
-    await ElMessageBox.confirm('确定要同步所有标签的文章数吗？', '提示', {
+    await ElMessageBox.confirm('确定要同步所有标签的作品数吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'info',
@@ -335,7 +335,7 @@ async function handleMerge() {
 
   try {
     await ElMessageBox.confirm(
-      `确定将标签「${sourceTag?.name}」合并到「${targetTag?.name}」吗？源标签将被删除，其下所有文章将转移至目标标签。`,
+      `确定将标签「${sourceTag?.name}」合并到「${targetTag?.name}」吗？源标签将被删除，其下所有作品将转移至目标标签。`,
       '确认合并',
       {
         confirmButtonText: '确定合并',

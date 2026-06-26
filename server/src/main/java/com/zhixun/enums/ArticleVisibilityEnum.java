@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.util.Arrays;
 
 /**
- * 文章可见性枚举
+ * 作品可见性枚举
  */
 @Getter
 @AllArgsConstructor

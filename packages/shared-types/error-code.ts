@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 错误码枚举 — 前后端统一
  *
  * 分类规则：
  * - 通用：HTTP 标准状态码
  * - 1xxx：认证相关
- * - 2xxx：文章相关
+ * - 2xxx：作品相关
  * - 3xxx：用户相关
  * - 4xxx：文件相关
  * - 5xxx：搜索相关
@@ -29,7 +29,7 @@ export enum ErrorCode {
   AUTH_ACCOUNT_NOT_FOUND = 1006,
   AUTH_VERIFICATION_CODE_ERROR = 1007,
 
-  // 文章 (2xxx)
+  // 作品 (2xxx)
   ARTICLE_NOT_FOUND = 2001,
   ARTICLE_DELETED = 2002,
   ARTICLE_UNDER_REVIEW = 2003,
@@ -69,11 +69,11 @@ export const ErrorMessage: Record<number, string> = {
   [ErrorCode.AUTH_ACCOUNT_BANNED]: '账号已被封禁',
   [ErrorCode.AUTH_ACCOUNT_NOT_FOUND]: '账号不存在',
   [ErrorCode.AUTH_VERIFICATION_CODE_ERROR]: '验证码错误',
-  [ErrorCode.ARTICLE_NOT_FOUND]: '文章不存在',
-  [ErrorCode.ARTICLE_DELETED]: '文章已被删除',
-  [ErrorCode.ARTICLE_UNDER_REVIEW]: '文章正在审核中',
-  [ErrorCode.ARTICLE_REJECTED]: '文章已被驳回',
-  [ErrorCode.ARTICLE_FORBIDDEN_WORD]: '文章包含违规内容',
+  [ErrorCode.ARTICLE_NOT_FOUND]: '作品不存在',
+  [ErrorCode.ARTICLE_DELETED]: '作品已被删除',
+  [ErrorCode.ARTICLE_UNDER_REVIEW]: '作品正在审核中',
+  [ErrorCode.ARTICLE_REJECTED]: '作品已被驳回',
+  [ErrorCode.ARTICLE_FORBIDDEN_WORD]: '作品包含违规内容',
   [ErrorCode.USER_NOT_FOUND]: '用户不存在',
   [ErrorCode.USER_ALREADY_EXISTS]: '用户已存在',
   [ErrorCode.USER_BANNED]: '用户已被封禁',

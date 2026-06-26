@@ -6,12 +6,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 文章详情视图（完整内容）
+ * 作品详情视图（完整内容）
  */
 @Data
 public class ArticleDetailVO {
 
-    /** 文章ID */
+    /** 作品ID */
     private Long id;
 
     /** 标题 */

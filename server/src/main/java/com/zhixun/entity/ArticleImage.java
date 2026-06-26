@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 文章图片实体，对应 cms_article_image 表
+ * 作品图片实体，对应 cms_article_image 表
  */
 @Data
 @NoArgsConstructor
@@ -21,7 +21,7 @@ public class ArticleImage {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 文章ID，对应 article_id */
+    /** 作品ID，对应 article_id */
     private Long articleId;
 
     /** 图片地址 */

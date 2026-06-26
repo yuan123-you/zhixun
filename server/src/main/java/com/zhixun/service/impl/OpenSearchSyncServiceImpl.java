@@ -58,7 +58,7 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int BULK_SIZE = 500;
 
-    // ========== 文章同步 ==========
+    // ========== 作品同步 ==========
 
     @Override
     @Async
@@ -76,9 +76,9 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
                     .document(doc)
             );
             openSearchClient.index(request);
-            log.debug("同步文章到 OpenSearch: articleId={}", articleId);
+            log.debug("同步作品到 OpenSearch: articleId={}", articleId);
         } catch (Exception e) {
-            log.error("同步文章到 OpenSearch 失败: articleId={}, error={}", articleId, e.getMessage());
+            log.error("同步作品到 OpenSearch 失败: articleId={}, error={}", articleId, e.getMessage());
         }
     }
 
@@ -106,14 +106,14 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
             if (response.errors()) {
                 for (BulkResponseItem item : response.items()) {
                     if (item.error() != null) {
-                        log.error("批量同步文章失败: id={}, error={}", item.id(), item.error().reason());
+                        log.error("批量同步作品失败: id={}, error={}", item.id(), item.error().reason());
                     }
                 }
             } else {
-                log.debug("批量同步文章到 OpenSearch: count={}", articles.size());
+                log.debug("批量同步作品到 OpenSearch: count={}", articles.size());
             }
         } catch (Exception e) {
-            log.error("批量同步文章到 OpenSearch 失败: error={}", e.getMessage());
+            log.error("批量同步作品到 OpenSearch 失败: error={}", e.getMessage());
         }
     }
 
@@ -124,9 +124,9 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
                     .index(openSearchConfig.getArticleIndex())
                     .id(String.valueOf(articleId))
             );
-            log.debug("从 OpenSearch 删除文章: articleId={}", articleId);
+            log.debug("从 OpenSearch 删除作品: articleId={}", articleId);
         } catch (IOException e) {
-            log.error("从 OpenSearch 删除文章失败: articleId={}, error={}", articleId, e.getMessage());
+            log.error("从 OpenSearch 删除作品失败: articleId={}, error={}", articleId, e.getMessage());
         }
     }
 
@@ -237,9 +237,9 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
                 );
             }
             openSearchClient.bulk(bulkBuilder.build());
-            log.debug("同步文章图片到 OpenSearch: articleId={}, count={}", articleId, images.size());
+            log.debug("同步作品图片到 OpenSearch: articleId={}, count={}", articleId, images.size());
         } catch (Exception e) {
-            log.error("同步文章图片到 OpenSearch 失败: articleId={}, error={}", articleId, e.getMessage());
+            log.error("同步作品图片到 OpenSearch 失败: articleId={}, error={}", articleId, e.getMessage());
         }
     }
 
@@ -268,7 +268,7 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
                     )
             );
         } catch (IOException e) {
-            log.error("从 OpenSearch 删除文章图片失败: articleId={}, error={}", articleId, e.getMessage());
+            log.error("从 OpenSearch 删除作品图片失败: articleId={}, error={}", articleId, e.getMessage());
         }
     }
 
@@ -285,11 +285,11 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
     @Override
     public void fullSyncArticles() {
-        log.info("开始全量同步文章...");
+        log.info("开始全量同步作品...");
         try {
             long total = articleMapper.selectCount(
                     new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED));
-            log.info("待同步文章总数: {}", total);
+            log.info("待同步作品总数: {}", total);
 
             long processed = 0;
             long lastId = 0;
@@ -318,10 +318,10 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
                 processed += articles.size();
                 lastId = articles.get(articles.size() - 1).getId();
-                log.info("文章同步进度: {}/{}", processed, total);
+                log.info("作品同步进度: {}/{}", processed, total);
             }
         } catch (Exception e) {
-            log.error("全量同步文章失败: {}", e.getMessage());
+            log.error("全量同步作品失败: {}", e.getMessage());
         }
     }
 
@@ -369,7 +369,7 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
     public void fullSyncImages() {
         log.info("开始全量同步图片...");
         try {
-            // 只同步已发布文章的图片
+            // 只同步已发布作品的图片
             List<Article> publishedArticles = articleMapper.selectList(
                     new LambdaQueryWrapper<Article>()
                             .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
@@ -383,7 +383,7 @@ public class OpenSearchSyncServiceImpl implements OpenSearchSyncService {
 
             log.info("待同步图片总数: {}", images.size());
 
-            // 构建文章信息缓存
+            // 构建作品信息缓存
             Map<Long, Article> articleMap = publishedArticles.stream()
                     .collect(Collectors.toMap(Article::getId, a -> a));
 

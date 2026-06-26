@@ -5,12 +5,12 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 热榜文章视图
+ * 热榜作品视图
  */
 @Data
 public class HotArticleVO {
 
-    /** 文章ID */
+    /** 作品ID */
     private Long id;
 
     /** 标题 */

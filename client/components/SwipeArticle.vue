@@ -1,5 +1,5 @@
-<template>
-  <!-- 文章滑动切换容器 -->
+﻿<template>
+  <!-- 作品滑动切换容器 -->
   <div
     class="swipe-article relative overflow-hidden"
     @touchstart="onTouchStart"
@@ -46,14 +46,14 @@
 </template>
 
 <script setup lang="ts">
-/** 文章滑动切换组件：左右滑动切换上/下篇 */
+/** 作品滑动切换组件：左右滑动切换上/下篇 */
 
 const THRESHOLD = 80
 
 const props = defineProps<{
-  /** 上一篇文章ID */
+  /** 上一篇作品ID */
   prevId?: number | null
-  /** 下一篇文章ID */
+  /** 下一篇作品ID */
   nextId?: number | null
 }>()
 

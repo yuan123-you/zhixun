@@ -75,10 +75,10 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CommentVO createComment(Long userId, CommentCreateRequest request) {
-        // 检查文章是否存在
+        // 检查作品是否存在
         Article article = articleMapper.selectById(request.getArticleId());
         if (article == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "文章不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
 
         // 敏感词检测
@@ -101,7 +101,7 @@ public class CommentServiceImpl implements CommentService {
         comment.setParentId(request.getParentId() != null ? request.getParentId() : 0L);
         comment.setReplyToId(request.getReplyUserId());
         comment.setContent(HtmlWhitelistFilter.escapePlainText(request.getContent()));
-        // 自动审核：无敏感词直接通过，状态设为 NORMAL，文章评论数+1
+        // 自动审核：无敏感词直接通过，状态设为 NORMAL，作品评论数+1
         comment.setStatus(CommentStatusEnum.NORMAL);
         comment.setLikeCount(0);
 
@@ -122,7 +122,7 @@ public class CommentServiceImpl implements CommentService {
         }
         CommentVO commentVO = buildCommentVO(comment, userMap);
 
-        // 自动审核通过：更新文章评论数
+        // 自动审核通过：更新作品评论数
         articleMapper.updateById(new Article() {{
             setId(request.getArticleId());
             setCommentCount((article.getCommentCount() != null ? article.getCommentCount() : 0) + 1);
@@ -198,7 +198,7 @@ public class CommentServiceImpl implements CommentService {
         comment.setStatus(CommentStatusEnum.DELETED);
         commentMapper.updateById(comment);
 
-        // 减少文章评论数（仅当评论之前是正常状态时才减少，PENDING 状态的评论还未计入评论数）
+        // 减少作品评论数（仅当评论之前是正常状态时才减少，PENDING 状态的评论还未计入评论数）
         if (originalStatus == CommentStatusEnum.NORMAL) {
             articleMapper.update(null, new LambdaUpdateWrapper<Article>()
                     .eq(Article::getId, comment.getArticleId())
@@ -244,7 +244,7 @@ public class CommentServiceImpl implements CommentService {
             comment.setStatus(CommentStatusEnum.NORMAL);
             commentMapper.updateById(comment);
 
-            // 审核通过，增加文章评论数（SQL 原子操作）
+            // 审核通过，增加作品评论数（SQL 原子操作）
             articleMapper.update(null, new LambdaUpdateWrapper<Article>()
                     .eq(Article::getId, comment.getArticleId())
                     .setSql("comment_count = comment_count + 1"));

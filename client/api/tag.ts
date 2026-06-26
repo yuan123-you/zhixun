@@ -1,4 +1,4 @@
-import type { Tag, Article, PageResult } from '~/types'
+﻿import type { Tag, Article, PageResult } from '~/types'
 
 /** 标签API */
 export const tagApi = {
@@ -44,7 +44,7 @@ export const tagApi = {
     return get<Tag[]>('/tags/followed')
   },
 
-  /** 获取标签下的文章 */
+  /** 获取标签下的作品 */
   getTagArticles: (tagId: number, page: number = 1, pageSize: number = 20) => {
     const { get } = useApi()
     return get<PageResult<Article>>('/articles', { tag_id: tagId, page, pageSize })

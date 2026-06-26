@@ -37,7 +37,7 @@ public class RankController {
     }
 
     /**
-     * 热门标签（最近7天文章数最多的标签）
+     * 热门标签（最近7天作品数最多的标签）
      */
     @GetMapping("/hot-tags")
     public R<List<TagVO>> hotTags(
@@ -46,7 +46,7 @@ public class RankController {
     }
 
     /**
-     * 热门用户（最近7天文章浏览量最高的用户）
+     * 热门用户（最近7天作品浏览量最高的用户）
      */
     @GetMapping("/hot-users")
     public R<List<UserVO>> hotUsers(

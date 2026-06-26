@@ -30,7 +30,7 @@ public class CollectController {
     private final SecurityUtil securityUtil;
 
     /**
-     * 收藏/取消收藏文章
+     * 收藏/取消收藏作品
      */
     @PostMapping("/articles/{id}/collect")
     @PreAuthorize("isAuthenticated()")

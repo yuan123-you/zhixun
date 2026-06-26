@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-container class="admin-layout">
     <!-- 侧边栏 -->
     <el-aside :width="sidebarCollapsed ? '64px' : '220px'" class="sidebar">
@@ -26,8 +26,8 @@
             <el-icon><Document /></el-icon>
             <span>内容管理</span>
           </template>
-          <el-menu-item index="/articles">文章管理</el-menu-item>
-          <el-menu-item index="/articles/pending">待审核文章</el-menu-item>
+          <el-menu-item index="/articles">作品管理</el-menu-item>
+          <el-menu-item index="/articles/pending">待审核作品</el-menu-item>
           <el-menu-item index="/categories">分类管理</el-menu-item>
           <el-menu-item index="/tags">标签管理</el-menu-item>
         </el-sub-menu>

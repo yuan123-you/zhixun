@@ -24,7 +24,7 @@ public class ViewHistory {
     /** 用户ID，对应 user_id */
     private Long userId;
 
-    /** 文章ID，对应 article_id */
+    /** 作品ID，对应 article_id */
     private Long articleId;
 
     /** 浏览时长，对应 view_duration */

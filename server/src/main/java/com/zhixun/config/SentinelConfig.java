@@ -72,7 +72,7 @@ public class SentinelConfig {
         searchRule.setLimitApp("default");
         rules.add(searchRule);
 
-        // 文章发布限流：每秒最多10次
+        // 作品发布限流：每秒最多10次
         FlowRule articleCreateRule = new FlowRule();
         articleCreateRule.setResource("article-create");
         articleCreateRule.setGrade(RuleConstant.FLOW_GRADE_QPS);
@@ -149,7 +149,7 @@ public class SentinelConfig {
         searchDegradeRule.setStatIntervalMs(60000); // 统计时长60秒
         rules.add(searchDegradeRule);
 
-        // 文章服务熔断：异常比例 > 50%，熔断10秒
+        // 作品服务熔断：异常比例 > 50%，熔断10秒
         DegradeRule articleDegradeRule = new DegradeRule();
         articleDegradeRule.setResource("article-create");
         articleDegradeRule.setGrade(RuleConstant.DEGRADE_GRADE_EXCEPTION_RATIO);

@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * 文章可见性变更请求
+ * 作品可见性变更请求
  */
 @Data
 public class ArticleVisibilityRequest {

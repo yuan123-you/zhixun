@@ -1,4 +1,4 @@
-import { storage, STORAGE_KEYS, TTL } from '~/utils/storage'
+﻿import { storage, STORAGE_KEYS, TTL } from '~/utils/storage'
 
 /** 阅读进度 */
 interface ReadProgress {
@@ -14,15 +14,15 @@ interface ReadProgress {
 const PROGRESS_TTL = TTL.DAY_7
 
 /**
- * 文章阅读进度本地记录
- * - 记录每篇文章的滚动位置和阅读百分比
- * - 返回文章时自动恢复滚动位置
+ * 作品阅读进度本地记录
+ * - 记录每篇作品的滚动位置和阅读百分比
+ * - 返回作品时自动恢复滚动位置
  * - 7 天后自动过期
  */
 export const useReadProgress = () => {
   /**
    * 获取阅读进度
-   * @param articleId 文章ID
+   * @param articleId 作品ID
    */
   const getProgress = (articleId: number): ReadProgress | null => {
     return storage.get<ReadProgress>(`${STORAGE_KEYS.READ_PROGRESS_PREFIX}${articleId}`)
@@ -30,7 +30,7 @@ export const useReadProgress = () => {
 
   /**
    * 保存阅读进度
-   * @param articleId 文章ID
+   * @param articleId 作品ID
    * @param scrollTop 滚动位置
    * @param percentage 阅读百分比
    */
@@ -48,15 +48,15 @@ export const useReadProgress = () => {
 
   /**
    * 删除阅读进度
-   * @param articleId 文章ID
+   * @param articleId 作品ID
    */
   const removeProgress = (articleId: number): void => {
     storage.remove(`${STORAGE_KEYS.READ_PROGRESS_PREFIX}${articleId}`)
   }
 
   /**
-   * 恢复文章滚动位置
-   * @param articleId 文章ID
+   * 恢复作品滚动位置
+   * @param articleId 作品ID
    * @param containerEl 容器元素或选择器
    */
   const restoreScroll = (articleId: number, containerEl: HTMLElement | string): void => {
@@ -79,7 +79,7 @@ export const useReadProgress = () => {
 
   /**
    * 监听滚动并自动保存进度
-   * @param articleId 文章ID
+   * @param articleId 作品ID
    * @param containerEl 容器元素
    * @param contentHeight 内容总高度
    * @returns 清理函数

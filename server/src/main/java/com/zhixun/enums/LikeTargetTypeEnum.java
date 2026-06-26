@@ -11,8 +11,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum LikeTargetTypeEnum {
 
-    /** 文章 */
-    ARTICLE(1, "文章"),
+    /** 作品 */
+    ARTICLE(1, "作品"),
 
     /** 评论 */
     COMMENT(2, "评论");

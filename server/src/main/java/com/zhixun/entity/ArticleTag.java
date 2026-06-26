@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 文章-标签关联实体，对应 cms_article_tag 表
+ * 作品-标签关联实体，对应 cms_article_tag 表
  */
 @Data
 @NoArgsConstructor
@@ -23,7 +23,7 @@ public class ArticleTag implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 文章ID，对应 article_id */
+    /** 作品ID，对应 article_id */
     private Long articleId;
 
     /** 标签ID，对应 tag_id */

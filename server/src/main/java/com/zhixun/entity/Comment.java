@@ -21,7 +21,7 @@ public class Comment {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 文章ID，对应 article_id */
+    /** 作品ID，对应 article_id */
     private Long articleId;
 
     /** 评论用户ID，对应 user_id */

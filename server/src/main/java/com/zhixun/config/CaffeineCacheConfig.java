@@ -32,7 +32,7 @@ public class CaffeineCacheConfig {
     public static final String CACHE_SENSITIVE_WORDS = "sensitiveWords";
     /** 敏感词白名单缓存名称 */
     public static final String CACHE_SENSITIVE_WHITELIST = "sensitiveWhitelist";
-    /** 热门文章缓存名称 */
+    /** 热门作品缓存名称 */
     public static final String CACHE_ARTICLE_HOT = "articleHot";
     /** 用户资料缓存名称 */
     public static final String CACHE_USER_PROFILE = "userProfile";

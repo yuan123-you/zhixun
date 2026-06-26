@@ -19,10 +19,10 @@ public class SearchResultVO {
     /** 搜索类型 */
     private String type;
 
-    /** 文章列表（type=article 或 type=all 时有值） */
+    /** 作品列表（type=article 或 type=all 时有值） */
     private List<ArticleVO> articles;
 
-    /** 文章总数 */
+    /** 作品总数 */
     private Long articleTotal;
 
     /** 用户列表（type=user 或 type=all 时有值） */

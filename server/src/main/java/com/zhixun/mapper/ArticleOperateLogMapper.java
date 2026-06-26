@@ -5,7 +5,7 @@ import com.zhixun.entity.ArticleOperateLog;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 文章操作日志 Mapper
+ * 作品操作日志 Mapper
  */
 @Mapper
 public interface ArticleOperateLogMapper extends BaseMapper<ArticleOperateLog> {

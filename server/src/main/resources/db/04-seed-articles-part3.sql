@@ -1,11 +1,11 @@
--- ============================================================
--- 知讯平台 - 扩展文章种子数据 (第三部分: 文章256-355)
+﻿-- ============================================================
+-- 知讯平台 - 扩展作品种子数据 (第三部分: 作品256-355)
 -- 用途：为热门三级分类增加更多深度内容
 -- 执行顺序：在 04-seed-articles-part2.sql 之后执行
 -- ============================================================
 
 -- ============================================================
--- 1. 文章数据 (ID 256-355)
+-- 1. 作品数据 (ID 256-355)
 -- ============================================================
 
 INSERT INTO cms_article (id, author_id, category_id, title, summary, content, cover_image, status, is_top, is_recommend, view_count, like_count, comment_count, collect_count, hot_score, publish_at, created_at, updated_at) VALUES
@@ -112,7 +112,7 @@ INSERT INTO cms_article (id, author_id, category_id, title, summary, content, co
 
 
 -- ============================================================
--- 2. 文章标签关联 (ID 1005+)
+-- 2. 作品标签关联 (ID 1005+)
 -- ============================================================
 
 INSERT INTO cms_article_tag (id, article_id, tag_id) VALUES
@@ -219,7 +219,7 @@ INSERT INTO cms_article_tag (id, article_id, tag_id) VALUES
 
 
 -- ============================================================
--- 3. 文章图片 (ID 496+)
+-- 3. 作品图片 (ID 496+)
 -- ============================================================
 
 INSERT INTO cms_article_image (id, article_id, url, type, width, height, sort_order, created_at) VALUES

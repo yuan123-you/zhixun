@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- 标签聚合页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <h1 class="text-2xl font-bold text-slate-900 mb-3">标签</h1>
@@ -63,8 +63,8 @@
               <div class="flex-1 min-w-0">
                 <span class="text-sm font-medium text-slate-900">{{ tag.name }}</span>
               </div>
-              <!-- 文章数 -->
-              <span class="text-sm text-slate-500">{{ tag.articleCount }} 篇文章</span>
+              <!-- 作品数 -->
+              <span class="text-sm text-slate-500">{{ tag.articleCount }} 个作品</span>
               <!-- 关注按钮 -->
               <button
                 class="ml-3 px-3 py-1 text-xs font-medium rounded-full transition-colors"
@@ -96,7 +96,7 @@
               <div class="flex-1 min-w-0">
                 <span class="text-sm font-medium text-slate-900">{{ tag.name }}</span>
               </div>
-              <span class="text-sm text-slate-500">{{ tag.articleCount }} 篇文章</span>
+              <span class="text-sm text-slate-500">{{ tag.articleCount }} 个作品</span>
               <button
                 class="ml-3 px-3 py-1 text-xs font-medium rounded-full bg-slate-50 text-slate-600 transition-colors"
                 @click.stop="toggleFollowTag(tag)"
@@ -108,11 +108,11 @@
           <EmptyState v-else title="暂无关注标签" description="去热门标签中关注感兴趣的标签吧" />
         </div>
 
-        <!-- 选中标签后的文章列表 -->
+        <!-- 选中标签后的作品列表 -->
         <div v-if="selectedTag" class="mt-3">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-lg font-semibold text-slate-900">
-              「{{ selectedTag.name }}」相关文章
+              「{{ selectedTag.name }}」相关作品
             </h2>
             <button class="text-sm text-slate-500 hover:text-slate-700" @click="clearSelection">
               清除筛选
@@ -136,7 +136,7 @@
           </div>
           <div class="p-2 space-y-2">
             <div class="flex items-center justify-between text-sm">
-              <span class="text-slate-500">文章数</span>
+              <span class="text-slate-500">作品数</span>
               <span class="font-medium text-slate-900">{{ selectedTag.articleCount }}</span>
             </div>
             <button
@@ -176,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-/** 标签聚合页：标签云、热门标签、已关注标签、标签下文章列表 */
+/** 标签聚合页：标签云、热门标签、已关注标签、标签下作品列表 */
 import type { Tag, Article, PageResult, ApiResponse } from '~/types'
 
 const userStore = useUserStore()
@@ -299,7 +299,7 @@ const clearSelection = () => {
   tagArticles.value = []
 }
 
-// 获取标签下文章
+// 获取标签下作品
 const fetchTagArticles = async () => {
   if (!selectedTag.value) return
   articlesLoading.value = true
@@ -324,7 +324,7 @@ const fetchTagArticles = async () => {
   }
 }
 
-// 加载更多文章
+// 加载更多作品
 const loadMoreArticles = () => {
   articlesPage.value++
   fetchTagArticles()
@@ -354,7 +354,7 @@ const toggleFollowTag = async (tag: Tag) => {
   }
 }
 
-// 标签云样式：根据文章数计算大小和颜色
+// 标签云样式：根据作品数计算大小和颜色
 const getTagStyle = (tag: Tag) => {
   const maxCount = Math.max(...cloudTags.value.map(t => t.articleCount), 1)
   const ratio = tag.articleCount / maxCount

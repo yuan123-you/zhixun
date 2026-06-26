@@ -1,8 +1,8 @@
-<template>
-  <!-- 我的文章列表 -->
+﻿<template>
+  <!-- 我的作品列表 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <div class="flex items-center justify-between mb-3">
-      <h1 class="text-xl font-bold text-slate-900">我的文章</h1>
+      <h1 class="text-xl font-bold text-slate-900">我的作品</h1>
       <span class="text-sm text-slate-500">共 {{ totalCount }} 篇</span>
     </div>
     <ErrorRetry v-if="error && !articles.length" :message="error" :on-retry="fetchArticles" />
@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-/** 我的文章页面 */
+/** 我的作品页面 */
 import type { Article, PageResult } from '~/types'
 import { userApi } from '~/api'
 
@@ -67,6 +67,6 @@ onMounted(() => {
 })
 
 useHead({
-  title: () => '我的文章 - 知讯',
+  title: () => '我的作品 - 知讯',
 })
 </script>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="category-management">
     <el-card shadow="never">
       <template #header>
@@ -18,7 +18,7 @@
       >
         <el-table-column prop="name" label="分类名称" min-width="200" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="articleCount" label="文章数" width="100" />
+        <el-table-column prop="articleCount" label="作品数" width="100" />
         <el-table-column prop="sort" label="排序" width="80" />
         <el-table-column prop="createdAt" label="创建时间" width="170" />
         <el-table-column label="操作" width="200" fixed="right">

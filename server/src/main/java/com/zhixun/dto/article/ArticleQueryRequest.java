@@ -3,7 +3,7 @@ package com.zhixun.dto.article;
 import lombok.Data;
 
 /**
- * 文章列表查询请求
+ * 作品列表查询请求
  */
 @Data
 public class ArticleQueryRequest {
@@ -20,7 +20,7 @@ public class ArticleQueryRequest {
     /** 作者ID */
     private Long userId;
 
-    /** 文章状态 */
+    /** 作品状态 */
     private Integer status;
 
     /** 排序字段 */

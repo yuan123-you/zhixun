@@ -45,7 +45,7 @@ public class HotScoreServiceImpl implements HotScoreService {
         // 多维度加权：浏览0.3 + 点赞3 + 评论2 + 收藏5
         double interactionScore = viewCount * 0.3 + likeCount * 3.0 + commentCount * 2.0 + collectCount * 5.0;
 
-        // 时间衰减：以天为单位，指数0.5（比之前的1.5更温和，避免老文章分数过低）
+        // 时间衰减：以天为单位，指数0.5（比之前的1.5更温和，避免老作品分数过低）
         LocalDateTime publishTime = article.getPublishAt() != null ? article.getPublishAt() : article.getCreatedAt();
         double daysSincePublish = 1.0;
         if (publishTime != null) {
@@ -85,7 +85,7 @@ public class HotScoreServiceImpl implements HotScoreService {
     public void batchUpdateHotScores() {
         log.info("开始批量更新热度分...");
 
-        // 查询所有已发布文章
+        // 查询所有已发布作品
         List<Article> articles = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>()
                         .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
@@ -94,7 +94,7 @@ public class HotScoreServiceImpl implements HotScoreService {
                                 Article::getPublishAt, Article::getCreatedAt));
 
         if (CollectionUtils.isEmpty(articles)) {
-            log.info("没有需要更新热度分的文章");
+            log.info("没有需要更新热度分的作品");
             return;
         }
 
@@ -105,10 +105,10 @@ public class HotScoreServiceImpl implements HotScoreService {
                 stringRedisTemplate.opsForZSet().add(HOT_RANK_KEY, String.valueOf(article.getId()), hotScore);
                 count++;
             } catch (Exception e) {
-                log.error("更新文章热度分失败, articleId={}: {}", article.getId(), e.getMessage());
+                log.error("更新作品热度分失败, articleId={}: {}", article.getId(), e.getMessage());
             }
         }
 
-        log.info("批量更新热度分完成，共更新 {} 篇文章", count);
+        log.info("批量更新热度分完成，共更新 {} 篇作品", count);
     }
 }

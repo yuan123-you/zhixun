@@ -33,7 +33,7 @@ public class FallbackService {
     private final ArticleMapper articleMapper;
     private final StringRedisTemplate stringRedisTemplate;
 
-    /** 热门文章降级缓存 Key */
+    /** 热门作品降级缓存 Key */
     private static final String FALLBACK_HOT_ARTICLES_KEY = "fallback:hot_articles";
     /** 降级缓存 TTL（10分钟） */
     private static final long FALLBACK_CACHE_TTL_MINUTES = 10;
@@ -41,16 +41,16 @@ public class FallbackService {
     private static final String FALLBACK_RANK_KEY_PREFIX = "fallback:rank:";
 
     /**
-     * 推荐服务降级：返回热门文章列表
+     * 推荐服务降级：返回热门作品列表
      * 当推荐引擎（协同过滤/Bandit/内容推荐）不可用时使用
      *
      * @param page     页码
      * @param pageSize 每页大小
-     * @return 热门文章分页结果
+     * @return 热门作品分页结果
      */
     @Slave
     public PageResult<ArticleVO> getRecommendFallback(Integer page, Integer pageSize) {
-        log.warn("推荐服务降级：返回热门文章列表, page={}, pageSize={}", page, pageSize);
+        log.warn("推荐服务降级：返回热门作品列表, page={}, pageSize={}", page, pageSize);
 
         // 尝试从降级缓存获取
         String cacheKey = FALLBACK_HOT_ARTICLES_KEY + ":page:" + page + ":size:" + pageSize;
@@ -157,7 +157,7 @@ public class FallbackService {
      * @param period     时间周期
      * @param categoryId 分类ID
      * @param limit      返回数量
-     * @return 热门文章列表
+     * @return 热门作品列表
      */
     public List<HotArticleVO> getRankFallback(String period, Long categoryId, Integer limit) {
         log.warn("排行榜降级：返回缓存数据, period={}, categoryId={}", period, categoryId);
@@ -195,7 +195,7 @@ public class FallbackService {
     // ========== 内部方法 ==========
 
     /**
-     * 将文章列表转换为简单 VO 列表
+     * 将作品列表转换为简单 VO 列表
      */
     private List<ArticleVO> convertToSimpleVOList(List<Article> articles) {
         if (CollectionUtils.isEmpty(articles)) {

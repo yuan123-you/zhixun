@@ -1,4 +1,4 @@
-// 共享类型（来自 @zhixun/shared-types 统一类型包）
+﻿// 共享类型（来自 @zhixun/shared-types 统一类型包）
 // 注：ApiResponse / PageResult 与本地定义冲突，本地版本保持现有字段名（如 list/page_size），不在此处重导出
 export {
   ErrorCode,
@@ -14,7 +14,7 @@ export {
 
 // TypeScript 类型定义
 
-/** 文章接口 */
+/** 作品接口 */
 export interface Article {
   id: number
   title: string
@@ -55,14 +55,14 @@ export interface Article {
   updatedAt: string
 }
 
-/** 文章状态 */
+/** 作品状态 */
 export enum ArticleStatus {
   Draft = 0,
   Published = 1,
   Deleted = 2,
 }
 
-/** 文章可见性 */
+/** 作品可见性 */
 export enum ArticleVisibility {
   Public = 0,
   Followers = 1,
@@ -196,7 +196,7 @@ export interface Conversation {
 
 /** 排行项接口（与后端 HotArticleVO 对齐） */
 export interface RankItem {
-  /** 文章ID（后端字段名 id） */
+  /** 作品ID（后端字段名 id） */
   id: number
   /** 标题 */
   title: string
@@ -234,9 +234,9 @@ export interface SearchResultVO<T = any> {
   total: number
   /** 搜索类型 */
   type: string
-  /** 文章列表（type=article 或 type=all 时有值） */
+  /** 作品列表（type=article 或 type=all 时有值） */
   articles: T[]
-  /** 文章总数 */
+  /** 作品总数 */
   articleTotal?: number
   /** 用户列表（type=user 或 type=all 时有值） */
   users: T[]

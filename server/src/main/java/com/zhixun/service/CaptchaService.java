@@ -133,7 +133,8 @@ public class CaptchaService {
         // 10. 异步发送邮件
         emailService.sendVerifyCode(email, code, purpose);
 
-        log.info("验证码已发送: email={}, purpose={}", normalizedEmail, purpose);
+        // 开发环境：邮件未配置时，将验证码输出到日志以便调试
+        log.info("验证码已发送(email={}, purpose={})，验证码为: {}", normalizedEmail, purpose, code);
     }
 
     /**

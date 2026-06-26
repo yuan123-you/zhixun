@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 本地存储工具类
  * 提供类型安全的 localStorage 操作，支持 TTL 过期、数据版本管理和容量监控
  * SSR 安全：所有操作均通过 import.meta.client 守卫
@@ -268,7 +268,7 @@ export const STORAGE_KEYS = {
   SETTINGS_LOCAL: 'settings_local',
   /** 搜索历史 */
   SEARCH_HISTORY: 'search_history',
-  /** 文章草稿 */
+  /** 作品草稿 */
   ARTICLE_DRAFT: 'article_draft',
   /** 阅读进度前缀 */
   READ_PROGRESS_PREFIX: 'read_progress_',

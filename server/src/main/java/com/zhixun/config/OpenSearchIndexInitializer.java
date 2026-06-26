@@ -51,10 +51,10 @@ public class OpenSearchIndexInitializer implements CommandLineRunner {
     }
 
     /**
-     * 创建文章索引
+     * 创建作品索引
      */
     private void createArticleIndex() throws Exception {
-        createIndex(openSearchConfig.getArticleIndex(), "/opensearch/article_mapping.json", "文章");
+        createIndex(openSearchConfig.getArticleIndex(), "/opensearch/article_mapping.json", "作品");
     }
 
     /**

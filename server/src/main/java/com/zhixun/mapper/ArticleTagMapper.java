@@ -5,7 +5,7 @@ import com.zhixun.entity.ArticleTag;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 文章-标签关联 Mapper
+ * 作品-标签关联 Mapper
  */
 @Mapper
 public interface ArticleTagMapper extends BaseMapper<ArticleTag> {

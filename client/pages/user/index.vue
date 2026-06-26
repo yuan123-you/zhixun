@@ -1,14 +1,14 @@
-<template>
+﻿<template>
   <!-- 个人中心 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
     <!-- 个人资料卡 -->
-    <div class="card p-3 mb-3">
-      <div class="flex items-start space-x-3">
+    <div class="card p-2.5 md:p-3 mb-3">
+      <div class="flex items-start gap-2 md:gap-3">
         <!-- 头像（可点击编辑） -->
         <div class="relative group cursor-pointer shrink-0" @click="triggerAvatarUpload">
-          <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="xl" />
+          <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" :size="isMobile ? 'md' : 'lg'" />
           <div class="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -16,29 +16,29 @@
         </div>
         <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
 
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 overflow-hidden">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-slate-900">{{ userStore.userInfo?.nickname }}</h2>
-            <NuxtLink to="/user/edit" class="btn-secondary text-sm">{{ '编辑资料' }}</NuxtLink>
+            <h2 class="text-lg md:text-xl font-bold text-slate-900 truncate">{{ userStore.userInfo?.nickname }}</h2>
+            <NuxtLink to="/user/edit" class="btn-secondary text-xs md:text-sm shrink-0 ml-2">{{ '编辑资料' }}</NuxtLink>
           </div>
-          <div class="flex items-center gap-2 mt-1">
-            <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+          <div class="flex flex-wrap items-center gap-1 mt-1">
+            <span class="text-[10px] md:text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
               ID: {{ userStore.userInfo?.uid }}
             </span>
-            <span v-if="userStore.userInfo?.showGenderOnProfile && userStore.userInfo?.gender" class="text-xs text-slate-400 bg-pink-50 px-2 py-0.5 rounded">
+            <span v-if="userStore.userInfo?.showGenderOnProfile && userStore.userInfo?.gender" class="text-[10px] md:text-xs text-slate-400 bg-pink-50 px-1.5 py-0.5 rounded shrink-0">
               {{ userStore.userInfo.gender === 1 ? '男' : userStore.userInfo.gender === 2 ? '女' : '' }}
             </span>
-            <span v-if="userStore.userInfo?.province" class="text-xs text-slate-400 bg-blue-50 px-2 py-0.5 rounded">
+            <span v-if="userStore.userInfo?.province" class="text-[10px] md:text-xs text-slate-400 bg-blue-50 px-1.5 py-0.5 rounded shrink-0">
               {{ userStore.userInfo?.province }}
             </span>
-            <span v-if="userStore.userInfo?.ipLocation" class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+            <span v-if="userStore.userInfo?.ipLocation" class="text-[10px] md:text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
               IP属地: {{ userStore.userInfo?.ipLocation }}
             </span>
           </div>
-          <p v-if="userStore.userInfo?.bio" class="text-sm text-slate-500 mt-1">{{ userStore.userInfo?.bio }}</p>
-          <div class="flex items-center space-x-4 mt-2 text-sm text-slate-500">
+          <p v-if="userStore.userInfo?.bio" class="text-xs md:text-sm text-slate-500 mt-1 line-clamp-2">{{ userStore.userInfo?.bio }}</p>
+          <div class="flex items-center gap-3 md:gap-4 mt-1.5 text-xs md:text-sm text-slate-500">
             <NuxtLink to="/user/articles" class="cursor-pointer hover:text-primary transition-colors">
-              <strong class="text-slate-900">{{ userStore.userInfo?.articleCount }}</strong> {{ '文章' }}
+              <strong class="text-slate-900">{{ userStore.userInfo?.articleCount }}</strong> {{ '作品' }}
             </NuxtLink>
             <NuxtLink to="/user/following" class="cursor-pointer hover:text-primary transition-colors">
               <strong class="text-slate-900">{{ userStore.userInfo?.followCount }}</strong> {{ '关注' }}
@@ -68,7 +68,7 @@
 
     <!-- Tab内容 -->
     <div>
-      <!-- 文章 -->
+      <!-- 作品 -->
       <ErrorRetry v-if="activeTab === 'published' && tabError && !publishedArticles.length" :message="tabError" :on-retry="retryTabData" />
       <div v-if="activeTab === 'published' && !tabError">
         <!-- 骨架屏 -->
@@ -76,8 +76,8 @@
           <div v-for="i in 6" :key="i" class="aspect-[3/4] bg-slate-100 animate-pulse" />
         </div>
         <div v-else-if="!loading && publishedArticles.length === 0" class="text-center py-10 text-slate-400">
-          <p class="text-lg mb-2">还没有发布文章</p>
-          <NuxtLink to="/editor" class="text-primary hover:underline text-sm">去写文章</NuxtLink>
+          <p class="text-lg mb-2">还没有发布作品</p>
+          <NuxtLink to="/editor" class="text-primary hover:underline text-sm">去创作</NuxtLink>
         </div>
         <div v-else class="grid grid-cols-3">
           <div v-for="article in publishedArticles" :key="article.id" class="relative group">
@@ -126,7 +126,7 @@
         <div v-else-if="!loading && draftArticles.length === 0" class="text-center py-10 text-slate-400">
           <p class="text-lg mb-2">草稿箱为空</p>
           <p class="text-xs">草稿保存30天后将自动清理</p>
-          <NuxtLink to="/editor" class="text-primary hover:underline text-sm mt-2 inline-block">去写文章</NuxtLink>
+          <NuxtLink to="/editor" class="text-primary hover:underline text-sm mt-2 inline-block">去创作</NuxtLink>
         </div>
         <div v-else class="grid grid-cols-3">
           <div v-for="article in draftArticles" :key="article.id" class="relative group">
@@ -199,7 +199,7 @@
           <p class="text-sm text-slate-700">{{ comment.content }}</p>
           <div class="flex items-center justify-between mt-2">
             <span class="text-xs text-gray-400">{{ formatDate(comment.createdAt) }}</span>
-            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-xs text-primary hover:text-primary-600">{{ '查看文章' }}</NuxtLink>
+            <NuxtLink :to="`/articles/${comment.articleId}`" class="text-xs text-primary hover:text-primary-600">{{ '查看作品' }}</NuxtLink>
           </div>
         </div>
         <EmptyState v-if="!loading && myComments.length === 0" title="暂无评论" />
@@ -230,7 +230,7 @@
       <div v-if="showScheduleModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="showScheduleModal = false">
         <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
           <h3 class="text-lg font-bold text-slate-900 mb-4">定时发布</h3>
-          <p class="text-sm text-slate-600 mb-3">文章「{{ scheduleTarget?.title || '无标题' }}」将在指定时间自动发布</p>
+          <p class="text-sm text-slate-600 mb-3">作品「{{ scheduleTarget?.title || '无标题' }}」将在指定时间自动发布</p>
           <div class="mb-4">
             <label class="block text-sm text-slate-600 mb-1">选择发布时间</label>
             <input
@@ -255,7 +255,7 @@
       <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="showDeleteModal = false">
         <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
           <h3 class="text-lg font-bold text-slate-900 mb-4">确认删除</h3>
-          <p class="text-sm text-slate-600 mb-4">确定要删除文章「{{ deleteTarget?.title || '无标题' }}」吗？此操作不可撤销。</p>
+          <p class="text-sm text-slate-600 mb-4">确定要删除作品「{{ deleteTarget?.title || '无标题' }}」吗？此操作不可撤销。</p>
           <div class="flex justify-end gap-3">
             <button class="btn-ghost text-sm" @click="showDeleteModal = false">取消</button>
             <button class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 transition-colors" :disabled="deletingId !== null" @click="confirmDelete">
@@ -280,6 +280,7 @@ definePageMeta({
 const userStore = useUserStore()
 const router = useRouter()
 const { put: apiPut } = useApi()
+const { isMobile } = useBreakpoints()
 
 const avatarInput = ref<HTMLInputElement | null>(null)
 const avatarUploading = ref(false)
@@ -308,9 +309,8 @@ const handleAvatarChange = async (e: Event) => {
     const formData = new FormData()
     formData.append('file', file)
     const { post: apiPost } = useApi()
-    const uploadRes = await apiPost<any>('/files/upload/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    // 不手动设置 Content-Type，让 axios 自动设置带 boundary 的 multipart/form-data
+    const uploadRes = await apiPost<any>('/files/upload/image', formData)
     const avatarUrl = uploadRes.data?.data
     if (avatarUrl) {
       await apiPut<any>('/user/profile', { avatar: avatarUrl })
@@ -327,7 +327,7 @@ const handleAvatarChange = async (e: Event) => {
 }
 
 const tabs = [
-  { key: 'published', label: computed(() => '文章') },
+  { key: 'published', label: computed(() => '作品') },
   { key: 'drafts', label: computed(() => '草稿') },
   { key: 'collected', label: computed(() => '收藏') },
   { key: 'liked', label: computed(() => '点赞') },
@@ -521,7 +521,7 @@ const loadMore = async () => {
   }
 }
 
-// 修改文章可见性
+// 修改作品可见性
 const handleVisibilityChange = async (article: Article, visibility: number) => {
   try {
     await articleApi.updateVisibility(article.id, visibility)
@@ -537,10 +537,10 @@ const publishDraftNow = async (article: Article) => {
   publishingId.value = article.id
   try {
     await articleApi.publishDraft(article.id)
-    showToast('文章已发布')
+    showToast('作品已发布')
     // 从草稿列表移除
     draftArticles.value = draftArticles.value.filter(a => a.id !== article.id)
-    // 如果当前在文章Tab，刷新文章列表
+    // 如果当前在作品Tab，刷新作品列表
     if (activeTab.value === 'published') {
       currentPage.value = 1
       await loadTabData()
@@ -594,7 +594,7 @@ const confirmDelete = async () => {
   deletingId.value = deleteTarget.value.id
   try {
     await articleApi.deleteArticle(deleteTarget.value.id)
-    showToast('文章已删除')
+    showToast('作品已删除')
     const id = deleteTarget.value.id
     publishedArticles.value = publishedArticles.value.filter(a => a.id !== id)
     draftArticles.value = draftArticles.value.filter(a => a.id !== id)
