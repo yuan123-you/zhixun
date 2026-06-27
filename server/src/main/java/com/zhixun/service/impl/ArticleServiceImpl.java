@@ -39,6 +39,7 @@ import com.zhixun.mapper.ArticleViewHistoryMapper;
 import com.zhixun.mapper.CollectMapper;
 import com.zhixun.mapper.UserFollowMapper;
 import com.zhixun.mapper.CategoryMapper;
+import com.zhixun.mapper.ArticleImageMapper;
 import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.security.HtmlWhitelistFilter;
@@ -93,6 +94,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
+    private final ArticleImageMapper articleImageMapper;
     private final SensitiveWordUtil sensitiveWordUtil;
     private final SecurityUtil securityUtil;
     private final OpenSearchSyncService openSearchSyncService;
@@ -1107,7 +1109,7 @@ public class ArticleServiceImpl implements ArticleService {
                     // 创建新标签
                     Tag newTag = new Tag();
                     newTag.setName(trimmedName);
-                    newTag.setArticleCount(0);
+                    newTag.setArticleCount(0L);
                     tagMapper.insert(newTag);
                     result.add(newTag.getId());
                 }
