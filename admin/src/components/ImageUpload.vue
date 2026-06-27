@@ -61,12 +61,12 @@ watch(() => props.modelValue, (val) => {
 function beforeUpload(file: File) {
   const isImage = file.type.startsWith('image/')
   if (!isImage) {
-    ElMessage.error('只能上传图片文件')
+    ElMessage.error('仅支持上传图片格式文件')
     return false
   }
   const isLtMaxSize = file.size / 1024 / 1024 < props.maxSize
   if (!isLtMaxSize) {
-    ElMessage.error(`图片大小不能超过 ${props.maxSize}MB`)
+    ElMessage.error(`文件大小不能超过 ${props.maxSize}MB`)
     return false
   }
   return true
@@ -80,7 +80,7 @@ async function handleUpload(options: { file: File }) {
     emit('update:modelValue', res.data.url)
     ElMessage.success('上传成功')
   } catch {
-    ElMessage.error('上传失败')
+    ElMessage.error('文件上传失败，请重试')
   }
 }
 

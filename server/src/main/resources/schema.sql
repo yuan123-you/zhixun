@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS sys_user (
   last_login_at DATETIME,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 CREATE INDEX idx_sys_user_role ON sys_user(role);
 CREATE INDEX idx_sys_user_status ON sys_user(status);
 
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS cms_category (
   status TINYINT DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分类表';
 CREATE INDEX idx_cms_category_parent ON cms_category(parent_id);
 
 -- 3. cms_tag 标签表
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS cms_tag (
   name VARCHAR(50) NOT NULL UNIQUE,
   article_count INT DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='标签表';
 
 -- 4. cms_article 作品表
 CREATE TABLE IF NOT EXISTS cms_article (
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS cms_article (
   deleted_at DATETIME,
   FOREIGN KEY (author_id) REFERENCES sys_user(id) ON DELETE CASCADE,
   FOREIGN KEY (category_id) REFERENCES cms_category(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章/作品表';
 CREATE INDEX idx_cms_article_author ON cms_article(author_id);
 CREATE INDEX idx_cms_article_category ON cms_article(category_id);
 CREATE INDEX idx_cms_article_status ON cms_article(status);
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS cms_article_tag (
   UNIQUE KEY uk_article_tag (article_id, tag_id),
   FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE,
   FOREIGN KEY (tag_id) REFERENCES cms_tag(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作品标签关联表';
 CREATE INDEX idx_cms_article_tag_article ON cms_article_tag(article_id);
 CREATE INDEX idx_cms_article_tag_tag ON cms_article_tag(tag_id);
 
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS cms_article_image (
   sort_order INT DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作品图片表';
 CREATE INDEX idx_cms_article_image_article ON cms_article_image(article_id);
 
 -- 7. cms_like 点赞表
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS cms_like (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_like (user_id, target_id, target_type),
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='点赞表';
 CREATE INDEX idx_cms_like_user ON cms_like(user_id);
 CREATE INDEX idx_cms_like_target ON cms_like(target_id, target_type);
 
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS cms_collect (
   UNIQUE KEY uk_collect (user_id, article_id),
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE,
   FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收藏表';
 CREATE INDEX idx_cms_collect_user ON cms_collect(user_id);
 CREATE INDEX idx_cms_collect_article ON cms_collect(article_id);
 
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS cms_comment (
   deleted_at DATETIME,
   FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评论表';
 CREATE INDEX idx_cms_comment_article ON cms_comment(article_id);
 CREATE INDEX idx_cms_comment_user ON cms_comment(user_id);
 CREATE INDEX idx_cms_comment_parent ON cms_comment(parent_id);
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS cms_view_history (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE SET NULL,
   FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='浏览记录表';
 CREATE INDEX idx_cms_view_history_user ON cms_view_history(user_id);
 CREATE INDEX idx_cms_view_history_article ON cms_view_history(article_id);
 CREATE INDEX idx_cms_view_history_created ON cms_view_history(created_at);
@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS sys_sensitive_word (
   word VARCHAR(100) NOT NULL UNIQUE,
   level TINYINT NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词表';
 
 -- 12. sys_operation_log 操作日志表
 CREATE TABLE IF NOT EXISTS sys_operation_log (
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS sys_operation_log (
   ip VARCHAR(50),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (operator_id) REFERENCES sys_user(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';
 CREATE INDEX idx_sys_operation_log_operator ON sys_operation_log(operator_id);
 CREATE INDEX idx_sys_operation_log_created ON sys_operation_log(created_at);
 
@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS sys_login_log (
   fail_reason VARCHAR(200),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='登录日志表';
 CREATE INDEX idx_sys_login_log_user ON sys_login_log(user_id);
 CREATE INDEX idx_sys_login_log_created ON sys_login_log(created_at);
 
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS sys_notification (
   related_id BIGINT,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知消息表';
 CREATE INDEX idx_sys_notification_user ON sys_notification(user_id);
 CREATE INDEX idx_sys_notification_read ON sys_notification(is_read);
 
@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS user_follow (
   UNIQUE KEY uk_follow (follower_id, following_id),
   FOREIGN KEY (follower_id) REFERENCES sys_user(id) ON DELETE CASCADE,
   FOREIGN KEY (following_id) REFERENCES sys_user(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='关注表';
 CREATE INDEX idx_user_follow_follower ON user_follow(follower_id);
 CREATE INDEX idx_user_follow_following ON user_follow(following_id);
 
@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS user_message (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (sender_id) REFERENCES sys_user(id) ON DELETE CASCADE,
   FOREIGN KEY (receiver_id) REFERENCES sys_user(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='私信表';
 CREATE INDEX idx_user_message_sender ON user_message(sender_id);
 CREATE INDEX idx_user_message_receiver ON user_message(receiver_id);
 CREATE INDEX idx_user_message_read ON user_message(is_read);
@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户偏好设置表';
 
 -- 18. user_preferred_category 用户偏好分类关联表
 CREATE TABLE IF NOT EXISTS user_preferred_category (
@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS user_preferred_category (
   UNIQUE KEY uk_preferred_category (user_id, category_id, type),
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE,
   FOREIGN KEY (category_id) REFERENCES cms_category(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户偏好分类关联表';
 CREATE INDEX idx_user_preferred_category_user ON user_preferred_category(user_id);
 
 -- 19. user_preferred_tag 用户偏好标签关联表
@@ -294,11 +294,11 @@ CREATE TABLE IF NOT EXISTS user_preferred_tag (
   UNIQUE KEY uk_preferred_tag (user_id, tag_id, type),
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE,
   FOREIGN KEY (tag_id) REFERENCES cms_tag(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户偏好标签关联表';
 CREATE INDEX idx_user_preferred_tag_user ON user_preferred_tag(user_id);
 
 -- ============================================================
--- V2: 新功能模块（话题/群组/签到/经验/徽章/主页主题/模板/举报/协作）
+-- V2: 新功能模块（话题/群组/主页主题/模板/举报/协作）
 -- ============================================================
 
 -- 20. cms_topic 话题表
@@ -387,53 +387,6 @@ CREATE TABLE IF NOT EXISTS cms_group_message (
     INDEX idx_group_msg_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组消息表';
 
--- 26. user_check_in 签到表
-CREATE TABLE IF NOT EXISTS user_check_in (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    check_in_date DATE NOT NULL,
-    consecutive_days INT DEFAULT 1,
-    points INT DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uk_user_date (user_id, check_in_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户签到表';
-
--- 27. user_experience 用户经验表
-CREATE TABLE IF NOT EXISTS user_experience (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    exp BIGINT DEFAULT 0,
-    level INT DEFAULT 1,
-    level_name VARCHAR(20) DEFAULT '初级用户',
-    next_level_exp BIGINT DEFAULT 100,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uk_user_exp (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户经验表';
-
--- 28. sys_badge 徽章表
-CREATE TABLE IF NOT EXISTS sys_badge (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL,
-    description VARCHAR(200) DEFAULT NULL,
-    icon VARCHAR(500) DEFAULT NULL,
-    category VARCHAR(20) DEFAULT NULL COMMENT 'sign_in/content/social/achievement/special',
-    `condition` VARCHAR(200) DEFAULT NULL COMMENT '获取条件',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='徽章表';
-
--- 29. user_badge 用户徽章表
-CREATE TABLE IF NOT EXISTS user_badge (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    badge_id BIGINT NOT NULL,
-    earned_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uk_user_badge (user_id, badge_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户徽章表';
-
 -- 30. user_profile_theme 用户主页主题表
 CREATE TABLE IF NOT EXISTS user_profile_theme (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -514,18 +467,133 @@ CREATE TABLE IF NOT EXISTS cms_article_collaborator (
     INDEX idx_collaborator_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章协作表';
 
--- ============================================================
--- 初始徽章数据
--- ============================================================
-INSERT IGNORE INTO sys_badge (id, name, description, icon, category, `condition`) VALUES
-(1, '首批用户', '平台最早的一批用户', '/badges/pioneer.svg', 'special', '注册即获得'),
-(2, '连签达人', '连续签到7天', '/badges/checkin7.svg', 'sign_in', '连续签到7天'),
-(3, '百赞作者', '累计获得100个点赞', '/badges/like100.svg', 'content', '累计获赞100次'),
-(4, '千粉作者', '粉丝数突破1000', '/badges/fan1000.svg', 'social', '粉丝数达到1000'),
-(5, '日更达人', '连续30天发布内容', '/badges/daily.svg', 'content', '连续30天发布'),
-(6, '评论达人', '累计发表100条评论', '/badges/comment100.svg', 'content', '累计评论100条'),
-(7, '收藏达人', '收藏内容超过50篇', '/badges/collect50.svg', 'content', '收藏数达到50'),
-(8, '年度创作者', '年度表现优异的创作者', '/badges/yearly.svg', 'achievement', '年度评选获得');
+-- 35. sys_sensitive_whitelist 敏感词白名单表
+CREATE TABLE IF NOT EXISTS sys_sensitive_whitelist (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    word VARCHAR(100) NOT NULL COMMENT '白名单词',
+    created_by BIGINT DEFAULT NULL COMMENT '创建人',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE INDEX uk_whitelist_word (word),
+    FOREIGN KEY (created_by) REFERENCES sys_user(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词白名单表';
+
+-- 36. user_tag_follow 用户关注标签表
+CREATE TABLE IF NOT EXISTS user_tag_follow (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    tag_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE INDEX uk_user_tag_follow (user_id, tag_id),
+    INDEX idx_user_tag_follow_user (user_id),
+    INDEX idx_user_tag_follow_tag (tag_id),
+    FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES cms_tag(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户关注标签表';
+
+-- 37. cms_comment_report 评论举报表
+CREATE TABLE IF NOT EXISTS cms_comment_report (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    comment_id BIGINT NOT NULL,
+    reporter_id BIGINT NOT NULL,
+    reason VARCHAR(500) DEFAULT NULL COMMENT '举报原因',
+    status TINYINT NOT NULL DEFAULT 0 COMMENT '0待处理 1已忽略 2已删除',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_cms_comment_report_comment (comment_id),
+    INDEX idx_cms_comment_report_reporter (reporter_id),
+    INDEX idx_cms_comment_report_status (status),
+    FOREIGN KEY (comment_id) REFERENCES cms_comment(id) ON DELETE CASCADE,
+    FOREIGN KEY (reporter_id) REFERENCES sys_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评论举报表';
+
+-- 38. sys_security_audit_log 安全审计日志表
+CREATE TABLE IF NOT EXISTS sys_security_audit_log (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    event_type VARCHAR(50) NOT NULL COMMENT '事件类型',
+    user_id BIGINT DEFAULT NULL COMMENT '操作人',
+    ip VARCHAR(50) DEFAULT NULL COMMENT '操作IP',
+    method VARCHAR(10) DEFAULT NULL COMMENT '请求方法',
+    path VARCHAR(500) DEFAULT NULL COMMENT '请求路径',
+    detail TEXT DEFAULT NULL COMMENT '详情',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_sys_security_audit_log_event_type (event_type),
+    INDEX idx_sys_security_audit_log_user_id (user_id),
+    INDEX idx_sys_security_audit_log_ip (ip),
+    INDEX idx_sys_security_audit_log_created (created_at),
+    FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='安全审计日志表';
+
+-- 39. cms_banner 轮播图/横幅表
+CREATE TABLE IF NOT EXISTS cms_banner (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(100) NOT NULL COMMENT '标题',
+    image_url VARCHAR(500) NOT NULL COMMENT '图片地址',
+    link_url VARCHAR(500) DEFAULT NULL COMMENT '跳转链接',
+    link_type TINYINT DEFAULT 1 COMMENT '链接类型：1=内部 2=外部',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    start_time DATETIME DEFAULT NULL COMMENT '开始时间',
+    end_time DATETIME DEFAULT NULL COMMENT '结束时间',
+    status TINYINT DEFAULT 1 COMMENT '0隐藏 1显示',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_cms_banner_status (status),
+    INDEX idx_cms_banner_time (start_time, end_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='轮播图/横幅表';
+
+-- 40. sys_announcement 系统公告表
+CREATE TABLE IF NOT EXISTS sys_announcement (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL COMMENT '公告标题',
+    content VARCHAR(2000) NOT NULL COMMENT '公告内容',
+    type TINYINT DEFAULT 1 COMMENT '公告类型',
+    is_top TINYINT DEFAULT 0 COMMENT '是否置顶',
+    start_time DATETIME DEFAULT NULL COMMENT '生效时间',
+    end_time DATETIME DEFAULT NULL COMMENT '失效时间',
+    status TINYINT DEFAULT 1 COMMENT '0隐藏 1显示',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_sys_announcement_status (status),
+    INDEX idx_sys_announcement_time (start_time, end_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统公告表';
+
+-- 41. cms_danmaku 弹幕表
+CREATE TABLE IF NOT EXISTS cms_danmaku (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    article_id BIGINT NOT NULL COMMENT '关联作品',
+    user_id BIGINT NOT NULL COMMENT '发送用户',
+    content VARCHAR(500) NOT NULL COMMENT '弹幕内容',
+    color VARCHAR(10) DEFAULT '#FFFFFF' COMMENT '弹幕颜色',
+    position VARCHAR(10) DEFAULT 'scroll' COMMENT '弹幕位置：scroll/top/bottom',
+    time_point DECIMAL(10,2) DEFAULT 0.00 COMMENT '弹幕时间点(秒)',
+    status TINYINT DEFAULT 1 COMMENT '0隐藏 1显示',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_cms_danmaku_article (article_id),
+    INDEX idx_cms_danmaku_user (user_id),
+    INDEX idx_cms_danmaku_time (article_id, time_point),
+    FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='弹幕表';
+
+-- 42. cms_repost 转发表
+CREATE TABLE IF NOT EXISTS cms_repost (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    article_id BIGINT NOT NULL COMMENT '原作品ID',
+    user_id BIGINT NOT NULL COMMENT '转发用户',
+    content VARCHAR(500) DEFAULT NULL COMMENT '转发附言',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_cms_repost_article (article_id),
+    INDEX idx_cms_repost_user (user_id),
+    INDEX idx_cms_repost_created (created_at),
+    FOREIGN KEY (article_id) REFERENCES cms_article(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='转发表';
 
 -- ============================================================
 -- 兼容性修复：为已存在的表补充缺失列（MySQL 8.0+）

@@ -169,7 +169,7 @@ async function loadComments(force = false) {
     total.value = result.total
   } catch {
     hasError.value = true
-    ElMessage.error('评论列表加载失败，请稍后重试')
+    ElMessage.error('评论列表加载失败，请检查网络后重试')
   } finally {
     loading.value = false
     isFirstLoad.value = false

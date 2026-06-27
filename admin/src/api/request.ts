@@ -61,7 +61,7 @@ function isTokenExpired(): boolean {
 async function refreshAccessToken(): Promise<string> {
   const currentRefreshToken = storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
   if (!currentRefreshToken) {
-    throw new Error('无刷新令牌')
+    throw new Error('登录信息已过期，请重新登录')
   }
 
   // 如果已经在刷新中，复用同一个 Promise
@@ -156,12 +156,12 @@ service.interceptors.response.use(
     const res = response.data
     // 业务错误码处理
     if (res.code !== 0 && res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
+      ElMessage.error(res.message || '操作失败，请稍后重试')
       // Token 过期或无效 — 尝试刷新
       if (res.code === 401) {
         return handleTokenRefresh(response.config)
       }
-      return Promise.reject(new Error(res.message || '请求失败'))
+      return Promise.reject(new Error(res.message || '操作失败，请稍后重试'))
     }
     return res as any
   },
@@ -197,10 +197,10 @@ service.interceptors.response.use(
     }
 
     const messages: Record<number, string> = {
-      400: '请求参数错误',
-      403: '暂无权限',
-      404: '请求资源不存在',
-      500: '服务器内部错误',
+      400: '请求参数有误，请检查后重试',
+      403: '暂无操作权限',
+      404: '请求的资源不存在',
+      500: '服务器繁忙，请稍后重试',
     }
     // 403 弹框友好提醒，其余状态码用轻提示
     if (status === 403) {
@@ -210,7 +210,7 @@ service.interceptors.response.use(
         { confirmButtonText: '我知道了', type: 'warning' }
       ).catch(() => {})
     } else {
-      const message = messages[status] || `请求失败: ${error.message}`
+      const message = messages[status] || '操作失败，请稍后重试'
       ElMessage.error(message)
     }
 

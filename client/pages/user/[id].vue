@@ -235,7 +235,7 @@ const toggleFollow = async () => {
         : Math.max(0, (userStore.userInfo.followCount || 0) - 1)
     }
   } catch {
-    showToast('关注操作失败', 'error')
+    showToast('关注失败，请稍后重试', 'error')
   }
 }
 

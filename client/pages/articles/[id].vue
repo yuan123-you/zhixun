@@ -5,7 +5,7 @@
     <LoadingSkeleton v-if="pending" type="article" />
 
     <!-- 错误状态 -->
-    <ErrorRetry v-else-if="articleError" :message="articleError?.message || '作品加载失败'" :on-retry="() => refresh()" />
+    <ErrorRetry v-else-if="articleError" :message="articleError?.message || '作品加载失败，请稍后重试'" :on-retry="() => refresh()" />
 
     <!-- 作品内容 -->
     <SwipeArticle v-else-if="article" :prev-id="prevArticleId" :next-id="nextArticleId">
@@ -375,7 +375,7 @@ const { data: article, pending, error: articleError, refresh } = await useAsyncD
   `article-${articleId.value}`,
   async () => {
     if (articleId.value === null) {
-      throw new Error('无效的作品ID')
+      throw new Error('作品信息有误，请返回首页')
     }
     const { articleApi } = await import('~/api')
     const response = await articleApi.getArticleDetail(articleId.value!)
@@ -449,7 +449,7 @@ const toggleFollowAuthor = async () => {
     // 失效用户相关缓存
     invalidateUser()
   } catch (error: any) {
-    console.error('关注操作失败' + ':', error.message)
+    console.error('关注操作失败，请稍后重试')
   }
 }
 
@@ -724,6 +724,6 @@ onUnmounted(() => {
 
 // 页面元信息
 useHead({
-  title: () => article.value ? `${article.value.title} - 知讯` : '作品加载失败，请稍后重试' + ' - 知讯',
+  title: () => article.value ? `${article.value.title} - 知讯` : '作品无法加载 - 知讯',
 })
 </script>

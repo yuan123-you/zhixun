@@ -291,6 +291,7 @@ const fetchOnlineStatus = async () => {
 const formatMessageTime = (timeStr: string) => {
   if (!timeStr) return ''
   const date = new Date(timeStr)
+  if (isNaN(date.getTime())) return ''
   const now = new Date()
   const pad = (n: number) => n.toString().padStart(2, '0')
 
@@ -309,7 +310,10 @@ const formatMessageTime = (timeStr: string) => {
 /** 两条消息之间的时间差（分钟） */
 const getTimeDiff = (prevTime: string, currTime: string) => {
   if (!prevTime || !currTime) return 0
-  return Math.abs(new Date(currTime).getTime() - new Date(prevTime).getTime()) / 60000
+  const prevMs = new Date(prevTime).getTime()
+  const currMs = new Date(currTime).getTime()
+  if (isNaN(prevMs) || isNaN(currMs)) return 0
+  return Math.abs(currMs - prevMs) / 60000
 }
 
 // 挂载滚动监听

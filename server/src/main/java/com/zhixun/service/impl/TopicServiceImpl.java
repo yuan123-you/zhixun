@@ -68,7 +68,7 @@ public class TopicServiceImpl implements TopicService {
     @Override @Transactional
     public void toggleFollow(Long userId, Long topicId) {
         Topic t = topicMapper.selectById(topicId);
-        if (t == null) throw new RuntimeException("话题不存在");
+        if (t == null) throw new RuntimeException("话题不存在或已被删除");
         TopicFollow f = topicFollowMapper.selectByUserIdAndTopicId(userId, topicId);
         if (f != null) {
             topicFollowMapper.deleteById(f.getId());

@@ -522,7 +522,7 @@ const handleEditorImageUpload = async (event: Event) => {
       showToast('图片上传失败：服务器未返回图片地址', 'error')
     }
   } catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || '图片上传失败，请检查服务器配置'
+    const msg = err?.response?.data?.message || err?.message || '图片上传失败，请重试'
     showToast(msg, 'error')
   } finally {
     imageUploading.value = false
@@ -578,7 +578,7 @@ const handleAIWrite = async (mode: string) => {
       }
     }
   } catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || 'AI 处理失败'
+    const msg = err?.response?.data?.message || err?.message || 'AI 处理失败，请稍后重试'
     showToast(msg, 'error')
   } finally { aiLoading.value = false }
 }
@@ -598,7 +598,7 @@ const handleEditorVoice = async (blob: Blob) => {
       showToast('语音上传失败：服务器未返回地址', 'error')
     }
   } catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || '语音上传失败'
+    const msg = err?.response?.data?.message || err?.message || '语音上传失败，请重试'
     showToast(msg, 'error')
   }
 }
@@ -742,7 +742,7 @@ function buildArticleRequest(status: number): Record<string, any> {
     content: form.content,
     summary: form.summary.trim() || undefined,
     categoryName: form.categoryName.trim() || '默认分类',
-    tagIds: [],
+    tagNames: form.tags.length > 0 ? form.tags : undefined,
     images: form.images.length > 0 ? form.images : undefined,
     location: form.location || undefined,
     status,

@@ -145,7 +145,7 @@ export const useApi = () => {
             requestConfig.headers.Authorization = `Bearer ${newToken}`
           } catch {
             // 刷新失败，不再用旧Token发送请求
-            return Promise.reject(new Error('Token刷新失败，请重新登录'))
+            return Promise.reject(new Error('登录信息已过期，请重新登录'))
           }
         } else if (token) {
           requestConfig.headers.Authorization = `Bearer ${token}`
@@ -180,7 +180,7 @@ export const useApi = () => {
     if (!import.meta.client || forbiddenDialogVisible) return
     forbiddenDialogVisible = true
     // 安全的文本转义，防止后端错误消息中的 HTML 注入
-    const safeMessage = (message || '暂无权限访问')
+    const safeMessage = (message || '暂无访问权限')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -225,7 +225,7 @@ export const useApi = () => {
           return handleTokenRefresh(response.config)
         }
         // 其他业务错误
-        return Promise.reject(new Error(data.message || '请求失败'))
+        return Promise.reject(new Error(data.message || '操作失败，请稍后重试'))
       }
       return response
     },
@@ -260,8 +260,8 @@ export const useApi = () => {
             // 发送验证码接口单独处理
             const isSendCode = requestUrl.includes('/auth/send-code')
             const forbiddenMsg = isSendCode ? '发送验证码失败，请重试'
-                : isAuthEndpoint ? '用户名或密码错误' : '没有权限'
-            showForbiddenDialog(isAuthEndpoint && !isSendCode ? '用户名或密码错误' : undefined)
+                : isAuthEndpoint ? '登录失败，请检查账号密码' : '暂无操作权限'
+            showForbiddenDialog(isAuthEndpoint && !isSendCode ? '登录失败，请检查账号密码' : undefined)
             return Promise.reject(new Error(forbiddenMsg))
           }
           case 404:
@@ -269,9 +269,9 @@ export const useApi = () => {
           case 429:
             return Promise.reject(new Error('操作太频繁，稍后再试'))
           case 500:
-            return Promise.reject(new Error('服务器开小差了'))
+            return Promise.reject(new Error('服务器繁忙，请稍后重试'))
           default:
-            return Promise.reject(new Error(error.response.data?.message || '请求失败'))
+            return Promise.reject(new Error(error.response.data?.message || '操作失败，请稍后重试'))
         }
       }
       // 网络错误

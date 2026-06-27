@@ -3,6 +3,9 @@
   <div class="h-[calc(100vh-3rem)] flex flex-col">
     <!-- 顶部Tab栏 -->
     <div class="flex items-center border-b border-slate-200 bg-white shrink-0">
+      <button v-if="activeMainTab === 'messages' && activeConversation" class="md:hidden p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg mr-1 shrink-0" @click="activeConversation = null">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+      </button>
       <button
         v-for="tab in mainTabs"
         :key="tab.key"
@@ -62,9 +65,6 @@
           <template v-if="activeConversation">
             <!-- 聊天头部 -->
             <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-white shrink-0">
-              <button class="md:hidden p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg" @click="activeConversation = null">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-              </button>
               <UserAvatar :src="activeConversation.user?.avatar" alt="" size="md" />
               <div class="min-w-0">
                 <p class="font-medium text-slate-900 text-sm truncate">{{ activeConversation.user?.nickname }}</p>
@@ -235,7 +235,7 @@ const loadConversations = async () => {
   try {
     const { data } = await socialApi.getConversations()
     conversations.value = data.data.list || []
-  } catch { conversationsError.value = '加载失败' } finally { loadingConv.value = false }
+  } catch { conversationsError.value = '消息列表加载失败，请稍后重试' } finally { loadingConv.value = false }
 }
 
 const loadMsgUnread = async () => {
@@ -255,6 +255,8 @@ const selectConversation = async (conv: Conversation) => {
   }
 }
 
+const { post: apiPost } = useApi()
+
 const sendMessage = async () => {
   if (!inputContent.value.trim() || !activeConversation.value) return
   const targetUserId = activeConversation.value.user?.id
@@ -263,9 +265,14 @@ const sendMessage = async () => {
   inputContent.value = ''
   try {
     const { data } = await socialApi.sendMessage(targetUserId, { content })
-    messages.value.push(data.data)
-    nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
-  } catch {}
+    if (data.data) {
+      messages.value.push(data.data)
+      nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+    }
+  } catch (e: any) {
+    inputContent.value = content
+    console.error('发送消息失败:', e?.message || e)
+  }
 }
 
 const handleVoiceSend = async (blob: Blob) => {
@@ -275,21 +282,27 @@ const handleVoiceSend = async (blob: Blob) => {
   try {
     const formData = new FormData()
     formData.append('file', blob, 'voice.webm')
-    const { post } = useApi()
-    const uploadRes = await post<any>('/files/upload/voice', formData)
+    const uploadRes = await apiPost<any>('/files/upload/voice', formData)
     const voiceUrl = uploadRes.data?.data
     if (voiceUrl) {
       const { data } = await socialApi.sendMessage(targetUserId, { content: voiceUrl, type: 'voice' })
-      messages.value.push(data.data)
-      nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+      if (data.data) {
+        messages.value.push(data.data)
+        nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+      }
     }
-  } catch {}
+  } catch (e: any) {
+    console.error('发送语音失败:', e?.message || e)
+  }
 }
 
 const isMyMsg = (msg: Message) => msg.senderId === userStore.userInfo?.id
 
 const formatConvTime = (t: string) => {
-  const d = new Date(t), n = new Date(), diff = n.getTime() - d.getTime()
+  if (!t) return ''
+  const d = new Date(t)
+  if (isNaN(d.getTime())) return ''
+  const n = new Date(), diff = n.getTime() - d.getTime()
   if (diff < 86400000) return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
@@ -323,7 +336,7 @@ const fetchNotis = async () => {
     if (activeNotiTab.value) params.type = activeNotiTab.value
     const { data } = await notificationApi.getNotifications(params)
     const d = data.data; notifications.value = d?.list || []; notiTotal.value = d?.total || 0
-  } catch { notiError.value = '加载失败' } finally { notiLoading.value = false }
+  } catch { notiError.value = '通知列表加载失败，请稍后重试' } finally { notiLoading.value = false }
 }
 
 const loadMoreNoti = async () => {

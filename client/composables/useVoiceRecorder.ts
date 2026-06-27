@@ -25,7 +25,7 @@ export function useVoiceRecorder() {
       recordingTime.value = 0
       timer = setInterval(() => { recordingTime.value++ }, 1000)
     } catch (e) {
-      console.error('Microphone access denied:', e)
+      console.error('麦克风权限未开启，请在浏览器设置中允许访问麦克风')
     }
   }
 

@@ -54,7 +54,7 @@ export function useLazyData<T = any>(options: LazyDataOptions<T>) {
       data.value = result
       loaded.value = true
     } catch (err: any) {
-      error.value = err.message || '加载失败'
+      error.value = err.message || '加载失败，请稍后重试'
     } finally {
       loading.value = false
     }
@@ -77,7 +77,7 @@ export function useLazyData<T = any>(options: LazyDataOptions<T>) {
       data.value = result
       loaded.value = true
     } catch (err: any) {
-      error.value = err.message || '加载失败'
+      error.value = err.message || '加载失败，请稍后重试'
       loaded.value = false
     } finally {
       loading.value = false

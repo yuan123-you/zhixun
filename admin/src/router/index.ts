@@ -100,12 +100,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '模板管理', icon: 'Tickets' },
       },
       {
-        path: 'badges',
-        name: 'Badges',
-        component: () => import('@/views/badges/index.vue'),
-        meta: { title: '徽章管理', icon: 'Medal' },
-      },
-      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/settings/index.vue'),

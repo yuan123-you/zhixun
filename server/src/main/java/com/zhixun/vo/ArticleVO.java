@@ -71,6 +71,9 @@ public class ArticleVO {
     /** 标签列表 */
     private List<TagVO> tags;
 
+    /** 作品图片URL列表 */
+    private List<String> images;
+
     /** 搜索结果中的正文内容片段（含高亮标记） */
     private String contentSnippet;
 

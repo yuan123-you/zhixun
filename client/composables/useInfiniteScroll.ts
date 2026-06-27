@@ -84,7 +84,7 @@ export function useInfiniteScroll<T = any>(options: InfiniteScrollOptions<T>) {
       if (isLoadMore) {
         page.value--
       }
-      error.value = err.message || '加载失败'
+      error.value = err.message || '内容加载失败，请稍后重试'
     } finally {
       loading.value = false
       loadingMore.value = false

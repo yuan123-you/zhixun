@@ -14,7 +14,7 @@ export const useAuth = () => {
       userStore.setUser(authData.userInfo)
       return authData
     } catch (error: any) {
-      throw new Error(error.message || '账号或密码不正确')
+      throw new Error(error.message || '登录失败，请检查账号密码')
     }
   }
 
@@ -42,7 +42,7 @@ export const useAuth = () => {
       const response = await get<GraphCaptchaResponse>('/auth/graph-captcha')
       return response.data.data
     } catch (error: any) {
-      throw new Error(error.message || '验证码获取失败')
+      throw new Error(error.message || '验证码获取失败，请稍后重试')
     }
   }
 
@@ -51,7 +51,7 @@ export const useAuth = () => {
     try {
       await post('/auth/send-code', data)
     } catch (error: any) {
-      throw new Error(error.message || '验证码发送失败')
+      throw new Error(error.message || '验证码发送失败，请稍后重试')
     }
   }
 
@@ -88,7 +88,7 @@ export const useAuth = () => {
     } catch {
       userStore.logout()
       navigateTo('/login')
-      throw new Error('Token刷新失败')
+      throw new Error('登录信息已过期，请重新登录')
     }
   }
 

@@ -11,6 +11,7 @@ import com.zhixun.config.Slave;
 import com.zhixun.dto.user.ProfileUpdateRequest;
 import com.zhixun.dto.user.SettingsUpdateRequest;
 import com.zhixun.entity.Article;
+import com.zhixun.entity.ArticleImage;
 import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.User;
 import com.zhixun.entity.UserPreferredCategory;
@@ -20,6 +21,7 @@ import com.zhixun.entity.ViewHistory;
 import com.zhixun.enums.ArticleStatusEnum;
 import com.zhixun.enums.LikeTargetTypeEnum;
 import com.zhixun.enums.PreferredTypeEnum;
+import com.zhixun.mapper.ArticleImageMapper;
 import com.zhixun.mapper.ArticleLikeMapper;
 import com.zhixun.mapper.ArticleMapper;
 import com.zhixun.mapper.UserMapper;
@@ -74,6 +76,7 @@ public class UserServiceImpl implements UserService {
     private final UserPreferredCategoryMapper userPreferredCategoryMapper;
     private final UserPreferredTagMapper userPreferredTagMapper;
     private final ArticleTagMapper articleTagMapper;
+    private final ArticleImageMapper articleImageMapper;
     private final TagMapper tagMapper;
     private final CategoryMapper categoryMapper;
     private final AesUtil aesUtil;
@@ -637,6 +640,20 @@ public class UserServiceImpl implements UserService {
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getArticleId));
 
+        // 批量查询作品图片
+        Map<Long, List<String>> articleImageMap = new java.util.HashMap<>();
+        try {
+            List<ArticleImage> allImages = safeToList(articleImageMapper.selectList(
+                    new LambdaQueryWrapper<ArticleImage>()
+                            .in(ArticleImage::getArticleId, articleIds)
+                            .orderByAsc(ArticleImage::getSortOrder)));
+            for (ArticleImage img : allImages) {
+                articleImageMap.computeIfAbsent(img.getArticleId(), k -> new java.util.ArrayList<>()).add(img.getUrl());
+            }
+        } catch (Exception e) {
+            log.warn("批量查询作品图片失败: {}", e.getMessage());
+        }
+
         return articles.stream().map(article -> {
             ArticleVO vo = new ArticleVO();
             vo.setId(article.getId());
@@ -693,6 +710,9 @@ public class UserServiceImpl implements UserService {
             } else {
                 vo.setTags(Collections.emptyList());
             }
+            // 设置图片列表
+            List<String> imageUrls = articleImageMap.get(article.getId());
+            vo.setImages(imageUrls != null ? imageUrls : Collections.emptyList());
             return vo;
         }).collect(Collectors.toList());
     }

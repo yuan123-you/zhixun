@@ -64,16 +64,6 @@
         </NuxtLink>
       </div>
 
-      <!-- 每日签到卡片 -->
-      <div class="mt-3 px-3">
-        <ClientOnly>
-          <CheckInCard
-            :status="incentiveStatus"
-            :loading="incentiveLoading"
-            @checkin="handleCheckIn"
-          />
-        </ClientOnly>
-      </div>
     </div>
 
     <!-- Tab切换 - 紧凑样式 -->
@@ -105,33 +95,8 @@
           <NuxtLink to="/editor" class="text-primary hover:underline text-sm">去创作</NuxtLink>
         </div>
         <div v-else class="grid grid-cols-3 gap-0">
-          <div v-for="article in publishedArticles" :key="article.id" class="relative group">
+          <div v-for="article in publishedArticles" :key="article.id" class="relative">
             <ArticleGridCard :article="article" :to="`/user/preview/${article.id}`" />
-            <!-- 悬浮操作层 -->
-            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 flex flex-col">
-              <div class="flex items-start justify-end p-1 gap-1">
-                <select
-                  :value="article.visibility ?? 0"
-                  class="text-[9px] border-0 rounded bg-white/90 text-slate-700 px-1 py-0 focus:outline-none cursor-pointer"
-                  @click.stop
-                  @change="handleVisibilityChange(article, Number(($event.target as HTMLSelectElement).value))"
-                >
-                  <option :value="0">公开</option>
-                  <option :value="1">粉丝</option>
-                  <option :value="2">互关</option>
-                  <option :value="3">私密</option>
-                </select>
-                <button
-                  class="p-0.5 rounded bg-white/90 text-slate-500 hover:text-red-500 transition-colors"
-                  @click.stop="handleDeleteArticle(article)"
-                  title="删除"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
         <div v-if="hasMore" class="text-center py-3">
@@ -299,7 +264,6 @@
 /** 个人中心页 */
 import type { Article, Comment } from '~/types'
 import { userApi, articleApi } from '~/api'
-import { incentiveApi } from '~/api/incentive'
 
 definePageMeta({
   middleware: 'auth',
@@ -392,29 +356,6 @@ const scheduleTime = ref('')
 const showDeleteModal = ref(false)
 const deleteTarget = ref<Article | null>(null)
 const deletingId = ref<number | null>(null)
-
-// 签到激励
-const incentiveStatus = ref<any>(null)
-const incentiveLoading = ref(false)
-
-const fetchIncentiveStatus = async () => {
-  try {
-    const { data } = await incentiveApi.getCheckInStatus()
-    incentiveStatus.value = (data as any)?.data?.data || (data as any)?.data
-  } catch { incentiveStatus.value = null }
-}
-
-const handleCheckIn = async () => {
-  incentiveLoading.value = true
-  try {
-    const { data } = await incentiveApi.checkIn()
-    const result = (data as any)?.data?.data || (data as any)?.data
-    incentiveStatus.value = result
-    showToast(`签到成功！+${result?.todayPoints || 0} 积分`)
-  } catch (err: any) {
-    showToast(err?.response?.data?.message || '签到失败', 'error')
-  } finally { incentiveLoading.value = false }
-}
 
 // 最小可选时间
 const minScheduleTime = computed(() => {
@@ -572,17 +513,6 @@ const loadMore = async () => {
   }
 }
 
-// 修改作品可见性
-const handleVisibilityChange = async (article: Article, visibility: number) => {
-  try {
-    await articleApi.updateVisibility(article.id, visibility)
-    article.visibility = visibility
-    showToast('可见性已更新')
-  } catch (err: any) {
-    showToast(err?.response?.data?.message || '操作失败', 'error')
-  }
-}
-
 // 发布草稿（立即）
 const publishDraftNow = async (article: Article) => {
   publishingId.value = article.id
@@ -597,7 +527,7 @@ const publishDraftNow = async (article: Article) => {
       await loadTabData()
     }
   } catch (err: any) {
-    showToast(err?.response?.data?.message || '发布失败', 'error')
+    showToast(err?.response?.data?.message || '发布失败，请稍后重试', 'error')
   } finally {
     publishingId.value = null
   }
@@ -622,7 +552,7 @@ const confirmSchedulePublish = async () => {
     showScheduleModal.value = false
     scheduleTarget.value = null
   } catch (err: any) {
-    showToast(err?.response?.data?.message || '操作失败', 'error')
+    showToast(err?.response?.data?.message || '操作失败，请稍后重试', 'error')
   } finally {
     schedulingId.value = null
   }
@@ -652,7 +582,7 @@ const confirmDelete = async () => {
     showDeleteModal.value = false
     deleteTarget.value = null
   } catch (err: any) {
-    showToast(err?.response?.data?.message || '删除失败', 'error')
+    showToast(err?.response?.data?.message || '删除失败，请稍后重试', 'error')
   } finally {
     deletingId.value = null
   }
@@ -693,7 +623,6 @@ const formatDate = (date: string) => {
 // 页面加载时获取默认Tab数据
 onMounted(async () => {
   loadTabData()
-  fetchIncentiveStatus()
   // 获取完整个人资料（含统计数字）
   try {
     const { data: profileData } = await userApi.getProfile()

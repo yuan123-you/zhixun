@@ -136,6 +136,7 @@ const sendMessage = () => {
 const formatTime = (time: string) => {
   if (!time) return ''
   const date = new Date(time)
+  if (isNaN(date.getTime())) return ''
   const now = new Date()
   const pad = (n: number) => n.toString().padStart(2, '0')
 

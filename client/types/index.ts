@@ -61,11 +61,13 @@ export interface Article {
   updatedAt: string
 }
 
-/** 作品状态 */
+/** 作品状态（与后端 ArticleStatusEnum 对齐） */
 export enum ArticleStatus {
   Draft = 0,
-  Published = 1,
-  Deleted = 2,
+  Pending = 1,
+  Published = 2,
+  Rejected = 3,
+  Offline = 4,
 }
 
 /** 作品可见性 */
@@ -410,25 +412,6 @@ export interface GroupMessageData {
   content: string
   messageType: string
   createdAt: string
-}
-
-export interface CheckInData {
-  hasCheckedIn: boolean
-  consecutiveDays: number
-  todayPoints: number
-  totalExp: number
-  level: number
-  levelName: string
-}
-
-export interface BadgeData {
-  id: number
-  name: string
-  description: string
-  icon: string
-  category: string
-  isOwned: boolean
-  earnedAt?: string
 }
 
 export interface TemplateData {

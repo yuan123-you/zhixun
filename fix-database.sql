@@ -109,53 +109,6 @@ CREATE TABLE IF NOT EXISTS cms_group_message (
     INDEX idx_group_msg_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组消息表';
 
--- 用户签到表
-CREATE TABLE IF NOT EXISTS user_check_in (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    check_in_date DATE NOT NULL,
-    consecutive_days INT DEFAULT 1,
-    points INT DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uk_user_date (user_id, check_in_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户签到表';
-
--- 用户经验表
-CREATE TABLE IF NOT EXISTS user_experience (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    exp BIGINT DEFAULT 0,
-    level INT DEFAULT 1,
-    level_name VARCHAR(20) DEFAULT '初级用户',
-    next_level_exp BIGINT DEFAULT 100,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uk_user_exp (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户经验表';
-
--- 徽章表
-CREATE TABLE IF NOT EXISTS sys_badge (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL,
-    description VARCHAR(200) DEFAULT NULL,
-    icon VARCHAR(500) DEFAULT NULL,
-    category VARCHAR(20) DEFAULT NULL COMMENT 'sign_in/content/social/achievement/special',
-    `condition` VARCHAR(200) DEFAULT NULL COMMENT '获取条件',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='徽章表';
-
--- 用户徽章表
-CREATE TABLE IF NOT EXISTS user_badge (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    badge_id BIGINT NOT NULL,
-    earned_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uk_user_badge (user_id, badge_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户徽章表';
-
 -- 用户主页主题表
 CREATE TABLE IF NOT EXISTS user_profile_theme (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -237,19 +190,6 @@ CREATE TABLE IF NOT EXISTS cms_article_collaborator (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章协作表';
 
 -- ============================================================
--- 3. 插入初始徽章数据
--- ============================================================
-INSERT IGNORE INTO sys_badge (id, name, description, icon, category, `condition`) VALUES
-(1, '首批用户', '平台最早的一批用户', '/badges/pioneer.svg', 'special', '注册即获得'),
-(2, '连签达人', '连续签到7天', '/badges/checkin7.svg', 'sign_in', '连续签到7天'),
-(3, '百赞作者', '累计获得100个点赞', '/badges/like100.svg', 'content', '累计获赞100次'),
-(4, '千粉作者', '粉丝数突破1000', '/badges/fan1000.svg', 'social', '粉丝数达到1000'),
-(5, '日更达人', '连续30天发布内容', '/badges/daily.svg', 'content', '连续30天发布'),
-(6, '评论达人', '累计发表100条评论', '/badges/comment100.svg', 'content', '累计评论100条'),
-(7, '收藏达人', '收藏内容超过50篇', '/badges/collect50.svg', 'content', '收藏数达到50'),
-(8, '年度创作者', '年度表现优异的创作者', '/badges/yearly.svg', 'achievement', '年度评选获得');
-
--- ============================================================
 -- 4. 验证修复结果
 -- ============================================================
 SELECT '=== 修复后的表列表 ===' AS '';
@@ -258,5 +198,3 @@ SHOW TABLES;
 SELECT '=== cms_article 表现在包含的列 ===' AS '';
 SHOW COLUMNS FROM cms_article;
 
-SELECT '=== 徽章数据 ===' AS '';
-SELECT * FROM sys_badge;

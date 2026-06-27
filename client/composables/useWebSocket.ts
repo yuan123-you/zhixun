@@ -94,13 +94,13 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
           const message: WebSocketMessage = JSON.parse(event.data)
           handleMessage(message)
         } catch (err) {
-          console.error('[WebSocket] 消息解析失败:', err)
+          console.error('[WebSocket] 实时通信数据解析异常，将自动重试')
         }
       }
 
       ws.onerror = (err) => {
-        console.error('[WebSocket] 连接错误:', err)
-        error.value = new Error('WebSocket连接错误')
+        console.error('[WebSocket] 实时通信连接中断，将自动重连')
+        error.value = new Error('实时通信连接中断')
       }
 
       ws.onclose = () => {
@@ -118,7 +118,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
         }
       }
     } catch (err) {
-      console.error('[WebSocket] 创建连接失败:', err)
+      console.error('[WebSocket] 实时通信连接建立失败，请检查网络')
       error.value = err as Error
     }
   }
@@ -155,7 +155,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       ws.send(JSON.stringify(message))
       return true
     } catch (err) {
-      console.error('[WebSocket] 发送消息失败:', err)
+      console.error('[WebSocket] 实时通信消息发送失败，请稍后重试')
       return false
     }
   }
@@ -171,7 +171,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
         try {
           listener(data)
         } catch (err) {
-          console.error(`[WebSocket] 消息监听器执行失败 (${type}):`, err)
+          console.error(`[WebSocket] 实时消息处理异常 (${type})`)
         }
       })
     }
@@ -183,7 +183,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
         try {
           listener(message)
         } catch (err) {
-          console.error('[WebSocket] 全局消息监听器执行失败:', err)
+          console.error('[WebSocket] 实时消息全局处理异常')
         }
       })
     }

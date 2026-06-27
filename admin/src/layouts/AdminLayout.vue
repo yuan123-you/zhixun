@@ -55,7 +55,6 @@
             <span>系统管理</span>
           </template>
           <el-menu-item index="/sensitive-words">敏感词管理</el-menu-item>
-          <el-menu-item index="/badges">徽章管理</el-menu-item>
           <el-menu-item index="/operation-logs">操作日志</el-menu-item>
           <el-menu-item index="/settings">系统设置</el-menu-item>
         </el-sub-menu>

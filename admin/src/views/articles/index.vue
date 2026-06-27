@@ -266,7 +266,7 @@ async function loadArticles(force = false) {
     total.value = result.total
   } catch {
     hasError.value = true
-    ElMessage.error('作品列表加载失败，请稍后重试')
+    ElMessage.error('作品列表加载失败，请检查网络后重试')
   } finally {
     loading.value = false
     isFirstLoad.value = false
@@ -279,7 +279,7 @@ async function loadCategories() {
     const result = await categoryCache.request('/categories')
     categoryList.value = result
   } catch {
-    ElMessage.error('分类列表加载失败')
+    ElMessage.error('分类列表加载失败，请检查网络后重试')
   }
 }
 

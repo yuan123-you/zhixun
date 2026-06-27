@@ -1,7 +1,8 @@
 <template>
   <!-- 评论区组件 -->
   <div class="space-y-3">
-    <!-- 评论输入框 -->
+    <!-- 评论输入框（移动端固定在底部Tab栏上方） -->
+    <div class="sticky bottom-14 md:static z-30 bg-white dark:bg-gray-900 pt-2 pb-1 -mx-1.5 px-1.5 border-t border-slate-100 dark:border-gray-800">
     <ClientOnly>
       <div v-if="userStore.isLoggedIn" class="flex space-x-3">
         <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="md" />
@@ -27,6 +28,7 @@
         <NuxtLink to="/login" class="btn-primary text-sm">去登录</NuxtLink>
       </div>
     </ClientOnly>
+    </div>
 
     <!-- 评论列表头部：总数 + 排序 -->
     <div class="flex items-center justify-between">
@@ -50,17 +52,17 @@
       </div>
     </div>
 
-    <!-- 评论列表 -->
+    <!-- 评论列表（多级嵌套由 CommentItem 递归渲染） -->
     <div class="space-y-6">
-      <div v-for="comment in comments" :key="comment.id" class="space-y-4">
-        <!-- 一级评论 -->
-        <CommentItem :comment="comment" @reply="handleReply" @like="handleLike" @delete="handleDelete" @report="handleReport" />
-
-        <!-- 二级回复 -->
-        <div v-if="comment.replies?.length" class="ml-10 space-y-2">
-          <CommentItem v-for="reply in comment.replies" :key="reply.id" :comment="reply" @reply="handleReply" @like="handleLike" @delete="handleDelete" @report="handleReport" />
-        </div>
-      </div>
+      <CommentItem
+        v-for="comment in comments"
+        :key="comment.id"
+        :comment="comment"
+        @reply="handleReply"
+        @like="handleLike"
+        @delete="handleDelete"
+        @report="handleReport"
+      />
     </div>
 
     <!-- 加载更多 -->

@@ -577,7 +577,7 @@ const fetchArticle = async () => {
     const { data } = await articleApi.getArticleDetail(articleId.value)
     article.value = data.data
   } catch (err: any) {
-    error.value = err?.response?.data?.message || '作品加载失败'
+    error.value = err?.response?.data?.message || '作品加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -659,7 +659,7 @@ const shareToUser = async (user: User) => {
     showToast(`已分享给 ${user.nickname}`)
     closeAllSheets()
   } catch (err: any) {
-    showToast(err?.response?.data?.message || '分享失败')
+    showToast(err?.response?.data?.message || '分享失败，请稍后重试')
   } finally {
     shareSendingId.value = null
   }
@@ -704,7 +704,7 @@ const updateVisibility = async (visibility: number) => {
     article.value.visibility = visibility
     showToast('权限已更新')
   } catch (err: any) {
-    showToast(err?.response?.data?.message || '操作失败')
+    showToast(err?.response?.data?.message || '操作失败，请稍后重试')
   } finally {
     savingVisibility.value = null
   }
@@ -753,7 +753,7 @@ const executeDelete = async () => {
       navigateTo('/user')
     }, 500)
   } catch (err: any) {
-    showToast(err?.response?.data?.message || '删除失败')
+    showToast(err?.response?.data?.message || '删除失败，请稍后重试')
     showDeleteConfirm.value = false
   } finally {
     deleting.value = false

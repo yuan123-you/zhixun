@@ -477,24 +477,20 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
-     * 将评论列表转换为 VO 列表（含子评论嵌套）
+     * 将评论列表转换为 VO 列表（含多级子评论嵌套）
      */
     private List<CommentVO> convertToVOListWithChildren(List<Comment> comments, Long articleId) {
         if (CollectionUtils.isEmpty(comments)) {
             return Collections.emptyList();
         }
 
-        // 获取所有顶级评论ID
-        List<Long> parentIds = comments.stream().map(Comment::getId).collect(Collectors.toList());
-
-        // 查询所有子评论
-        LambdaQueryWrapper<Comment> childWrapper = new LambdaQueryWrapper<>();
-        childWrapper.eq(Comment::getArticleId, articleId)
-                .in(Comment::getParentId, parentIds)
+        // 查询该作品下所有非顶级评论（parentId != 0），支持多级嵌套
+        LambdaQueryWrapper<Comment> allChildWrapper = new LambdaQueryWrapper<>();
+        allChildWrapper.eq(Comment::getArticleId, articleId)
                 .ne(Comment::getParentId, 0L)
                 .eq(Comment::getStatus, CommentStatusEnum.NORMAL)
                 .orderByAsc(Comment::getCreatedAt);
-        List<Comment> allChildren = commentMapper.selectList(childWrapper);
+        List<Comment> allChildren = commentMapper.selectList(allChildWrapper);
 
         // 收集所有需要查询的用户ID
         List<Comment> allComments = new java.util.ArrayList<>(comments);
@@ -539,27 +535,35 @@ public class CommentServiceImpl implements CommentService {
             likedCommentIds = java.util.Collections.emptySet();
         }
 
-        // 按父评论ID分组子评论
+        // 按父评论ID分组所有子评论（支持多级）
         Map<Long, List<Comment>> childrenMap = allChildren.stream()
                 .collect(Collectors.groupingBy(Comment::getParentId));
 
-        // 转换顶级评论
+        // 转换顶级评论，递归构建多级树形结构
         return comments.stream().map(comment -> {
             CommentVO vo = buildCommentVO(comment, userMap);
             vo.setIsLiked(likedCommentIds.contains(comment.getId()));
-
-            // 设置子评论
-            List<Comment> children = childrenMap.getOrDefault(comment.getId(), Collections.emptyList());
-            List<CommentVO> childVOs = children.stream()
-                    .map(child -> {
-                        CommentVO childVo = buildCommentVO(child, userMap);
-                        childVo.setIsLiked(likedCommentIds.contains(child.getId()));
-                        return childVo;
-                    })
-                    .collect(Collectors.toList());
-            vo.setReplies(childVOs);
-
+            // 递归构建子评论树
+            vo.setReplies(buildReplyTree(comment.getId(), childrenMap, userMap, likedCommentIds));
             return vo;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 递归构建回复树（支持无限层级嵌套）
+     */
+    private List<CommentVO> buildReplyTree(Long parentId, Map<Long, List<Comment>> childrenMap,
+                                           Map<Long, User> userMap, java.util.Set<Long> likedCommentIds) {
+        List<Comment> children = childrenMap.getOrDefault(parentId, Collections.emptyList());
+        if (children.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return children.stream().map(child -> {
+            CommentVO childVo = buildCommentVO(child, userMap);
+            childVo.setIsLiked(likedCommentIds.contains(child.getId()));
+            // 递归构建子回复
+            childVo.setReplies(buildReplyTree(child.getId(), childrenMap, userMap, likedCommentIds));
+            return childVo;
         }).collect(Collectors.toList());
     }
 

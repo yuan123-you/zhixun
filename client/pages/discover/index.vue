@@ -226,7 +226,7 @@ const { refresh: refreshAll } = useRefresh({
   },
   debounceMs: 500,
   showError: true,
-  errorMessage: '刷新失败，请稍后重试',
+  errorMessage: '刷新失败，请检查网络后重试',
 })
 
 // 自动刷新定时器

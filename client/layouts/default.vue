@@ -1,6 +1,6 @@
 <template>
   <!-- 默认布局：顶部导航栏 + 主内容区 + 平板侧边栏 + 移动端底部Tab导航 -->
-  <div class="min-h-screen bg-[var(--color-bg)] dark:bg-gray-900">
+  <div class="flex flex-col min-h-screen bg-[var(--color-bg)] dark:bg-gray-900">
     <!-- 页面切换进度条 -->
     <NuxtLoadingIndicator color="#6366f1" :height="3" :throttle="200" />
 
@@ -103,7 +103,7 @@
 
     <!-- 主内容区 -->
     <main
-      class="pb-16 md:pb-0"
+      class="flex-1 pb-[3.5rem] md:pb-0"
       :class="mainTopPadding"
       style="transition: padding-left 0.3s ease;"
       :style="isTablet && isTabletSidebarOpen ? 'padding-left: 260px' : ''"

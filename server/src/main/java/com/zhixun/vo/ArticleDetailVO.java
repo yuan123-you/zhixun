@@ -65,6 +65,9 @@ public class ArticleDetailVO {
     /** 标签列表 */
     private List<TagVO> tags;
 
+    /** 作品图片URL列表 */
+    private List<String> images;
+
     /** 当前用户是否已点赞 */
     private Boolean isLiked;
 

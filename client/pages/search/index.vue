@@ -617,7 +617,7 @@ const doSearch = async (loadMore = false) => {
       articleResults.value = []
       userResults.value = []
       imageResults.value = []
-      searchError.value = '搜索失败，请稍后重试'
+      searchError.value = '搜索失败，请检查网络后重试'
     }
   } finally {
     loading.value = false
@@ -773,7 +773,7 @@ const toggleFollow = async (userId: number) => {
       user.followerCount = result.followerCount
     }
   } catch (error: any) {
-    console.error('关注操作失败:', error.message)
+    console.error('关注操作失败，请稍后重试')
   }
 }
 

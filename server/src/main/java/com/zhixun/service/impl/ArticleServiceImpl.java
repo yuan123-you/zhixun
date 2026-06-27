@@ -17,6 +17,7 @@ import com.zhixun.dto.article.ArticleStatusRequest;
 import com.zhixun.dto.article.ArticleUpdateRequest;
 import com.zhixun.dto.article.ArticleVisibilityRequest;
 import com.zhixun.entity.Article;
+import com.zhixun.entity.ArticleImage;
 import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.ArticleOperateLog;
 import com.zhixun.entity.ArticleTag;
@@ -28,6 +29,7 @@ import com.zhixun.entity.Tag;
 import com.zhixun.entity.User;
 import com.zhixun.enums.ArticleStatusEnum;
 import com.zhixun.enums.ArticleVisibilityEnum;
+import com.zhixun.enums.ImageTypeEnum;
 import com.zhixun.enums.LikeTargetTypeEnum;
 import com.zhixun.mapper.ArticleLikeMapper;
 import com.zhixun.mapper.ArticleMapper;
@@ -125,7 +127,9 @@ public class ArticleServiceImpl implements ArticleService {
     public Long createArticle(Long userId, ArticleCreateRequest request, String clientIp) {
         Article article = new Article();
         article.setAuthorId(userId);
-        article.setCategoryId(request.getCategoryId());
+        // 处理分类：优先使用 categoryId，其次根据 categoryName 查找或创建
+        Long categoryId = resolveCategoryId(request.getCategoryId(), request.getCategoryName());
+        article.setCategoryId(categoryId);
         article.setTitle(sanitize(request.getTitle()));
         // 先过滤敏感词，再做HTML白名单过滤
         String rawContent = request.getContent() != null ? request.getContent() : "";
@@ -141,7 +145,12 @@ public class ArticleServiceImpl implements ArticleService {
         }
         article.setContent(HtmlWhitelistFilter.filterRichText(filteredContent));
         article.setSummary(sanitize(request.getSummary()));
-        article.setCoverImage(request.getCoverImage());
+        // 封面图：优先使用传入的 coverImage，否则取第一张图片
+        String coverImage = request.getCoverImage();
+        if (coverImage == null && request.getImages() != null && !request.getImages().isEmpty()) {
+            coverImage = request.getImages().get(0);
+        }
+        article.setCoverImage(coverImage);
         article.setDeviceInfo(request.getDeviceInfo());
         article.setLocation(sanitize(request.getLocation()));
         article.setIpAddress(resolveIpLocation(clientIp));
@@ -152,7 +161,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setIsTop(0);
         article.setIsRecommend(0);
 
-        // 敏感词检测（异步，先保存为草稿或待审核状态）
+        // 敏感词检测
         boolean hasSensitiveWord;
         try {
             hasSensitiveWord = checkSensitiveWord(request.getTitle(), request.getContent());
@@ -160,20 +169,31 @@ public class ArticleServiceImpl implements ArticleService {
             log.error("敏感词检测异常: {}", e.getMessage());
             hasSensitiveWord = false;
         }
-        if (hasSensitiveWord) {
-            // 包含敏感词，设为待审核状态
-            article.setStatus(ArticleStatusEnum.PENDING);
-        } else {
-            // 无敏感词，默认设为草稿状态
-            article.setStatus(ArticleStatusEnum.DRAFT);
+
+        // 确定作品状态：根据用户意图（草稿/发布）和敏感词检测结果
+        boolean isPublishIntent = false;
+        Integer requestStatus = request.getStatus();
+        if (requestStatus != null) {
+            ArticleStatusEnum requestStatusEnum = ArticleStatusEnum.fromValue(requestStatus);
+            // status=1（PENDING）或 status=2（PUBLISHED）都表示用户想要发布
+            if (requestStatusEnum == ArticleStatusEnum.PENDING
+                    || requestStatusEnum == ArticleStatusEnum.PUBLISHED) {
+                isPublishIntent = true;
+            }
         }
 
-        // 处理请求中的状态
-        if (request.getStatus() != null) {
-            ArticleStatusEnum requestStatus = ArticleStatusEnum.fromValue(request.getStatus());
-            if (requestStatus == ArticleStatusEnum.DRAFT || requestStatus == ArticleStatusEnum.PENDING) {
-                article.setStatus(requestStatus);
-            }
+        if (isPublishIntent && !hasSensitiveWord) {
+            // 用户意图发布 且 无敏感词 → 直接发布
+            article.setStatus(ArticleStatusEnum.PUBLISHED);
+        } else if (isPublishIntent) {
+            // 用户意图发布 但 有敏感词 → 待审核
+            article.setStatus(ArticleStatusEnum.PENDING);
+        } else if (hasSensitiveWord) {
+            // 保存草稿但有敏感词 → 待审核
+            article.setStatus(ArticleStatusEnum.PENDING);
+        } else {
+            // 保存草稿且无敏感词 → 草稿
+            article.setStatus(ArticleStatusEnum.DRAFT);
         }
 
         // 处理定时发布
@@ -188,8 +208,8 @@ public class ArticleServiceImpl implements ArticleService {
             article.setVisibility(ArticleVisibilityEnum.PUBLIC.getValue());
         }
 
-        // 如果状态为已发布，设置发布时间
-        if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
+        // 如果状态为已发布且未设置定时发布时间，设置发布时间为当前
+        if (article.getStatus() == ArticleStatusEnum.PUBLISHED && article.getPublishAt() == null) {
             article.setPublishAt(LocalDateTime.now());
         }
 
@@ -201,8 +221,12 @@ public class ArticleServiceImpl implements ArticleService {
                 .eq(User::getId, userId)
                 .setSql("article_count = article_count + 1"));
 
-        // 处理标签关联
-        handleTags(article.getId(), request.getTagIds());
+        // 处理标签关联（支持 tagIds 和 tagNames）
+        List<Long> resolvedTagIds = resolveTagIds(request.getTagIds(), request.getTagNames());
+        handleTags(article.getId(), resolvedTagIds);
+
+        // 保存作品图片
+        saveArticleImages(article.getId(), request.getImages());
 
         // 同步到 OpenSearch（仅已发布状态才同步，非关键操作，失败不影响主事务）
         if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
@@ -393,6 +417,9 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 查询标签列表
         vo.setTags(getArticleTags(articleId));
+
+        // 查询作品图片
+        vo.setImages(getArticleImageUrls(articleId));
 
         // 获取 Redis 中的浏览量
         try {
@@ -1030,6 +1057,128 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
+     * 解析分类ID：优先使用 categoryId，其次根据 categoryName 查找或创建分类
+     */
+    private Long resolveCategoryId(Long categoryId, String categoryName) {
+        if (categoryId != null) {
+            return categoryId;
+        }
+        if (categoryName != null && !categoryName.trim().isEmpty()) {
+            String name = categoryName.trim();
+            // 查找已存在的分类
+            Category existing = categoryMapper.selectOne(
+                    new LambdaQueryWrapper<Category>().eq(Category::getName, name));
+            if (existing != null) {
+                return existing.getId();
+            }
+            // 创建新分类
+            Category newCategory = new Category();
+            newCategory.setName(name);
+            newCategory.setStatus(1);
+            newCategory.setSortOrder(0);
+            categoryMapper.insert(newCategory);
+            return newCategory.getId();
+        }
+        return null;
+    }
+
+    /**
+     * 解析标签ID列表：支持 tagIds 和 tagNames，根据名称查找或创建标签
+     */
+    private List<Long> resolveTagIds(List<Long> tagIds, List<String> tagNames) {
+        List<Long> result = new ArrayList<>();
+        if (tagIds != null) {
+            result.addAll(tagIds);
+        }
+        if (tagNames != null && !tagNames.isEmpty()) {
+            for (String name : tagNames) {
+                if (name == null || name.trim().isEmpty()) {
+                    continue;
+                }
+                String trimmedName = name.trim();
+                // 查找已存在的标签
+                Tag existing = tagMapper.selectOne(
+                        new LambdaQueryWrapper<Tag>().eq(Tag::getName, trimmedName));
+                if (existing != null) {
+                    if (!result.contains(existing.getId())) {
+                        result.add(existing.getId());
+                    }
+                } else {
+                    // 创建新标签
+                    Tag newTag = new Tag();
+                    newTag.setName(trimmedName);
+                    newTag.setArticleCount(0);
+                    tagMapper.insert(newTag);
+                    result.add(newTag.getId());
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 保存作品图片到 cms_article_image 表
+     */
+    private void saveArticleImages(Long articleId, List<String> imageUrls) {
+        if (CollectionUtils.isEmpty(imageUrls)) {
+            return;
+        }
+        // 先删除旧的图片记录
+        articleImageMapper.delete(new LambdaQueryWrapper<ArticleImage>().eq(ArticleImage::getArticleId, articleId));
+
+        int sortOrder = 0;
+        for (String url : imageUrls) {
+            if (url == null || url.trim().isEmpty()) {
+                continue;
+            }
+            ArticleImage image = new ArticleImage();
+            image.setArticleId(articleId);
+            image.setUrl(url.trim());
+            image.setType(ImageTypeEnum.CONTENT);
+            image.setSortOrder(sortOrder++);
+            articleImageMapper.insert(image);
+        }
+    }
+
+    /**
+     * 获取单个作品的图片URL列表
+     */
+    private List<String> getArticleImageUrls(Long articleId) {
+        List<ArticleImage> images = articleImageMapper.selectList(
+                new LambdaQueryWrapper<ArticleImage>()
+                        .eq(ArticleImage::getArticleId, articleId)
+                        .orderByAsc(ArticleImage::getSortOrder));
+        if (images.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return images.stream()
+                .map(ArticleImage::getUrl)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 批量获取作品图片URL列表
+     */
+    private Map<Long, List<String>> getBatchArticleImageUrls(List<Long> articleIds) {
+        Map<Long, List<String>> result = new HashMap<>();
+        if (CollectionUtils.isEmpty(articleIds)) {
+            return result;
+        }
+        try {
+            List<ArticleImage> allImages = articleImageMapper.selectList(
+                    new LambdaQueryWrapper<ArticleImage>()
+                            .in(ArticleImage::getArticleId, articleIds)
+                            .orderByAsc(ArticleImage::getSortOrder));
+            for (ArticleImage img : allImages) {
+                result.computeIfAbsent(img.getArticleId(), k -> new ArrayList<>()).add(img.getUrl());
+            }
+        } catch (Exception e) {
+            log.warn("批量查询作品图片失败: {}", e.getMessage());
+        }
+        return result;
+    }
+
+    /**
      * 获取作品的标签列表
      */
     private List<TagVO> getArticleTags(Long articleId) {
@@ -1096,6 +1245,9 @@ public class ArticleServiceImpl implements ArticleService {
         // 按作品ID分组标签
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getArticleId));
+
+        // 批量查询作品图片
+        Map<Long, List<String>> articleImageMap = getBatchArticleImageUrls(articleIds);
 
         // 批量查询 Redis 浏览量（multiGet 替代 N 次单独查询）
         Map<Long, Long> viewCountMap = batchGetViewCounts(articleIds);
@@ -1192,6 +1344,10 @@ public class ArticleServiceImpl implements ArticleService {
             } else {
                 vo.setTags(Collections.emptyList());
             }
+
+            // 设置图片列表
+            List<String> imageUrls = articleImageMap.get(article.getId());
+            vo.setImages(imageUrls != null ? imageUrls : Collections.emptyList());
 
             // 设置当前用户点赞/收藏状态
             vo.setIsLiked(likedArticleIds.contains(article.getId()));

@@ -21,8 +21,14 @@ public class ArticleCreateRequest {
     /** 分类ID */
     private Long categoryId;
 
+    /** 分类名称（当前端传入时为字符串，后端据此查找或创建分类） */
+    private String categoryName;
+
     /** 标签ID列表 */
     private List<Long> tagIds;
+
+    /** 标签名称列表（当前端传入标签名而非ID时使用） */
+    private List<String> tagNames;
 
     /** 摘要 */
     @Size(max = 500, message = "摘要最长500个字符")
@@ -35,7 +41,10 @@ public class ArticleCreateRequest {
     /** 封面图 */
     private String coverImage;
 
-    /** 作品状态：0-草稿，1-待审核 */
+    /** 作品中的图片URL列表 */
+    private List<String> images;
+
+    /** 作品状态：0-草稿，1-待审核/发布 */
     private Integer status;
 
     /** 可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己 */

@@ -192,7 +192,7 @@ const refreshGraphCaptcha = async () => {
     graphCaptchaKey.value = data.captchaKey
     graphCaptchaImage.value = data.image
   } catch (err: any) {
-    showAlert(err.message || '验证码获取失败')
+    showAlert(err.message || '验证码获取失败，请稍后重试')
   }
 }
 
@@ -234,7 +234,7 @@ const handleSendCode = async () => {
     // 发送成功后刷新图形验证码（验证码key已被后端消费），但不清空用户输入
     refreshGraphCaptcha()
   } catch (err: any) {
-    const errMsg = err.message || '验证码发送失败'
+    const errMsg = err.message || '验证码发送失败，请稍后重试'
     showAlert(errMsg)
     // 判断是否为图形验证码错误，仅此时清空图形验证码输入
     const isCaptchaError = errMsg.includes('图形验证码') || errMsg.includes('验证码错误') || errMsg.includes('验证码过期')

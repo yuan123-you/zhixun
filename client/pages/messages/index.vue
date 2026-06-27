@@ -41,7 +41,7 @@
           >
             <!-- 头像 + 在线状态 -->
             <div class="relative flex-shrink-0">
-              <UserAvatar :src="conv.user.avatar" :alt="conv.user.nickname" size="lg" />
+              <UserAvatar :src="conv.user?.avatar" :alt="conv.user?.nickname" size="lg" />
               <span
                 v-if="isUserOnline(conv.user.id)"
                 class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"
@@ -52,7 +52,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
                 <span class="font-medium text-sm text-slate-900 dark:text-white truncate">
-                  {{ conv.user.nickname }}
+                  {{ conv.user?.nickname }}
                 </span>
                 <span class="text-xs text-slate-400 dark:text-gray-500 flex-shrink-0 ml-2">
                   {{ formatRelativeTime(conv.lastMessage?.createdAt || conv.updatedAt) }}
@@ -185,6 +185,7 @@ const formatRelativeTime = (timeStr: string) => {
   if (!timeStr) return ''
   const now = Date.now()
   const time = new Date(timeStr).getTime()
+  if (isNaN(time)) return ''
   const diff = now - time
 
   if (diff < 60 * 1000) return '刚刚'

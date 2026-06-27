@@ -444,7 +444,7 @@ const handleCopyLink = async () => {
       linkCopied.value = false
     }, 2000)
   } else {
-    showToast(result.message || '复制失败')
+    showToast(result.message || '复制失败，请稍后重试')
   }
 }
 

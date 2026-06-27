@@ -69,7 +69,7 @@ export function useRefresh(options: RefreshOptions) {
       onSuccess?.()
       return true
     } catch (err: any) {
-      const msg = errorMessage || err.message || '刷新失败，请稍后重试'
+      const msg = errorMessage || err.message || '刷新失败，请检查网络后重试'
       error.value = msg
       onError?.(err instanceof Error ? err : new Error(msg))
 
