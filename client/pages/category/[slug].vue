@@ -1,18 +1,14 @@
 ﻿<template>
   <!-- 分类页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <div class="flex items-center gap-3 mb-6">
-      <button class="p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg" @click="navigateTo('/')">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
+    <div class="flex items-center gap-2 mb-1.5">
       <span class="w-3 h-3 rounded-full shrink-0" :class="categoryColor"></span>
-      <h1 class="text-2xl font-bold text-slate-900">{{ categoryLabel }}</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ categoryLabel }}</h1>
     </div>
+    <p class="text-gray-500 dark:text-gray-400 mb-1.5">浏览该分类下的精彩内容</p>
 
     <!-- 分类Tab -->
-    <div class="flex items-center space-x-2 mb-6">
+    <div class="flex items-center space-x-2 mb-3">
       <button
         v-for="tab in tabs"
         :key="tab.key"

@@ -18,7 +18,7 @@
       <aside
         v-if="isTablet"
         class="tablet-sidebar fixed left-0 bottom-0 w-[260px] z-40 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 overflow-y-auto transition-transform duration-300"
-        :class="[isTabletSidebarOpen ? 'translate-x-0' : '-translate-x-full', isBackButtonVisible ? 'top-12' : 'top-0', showHeader ? 'md:top-16' : 'md:top-0']"
+        :class="[isTabletSidebarOpen ? 'translate-x-0' : '-translate-x-full', isBackButtonVisible ? 'top-10' : 'top-0', showHeader ? 'md:top-16' : 'md:top-0']"
       >
         <div class="p-3 space-y-3">
           <!-- 侧边栏导航 -->
@@ -95,7 +95,7 @@
         <div
           v-if="isTablet && isTabletSidebarOpen"
           class="fixed inset-0 bg-black/30 z-39"
-          :class="[isBackButtonVisible ? 'top-12' : 'top-0', showHeader ? 'md:top-16' : 'md:top-0']"
+          :class="[isBackButtonVisible ? 'top-10' : 'top-0', showHeader ? 'md:top-16' : 'md:top-0']"
           @click="closeTabletSidebar"
         />
       </Transition>
@@ -181,15 +181,15 @@ const isBackButtonVisible = computed(() => {
 })
 
 // 主内容区顶部内边距：
-// - /user 页面：移动端 AppHeader(48) + 可选返回顶栏(48)，桌面端 AppHeader(64) 留空间；
+// - /user 页面：移动端 AppHeader(48) + 可选返回顶栏(40)，桌面端 AppHeader(64) 留空间；
 // - 其他页面：仅在全局返回按钮可见时为其顶栏留空间，桌面端贴顶
 const mainTopPadding = computed(() => {
   if (showHeader.value) {
-    // /user 页面：移动端 AppHeader 48px + 可选 BackButton 48px
-    return isBackButtonVisible.value ? 'pt-24 md:pt-16' : 'pt-12 md:pt-16'
+    // /user 页面：移动端 AppHeader 48px + 可选 BackButton 40px
+    return isBackButtonVisible.value ? 'pt-[5.5rem] md:pt-16' : 'pt-12 md:pt-16'
   }
-  // 其他页面：仅在返回按钮可见时为移动端顶栏留 48px 空间
-  if (isBackButtonVisible.value) return 'pt-12 md:pt-0'
+  // 其他页面：仅在返回按钮可见时为移动端顶栏留 40px 空间
+  if (isBackButtonVisible.value) return 'pt-10 md:pt-0'
   return ''
 })
 
@@ -223,5 +223,5 @@ watch(isLandscape, (val) => {
   if (isTablet.value && val) {
     isTabletSidebarOpen.value = true
   }
-}, { immediate: true })
+},   { immediate: true })
 </script>

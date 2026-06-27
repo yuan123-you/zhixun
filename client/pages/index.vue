@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto py-1.5">
     <PullToRefresh :on-refresh="() => handleRefresh()" :error="error || undefined">
     <div class="flex gap-6">
       <!-- 左侧主内容区 -->
@@ -249,10 +249,13 @@ const tabs = [
 ]
 
 // 初始Tab：SSR 时固定为 'recommend' 避免 hydration mismatch，
-// 客户端 onMounted 后再根据 localStorage 中保存的默认排序调整
+// 客户端 hydration 稳定后再根据 localStorage 中保存的默认排序调整
 const activeTab = ref('recommend')
 
 // 客户端挂载后同步用户本地设置的默认排序
+// 使用 requestIdleCallback 将 Tab 切换推迟到浏览器空闲时，
+// 此时所有 hydration 相关的 DOM 变化、CSS 过渡均已稳定，
+// pre-hydration 类也已被移除，避免切换时的内容闪烁和布局错乱。
 onMounted(() => {
   const tabMap: Record<string, string> = {
     latest: 'latest',
@@ -260,9 +263,17 @@ onMounted(() => {
   }
   const targetTab = tabMap[savedDefaultSort.value] || 'recommend'
   if (activeTab.value !== targetTab) {
-    activeTab.value = targetTab
-    // 主动触发对应 Tab 的数据加载
-    fetchArticles()
+    const switchAndFetch = () => {
+      activeTab.value = targetTab
+      fetchArticles()
+    }
+    // 优先使用 requestIdleCallback（浏览器空闲时才执行），
+    // 确保 hydration 完成、pre-hydration 已移除后再切换 Tab
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(switchAndFetch, { timeout: 800 })
+    } else {
+      setTimeout(switchAndFetch, 500)
+    }
   }
 })
 const articles = ref<Article[]>([])

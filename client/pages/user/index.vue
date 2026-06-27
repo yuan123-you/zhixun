@@ -1,6 +1,6 @@
 ﻿<template>
   <!-- 个人中心 - 抖音风格 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-0 md:px-2">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-0 md:px-1.5">
     <!-- 个人资料卡 - 抖音紧凑居中布局 -->
     <div class="pt-3 pb-2 px-3">
       <div class="flex flex-col items-center">
@@ -112,7 +112,7 @@
               <div class="flex items-start justify-end p-1 gap-1">
                 <select
                   :value="article.visibility ?? 0"
-                  class="text-[10px] border-0 rounded bg-white/90 text-slate-700 px-1 py-0.5 focus:outline-none cursor-pointer"
+                  class="text-[9px] border-0 rounded bg-white/90 text-slate-700 px-1 py-0 focus:outline-none cursor-pointer"
                   @click.stop
                   @change="handleVisibilityChange(article, Number(($event.target as HTMLSelectElement).value))"
                 >

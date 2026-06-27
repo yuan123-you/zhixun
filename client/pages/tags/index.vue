@@ -1,10 +1,11 @@
 ﻿<template>
   <!-- 标签聚合页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <h1 class="text-2xl font-bold text-slate-900 mb-3">标签</h1>
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">标签</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">探索热门标签，发现精彩内容</p>
 
     <!-- Tab切换：标签云 / 热门标签 / 已关注 -->
-    <div class="flex items-center space-x-2 mb-3">
+    <div class="flex items-center space-x-2 mb-2">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -128,13 +129,13 @@
       </div>
 
       <!-- 右侧栏（桌面端） -->
-      <aside class="hidden lg:block w-80 2xl:w-96 shrink-0 space-y-3">
+      <aside class="hidden lg:block w-80 2xl:w-96 shrink-0 space-y-2">
         <!-- 当前选中标签信息 -->
         <div v-if="selectedTag" class="card">
-          <div class="p-2 border-b border-slate-200">
+          <div class="p-1.5 border-b border-slate-200">
             <h3 class="font-semibold text-slate-900">{{ selectedTag.name }}</h3>
           </div>
-          <div class="p-2 space-y-2">
+          <div class="p-1.5 space-y-1.5">
             <div class="flex items-center justify-between text-sm">
               <span class="text-slate-500">作品数</span>
               <span class="font-medium text-slate-900">{{ selectedTag.articleCount }}</span>

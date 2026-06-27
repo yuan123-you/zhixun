@@ -3,8 +3,11 @@
   <div>
     <!-- 骨架屏加载状态 -->
     <template v-if="loading && articles.length === 0">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-        <LoadingSkeleton v-for="i in 6" :key="i" type="article" />
+      <div>
+        <template v-for="i in 6" :key="i">
+          <hr v-if="i > 1" class="border-slate-200 dark:border-gray-700" />
+          <LoadingSkeleton type="article" />
+        </template>
       </div>
     </template>
 
@@ -15,13 +18,17 @@
 
     <!-- 作品列表 -->
     <template v-else>
-      <!-- 平板端双列网格，移动端单列 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-        <ArticleCard v-for="article in articles" :key="article.id" :article="article" />
+      <!-- 单列全宽，使用 <hr> 分隔 -->
+      <div>
+        <template v-for="(article, index) in articles" :key="article.id">
+          <hr v-if="index > 0" class="border-slate-200 dark:border-gray-700" />
+          <ArticleCard :article="article" />
+        </template>
       </div>
 
       <!-- 加载更多骨架屏 -->
-      <div v-if="loading && articles.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2.5">
+      <div v-if="loading && articles.length > 0">
+        <hr class="border-slate-200 dark:border-gray-700" />
         <LoadingSkeleton v-for="i in 2" :key="'more-' + i" type="article" />
       </div>
 

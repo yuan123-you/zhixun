@@ -1,8 +1,9 @@
 <template>
   <!-- 我的粉丝列表 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <div class="flex items-center justify-between mb-3">
-      <h1 class="text-xl font-bold text-slate-900">我的粉丝</h1>
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">我的粉丝</h1>
+    <div class="flex items-center justify-between mt-1 mb-1.5">
+      <p class="text-gray-500 dark:text-gray-400">关注你的人</p>
       <span class="text-sm text-slate-500">共 {{ totalCount }} 人</span>
     </div>
     <ErrorRetry v-if="error && !users.length" :message="error" :on-retry="fetchFollowers" />
@@ -23,7 +24,7 @@
       <div
         v-for="user in users"
         :key="user.id"
-        class="card p-3 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow"
+        class="card p-2.5 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow"
         @click="navigateTo(`/user/${user.id}`)"
       >
         <div class="flex items-center gap-3 min-w-0">

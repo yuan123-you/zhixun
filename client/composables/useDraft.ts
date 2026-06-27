@@ -12,8 +12,10 @@ export interface ArticleDraft {
   categoryId?: number
   /** 标签ID列表 */
   tagIds: number[]
-  /** 封面图URL */
+  /** 封面图URL（已废弃，保留兼容） */
   coverImage?: string
+  /** 作品图片列表（最多9张） */
+  images?: string[]
   /** 保存时间 */
   savedAt: number
 }

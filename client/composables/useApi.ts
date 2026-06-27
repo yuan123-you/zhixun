@@ -248,11 +248,20 @@ export const useApi = () => {
             // Token过期，尝试刷新
             return handleTokenRefresh(error.response.config)
           case 403: {
-            // 认证相关接口返回403时，提示用户名或密码错误而非权限不足
+            // 认证相关接口返回403时，可能是CSRF校验、验证码失效等原因，提示更具体的信息
             const requestUrl = error.response.config?.url || ''
-            const isAuthEndpoint = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register')
-            const forbiddenMsg = isAuthEndpoint ? '用户名或密码错误' : '没有权限'
-            showForbiddenDialog(isAuthEndpoint ? '用户名或密码错误' : undefined)
+            const isAuthEndpoint = requestUrl.includes('/auth/login')
+                || requestUrl.includes('/auth/register')
+                || requestUrl.includes('/auth/refresh')
+                || requestUrl.includes('/auth/send-code')
+                || requestUrl.includes('/auth/graph-captcha')
+                || requestUrl.includes('/auth/forgot-password')
+                || requestUrl.includes('/auth/oauth')
+            // 发送验证码接口单独处理
+            const isSendCode = requestUrl.includes('/auth/send-code')
+            const forbiddenMsg = isSendCode ? '发送验证码失败，请重试'
+                : isAuthEndpoint ? '用户名或密码错误' : '没有权限'
+            showForbiddenDialog(isAuthEndpoint && !isSendCode ? '用户名或密码错误' : undefined)
             return Promise.reject(new Error(forbiddenMsg))
           }
           case 404:

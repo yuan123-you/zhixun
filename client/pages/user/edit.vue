@@ -1,6 +1,8 @@
 <template>
   <!-- 编辑资料页 -->
-  <div class="max-w-2xl mx-auto px-2 2xl:px-3 py-2">
+  <div class="max-w-2xl mx-auto px-1.5 2xl:px-2 py-1.5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">编辑资料</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">修改你的个人公开信息</p>
     <!-- 加载状态 -->
     <div v-if="pageLoading" class="flex items-center justify-center py-20">
       <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -8,7 +10,7 @@
 
     <template v-else>
     <!-- 头像 -->
-    <section class="card p-3 mb-3">
+    <section class="card p-2.5 mb-2">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '头像' }}</h2>
       <div class="flex items-center gap-4">
         <div class="relative group cursor-pointer shrink-0" @click="triggerAvatarUpload">
@@ -31,9 +33,9 @@
     </section>
 
     <!-- 基本信息 -->
-    <section class="card p-3 mb-3">
-      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '基本信息' }}</h2>
-      <div class="space-y-3">
+    <section class="card p-2.5 mb-2">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1.5">{{ '基本信息' }}</h2>
+      <div class="space-y-2.5">
         <!-- 昵称 -->
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '昵称' }}</label>
@@ -152,9 +154,9 @@
     </section>
 
     <!-- 账号安全（只读信息） -->
-    <section class="card p-3 mb-3">
-      <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ '账号信息（只读）' }}</h2>
-      <div class="space-y-3">
+    <section class="card p-2.5 mb-2">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1.5">{{ '账号信息（只读）' }}</h2>
+      <div class="space-y-2.5">
         <div>
           <label class="block text-sm font-medium text-slate-500 mb-1">{{ '用户名' }}</label>
           <p class="text-sm text-slate-700 bg-slate-50 px-3 py-2 rounded-lg">{{ userStore.userInfo?.username || '-' }}</p>

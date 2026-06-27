@@ -246,6 +246,32 @@
     font-size: 16px;
   }
 
+  /* 下拉选择框全局紧凑化 */
+  select {
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+  select option {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+  }
+  select.input {
+    height: auto;
+    min-height: 2rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    padding-left: 0.5rem;
+    padding-right: 1.25rem;
+  }
+  .dark select.input {
+    height: auto;
+    min-height: 2rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    padding-left: 0.5rem;
+    padding-right: 1.25rem;
+  }
+
   /* 标签样式 */
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
@@ -355,9 +381,9 @@
   /* 移动端紧凑行高 */
   p, li { line-height: 1.5; }
 
-  /* 移动端紧凑卡片内边距 - 左10px 右10px 上6px 下6px 确保各组件对齐 */
+  /* 移动端紧凑卡片内边距 - 左8px 右8px 上5px 下5px 确保各组件对齐 */
   .card {
-    padding: 0.375rem 0.625rem;
+    padding: 0.3125rem 0.5rem;
   }
 
   /* 移动端按钮紧凑化但保持可点击性 */
@@ -372,6 +398,16 @@
     height: 2.25rem;
     padding: 0.375rem 0.75rem;
     font-size: 16px; /* 保持16px防止iOS缩放 */
+  }
+
+  /* 移动端下拉框进一步紧凑化 */
+  select.input,
+  .dark select.input {
+    min-height: 1.625rem;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+    padding-left: 0.375rem;
+    padding-right: 1rem;
   }
 
   /* 移动端badge紧凑化 */
@@ -713,8 +749,9 @@
  * 产生过渡动画导致布局停留在中间帧。
  *
  * 由 server/plugins/pre-hydration.ts 在 SSR 阶段将 pre-hydration 写入 <html class="pre-hydration">；
- * 客户端水合完成且 useBreakpoints/color-mode 稳定后，由 plugins/hydration.client.ts
- * 在双 rAF + 50ms 延时后移除该类，恢复正常过渡效果。
+ * 客户端 hydration 后，由 plugins/hydration.client.ts 使用 MutationObserver 检测 DOM 稳定
+ * （连续 200ms 无 class/style/子节点变化），确认所有 onMounted 链、v-if/v-show 切换、
+ * color-mode 应用、Teleport 渲染等全部完成后，再移除该类恢复正常过渡效果。
  *
  * 这是解决"DevTools 检查元素时布局正常、正常浏览时错位"的关键修复：
  * DevTools 打开时会强制同步重排（reflow），将过渡"快进"到最终状态，

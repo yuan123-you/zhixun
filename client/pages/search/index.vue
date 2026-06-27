@@ -1,6 +1,6 @@
 ﻿<template>
   <!-- 搜索页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 md:px-2 2xl:px-3 py-1.5 md:py-2">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1 2xl:px-2 py-1">
     <!-- 搜索框（自动聚焦 + 自动搜索） -->
     <div class="mb-2 md:mb-3">
       <div class="flex items-center bg-white rounded-full px-2 md:px-3 py-1.5 md:py-2 shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
@@ -112,13 +112,13 @@
       <!-- 筛选栏（紧凑型） -->
       <div class="flex items-center flex-wrap gap-1 mb-1 md:mb-1.5">
         <!-- 分类筛选 -->
-        <select v-model="filterCategoryId" class="input py-0.5 text-[10px] md:text-xs w-auto min-w-[72px] max-w-[90px] rounded" @change="doSearch()">
+        <select v-model="filterCategoryId" class="input text-[10px] w-auto min-w-[60px] max-w-[75px] rounded" @change="doSearch()">
           <option :value="undefined">全部分类</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
 
         <!-- 时间范围筛选 -->
-        <select v-model="filterTimeRange" class="input py-0.5 text-[10px] md:text-xs w-auto min-w-[72px] max-w-[90px] rounded" @change="doSearch()">
+        <select v-model="filterTimeRange" class="input text-[10px] w-auto min-w-[60px] max-w-[75px] rounded" @change="doSearch()">
           <option :value="undefined">全部时间</option>
           <option value="24h">24小时</option>
           <option value="7d">7天</option>
@@ -126,7 +126,7 @@
         </select>
 
         <!-- 排序 -->
-        <select v-model="sortBy" class="input py-0.5 text-[10px] md:text-xs w-auto min-w-[64px] max-w-[80px] rounded" @change="doSearch()">
+        <select v-model="sortBy" class="input text-[10px] w-auto min-w-[54px] max-w-[68px] rounded" @change="doSearch()">
           <option value="relevance">相关度</option>
           <option value="latest">最新</option>
           <option value="popular">最热</option>

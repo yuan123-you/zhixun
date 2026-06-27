@@ -1,9 +1,10 @@
 <template>
-  <div class="max-w-[800px] mx-auto px-3 py-4">
+  <div class="max-w-[800px] mx-auto px-1.5 py-1.5">
     <!-- 群组广场 -->
     <!-- 顶部标题和创建 -->
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white">群组广场</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">群组广场</h1>
+    <div class="flex items-center justify-between mt-1 mb-1.5">
+      <p class="text-gray-500 dark:text-gray-400">加入群组，与志同道合的人交流</p>
       <ClientOnly>
         <button
           v-if="userStore.isLoggedIn"
@@ -19,7 +20,7 @@
     </div>
 
     <!-- 搜索栏 -->
-    <div class="relative mb-4">
+    <div class="relative mb-3">
       <input
         v-model="searchKeyword"
         type="text"

@@ -65,6 +65,8 @@ public class FollowController {
         vo.setNickname(user.getNickname());
         vo.setAvatar(user.getAvatar());
         vo.setBio(user.getBio());
+        vo.setGender(user.getGender());
+        vo.setShowGenderOnProfile(user.getShowGenderOnProfile() != null && user.getShowGenderOnProfile() == 1);
         vo.setProvince(user.getProvince());
         vo.setIpLocation(user.getIpLocation());
         vo.setRole(user.getRole() != null ? user.getRole().name() : null);

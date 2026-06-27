@@ -21,6 +21,8 @@ export interface Article {
   content: string
   summary: string
   coverImage: string
+  /** 作品图片列表（最多9张） */
+  images?: string[]
   categoryId: number
   categoryName: string
   tags: Tag[]

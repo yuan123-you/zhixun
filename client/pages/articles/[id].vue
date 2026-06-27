@@ -1,6 +1,6 @@
 ﻿<template>
   <!-- 作品详情页 -->
-  <div class="max-w-[800px] md:max-w-[900px] 2xl:max-w-[1200px] mx-auto px-2 2xl:px-3 py-2">
+  <div class="max-w-[800px] md:max-w-[900px] 2xl:max-w-[1200px] mx-auto px-1.5 2xl:px-2 py-1.5">
     <!-- 加载状态 -->
     <LoadingSkeleton v-if="pending" type="article" />
 
@@ -56,14 +56,23 @@
         </ClientOnly>
       </div>
 
-      <!-- 封面图 -->
-      <div v-if="article.coverImage" class="mb-3 rounded-lg overflow-hidden cursor-pointer" @click="openImageZoom(resolveUrl(article.coverImage) || '', article.title)">
-        <img :src="resolveUrl(article.coverImage) || ''" :alt="article.title" class="w-full max-h-96 object-cover" />
-      </div>
-
       <!-- 作品内容（富文本渲染） -->
       <div class="relative">
         <div ref="contentRef" class="prose prose-slate max-w-none mb-4" v-html="article.content" @click="handleContentClick"></div>
+      </div>
+
+      <!-- 图片网格（最多9张，3列正方形，无间距，撑满屏幕） -->
+      <div v-if="article.images?.length" class="mb-4 -mx-1.5 md:-mx-0">
+        <div class="grid grid-cols-3 gap-0 w-full">
+          <div
+            v-for="(img, idx) in article.images.slice(0, 9)"
+            :key="idx"
+            class="aspect-square overflow-hidden cursor-pointer"
+            @click="openImageZoom(resolveUrl(img) || img, article.title)"
+          >
+            <img :src="resolveUrl(img) || img" alt="" class="w-full h-full object-cover" />
+          </div>
+        </div>
       </div>
 
       <!-- 标签 -->

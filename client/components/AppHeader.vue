@@ -1,6 +1,6 @@
 <template>
   <!-- 顶部导航栏（移动端下移至全局返回顶栏下方） -->
-  <header class="fixed top-12 md:top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-slate-200/60 dark:border-gray-700/60 shadow-[var(--shadow-sm)]">
+  <header class="fixed top-10 md:top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-slate-200/60 dark:border-gray-700/60 shadow-[var(--shadow-sm)]">
     <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-6 h-12 md:h-16 flex items-center justify-between gap-2">
       <!-- 左侧：品牌名（返回按钮已由全局 BackButton 组件统一提供） -->
       <div class="flex items-center gap-2 shrink-0">

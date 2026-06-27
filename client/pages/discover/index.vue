@@ -1,33 +1,34 @@
 <template>
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
     <!-- 发现页 -->
-
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">发现</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">发现热门内容</p>
 
     <PullToRefresh :on-refresh="() => refreshAll()" :error="usersError || rankError || tagsError">
       <!-- 热榜 -->
-      <section class="mb-2">
-        <div class="flex items-center justify-between mb-2">
+      <section class="mb-1.5">
+        <div class="flex items-center justify-between mb-1.5">
           <div class="flex items-center gap-2">
             <h2 class="text-lg font-semibold text-slate-900">{{ '热榜' }}</h2>
             <span v-if="rankUpdateTime" class="text-xs text-gray-400">{{ rankUpdateTime }}</span>
           </div>
           <NuxtLink to="/rank" class="text-sm text-primary hover:text-primary-600 transition-colors">查看全部</NuxtLink>
         </div>
-        <div v-if="rankLoading" class="space-y-2">
-          <div v-for="i in 5" :key="i" class="card px-2 py-2 flex items-center space-x-2 animate-pulse">
-            <div class="w-7 h-7 rounded-full bg-slate-200 shrink-0"></div>
+        <div v-if="rankLoading" class="space-y-1.5">
+          <div v-for="i in 5" :key="i" class="card px-2 py-1.5 flex items-center space-x-2 animate-pulse">
+            <div class="w-6 h-6 rounded-full bg-slate-200 shrink-0"></div>
             <div class="flex-1 h-4 bg-slate-200 rounded"></div>
           </div>
         </div>
         <ErrorRetry v-else-if="rankError" :message="rankError" :on-retry="fetchHotRank" />
-        <div v-else-if="hotRankItems.length > 0" class="space-y-1.5">
+        <div v-else-if="hotRankItems.length > 0" class="space-y-1">
           <div
             v-for="(item, index) in hotRankItems"
             :key="item.id"
-            class="card px-2 py-2 flex items-center gap-2 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer"
+            class="card px-2 py-1.5 flex items-center gap-2 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer"
             @click="navigateTo(`/articles/${item.id}`)"
           >
-            <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-xs" :class="getRankClass(index)">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-xs" :class="getRankClass(index)">
               {{ index + 1 }}
             </div>
             <div class="flex-1 min-w-0 overflow-hidden">
@@ -45,8 +46,8 @@
       </section>
 
       <!-- 热门标签 -->
-      <section class="mb-2">
-        <div class="flex items-center justify-between mb-2">
+      <section class="mb-1.5">
+        <div class="flex items-center justify-between mb-1.5">
           <div class="flex items-center gap-2">
             <h2 class="text-lg font-semibold text-slate-900">{{ '热门标签' }}</h2>
             <span v-if="tagsUpdateTime" class="text-xs text-gray-400">{{ tagsUpdateTime }}</span>
@@ -70,8 +71,8 @@
       </section>
 
       <!-- 推荐用户 -->
-      <section class="mb-2">
-        <div class="flex items-center justify-between mb-2">
+      <section class="mb-1.5">
+        <div class="flex items-center justify-between mb-1.5">
           <div class="flex items-center gap-2">
             <h2 class="text-lg font-semibold text-slate-900">{{ '推荐关注' }}</h2>
             <span v-if="usersUpdateTime" class="text-xs text-gray-400">{{ usersUpdateTime }}</span>

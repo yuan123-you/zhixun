@@ -7,7 +7,7 @@
       :class="{ 'hidden md:flex': activeConversation && isDesktop }"
     >
       <!-- 标题栏 -->
-      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 dark:border-gray-700/60">
+      <div class="flex items-center justify-between px-3 py-2.5 border-b border-slate-200/60 dark:border-gray-700/60">
         <h1 class="text-lg font-bold text-slate-900 dark:text-white">私信</h1>
         <span v-if="unreadTotal > 0" class="badge-primary text-xs px-2 py-0.5 rounded-full">
           {{ unreadTotal > 99 ? '99+' : unreadTotal }} 条未读
@@ -204,13 +204,13 @@ const formatRelativeTime = (timeStr: string) => {
 
 <style scoped>
 .messages-page {
-  margin: -3rem 0 -4rem 0;
+  margin: -2.5rem 0 -4rem 0;
   height: 100vh;
 }
 
 @media (min-width: 768px) {
   .messages-page {
-    margin: -4rem 0 0 0;
+    margin: -2.5rem 0 0 0;
   }
 }
 

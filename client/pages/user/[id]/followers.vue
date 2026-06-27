@@ -1,13 +1,9 @@
 <template>
   <!-- 粉丝列表 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <div class="flex items-center justify-between mb-3">
-      <div class="flex items-center gap-2">
-        <button class="text-slate-500 hover:text-primary transition-colors" @click="goBack">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        </button>
-        <h1 class="text-xl font-bold text-slate-900">{{ isOwn ? '我' : userName }}的粉丝</h1>
-      </div>
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ isOwn ? '我' : userName }}的粉丝</h1>
+    <div class="flex items-center justify-between mt-1 mb-1.5">
+      <p class="text-gray-500 dark:text-gray-400">{{ isOwn ? '你' : userName }}的粉丝</p>
       <span class="text-sm text-slate-500">共 {{ totalCount }} 人</span>
     </div>
     <ErrorRetry v-if="error && !users.length" :message="error" :on-retry="fetchList" />
@@ -38,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-const route = useRoute(); const router = useRouter(); const userStore = useUserStore()
+const route = useRoute(); const userStore = useUserStore()
 const targetId = computed(() => Number(route.params.id))
 const isOwn = computed(() => userStore.userInfo?.id === targetId.value)
 const userName = ref('')
@@ -46,8 +42,6 @@ const userName = ref('')
 interface FollowItem { id: number; nickname: string; avatar: string; bio?: string; isFollowing?: boolean; isMutualFollow?: boolean }
 const users = ref<FollowItem[]>([]); const loading = ref(false); const hasMore = ref(true)
 const error = ref<string | null>(null); const page = ref(1); const totalCount = ref(0); const loadingIds = ref<Record<number, boolean>>({})
-
-const goBack = () => { if (window.history.length > 1) router.back(); else navigateTo('/') }
 
 const fetchList = async () => {
   if (loading.value) return

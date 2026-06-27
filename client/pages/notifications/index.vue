@@ -6,7 +6,7 @@
       <button
         v-for="tab in mainTabs"
         :key="tab.key"
-        class="flex-1 py-3 text-sm font-medium text-center transition-colors relative"
+        class="flex-1 py-2.5 text-sm font-medium text-center transition-colors relative"
         :class="activeMainTab === tab.key ? 'text-primary' : 'text-slate-500 hover:text-slate-700'"
         @click="switchMainTab(tab.key)"
       >

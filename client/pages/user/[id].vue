@@ -1,6 +1,6 @@
 <template>
   <!-- 用户主页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-0 md:px-2 2xl:px-3 py-2">
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-0 md:px-1.5 2xl:px-2 py-1.5">
 
     <!-- 用户资料卡 — 抖音风格居中布局 -->
     <div v-if="userInfo" class="pt-3 pb-2 px-3">
@@ -302,7 +302,10 @@ const retryProfile = async () => {
 }
 
 onMounted(() => {
-  fetchOnlineStatus()
+  // 仅当已登录时才获取在线状态（该接口需要认证）
+  if (userStore.isLoggedIn) {
+    fetchOnlineStatus()
+  }
 })
 
 useHead({

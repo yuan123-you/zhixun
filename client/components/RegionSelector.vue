@@ -1,28 +1,28 @@
 <template>
   <!-- 省市区多级联动选择器 -->
   <div class="region-selector" ref="rootRef">
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-1">
       <!-- 省份选择 -->
       <div class="relative" ref="provinceRef">
         <button
-          class="flex items-center gap-1 px-3 py-2 text-sm border border-slate-300 rounded-lg hover:border-primary transition-colors bg-white min-w-[100px]"
+          class="flex items-center gap-0.5 px-2 py-1 text-xs border border-slate-300 rounded hover:border-primary transition-colors bg-white min-w-[70px]"
           :class="provinceLabel ? 'text-slate-700' : 'text-slate-400'"
           @click="toggleDropdown('province')"
         >
-          <span class="truncate max-w-[120px]">{{ provinceLabel || '请选择省份' }}</span>
-          <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" :class="{ 'rotate-180': openDropdown === 'province' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span class="truncate max-w-[90px]">{{ provinceLabel || '请选择省份' }}</span>
+          <svg class="w-3 h-3 text-slate-400 shrink-0" :class="{ 'rotate-180': openDropdown === 'province' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         <!-- 省份下拉 -->
         <div
           v-if="openDropdown === 'province'"
-          class="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto min-w-[180px]"
+          class="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-44 overflow-y-auto min-w-[140px]"
         >
           <button
             v-for="p in provinces"
             :key="p.value"
-            class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors"
+            class="w-full text-left px-2 py-1 text-xs hover:bg-primary-50 transition-colors"
             :class="selectedProvince === p.value ? 'bg-primary-50 text-primary font-medium' : 'text-slate-700'"
             @click="selectProvince(p)"
           >
@@ -34,24 +34,24 @@
       <!-- 城市选择 -->
       <div class="relative" v-if="currentCities.length > 0" ref="cityRef">
         <button
-          class="flex items-center gap-1 px-3 py-2 text-sm border border-slate-300 rounded-lg hover:border-primary transition-colors bg-white min-w-[100px]"
+          class="flex items-center gap-0.5 px-2 py-1 text-xs border border-slate-300 rounded hover:border-primary transition-colors bg-white min-w-[70px]"
           :class="cityLabel ? 'text-slate-700' : 'text-slate-400'"
           @click="toggleDropdown('city')"
         >
-          <span class="truncate max-w-[120px]">{{ cityLabel || '请选择城市' }}</span>
-          <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" :class="{ 'rotate-180': openDropdown === 'city' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span class="truncate max-w-[90px]">{{ cityLabel || '请选择城市' }}</span>
+          <svg class="w-3 h-3 text-slate-400 shrink-0" :class="{ 'rotate-180': openDropdown === 'city' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         <!-- 城市下拉 -->
         <div
           v-if="openDropdown === 'city'"
-          class="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto min-w-[180px]"
+          class="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-44 overflow-y-auto min-w-[140px]"
         >
           <button
             v-for="c in currentCities"
             :key="c.value"
-            class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors"
+            class="w-full text-left px-2 py-1 text-xs hover:bg-primary-50 transition-colors"
             :class="selectedCity === c.value ? 'bg-primary-50 text-primary font-medium' : 'text-slate-700'"
             @click="selectCity(c)"
           >
@@ -63,24 +63,24 @@
       <!-- 区/县选择 -->
       <div class="relative" v-if="currentDistricts.length > 0" ref="districtRef">
         <button
-          class="flex items-center gap-1 px-3 py-2 text-sm border border-slate-300 rounded-lg hover:border-primary transition-colors bg-white min-w-[100px]"
+          class="flex items-center gap-0.5 px-2 py-1 text-xs border border-slate-300 rounded hover:border-primary transition-colors bg-white min-w-[70px]"
           :class="districtLabel ? 'text-slate-700' : 'text-slate-400'"
           @click="toggleDropdown('district')"
         >
-          <span class="truncate max-w-[120px]">{{ districtLabel || '请选择区县' }}</span>
-          <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" :class="{ 'rotate-180': openDropdown === 'district' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span class="truncate max-w-[90px]">{{ districtLabel || '请选择区县' }}</span>
+          <svg class="w-3 h-3 text-slate-400 shrink-0" :class="{ 'rotate-180': openDropdown === 'district' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         <!-- 区县下拉 -->
         <div
           v-if="openDropdown === 'district'"
-          class="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto min-w-[180px]"
+          class="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-44 overflow-y-auto min-w-[140px]"
         >
           <button
             v-for="d in currentDistricts"
             :key="d.value"
-            class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors"
+            class="w-full text-left px-2 py-1 text-xs hover:bg-primary-50 transition-colors"
             :class="selectedDistrict === d.value ? 'bg-primary-50 text-primary font-medium' : 'text-slate-700'"
             @click="selectDistrict(d)"
           >
@@ -92,12 +92,12 @@
       <!-- 自动定位按钮 -->
       <button
         v-if="showAutoLocate"
-        class="flex items-center gap-1 px-3 py-2 text-sm text-primary border border-primary rounded-lg hover:bg-primary-50 transition-colors shrink-0"
+        class="flex items-center gap-0.5 px-2 py-1 text-xs text-primary border border-primary rounded hover:bg-primary-50 transition-colors shrink-0"
         :disabled="locating"
         title="自动获取位置"
         @click="$emit('autoLocate')"
       >
-        <svg class="w-4 h-4" :class="{ 'animate-spin': locating }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-3 h-3" :class="{ 'animate-spin': locating }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
@@ -106,15 +106,15 @@
     </div>
 
     <!-- 选中的位置预览 -->
-    <div v-if="displayText" class="mt-2 flex items-center gap-2">
-      <span class="text-sm text-slate-600 bg-slate-50 px-2.5 py-1 rounded">
-        <svg class="w-3.5 h-3.5 inline-block mr-1 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div v-if="displayText" class="mt-1.5 flex items-center gap-1.5">
+      <span class="text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded">
+        <svg class="w-3 h-3 inline-block mr-0.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
         {{ displayText }}
       </span>
-      <button v-if="displayText" class="text-xs text-slate-400 hover:text-red-400 transition-colors" @click="clearAll">× 清除</button>
+      <button v-if="displayText" class="text-[10px] text-slate-400 hover:text-red-400 transition-colors" @click="clearAll">× 清除</button>
     </div>
   </div>
 </template>

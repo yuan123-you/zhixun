@@ -1,14 +1,14 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-4xl mx-auto px-4 py-6">
+    <div class="max-w-4xl mx-auto px-2 py-2">
       <!-- Header -->
-      <div class="mb-6">
+      <div class="mb-2">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">话题广场</h1>
         <p class="text-gray-500 dark:text-gray-400 mt-1">发现热门话题，参与讨论</p>
       </div>
 
       <!-- Search -->
-      <div class="mb-6">
+      <div class="mb-3">
         <div class="relative">
           <input v-model="keyword" @input="onSearch" placeholder="搜索话题..."
             class="w-full px-4 py-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />

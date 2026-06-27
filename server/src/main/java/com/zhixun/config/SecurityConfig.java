@@ -39,17 +39,10 @@ public class SecurityConfig implements WebMvcConfigurer {
     private final DataPermissionInterceptor dataPermissionInterceptor;
 
     /**
-     * 放行的公开接口
-     * 注意：Spring Security requestMatchers 匹配的是 servletPath（不含 context-path）
+     * 放行的公开静态/工具接口
+     * 注意：认证接口已使用显式 HTTP 方法匹配，防止框架版本差异导致 403
      */
     private static final String[] PUBLIC_URLS = {
-            // 认证相关
-            "/v1/auth/login",
-            "/v1/auth/register",
-            "/v1/auth/refresh",
-            "/v1/auth/send-code",
-            "/v1/auth/graph-captcha",
-            "/v1/auth/forgot-password",
             // Swagger / Knife4j
             "/doc.html",
             "/swagger-ui/**",
@@ -86,8 +79,21 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .authorizeHttpRequests(auth -> auth
                         // 预检请求放行
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // 公开接口放行
-                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        // 认证相关 POST 接口放行（显式声明 HTTP 方法，防止框架歧义）
+                        .requestMatchers(HttpMethod.POST, "/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/auth/send-code").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/v1/auth/forgot-password").permitAll()
+                        // 认证相关 GET 接口放行
+                        .requestMatchers(HttpMethod.GET, "/v1/auth/graph-captcha").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/auth/oauth/url").permitAll()
+                        // OAuth 公开接口
+                        .requestMatchers(HttpMethod.POST, "/v1/auth/oauth/login").permitAll()
+                        // 公开静态资源/Swagger/WebSocket 放行
+                        .requestMatchers("/doc.html", "/swagger-ui/**", "/swagger-resources/**",
+                                "/v3/api-docs/**", "/webjars/**", "/ws/**", "/static/**",
+                                "/uploads/**", "/favicon.ico", "/actuator/**").permitAll()
                         // 作品列表和详情（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/articles", "/v1/articles/**").permitAll()
                         // 分类列表和分类树（公开）

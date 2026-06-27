@@ -1,16 +1,11 @@
 ﻿<template>
   <!-- 作品编辑器 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <!-- 标题输入 -->
-    <input
-      v-model="form.title"
-      type="text"
-      class="input text-2xl font-bold mb-3"
-      placeholder="请输入作品标题..."
-    />
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">创作</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">发布你的作品，分享精彩内容</p>
 
     <!-- 摘要输入 -->
-    <div class="mb-3">
+    <div class="mb-2">
       <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '摘要' }}</label>
       <textarea
         v-model="form.summary"
@@ -43,7 +38,7 @@
     </div>
 
     <!-- 编辑器区域：桌面端双栏，移动端Tab切换 -->
-    <div class="mb-3">
+    <div class="mb-2">
       <div class="border border-slate-300 rounded-lg overflow-hidden">
         <!-- 工具栏 -->
         <div class="flex items-center gap-0.5 p-2 bg-slate-50 border-b border-slate-300 flex-wrap">
@@ -59,9 +54,11 @@
           <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="链接" @click="insertMarkdown('[', '](url)')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
           </button>
-          <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="图片" @click="insertMarkdown('![alt](', ')')">
+          <!-- 图片上传按钮（替换原来的图片标记语法按钮） -->
+          <label class="p-2 text-slate-600 hover:bg-slate-200 rounded cursor-pointer" title="上传图片">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          </button>
+            <input type="file" accept="image/*" class="hidden" @change="handleEditorImageUpload" />
+          </label>
           <button class="p-2 text-slate-600 hover:bg-slate-200 rounded" title="代码" @click="insertMarkdown('`', '`')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
           </button>
@@ -78,6 +75,30 @@
           <button class="px-2 py-1.5 text-xs text-orange-600 hover:bg-orange-50 rounded transition font-medium" :disabled="aiLoading" @click="handleAIWrite('review')" title="AI 审核">审核</button>
         </div>
 
+        <!-- 已上传图片缩略图列表 -->
+        <div v-if="form.images.length > 0" class="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
+          <div
+            v-for="(img, idx) in form.images"
+            :key="idx"
+            class="relative w-14 h-14 shrink-0 rounded overflow-hidden border border-slate-300 group cursor-pointer"
+            @click="insertImageAtCursor(img)"
+            title="点击插入到正文"
+          >
+            <img :src="resolveUrl(img) || img" alt="" class="w-full h-full object-cover" />
+            <button
+              class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              @click.stop="removeImage(idx)"
+            >×</button>
+          </div>
+          <label
+            v-if="form.images.length < 9"
+            class="w-14 h-14 shrink-0 border-2 border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary cursor-pointer transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            <input type="file" accept="image/*" class="hidden" @change="handleEditorImageUpload" />
+          </label>
+        </div>
+
         <!-- 桌面端：双栏布局 -->
         <div class="hidden md:flex">
           <!-- 左侧编辑区 -->
@@ -85,42 +106,94 @@
             <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-medium">
               {{ '编辑' }}
             </div>
-            <MentionInput
-              ref="editorRef"
-              v-model="form.content"
-              placeholder="开始写作..."
-              :rows="18"
-              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
-            />
+            <!-- 标题和正文合并区域 -->
+            <div class="flex flex-col">
+              <input
+                v-model="form.title"
+                type="text"
+                class="w-full px-4 pt-3 pb-2 text-2xl font-bold text-slate-900 bg-white outline-none placeholder:text-gray-300 border-b border-slate-100"
+                placeholder="请输入作品标题..."
+                maxlength="50"
+              />
+              <div class="flex items-center justify-between px-4 py-0.5 bg-white">
+                <span class="text-xs text-gray-400">{{ form.title.length }}/50</span>
+              </div>
+              <MentionInput
+                ref="editorRef"
+                v-model="form.content"
+                placeholder="开始写作..."
+                :rows="18"
+                class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
+              />
+            </div>
           </div>
           <!-- 右侧预览区 -->
           <div class="w-1/2">
             <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-medium">
               预览
             </div>
-            <div
-              class="min-h-[400px] p-4 bg-white prose max-w-none overflow-auto text-sm"
-              v-html="renderedContent"
-            ></div>
+            <div class="min-h-[400px] p-4 bg-white overflow-auto text-sm">
+              <!-- 预览标题 -->
+              <h1 v-if="form.title.trim()" class="text-2xl font-bold text-slate-900 mb-3">{{ form.title }}</h1>
+              <!-- 预览正文 -->
+              <div class="prose max-w-none" v-html="renderedContent"></div>
+              <!-- 图片网格 -->
+              <div v-if="form.images.length > 0" class="mt-3">
+                <div class="grid grid-cols-3 gap-0 w-full">
+                  <div
+                    v-for="(img, idx) in form.images"
+                    :key="idx"
+                    class="aspect-square overflow-hidden"
+                  >
+                    <img :src="resolveUrl(img) || img" alt="" class="w-full h-full object-cover" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- 移动端/平板端：Tab切换 -->
         <div class="md:hidden">
           <div v-show="activeTab === 'edit'">
-            <MentionInput
-              ref="editorRef"
-              v-model="form.content"
-              placeholder="开始写作..."
-              :rows="18"
-              class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
-            />
+            <!-- 标题和正文合并区域 -->
+            <div class="flex flex-col">
+              <input
+                v-model="form.title"
+                type="text"
+                class="w-full px-4 pt-3 pb-2 text-xl font-bold text-slate-900 bg-white outline-none placeholder:text-gray-300 border-b border-slate-100"
+                placeholder="请输入作品标题..."
+                maxlength="50"
+              />
+              <div class="flex items-center justify-between px-4 py-0.5 bg-white">
+                <span class="text-xs text-gray-400">{{ form.title.length }}/50</span>
+              </div>
+              <MentionInput
+                ref="editorRefMobile"
+                v-model="form.content"
+                placeholder="开始写作..."
+                :rows="18"
+                class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
+              />
+            </div>
           </div>
           <div v-show="activeTab === 'preview'">
-            <div
-              class="min-h-[400px] p-4 bg-white prose max-w-none overflow-auto text-sm"
-              v-html="renderedContent"
-            ></div>
+            <div class="min-h-[400px] p-4 bg-white overflow-auto text-sm">
+              <h1 v-if="form.title.trim()" class="text-2xl font-bold text-slate-900 mb-3">{{ form.title }}</h1>
+              <div class="prose max-w-none" v-html="renderedContent"></div>
+              <!-- 图片网格 -->
+              <div v-if="form.images.length > 0" class="mt-3">
+                <div class="grid grid-cols-3 gap-0 w-full">
+                  <div
+                    v-for="(img, idx) in form.images"
+                    :key="idx"
+                    class="aspect-square overflow-hidden"
+                  >
+                    <img :src="resolveUrl(img) || img" alt="" class="w-full h-full object-cover" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -131,7 +204,7 @@
       <!-- 分类选择 -->
       <div>
         <label class="block text-xs md:text-sm font-medium text-slate-700 mb-1">{{ '分类' }}</label>
-        <select v-model="form.categoryId" class="input !h-9 !text-sm !px-3">
+        <select v-model="form.categoryId" class="input !h-8 !text-xs !px-2">
           <option value="">{{ '请选择分类' }}</option>
           <option v-for="category in categories" :key="category.id" :value="category.id">
             {{ category.name }}
@@ -171,21 +244,6 @@
         @change="onRegionChange"
         @auto-locate="autoLocate"
       />
-    </div>
-
-    <!-- 封面图上传 -->
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ '封面图' }}</label>
-      <div class="flex items-center space-x-3">
-        <div v-if="form.coverImage" class="relative w-40 h-28 rounded-lg overflow-hidden">
-          <img :src="resolveUrl(form.coverImage) || ''" alt="封面" class="w-full h-full object-cover" />
-          <button class="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center text-xs" @click="form.coverImage = ''">×</button>
-        </div>
-        <label class="btn-secondary cursor-pointer">
-          <span>{{ '选择图片' }}</span>
-          <input type="file" accept="image/*" class="hidden" @change="handleCoverUpload" />
-        </label>
-      </div>
     </div>
 
     <!-- 操作按钮 -->
@@ -239,14 +297,16 @@ const form = reactive({
   summary: '',
   categoryId: '',
   tags: [] as string[],
-  coverImage: '',
+  images: [] as string[],
   location: '',
 })
 
 const tagInput = ref('')
 const categories = ref<Category[]>([])
 const editorRef = ref<any>(null)
+const editorRefMobile = ref<any>(null)
 const locating = ref(false)
+const imageUploading = ref(false)
 
 // 自动定位
 const scheduledPublish = ref(false)
@@ -309,7 +369,6 @@ function renderMarkdown(text: string): string {
 
   // 图片
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_full: string, alt: string, src: string) => {
-    // 防止 javascript: URL 注入
     if (/^\s*javascript:/i.test(src.trim())) {
       return `<img src="" alt="${escapeHtml(alt)}" class="max-w-full rounded-lg my-2" />`
     }
@@ -320,7 +379,6 @@ function renderMarkdown(text: string): string {
 
   // 链接
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_full: string, text: string, href: string) => {
-    // 防止 javascript: / data: URL 注入
     const trimmedHref = href.trim()
     if (/^\s*(javascript|data):/i.test(trimmedHref)) {
       return escapeHtml(text)
@@ -395,13 +453,17 @@ const removeTag = (tag: string) => {
   form.tags = form.tags.filter((t) => t !== tag)
 }
 
+// 获取当前聚焦的编辑器 textarea 引用
+const getEditorTextarea = () => {
+  const el = editorRef.value || editorRefMobile.value
+  if (!el) return null
+  return (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+}
+
 // 插入Markdown语法
 const insertMarkdown = (prefix: string, suffix: string) => {
-  // MentionInput 内部包含 textarea，支持 ref
-  const el = editorRef.value
-  if (!el) return
-  // 尝试获取内部 textarea（MentionInput 包装的组件）
-  const textarea = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+  const textarea = getEditorTextarea()
+  if (!textarea) return
   const start = textarea.selectionStart ?? 0
   const end = textarea.selectionEnd ?? 0
   const selectedText = form.content.substring(start, end)
@@ -411,9 +473,8 @@ const insertMarkdown = (prefix: string, suffix: string) => {
     prefix + selectedText + suffix +
     form.content.substring(end)
 
-  // 恢复光标位置
   nextTick(() => {
-    const ta = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+    const ta = getEditorTextarea()
     ta?.focus()
     ta?.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length)
   })
@@ -421,16 +482,56 @@ const insertMarkdown = (prefix: string, suffix: string) => {
 
 // 在光标处插入文本
 const insertAtCursor = (text: string) => {
-  const el = editorRef.value
-  if (!el) return
-  const textarea = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+  const textarea = getEditorTextarea()
+  if (!textarea) return
   const pos = textarea?.selectionStart ?? form.content.length
   form.content = form.content.substring(0, pos) + text + form.content.substring(pos)
   nextTick(() => {
-    const ta = (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+    const ta = getEditorTextarea()
     ta?.focus()
     ta?.setSelectionRange(pos + text.length, pos + text.length)
   })
+}
+
+// 编辑器内图片上传
+const handleEditorImageUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  if (form.images.length >= 9) {
+    showToast('最多只能上传9张图片', 'error')
+    target.value = ''
+    return
+  }
+
+  imageUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const { post } = useApi()
+    const uploadRes = await post<any>('/files/upload/image', formData)
+    const imageUrl = uploadRes.data?.data
+    if (imageUrl) {
+      form.images.push(imageUrl)
+      showToast('图片上传成功')
+    }
+  } catch {
+    showToast('图片上传失败', 'error')
+  } finally {
+    imageUploading.value = false
+    target.value = ''
+  }
+}
+
+// 移除已上传图片
+const removeImage = (idx: number) => {
+  form.images.splice(idx, 1)
+}
+
+// 点击缩略图，将图片以 Markdown 语法插入到正文光标处
+const insertImageAtCursor = (imageUrl: string) => {
+  insertAtCursor(`\n![图片](${imageUrl})\n`)
 }
 
 // AI 写作
@@ -486,7 +587,6 @@ const autoLocate = async () => {
     let city = ''
     let district = ''
 
-    // 1. 优先使用浏览器 Geolocation API 获取高精度坐标
     let hasCoords = false
     let gpsLat = 0
     let gpsLng = 0
@@ -503,7 +603,6 @@ const autoLocate = async () => {
         gpsLng = position.coords.longitude
         hasCoords = true
 
-        // 2. 使用反向地理编码获取精确的省/市/区
         const geocodeResult = await reverseGeocode(gpsLat, gpsLng)
         if (geocodeResult && geocodeResult.province) {
           province = geocodeResult.province
@@ -515,7 +614,6 @@ const autoLocate = async () => {
       }
     }
 
-    // 3. 如果反向地理编码未获得完整结果，补充 IP 定位
     if (!hasCoords || !province) {
       const ipRegion = await getRegionByIP()
       if (ipRegion) {
@@ -525,7 +623,6 @@ const autoLocate = async () => {
       }
     }
 
-    // 4. 如果仍未获得结果，用本地坐标数据库做最后兜底
     if (!province && hasCoords) {
       const matched = matchRegionByCoord(gpsLat, gpsLng)
       if (matched) {
@@ -534,7 +631,6 @@ const autoLocate = async () => {
       }
     }
 
-    // 5. 如果获得了位置信息，设置到选择器中
     if (province && regionSelectorRef.value) {
       regionSelectorRef.value.setRegion({ province, city, district })
       const locationDisplay = district
@@ -549,19 +645,6 @@ const autoLocate = async () => {
   } finally {
     locating.value = false
   }
-}
-
-// 封面图上传
-const handleCoverUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
-  // TODO: 调用上传接口
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    form.coverImage = e.target?.result as string
-  }
-  reader.readAsDataURL(file)
 }
 
 // 保存草稿
@@ -589,18 +672,14 @@ const saveDraft = async () => {
 const getDeviceInfo = (): string | undefined => {
   if (!import.meta.client) return undefined
   const ua = navigator.userAgent
-  // 提取设备型号
   const mobileMatch = ua.match(/\b(Android|iPhone|iPad|iPod)\b[^;]*/i)
   if (mobileMatch) {
-    // 尝试提取更详细的Android设备型号
     const androidBuild = ua.match(/;\s*([^;)]+)\s+Build\//)
     if (androidBuild) return androidBuild[1].trim()
-    // iPhone/iPad
     const iosMatch = ua.match(/(iPhone|iPad|iPod)(?:\s*OS\s*[\d_]+)?/i)
     if (iosMatch) return iosMatch[0].replace(/_/g, '.')
     return mobileMatch[0]
   }
-  // 桌面端
   if (ua.includes('Windows')) return 'Windows'
   if (ua.includes('Mac OS')) return 'macOS'
   if (ua.includes('Linux')) return 'Linux'
@@ -609,7 +688,6 @@ const getDeviceInfo = (): string | undefined => {
 
 /**
  * 构建发送给后端的创建文章请求数据
- * 确保字段名和类型与后端 ArticleCreateRequest 完全匹配
  */
 function buildArticleRequest(status: number): Record<string, any> {
   const data: Record<string, any> = {
@@ -617,12 +695,11 @@ function buildArticleRequest(status: number): Record<string, any> {
     content: form.content,
     summary: form.summary.trim() || undefined,
     categoryId: form.categoryId ? Number(form.categoryId) : undefined,
-    tagIds: [], // 标签通过 tagIds (Long[]) 传递，当前暂不支持自由标签
-    coverImage: form.coverImage || undefined,
+    tagIds: [],
+    images: form.images.length > 0 ? form.images : undefined,
     location: form.location || undefined,
     status,
   }
-  // 清除 undefined 字段，避免发送多余的空值
   Object.keys(data).forEach((key) => {
     if (data[key] === undefined) delete data[key]
   })
@@ -636,7 +713,6 @@ const publishArticle = async () => {
     const { articleApi } = await import('~/api')
     const data = buildArticleRequest(1)
     data.deviceInfo = getDeviceInfo()
-    // 定时发布：传递 publishAt 字段
     if (scheduledPublish.value && publishAt.value) {
       data.publishAt = new Date(publishAt.value).toISOString()
     }

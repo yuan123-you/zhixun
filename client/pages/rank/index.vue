@@ -1,10 +1,11 @@
 ﻿<template>
   <!-- 排行榜页 -->
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-2 2xl:px-3 py-2">
-    <h1 class="text-2xl font-bold text-slate-900 mb-3">{{ '热榜' }}</h1>
+  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">热榜</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">查看热门排行</p>
 
     <!-- 日榜/周榜/月榜切换 -->
-    <div class="flex items-center space-x-2 mb-3">
+    <div class="flex items-center space-x-2 mb-2">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -19,11 +20,11 @@
     </div>
 
     <!-- 排行列表 -->
-    <div v-if="rankItems.length > 0" class="space-y-2">
+    <div v-if="rankItems.length > 0" class="space-y-1.5">
       <div
         v-for="(item, index) in rankItems"
         :key="item.id"
-        class="card px-2 py-2 flex items-center space-x-3 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer"
+        class="card px-2 py-1.5 flex items-center space-x-3 hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer"
         @click="navigateTo(`/articles/${item.id}`)"
       >
         <!-- 排名 -->
