@@ -220,7 +220,7 @@ public class FileServiceImpl implements FileService {
     /**
      * 上传文件到 MinIO
      */
-    private String uploadToMinio(MultipartFile file, String objectPath, String contentType) {
+    private String uploadToMinio(MultipartFile file, String objectPath, String contentType) throws Exception {
         String bucketName = minioConfig.getBucketName();
 
         // 确保存储桶存在
@@ -232,13 +232,15 @@ public class FileServiceImpl implements FileService {
         }
 
         // 上传文件
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectPath)
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .contentType(contentType)
-                        .build());
+        try (InputStream inputStream = file.getInputStream()) {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectPath)
+                            .stream(inputStream, file.getSize(), -1)
+                            .contentType(contentType)
+                            .build());
+        }
 
         log.debug("MinIO 上传成功: {}", objectPath);
 
