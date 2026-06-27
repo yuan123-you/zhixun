@@ -152,20 +152,22 @@ public class XssFilter extends OncePerRequestFilter {
      */
     @SuppressWarnings("unchecked")
     private static byte[] filterJsonBody(HttpServletRequest request) {
+        byte[] body;
         try {
-            byte[] body = request.getInputStream().readAllBytes();
-            if (body.length == 0) return body;
+            body = request.getInputStream().readAllBytes();
+        } catch (IOException e) {
+            log.warn("XSS JSON 读取请求体失败: {}", e.getMessage());
+            return new byte[0];
+        }
+        if (body.length == 0) return body;
 
+        try {
             Object json = OBJECT_MAPPER.readValue(body, Object.class);
             Object filtered = filterJsonValue(json);
             return OBJECT_MAPPER.writeValueAsBytes(filtered);
         } catch (Exception e) {
             log.warn("XSS JSON 过滤异常，使用原始请求体: {}", e.getMessage());
-            try {
-                return request.getInputStream().readAllBytes();
-            } catch (IOException ex) {
-                return new byte[0];
-            }
+            return body;
         }
     }
 
