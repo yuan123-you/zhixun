@@ -1,7 +1,7 @@
 ﻿<template>
   <!-- 作品网格卡片：无内边距/间隔的 3 列 grid 布局用 -->
   <NuxtLink
-    :to="`/articles/${article.id}`"
+    :to="to || `/articles/${article.id}`"
     class="relative block overflow-hidden group cursor-pointer"
     style="aspect-ratio: 3/4"
   >
@@ -60,6 +60,8 @@ import type { Article } from '~/types'
 
 const props = defineProps<{
   article: Article
+  /** 自定义跳转链接，不传则默认跳转 /articles/:id */
+  to?: string
 }>()
 
 const { resolveUrl } = useResourceUrl()

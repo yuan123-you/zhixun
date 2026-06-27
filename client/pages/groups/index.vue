@@ -1,10 +1,8 @@
 <template>
   <div class="max-w-[800px] mx-auto px-1.5 py-1.5">
     <!-- 群组广场 -->
-    <!-- 顶部标题和创建 -->
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">群组广场</h1>
-    <div class="flex items-center justify-between mt-1 mb-1.5">
-      <p class="text-gray-500 dark:text-gray-400">加入群组，与志同道合的人交流</p>
+    <!-- 顶部创建按钮 -->
+    <div class="flex items-center justify-between mb-1.5">
       <ClientOnly>
         <button
           v-if="userStore.isLoggedIn"
@@ -175,6 +173,9 @@
 /** 群组广场页 */
 import { groupApi } from '~/api/group'
 import type { GroupInfo } from '~/api/group'
+
+const { setTitle } = usePageHeaderTitle()
+setTitle('群组广场')
 
 const userStore = useUserStore()
 

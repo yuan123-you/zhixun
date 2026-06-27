@@ -1,11 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="max-w-4xl mx-auto px-2 py-2">
-      <!-- Header -->
-      <div class="mb-2">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">话题广场</h1>
-        <p class="text-gray-500 dark:text-gray-400 mt-1">发现热门话题，参与讨论</p>
-      </div>
 
       <!-- Search -->
       <div class="mb-3">
@@ -95,6 +90,9 @@ import { ref, watch, onMounted } from 'vue'
 import { topicApi } from '~/api/topic'
 import type { Topic } from '~/api/topic'
 import { useUserStore } from '~/stores/user'
+
+const { setTitle } = usePageHeaderTitle()
+setTitle('话题广场')
 
 const userStore = useUserStore()
 const topics = ref<Topic[]>([])

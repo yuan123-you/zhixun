@@ -1,8 +1,7 @@
 <template>
   <!-- 编辑资料页 -->
   <div class="max-w-2xl mx-auto px-1.5 2xl:px-2 py-1.5">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">编辑资料</h1>
-    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">修改你的个人公开信息</p>
+
     <!-- 加载状态 -->
     <div v-if="pageLoading" class="flex items-center justify-center py-20">
       <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -182,6 +181,9 @@
 <script setup lang="ts">
 /** 编辑资料页 - 修改个人公开信息 */
 import RegionSelector from '~/components/RegionSelector.vue'
+
+const { setTitle } = usePageHeaderTitle()
+setTitle('编辑资料')
 
 definePageMeta({
   middleware: 'auth',

@@ -43,6 +43,16 @@ public class FileController {
     }
 
     /**
+     * 上传语音
+     */
+    @PostMapping("/upload/voice")
+    @PreAuthorize("isAuthenticated()")
+    @SentinelResource(value = "file-upload", blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class)
+    public R<String> uploadVoice(@RequestParam("file") MultipartFile file) {
+        return R.ok(fileService.uploadVoice(file));
+    }
+
+    /**
      * Sentinel 限流降级处理
      */
     public static class BlockHandlers {

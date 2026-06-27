@@ -1,8 +1,7 @@
 <template>
   <!-- 关注列表 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ isOwn ? '我' : userName }}的关注</h1>
-    <div class="flex items-center justify-between mt-1 mb-1.5">
+    <div class="flex items-center justify-between mb-1.5">
       <p class="text-gray-500 dark:text-gray-400">{{ isOwn ? '你' : userName }}关注的用户</p>
       <span class="text-sm text-slate-500">共 {{ totalCount }} 人</span>
     </div>
@@ -35,6 +34,8 @@ const route = useRoute(); const userStore = useUserStore()
 const targetId = computed(() => Number(route.params.id))
 const isOwn = computed(() => userStore.userInfo?.id === targetId.value)
 const userName = ref('')
+const { setTitle } = usePageHeaderTitle()
+watchEffect(() => { setTitle(isOwn.value ? '我的关注' : `${userName.value || 'Ta'}的关注`) })
 
 interface FollowItem { id: number; nickname: string; avatar: string; bio?: string; isFollowing?: boolean }
 const users = ref<FollowItem[]>([]); const loading = ref(false); const hasMore = ref(true)

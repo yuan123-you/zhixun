@@ -1,18 +1,16 @@
 package com.zhixun.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * 本地文件存储的静态资源映射
- * 当 MinIO 不可用时，将 /uploads/** 映射到本地文件目录
+ * 始终注册，作为 MinIO 不可用时的降级方案
  */
 @Slf4j
 @Configuration
-@ConditionalOnProperty(name = "minio.enabled", havingValue = "false")
 public class LocalResourceConfig implements WebMvcConfigurer {
 
     @Override

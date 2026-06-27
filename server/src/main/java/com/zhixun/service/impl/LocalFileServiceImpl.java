@@ -19,16 +19,17 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 本地文件存储实现（当MinIO不可用时使用）
+ * 本地文件存储实现（当MinIO被显式禁用时使用）
  */
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "minio.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnProperty(name = "minio.enabled", havingValue = "false")
 public class LocalFileServiceImpl implements FileService {
 
     private static final String UPLOAD_DIR = "./uploads";
     private static final String IMAGE_DIR = "/images";
     private static final String FILE_DIR = "/files";
+    private static final String VOICE_DIR = "/voices";
 
     /** 图片允许的扩展名 */
     private static final Map<String, String> IMAGE_EXTENSIONS = Map.of(
@@ -53,6 +54,18 @@ public class LocalFileServiceImpl implements FileService {
 
     /** 附件最大大小（20MB） */
     private static final long FILE_MAX_SIZE = 20 * 1024 * 1024;
+
+    /** 语音最大大小（10MB） */
+    private static final long VOICE_MAX_SIZE = 10 * 1024 * 1024;
+
+    /** 语音允许的扩展名 */
+    private static final Map<String, String> VOICE_EXTENSIONS = Map.of(
+            "webm", "audio/webm",
+            "wav", "audio/wav",
+            "mp3", "audio/mpeg",
+            "m4a", "audio/mp4",
+            "ogg", "audio/ogg"
+    );
 
     @Override
     public String uploadImage(MultipartFile file) {
@@ -92,6 +105,28 @@ public class LocalFileServiceImpl implements FileService {
         }
 
         return saveFile(file, FILE_DIR);
+    }
+
+    @Override
+    public String uploadVoice(MultipartFile file) {
+        // 校验文件是否为空
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "语音文件不能为空");
+        }
+
+        // 校验文件大小
+        if (file.getSize() > VOICE_MAX_SIZE) {
+            throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "语音文件大小不能超过10MB");
+        }
+
+        // 获取文件扩展名
+        String originalFilename = file.getOriginalFilename();
+        String extension = getFileExtension(originalFilename);
+        if (!StringUtils.hasText(extension) || !VOICE_EXTENSIONS.containsKey(extension.toLowerCase())) {
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持 webm/wav/mp3/m4a/ogg 格式语音");
+        }
+
+        return saveFile(file, VOICE_DIR);
     }
 
     // ========== 内部方法 ==========

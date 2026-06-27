@@ -257,6 +257,7 @@ import type { Article, Comment } from '~/types'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const { setTitle } = usePageHeaderTitle()
 const { resolveUrl } = useResourceUrl()
 const { invalidateArticle, invalidateUser } = useCacheInvalidation()
 
@@ -271,7 +272,10 @@ const goBack = () => {
 const { recordView, updateDuration } = useViewHistory()
 const { isTablet, isLandscape } = useBreakpoints()
 const { promptOrientationLock, dismissOrientationPrompt, showOrientationPrompt } = useOrientation()
-const articleId = computed(() => Number(route.params.id))
+const articleId = computed(() => {
+  const id = Number(route.params.id)
+  return isNaN(id) ? null : id
+})
 
 // 作品数据
 const comments = ref<Comment[]>([])
@@ -370,8 +374,11 @@ const handleContentClick = (e: MouseEvent) => {
 const { data: article, pending, error: articleError, refresh } = await useAsyncData(
   `article-${articleId.value}`,
   async () => {
+    if (articleId.value === null) {
+      throw new Error('无效的作品ID')
+    }
     const { articleApi } = await import('~/api')
-    const response = await articleApi.getArticleDetail(articleId.value)
+    const response = await articleApi.getArticleDetail(articleId.value!)
     return response.data.data
   },
   {
@@ -395,6 +402,8 @@ onMounted(() => {
     }
   }
 })
+
+watch(article, (val) => { if (val?.title) setTitle(val.title) }, { immediate: true })
 
 // 点赞
 const toggleLike = async () => {

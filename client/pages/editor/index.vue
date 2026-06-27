@@ -1,8 +1,6 @@
 ﻿<template>
   <!-- 作品编辑器 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">创作</h1>
-    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">发布你的作品，分享精彩内容</p>
 
     <!-- 摘要输入 -->
     <div class="mb-2">
@@ -123,7 +121,7 @@
                 v-model="form.content"
                 placeholder="开始写作..."
                 :rows="18"
-                class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
+                class="editor-textarea w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
               />
             </div>
           </div>
@@ -173,7 +171,7 @@
                 v-model="form.content"
                 placeholder="开始写作..."
                 :rows="18"
-                class="w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
+                class="editor-textarea w-full min-h-[400px] p-4 bg-white text-slate-900 resize-none outline-none font-mono text-sm"
               />
             </div>
           </div>
@@ -201,15 +199,16 @@
 
     <!-- 分类和标签选择 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3 mb-3">
-      <!-- 分类选择 -->
+      <!-- 分类输入 -->
       <div>
         <label class="block text-xs md:text-sm font-medium text-slate-700 mb-1">{{ '分类' }}</label>
-        <select v-model="form.categoryId" class="input !h-8 !text-xs !px-2">
-          <option value="">{{ '请选择分类' }}</option>
-          <option v-for="category in categories" :key="category.id" :value="category.id">
-            {{ category.name }}
-          </option>
-        </select>
+        <input
+          v-model="form.categoryName"
+          type="text"
+          class="input !h-9 !text-sm !px-3"
+          placeholder="填写分类名称（选填，不填则默认分类）"
+          maxlength="20"
+        />
       </div>
 
       <!-- 标签选择 -->
@@ -249,6 +248,7 @@
     <!-- 操作按钮 -->
     <div class="flex items-center justify-end space-x-3">
       <button class="btn-ghost" @click="saveDraft">{{ '保存草稿' }}</button>
+      <button class="btn-outline" @click="openPreview">{{ '预览' }}</button>
       <button class="btn-primary" :disabled="!canPublish" @click="publishArticle">{{ '发布作品' }}</button>
     </div>
 
@@ -277,7 +277,6 @@
 
 <script setup lang="ts">
 /** 作品编辑器页 */
-import type { Category } from '~/types'
 import { matchRegionByCoord, getRegionByIP, reverseGeocode } from '~/utils/regions'
 import { aiApi } from '~/api/ai'
 
@@ -295,14 +294,13 @@ const form = reactive({
   title: '',
   content: '',
   summary: '',
-  categoryId: '',
+  categoryName: '',
   tags: [] as string[],
   images: [] as string[],
   location: '',
 })
 
 const tagInput = ref('')
-const categories = ref<Category[]>([])
 const editorRef = ref<any>(null)
 const editorRefMobile = ref<any>(null)
 const locating = ref(false)
@@ -322,7 +320,7 @@ const minPublishAt = computed(() => {
 
 // 是否可以发布
 const canPublish = computed(() => {
-  return form.title.trim() && form.content.trim() && form.categoryId
+  return form.title.trim() && form.content.trim()
 })
 
 // 简易 Markdown 渲染
@@ -428,17 +426,6 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
   }, 2000)
 }
 
-// 加载分类列表
-const loadCategories = async () => {
-  try {
-    const { get } = useApi()
-    const response = await get<Category[]>('/categories')
-    categories.value = response.data.data || []
-  } catch {
-    // 分类加载失败，静默处理
-  }
-}
-
 // 添加标签
 const addTag = () => {
   const tag = tagInput.value.trim()
@@ -455,9 +442,25 @@ const removeTag = (tag: string) => {
 
 // 获取当前聚焦的编辑器 textarea 引用
 const getEditorTextarea = () => {
-  const el = editorRef.value || editorRefMobile.value
-  if (!el) return null
-  return (el as any)?.textareaRef || (el as any)?.$el?.querySelector?.('textarea') || el
+  // Try to get the MentionInput component instance first
+  const componentEl = editorRef.value || editorRefMobile.value
+  if (!componentEl) {
+    // Fallback: try to find any textarea in the DOM
+    const editorArea = document.querySelector('.editor-textarea') as HTMLTextAreaElement
+    if (editorArea) return editorArea
+    // Last resort: find the first textarea in the editor
+    return document.querySelector('textarea')
+  }
+  // MentionInput exposes textareaRef via defineExpose
+  const textarea = (componentEl as any)?.textareaRef
+  if (textarea) return textarea
+  // Fallback: check for $el
+  const el = (componentEl as any)?.$el
+  if (el) {
+    if (el.tagName === 'TEXTAREA') return el
+    return el.querySelector?.('textarea') || el
+  }
+  return componentEl
 }
 
 // 插入Markdown语法
@@ -515,9 +518,12 @@ const handleEditorImageUpload = async (event: Event) => {
     if (imageUrl) {
       form.images.push(imageUrl)
       showToast('图片上传成功')
+    } else {
+      showToast('图片上传失败：服务器未返回图片地址', 'error')
     }
-  } catch {
-    showToast('图片上传失败', 'error')
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err?.message || '图片上传失败，请检查服务器配置'
+    showToast(msg, 'error')
   } finally {
     imageUploading.value = false
     target.value = ''
@@ -537,7 +543,10 @@ const insertImageAtCursor = (imageUrl: string) => {
 // AI 写作
 const aiLoading = ref(false)
 const handleAIWrite = async (mode: string) => {
-  const selectedText = window.getSelection()?.toString() || form.content
+  const textarea = getEditorTextarea()
+  const selectedText = (textarea && textarea.selectionStart !== textarea.selectionEnd)
+    ? form.content.substring(textarea.selectionStart, textarea.selectionEnd)
+    : form.content
   if (!selectedText.trim()) {
     showToast('请先输入或选中文本', 'error')
     return
@@ -547,11 +556,30 @@ const handleAIWrite = async (mode: string) => {
     const { data } = await aiApi.generateText(selectedText, form.title.trim() || undefined, mode)
     const result = data?.data?.content || data?.data?.text || ''
     if (result) {
-      form.content = result
-      showToast(`AI ${mode === 'expand' ? '扩写' : mode === 'polish' ? '润色' : mode === 'summarize' ? '摘要' : '审核'}完成`)
+      // 检测是否为 mock 响应（未配置AI API Key）
+      if (result.includes('[AI ') && result.includes('此内容由AI生成') || result.includes('mock')) {
+        showToast('AI功能需要配置智谱API Key，请联系管理员', 'error')
+        return
+      }
+      if (mode === 'review') {
+        // 审核模式：显示结果但不替换内容
+        showToast(`AI审核结果：${result}`)
+      } else {
+        if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+          // 替换选中文本
+          const before = form.content.substring(0, textarea.selectionStart)
+          const after = form.content.substring(textarea.selectionEnd)
+          form.content = before + result + after
+        } else {
+          form.content = result
+        }
+        const label = mode === 'expand' ? '扩写' : mode === 'polish' ? '润色' : '摘要'
+        showToast(`AI ${label}完成`)
+      }
     }
   } catch (err: any) {
-    showToast(err?.response?.data?.message || 'AI 处理失败', 'error')
+    const msg = err?.response?.data?.message || err?.message || 'AI 处理失败'
+    showToast(msg, 'error')
   } finally { aiLoading.value = false }
 }
 
@@ -566,8 +594,13 @@ const handleEditorVoice = async (blob: Blob) => {
     if (voiceUrl) {
       insertAtCursor(`\n[语音消息: ${voiceUrl}]\n`)
       showToast('语音已插入')
+    } else {
+      showToast('语音上传失败：服务器未返回地址', 'error')
     }
-  } catch { showToast('语音上传失败', 'error') }
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err?.message || '语音上传失败'
+    showToast(msg, 'error')
+  }
 }
 
 /** 地区选择器引用 */
@@ -647,6 +680,20 @@ const autoLocate = async () => {
   }
 }
 
+// 打开预览页
+const openPreview = () => {
+  if (!import.meta.client) return
+  sessionStorage.setItem('editor_preview_data', JSON.stringify({
+    title: form.title,
+    content: form.content,
+    summary: form.summary,
+    images: form.images,
+    tags: form.tags,
+    location: form.location,
+  }))
+  window.open('/editor/preview', '_blank')
+}
+
 // 保存草稿
 const saveDraft = async () => {
   if (!form.title.trim()) {
@@ -694,7 +741,7 @@ function buildArticleRequest(status: number): Record<string, any> {
     title: form.title.trim(),
     content: form.content,
     summary: form.summary.trim() || undefined,
-    categoryId: form.categoryId ? Number(form.categoryId) : undefined,
+    categoryName: form.categoryName.trim() || '默认分类',
     tagIds: [],
     images: form.images.length > 0 ? form.images : undefined,
     location: form.location || undefined,
@@ -732,11 +779,6 @@ const publishArticle = async () => {
     }
   }
 }
-
-// 页面加载时获取分类列表
-onMounted(() => {
-  loadCategories()
-})
 
 // 页面元信息
 useHead({

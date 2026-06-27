@@ -35,7 +35,6 @@
         </div>
       </div>
     </div>
-    <div v-else class="text-center py-6 text-gray-400 text-sm">请先登录</div>
   </div>
 </template>
 

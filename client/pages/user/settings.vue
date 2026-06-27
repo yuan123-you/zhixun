@@ -1,8 +1,7 @@
 <template>
   <!-- 全局设置页 -->
   <div class="max-w-2xl mx-auto px-1.5 2xl:px-2 py-1.5">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">设置</h1>
-    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">管理你的通知、隐私和偏好设置</p>
+
     <!-- 加载状态 -->
     <div v-if="pageLoading" class="flex items-center justify-center py-20">
       <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -143,6 +142,9 @@
 import type { UserSettingsServer, UserSettingsLocal, UserSettingsNotification, UserSettingsPrivacy, UserSettingsDisplay, UserSettingsRecommend } from '~/types'
 import { storage, STORAGE_KEYS } from '~/utils/storage'
 import { userApi } from '~/api'
+
+const { setTitle } = usePageHeaderTitle()
+setTitle('设置')
 
 definePageMeta({
   middleware: 'auth',

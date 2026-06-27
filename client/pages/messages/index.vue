@@ -120,6 +120,9 @@ import { useMessageStore } from '~/stores/message'
 
 definePageMeta({ middleware: 'auth' })
 
+const { setTitle } = usePageHeaderTitle()
+setTitle('私信')
+
 const messageStore = useMessageStore()
 const { isDesktop } = useBreakpoints()
 

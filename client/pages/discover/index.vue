@@ -1,8 +1,5 @@
 <template>
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
-    <!-- 发现页 -->
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">发现</h1>
-    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">发现热门内容</p>
 
     <PullToRefresh :on-refresh="() => refreshAll()" :error="usersError || rankError || tagsError">
       <!-- 热榜 -->

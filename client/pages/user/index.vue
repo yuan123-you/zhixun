@@ -5,7 +5,7 @@
     <div class="pt-3 pb-2 px-3">
       <div class="flex flex-col items-center">
         <!-- 头像（可点击编辑） -->
-        <div class="relative group cursor-pointer shrink-0 mb-2" @click="triggerAvatarUpload">
+        <div class="relative group cursor-pointer shrink-0 mb-1" @click="triggerAvatarUpload">
           <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" :size="isMobile ? 'lg' : 'xl'" />
           <div class="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,10 +17,10 @@
         <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
 
         <!-- 昵称 -->
-        <h2 class="text-base md:text-lg font-bold text-slate-900 mb-0.5">{{ userStore.userInfo?.nickname }}</h2>
+        <h2 class="text-base md:text-lg font-bold text-slate-900 mb-0">{{ userStore.userInfo?.nickname }}</h2>
 
         <!-- ID 和标签 -->
-        <div class="flex flex-wrap items-center justify-center gap-1 mb-1.5">
+        <div class="flex flex-wrap items-center justify-center gap-1 mb-1">
           <span class="text-[11px] text-slate-400">
             知讯号: {{ userStore.userInfo?.uid }}
           </span>
@@ -36,10 +36,10 @@
         </div>
 
         <!-- 简介 -->
-        <p v-if="userStore.userInfo?.bio" class="text-[11px] text-slate-500 text-center mb-2 max-w-[280px] line-clamp-2">{{ userStore.userInfo?.bio }}</p>
+        <p v-if="userStore.userInfo?.bio" class="text-[11px] text-slate-500 text-center mb-1 max-w-[280px] line-clamp-2">{{ userStore.userInfo?.bio }}</p>
 
         <!-- 统计数据行 -->
-        <div class="flex items-center justify-center gap-6 md:gap-8 mb-3">
+        <div class="flex items-center justify-center gap-6 md:gap-8 mb-2">
           <NuxtLink to="/user/articles" class="flex flex-col items-center cursor-pointer hover:text-primary transition-colors">
             <span class="text-base md:text-lg font-bold text-slate-900">{{ userStore.userInfo?.articleCount ?? 0 }}</span>
             <span class="text-[10px] text-slate-400">作品</span>
@@ -106,7 +106,7 @@
         </div>
         <div v-else class="grid grid-cols-3 gap-0">
           <div v-for="article in publishedArticles" :key="article.id" class="relative group">
-            <ArticleGridCard :article="article" />
+            <ArticleGridCard :article="article" :to="`/user/preview/${article.id}`" />
             <!-- 悬浮操作层 -->
             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 flex flex-col">
               <div class="flex items-start justify-end p-1 gap-1">

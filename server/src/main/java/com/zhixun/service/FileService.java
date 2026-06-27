@@ -27,4 +27,15 @@ public interface FileService {
      * @return 文件访问URL
      */
     String uploadFile(MultipartFile file);
+
+    /**
+     * 上传语音
+     * - 支持 webm/wav/mp3/m4a/ogg 格式
+     * - 大小限制 10MB
+     * - 上传到 MinIO
+     *
+     * @param file 语音文件
+     * @return 文件访问URL
+     */
+    String uploadVoice(MultipartFile file);
 }

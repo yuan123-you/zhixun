@@ -50,6 +50,7 @@ import type { Topic } from '~/api/topic'
 import type { Article } from '~/types'
 
 const route = useRoute()
+const { setTitle } = usePageHeaderTitle()
 const topic = ref<Topic | null>(null)
 const articles = ref<Article[]>([])
 const loading = ref(true)
@@ -59,6 +60,7 @@ async function fetchData() {
   try {
     const t = await topicApi.getTopicDetail(id)
     topic.value = t
+    if (t) setTitle(`#${t.name}`)
     const res = await articleApi.getArticles({ tagId: id } as any)
     articles.value = res.list || []
   } catch (e) { /* ignore */ }

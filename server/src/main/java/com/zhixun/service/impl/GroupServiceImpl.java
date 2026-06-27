@@ -13,6 +13,7 @@ import com.zhixun.vo.GroupVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,10 +50,16 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public Page<GroupVO> getMyGroups(Long userId, Integer page, Integer pageSize) {
-        Page<GroupInfo> pg = new Page<>(page, pageSize);
         List<GroupInfo> groups = groupMapper.selectByUserId(userId);
         List<GroupVO> vos = groups.stream().map(g -> toGroupVO(g, userId)).collect(Collectors.toList());
-        return (Page<GroupVO>) new Page<GroupInfo>(page, pageSize).convert(g -> toGroupVO(g, userId));
+        // 手动分页
+        int total = vos.size();
+        int fromIndex = (page - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        List<GroupVO> pageList = fromIndex >= total ? new ArrayList<>() : vos.subList(fromIndex, toIndex);
+        Page<GroupVO> result = new Page<>(page, pageSize, total);
+        result.setRecords(pageList);
+        return result;
     }
 
     @Override @Transactional

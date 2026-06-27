@@ -29,24 +29,19 @@
             {{ tab.label }}
           </button>
 
-          <!-- 推荐Tab的"换一批"刷新按钮 - 移动端仅显示图标 -->
-          <button
-            v-if="activeTab === 'recommend'"
-            class="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors rounded-full hover:bg-primary-50/50 no-tap-highlight shrink-0 px-2 py-1"
-            :disabled="refreshing"
-            @click="handleRefresh"
-          >
-            <svg
-              class="w-4 h-4 transition-transform"
-              :class="{ 'animate-spin': refreshing }"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <!-- 未登录时显示登录按钮（所有Tab） -->
+          <ClientOnly>
+            <NuxtLink
+              v-if="!userStore.isLoggedIn"
+              to="/login"
+              class="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors rounded-lg hover:bg-primary-50/50 no-tap-highlight shrink-0 px-2 py-1"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>{{ refreshing ? '刷新中' : '换一批' }}</span>
-          </button>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              <span>登录</span>
+            </NuxtLink>
+          </ClientOnly>
         </div>
 
         <!-- 作品列表 - 平板端双列 -->

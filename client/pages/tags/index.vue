@@ -1,8 +1,6 @@
 ﻿<template>
   <!-- 标签聚合页 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">标签</h1>
-    <p class="text-gray-500 dark:text-gray-400 mt-1 mb-1.5">探索热门标签，发现精彩内容</p>
 
     <!-- Tab切换：标签云 / 热门标签 / 已关注 -->
     <div class="flex items-center space-x-2 mb-2">
@@ -179,6 +177,9 @@
 <script setup lang="ts">
 /** 标签聚合页：标签云、热门标签、已关注标签、标签下作品列表 */
 import type { Tag, Article, PageResult, ApiResponse } from '~/types'
+
+const { setTitle } = usePageHeaderTitle()
+setTitle('标签')
 
 const userStore = useUserStore()
 const config = useRuntimeConfig()

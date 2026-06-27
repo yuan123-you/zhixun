@@ -172,7 +172,9 @@ const isHomePage = computed(() => route.path === '/')
 
 // 全局返回按钮是否可见（与 BackButton.vue 中的逻辑保持一致）
 const isBackButtonVisible = computed(() => {
-  if (route.path === '/') return false
+  // 首页和5个tabbar页面不显示返回按钮
+  const tabPages = ['/', '/discover', '/editor', '/notifications', '/user']
+  if (tabPages.includes(route.path)) return false
   // 带自己返回按钮的页面：私信详情、群聊、他人关注/粉丝列表
   if (/^\/messages\/\d+/.test(route.path)) return false
   if (/^\/groups\/\d+/.test(route.path)) return false

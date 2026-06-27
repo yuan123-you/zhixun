@@ -1069,11 +1069,10 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{ provin
  */
 export async function getRegionByIP(): Promise<{ province: string; city: string; district: string } | null> {
   const endpoints = [
-    // 国内优先：腾讯地图 IP 定位
-    'https://apis.map.qq.com/ws/location/v1/ip?output=json&key=QKDBZ-I4NC7-3HMXP-HTIS6-QTRVH-WUF5X',
-    // 国外备选
+    // 腾讯地图 IP 定位不支持浏览器端 CORS，已移除，改用后端代理方式
+    // 备选1: 免费 IP 定位
     'https://ipapi.co/json/',
-    // 另一个免费备选
+    // 备选2: 另一个免费服务
     'https://ipinfo.io/json',
   ]
 
@@ -1089,17 +1088,7 @@ export async function getRegionByIP(): Promise<{ province: string; city: string;
       if (!res.ok) continue
       const data = await res.json()
 
-      if (url.includes('map.qq.com')) {
-        // 腾讯地图 API 响应格式
-        if (data.status === 0 && data.result?.ad_info) {
-          const ad = data.result.ad_info
-          return {
-            province: ad.province || '',
-            city: ad.city || '',
-            district: ad.district || '',
-          }
-        }
-      } else if (url.includes('ipapi.co')) {
+      if (url.includes('ipapi.co')) {
         // ipapi.co 响应格式
         if (data && data.city) {
           return {

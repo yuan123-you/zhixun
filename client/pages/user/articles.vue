@@ -1,8 +1,7 @@
 ﻿<template>
   <!-- 我的作品列表 -->
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">我的作品</h1>
-    <div class="flex items-center justify-between mt-1 mb-1.5">
+    <div class="flex items-center justify-between mb-1.5">
       <p class="text-gray-500 dark:text-gray-400">管理你发布的所有作品</p>
       <span class="text-sm text-slate-500">共 {{ totalCount }} 篇</span>
     </div>
@@ -22,6 +21,9 @@
 /** 我的作品页面 */
 import type { Article, PageResult } from '~/types'
 import { userApi } from '~/api'
+
+const { setTitle } = usePageHeaderTitle()
+setTitle('我的作品')
 
 definePageMeta({
   middleware: 'auth',
