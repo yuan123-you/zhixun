@@ -37,7 +37,9 @@ public class LocalFileServiceImpl implements FileService {
             "jpeg", "image/jpeg",
             "png", "image/png",
             "gif", "image/gif",
-            "webp", "image/webp"
+            "webp", "image/webp",
+            "bmp", "image/bmp",
+            "svg", "image/svg+xml"
     );
 
     /** 图片文件头魔数 */
@@ -46,7 +48,8 @@ public class LocalFileServiceImpl implements FileService {
             "jpeg", new byte[]{(byte) 0xFF, (byte) 0xD8},
             "png", new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47},
             "gif", new byte[]{0x47, 0x49, 0x46, 0x38},
-            "webp", new byte[]{0x52, 0x49, 0x46, 0x46}
+            "webp", new byte[]{0x52, 0x49, 0x46, 0x46},
+            "bmp", new byte[]{0x42, 0x4D}
     );
 
     /** 图片最大大小（5MB） */
@@ -71,23 +74,42 @@ public class LocalFileServiceImpl implements FileService {
     public String uploadImage(MultipartFile file) {
         // 校验文件是否为空
         if (file == null || file.isEmpty()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件不能为空");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "请选择要上传的图片文件");
         }
 
         // 校验文件大小
         if (file.getSize() > IMAGE_MAX_SIZE) {
-            throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "图片大小不能超过5MB");
+            throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "图片大小不能超过5MB，当前文件大小: " + formatFileSize(file.getSize()));
+        }
+
+        // 获取并校验原始文件名
+        String originalFilename = file.getOriginalFilename();
+        if (!StringUtils.hasText(originalFilename)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件名不能为空");
+        }
+
+        // 文件名安全校验
+        String safeFilename = sanitizeFilename(originalFilename);
+        if (!StringUtils.hasText(safeFilename)) {
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "文件名不合法");
         }
 
         // 获取文件扩展名
-        String originalFilename = file.getOriginalFilename();
-        String extension = getFileExtension(originalFilename);
+        String extension = getFileExtension(safeFilename);
         if (!StringUtils.hasText(extension) || !IMAGE_EXTENSIONS.containsKey(extension.toLowerCase())) {
-            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持 jpg/png/gif/webp 格式图片");
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持 jpg/png/gif/webp/bmp 格式图片");
+        }
+
+        // 校验 Content-Type
+        String contentType = file.getContentType();
+        if (StringUtils.hasText(contentType) && !contentType.startsWith("image/")) {
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "文件 Content-Type 不是图片类型: " + contentType);
         }
 
         // 文件头魔数校验
         validateFileMagicNumber(file, extension.toLowerCase());
+
+        log.info("图片上传请求: fileName={}, size={}, extension={}", safeFilename, formatFileSize(file.getSize()), extension);
 
         return saveFile(file, IMAGE_DIR);
     }
@@ -129,6 +151,52 @@ public class LocalFileServiceImpl implements FileService {
         return saveFile(file, VOICE_DIR);
     }
 
+    /**
+     * 从本地存储读取文件流
+     * 本实现将 {@code bucket} 视作子目录（{@code images / files / voices}），
+     * {@code objectKey} 视作相对子目录的文件名，两者拼接后在 {@link #UPLOAD_DIR} 下查找文件。
+     * 同时做路径遍历校验，防止越权访问上传目录之外的文件。
+     *
+     * @param bucket    子目录名（如 images/files/voices）
+     * @param objectKey 对象 key（相对路径）
+     * @return 文件输入流；不存在时返回 null
+     */
+    @Override
+    public InputStream readFile(String bucket, String objectKey) {
+        if (!StringUtils.hasText(bucket) || !StringUtils.hasText(objectKey)) {
+            return null;
+        }
+        try {
+            // 清理 bucket/objectKey，防止路径分隔符注入
+            String safeBucket = bucket.replaceAll(".*[/\\\\]", "").trim();
+            String safeKey = objectKey.replace("\\", "/");
+            // 禁止向上跳目录
+            if (safeKey.contains("..")) {
+                log.warn("本地文件读取拒绝，路径包含 '..': bucket={}, objectKey={}", bucket, objectKey);
+                return null;
+            }
+            // 取文件名（防止 objectKey 携带子目录穿透）
+            String safeFileName = safeKey.substring(safeKey.lastIndexOf('/') + 1);
+            if (!StringUtils.hasText(safeFileName)) {
+                return null;
+            }
+            Path filePath = Paths.get(UPLOAD_DIR, safeBucket, safeFileName).normalize();
+            Path basePath = Paths.get(UPLOAD_DIR, safeBucket).normalize();
+            // 规范化后仍需校验路径必须落在 basePath 下
+            if (!filePath.startsWith(basePath)) {
+                log.warn("本地文件读取路径越界: bucket={}, objectKey={}", bucket, objectKey);
+                return null;
+            }
+            if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
+                return null;
+            }
+            return Files.newInputStream(filePath);
+        } catch (IOException e) {
+            log.error("本地文件读取失败: bucket={}, objectKey={}: {}", bucket, objectKey, e.getMessage());
+            return null;
+        }
+    }
+
     // ========== 内部方法 ==========
 
     /**
@@ -142,29 +210,75 @@ public class LocalFileServiceImpl implements FileService {
     }
 
     /**
+     * 文件名安全处理：移除路径分隔符，防止路径遍历攻击
+     */
+    private String sanitizeFilename(String filename) {
+        if (filename == null) return "";
+        String name = filename.replaceAll(".*[/\\\\]", "");
+        name = name.replaceAll("[\\x00-\\x1F\\x7F]", "");
+        if (name.length() > 255) {
+            name = name.substring(0, 255);
+        }
+        return name.trim();
+    }
+
+    /**
+     * 格式化文件大小显示
+     */
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
+        return String.format("%.1f MB", bytes / (1024.0 * 1024.0));
+    }
+
+    /**
      * 校验文件头魔数
+     * 使用 mark/reset 机制避免消耗 InputStream，确保后续上传操作能正常读取文件内容
      */
     private void validateFileMagicNumber(MultipartFile file, String extension) {
-        try (InputStream is = file.getInputStream()) {
-            byte[] magicNumber = FILE_MAGIC_NUMBERS.get(extension);
-            if (magicNumber != null) {
+        byte[] magicNumber = FILE_MAGIC_NUMBERS.get(extension);
+        if (magicNumber == null) {
+            return;
+        }
+
+        InputStream is = null;
+        try {
+            is = file.getInputStream();
+            if (!is.markSupported()) {
                 byte[] header = new byte[magicNumber.length];
                 int read = is.read(header);
                 if (read < magicNumber.length) {
                     throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "文件内容与扩展名不匹配");
                 }
-
                 for (int i = 0; i < magicNumber.length; i++) {
                     if (header[i] != magicNumber[i]) {
                         throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "文件内容与扩展名不匹配");
                     }
                 }
+                return;
             }
+
+            is.mark(magicNumber.length);
+            byte[] header = new byte[magicNumber.length];
+            int read = is.read(header);
+            if (read < magicNumber.length) {
+                throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "文件内容与扩展名不匹配");
+            }
+            for (int i = 0; i < magicNumber.length; i++) {
+                if (header[i] != magicNumber[i]) {
+                    throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "文件内容与扩展名不匹配");
+                }
+            }
+            is.reset();
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             log.error("文件头校验失败: {}", e.getMessage());
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "文件校验失败");
+        } finally {
+            if (is != null) {
+                try { is.close(); } catch (IOException ignored) {}
+            }
         }
     }
 
@@ -191,9 +305,12 @@ public class LocalFileServiceImpl implements FileService {
             }
             String newFilename = UUID.randomUUID().toString().replace("-", "") + extension;
 
-            // 保存文件
+            // 保存文件：使用 Files.copy 替代 transferTo，
+            // 避免 Spring StandardMultipartFile.transferTo 把相对路径解析到 Tomcat work 目录
             Path filePath = uploadPath.resolve(newFilename);
-            file.transferTo(filePath.toFile());
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
 
             log.info("文件上传成功: {}", filePath);
 

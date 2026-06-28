@@ -1,6 +1,7 @@
 package com.zhixun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zhixun.common.util.ServiceUtils;
 import com.zhixun.entity.Article;
 import com.zhixun.entity.ArticleTag;
 import com.zhixun.entity.Category;
@@ -74,7 +75,7 @@ public class RankServiceImpl implements RankService {
             if (stringRedisTemplate != null) {
                 String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
                 if (cachedIds != null && !cachedIds.isEmpty()) {
-                    List<Long> articleIds = parseIds(cachedIds);
+                    List<Long> articleIds = ServiceUtils.parseIds(cachedIds);
                     return buildHotArticleVOList(articleIds, limit);
                 }
             }
@@ -85,10 +86,18 @@ public class RankServiceImpl implements RankService {
         // 缓存未命中，查询数据库
         List<Article> articles = queryHotArticles(period, categoryId, limit);
 
-        // 如果指定周期内没有作品，回退到全时段查询
-        if (articles.isEmpty() && period != null) {
-            log.info("周期[{}]内无作品，回退到全时段查询", period);
-            articles = queryHotArticles(null, categoryId, limit);
+        // 如果指定周期内作品不足 limit，用全时段作品补充
+        if (period != null && articles.size() < limit) {
+            log.info("周期[{}]内作品不足{}条（当前{}条），用全时段作品补充", period, limit, articles.size());
+            List<Article> allTimeArticles = queryHotArticles(null, categoryId, limit);
+            java.util.Set<Long> existingIds = articles.stream().map(Article::getId).collect(java.util.stream.Collectors.toSet());
+            for (Article article : allTimeArticles) {
+                if (articles.size() >= limit) break;
+                if (!existingIds.contains(article.getId())) {
+                    articles.add(article);
+                    existingIds.add(article.getId());
+                }
+            }
         }
 
         // 计算热度分并排序
@@ -659,20 +668,7 @@ public class RankServiceImpl implements RankService {
         return Math.round(score * 10.0) / 10.0;
     }
 
-    /**
-     * 解析缓存的ID字符串
-     */
-    private List<Long> parseIds(String idsStr) {
-        List<Long> ids = new ArrayList<>();
-        for (String id : idsStr.split(",")) {
-            try {
-                ids.add(Long.parseLong(id.trim()));
-            } catch (NumberFormatException e) {
-                log.warn("解析作品ID失败: {}", id);
-            }
-        }
-        return ids;
-    }
+
 
     /**
      * 根据作品ID列表构建 HotArticleVO 列表

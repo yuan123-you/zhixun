@@ -1,9 +1,9 @@
-﻿import { get, post, put, del } from './request'
+import { get, post, put, del } from './request'
 import type { Tag, PageResult, PageParams } from '@/types'
 
-/** 获取标签列表 */
-export function getTagList(params?: PageParams & { keyword?: string }) {
-  return get<PageResult<Tag>>('/tags', params as unknown as Record<string, unknown>)
+/** 获取标签列表（管理端分页） */
+export function getTagList(params?: PageParams & { keyword?: string; sortBy?: string }) {
+  return get<PageResult<Tag>>('/admin/tags', params as unknown as Record<string, unknown>)
 }
 
 /** 获取所有标签（不分页，用于下拉选择） */

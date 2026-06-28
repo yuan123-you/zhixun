@@ -1,4 +1,4 @@
-﻿import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { setupGuards } from './guards'
 
 // 静态路由
@@ -98,6 +98,36 @@ const routes: RouteRecordRaw[] = [
         name: 'Templates',
         component: () => import('@/views/templates/index.vue'),
         meta: { title: '模板管理', icon: 'Tickets' },
+      },
+      {
+        path: 'groups',
+        name: 'Groups',
+        component: () => import('@/views/groups/index.vue'),
+        meta: { title: '群组管理', icon: 'ChatLineSquare' },
+      },
+      {
+        path: 'login-logs',
+        name: 'LoginLogs',
+        component: () => import('@/views/login-logs/index.vue'),
+        meta: { title: '登录日志', icon: 'Connection' },
+      },
+      {
+        path: 'security-audit',
+        name: 'SecurityAudit',
+        component: () => import('@/views/security-audit/index.vue'),
+        meta: { title: '安全审计', icon: 'Lock' },
+      },
+      {
+        path: 'notifications',
+        name: 'AdminNotifications',
+        component: () => import('@/views/notifications/index.vue'),
+        meta: { title: '通知管理', icon: 'Bell' },
+      },
+      {
+        path: 'cache',
+        name: 'CacheManagement',
+        component: () => import('@/views/cache/index.vue'),
+        meta: { title: '缓存管理', icon: 'Coin' },
       },
       {
         path: 'settings',

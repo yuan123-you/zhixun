@@ -11,13 +11,17 @@ import com.zhixun.service.MessageService;
 import com.zhixun.common.util.JwtUtil;
 import com.zhixun.service.OnlineStatusService;
 import com.zhixun.vo.MessageVO;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.io.IOException;
 import java.net.URI;
@@ -118,26 +122,38 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     /**
      * 从 WebSocket 连接中提取用户ID
-     * 通过查询参数 token 验证 JWT
+     * 优先从 Cookie 读取 accessToken，其次从 URL 参数读取（兼容旧版本）
      */
     private Long extractUserId(WebSocketSession session) {
         try {
-            URI uri = session.getUri();
-            if (uri == null) {
-                return null;
-            }
-
-            String query = uri.getQuery();
-            if (query == null || !query.contains("token=")) {
-                return null;
-            }
-
-            // 提取 token 参数
             String token = null;
-            for (String param : query.split("&")) {
-                if (param.startsWith("token=")) {
-                    token = param.substring(6);
-                    break;
+
+            // 优先从握手时的 HTTP 请求属性中获取 Cookie token（已由 WebSocketConfig 拦截器验证）
+            if (session.getAttributes().containsKey("handshakeCookies")) {
+                Object cookiesObj = session.getAttributes().get("handshakeCookies");
+                if (cookiesObj instanceof jakarta.servlet.http.Cookie[] cookies) {
+                    for (jakarta.servlet.http.Cookie cookie : cookies) {
+                        if ("accessToken".equals(cookie.getName())) {
+                            token = cookie.getValue();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Cookie 中无 token，尝试从 URL 参数读取（兼容旧版本）
+            if (token == null || token.isEmpty()) {
+                URI uri = session.getUri();
+                if (uri != null) {
+                    String query = uri.getQuery();
+                    if (query != null && query.contains("token=")) {
+                        for (String param : query.split("&")) {
+                            if (param.startsWith("token=")) {
+                                token = param.substring(6);
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 

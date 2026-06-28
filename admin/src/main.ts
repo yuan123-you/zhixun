@@ -19,8 +19,8 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-// 注册 Element Plus，使用中文语言包
-app.use(ElementPlus, { locale: zhCn })
+// 全局 Element Plus 提示配置（移动端适配 / 防溢出 / 显眼）
+app.use(ElementPlus, { locale: zhCn, size: 'default' })
 
 // 注册 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
@@ -44,5 +44,20 @@ app.directive('permission', {
     }
   },
 })
+
+// 全局 ElMessage 移动端适配配置（设置后所有页面 ElMessage 弹出的提示都更显眼、不溢出）
+// 通过覆写 .el-message CSS 自定义属性来集中控制位置、宽度、圆角、阴影（见 styles/index.scss）
+import { ElMessage } from 'element-plus'
+;(ElMessage as any).options = {
+  ...((ElMessage as any).options || {}),
+  // 顶部距离：让消息贴近顶部，比默认更显眼（不被 header 遮挡）
+  offset: 24,
+  // 多个消息合并展示（去重提示）
+  grouping: true,
+  // 默认展示时长（被调用方 options.duration 覆盖）
+  duration: 2500,
+  // 不显示关闭按钮（小屏上 X 容易误触）
+  showClose: false,
+}
 
 app.mount('#app')

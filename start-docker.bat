@@ -32,12 +32,13 @@ echo    所有服务已启动！
 echo ============================================
 echo.
 echo    后端 API:    http://localhost:8080/api/v1
-echo    C端前端:      http://localhost:3000
+echo    C端前端:      http://localhost:3500
 echo    管理后台:      http://localhost:3001
 echo    Nginx入口:    http://localhost
 echo    RabbitMQ管理: http://localhost:15672
 echo    MinIO控制台:  http://localhost:9001
 echo.
+echo    端口定义参考: docs\PORTS.md
 echo    查看日志: docker compose logs -f
 echo    停止服务: docker compose down
 echo ============================================

@@ -13,6 +13,15 @@ public class MessageVO {
     /** 消息ID */
     private Long id;
 
+    /** 会话ID */
+    private Long conversationId;
+
+    /** 消息类型 */
+    private String type;
+
+    /** 发送者信息 */
+    private UserVO sender;
+
     /** 发送者ID */
     private Long senderId;
 

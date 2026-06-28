@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="comment-management">
     <!-- 搜索筛选 -->
     <el-card shadow="never" class="search-card">
@@ -135,7 +135,7 @@ async function handleApprove(comment: Comment) {
   try {
     await approveComment(comment.id)
     ElMessage.success('审核通过')
-    commentCache.invalidate('/comments', queryParams as unknown as Record<string, unknown>)
+    commentCache.invalidate('/admin/comments', queryParams as unknown as Record<string, unknown>)
     loadComments()
   } catch {
     // 错误已在拦截器中处理
@@ -152,21 +152,22 @@ async function handleDelete(comment: Comment) {
     })
     await deleteComment(comment.id)
     ElMessage.success('删除成功')
-    commentCache.invalidate('/comments', queryParams as unknown as Record<string, unknown>)
+    commentCache.invalidate('/admin/comments', queryParams as unknown as Record<string, unknown>)
     loadComments()
   } catch {
     // 用户取消或请求失败
   }
 }
 
-/** 加载评论列表 */
+/** 删除评论 */
 async function loadComments(force = false) {
   loading.value = true
   hasError.value = false
   try {
-    const result = await commentCache.request('/comments', queryParams as unknown as Record<string, unknown>, { force })
-    commentList.value = result.list
-    total.value = result.total
+    // 注：管理端评论列表走 /admin/comments（公开接口 /comments 不存在，否则 500）
+  const result = await commentCache.request('/admin/comments', queryParams as unknown as Record<string, unknown>, { force })
+  commentList.value = (result as any).list || (result as any).data || []
+  total.value = (result as any).total || 0
   } catch {
     hasError.value = true
     ElMessage.error('评论列表加载失败，请检查网络后重试')

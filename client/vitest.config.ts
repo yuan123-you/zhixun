@@ -4,7 +4,8 @@ import { resolve } from 'path'
 export default defineConfig({
   resolve: {
     alias: {
-      '~': resolve(__dirname, '.'),
+      '~': resolve(__dirname, 'src'),
+      '@': resolve(__dirname, 'src'),
     },
   },
   test: {
@@ -13,7 +14,7 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      include: ['composables/useShuffleRefresh.ts', 'composables/useRefresh.ts'],
+      include: ['src/composables/useShuffleRefresh.ts', 'src/composables/useRefresh.ts', 'src/utils/sanitize.ts', 'src/utils/storage.ts'],
     },
   },
 })

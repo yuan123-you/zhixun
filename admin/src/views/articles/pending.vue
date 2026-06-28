@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="pending-articles">
     <!-- 搜索栏 -->
     <el-card shadow="never" class="search-card">
@@ -151,7 +151,7 @@ function handlePreview(article: Article) {
 /** 通过审核 */
 async function handleApprove(article: Article) {
   try {
-    await auditArticle({ id: article.id, action: 'approve' })
+    await auditArticle({ id: article.id, status: 2 })
     ElMessage.success('审核通过')
     loadPendingArticles()
   } catch {
@@ -175,7 +175,7 @@ async function confirmReject() {
   try {
     await auditArticle({
       id: currentRejectId.value,
-      action: 'reject',
+      status: 3,
       reason: rejectForm.reason,
     })
     ElMessage.success('已驳回')

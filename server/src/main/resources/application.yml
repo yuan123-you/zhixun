@@ -146,8 +146,8 @@ jwt:
   access-secret: ${JWT_ACCESS_SECRET:}
   # 刷新令牌密钥（至少32字节，Base64编码）
   refresh-secret: ${JWT_REFRESH_SECRET:}
-  # 访问令牌过期时间（秒）- 2小时
-  access-expiration: ${JWT_ACCESS_EXPIRATION:7200}
+  # 访问令牌过期时间（秒）- 7天
+  access-expiration: ${JWT_ACCESS_EXPIRATION:604800}
   # 刷新令牌过期时间（秒）- 7天
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
   # 令牌前缀
@@ -161,13 +161,11 @@ jwt:
 aes:
   secret-key: ${AES_SECRET_KEY:}
 
-# SSR 服务端通信配置
-ssr:
-  # SSR 服务端通信密钥：用于 Nuxt SSR 发起 POST 等状态变更请求时替代 CSRF Token
-  # 仅在服务端环境变量中配置，不暴露给浏览器端，防止 CSRF 攻击
-  # Nuxt SSR 请求时通过 X-SSR-Secret 请求头携带此密钥
-  # ⚠️ 生产环境必须通过环境变量注入，禁止为空
-  secret: ${SSR_SECRET:}
+# 端口统一约定（完整定义见 docs/PORTS.md，本文件不做硬编码端口）
+# - Backend: SERVER_PORT=8080（自身）
+# - 客户端连接：MySQL=3306 / Redis=6379 / RabbitMQ=5672 / MinIO=9000 / OpenSearch=9201
+# - 主机切换：本地开发使用 localhost，Docker 部署使用对应容器名
+# - 历史变更：OpenSearch HTTP 原 9200 → 9201，让出 8080 给 Spring Boot
 
 # OAuth 第三方登录配置
 oauth:
@@ -193,8 +191,10 @@ minio:
   bucket-name: ${MINIO_BUCKET:zhixun}
 
 # OpenSearch 配置
+# 端口规划（与 docs/PORTS.md 一致）：HTTP REST 统一使用 9201，让出 8080 给 Spring Boot
+# 历史原因：OpenSearch 2.11 的 performance analyzer 默认监听 8080，会与后端冲突。
 opensearch:
-  hosts: ${OPENSEARCH_HOSTS:http://localhost:9200}
+  hosts: ${OPENSEARCH_HOSTS:http://localhost:9201}
   username: ${OPENSEARCH_USERNAME:}
   password: ${OPENSEARCH_PASSWORD:}
   connect-timeout: 5000
@@ -202,6 +202,9 @@ opensearch:
   index-prefix: zhixun_
 
 # Sentinel 限流熔断配置
+# Dashboard 地址（端口来源：docs/PORTS.md）
+#   本地：localhost:8080（与 Backend 同机）
+#   Docker：server:8080
 sentinel:
   # 是否启用 Sentinel（生产环境建议开启）
   enabled: ${SENTINEL_ENABLED:true}
@@ -216,13 +219,21 @@ sentinel:
 app:
   data-version: ${APP_DATA_VERSION:20250625}
   # 知讯官方账号ID（新用户注册后将自动关注该账号并接收欢迎消息）
-  official-account-id: ${OFFICIAL_ACCOUNT_ID:0}
+  official-account-id: ${OFFICIAL_ACCOUNT_ID:1}
 # 智谱AI 配置 (ZhiPuAI glm-4.7-flash)
 zhixun:
   ai:
     api-key: ${ZHIPU_API_KEY:}
     base-url: ${ZHIPU_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
+    # 智谱免费模型：glm-4.7-flash（300亿参数MoE，https://open.bigmodel.cn/ ）
     model: ${ZHIPU_MODEL:glm-4.7-flash}
+  # 腾讯地图配置（用于 IP 定位 / 逆地理编码）
+  map:
+    tencent:
+      # 腾讯地图开发者 Key；为空时 IP 定位降级到 ip-api
+      key: ${TENCENT_MAP_KEY:}
+      # 是否启用腾讯地图 IP 定位（生产建议 true）
+      enabled: ${TENCENT_MAP_ENABLED:true}
 
 logging:
   level:

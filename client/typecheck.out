@@ -1,0 +1,69 @@
+src/components/EmojiPicker.vue(32,29): error TS2339: Property '$el' does not exist on type 'HTMLElement'.
+src/components/MentionInput.vue(12,8): error TS2322: Type '(e: KeyboardEvent) => void' is not assignable to type '(evt: Event | KeyboardEvent) => any'.
+  Types of parameters 'e' and 'evt' are incompatible.
+    Type 'Event | KeyboardEvent' is not assignable to type 'KeyboardEvent'.
+      Type 'Event' is missing the following properties from type 'KeyboardEvent': altKey, charCode, code, ctrlKey, and 17 more.
+src/components/NotificationBell.vue(28,62): error TS2345: Argument of type 'import("d:/zhixun/client/src/types/index").NotificationType' is not assignable to parameter of type 'string'.
+src/components/NotificationBell.vue(29,67): error TS2345: Argument of type 'import("d:/zhixun/client/src/types/index").NotificationType' is not assignable to parameter of type 'string'.
+src/components/NotificationBell.vue(81,33): error TS2339: Property 'items' does not exist on type 'PageResult<Notification>'.
+src/components/SearchBar.vue(49,9): error TS2339: Property 'searchApi' does not exist on type '{ instance: AxiosInstance; get: <T = any>(url: string, params?: Record<string, any> | undefined, options?: AxiosRequestConfig<any> | undefined) => Promise<...>; post: <T = any>(url: string, data?: any, options?: AxiosRequestConfig<...> | undefined) => Promise<...>; put: <T = any>(url: string, data?: any, options?: A...'.
+src/components/SearchBar.vue(68,35): error TS2304: Cannot find name 'useDebounceFn'.
+src/components/ShareDialog.vue(161,31): error TS2345: Argument of type '"qq" | "weibo" | "link"' is not assignable to parameter of type '"qq" | "weibo"'.
+  Type '"link"' is not assignable to type '"qq" | "weibo"'.
+src/components/ShareDialog.vue(214,33): error TS7016: Could not find a declaration file for module 'qrcode'. 'd:/zhixun/client/node_modules/qrcode/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/qrcode` if it exists or add a new declaration (.d.ts) file containing `declare module 'qrcode';`
+src/components/SharePoster.vue(62,33): error TS7016: Could not find a declaration file for module 'qrcode'. 'd:/zhixun/client/node_modules/qrcode/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/qrcode` if it exists or add a new declaration (.d.ts) file containing `declare module 'qrcode';`
+src/composables/useApi.ts(153,5): error TS2345: Argument of type '(response: AxiosResponse<ApiResponse>) => AxiosResponse<ApiResponse<any>, any, {}> | Promise<unknown>' is not assignable to parameter of type 'AxiosInterceptorFulfilled<AxiosResponse<any, any, {}>>'.
+  Type 'AxiosResponse<ApiResponse<any>, any, {}> | Promise<unknown>' is not assignable to type 'AxiosResponse<any, any, {}> | Promise<AxiosResponse<any, any, {}>>'.
+    Type 'Promise<unknown>' is not assignable to type 'AxiosResponse<any, any, {}> | Promise<AxiosResponse<any, any, {}>>'.
+      Type 'Promise<unknown>' is not assignable to type 'Promise<AxiosResponse<any, any, {}>>'.
+        Type 'unknown' is not assignable to type 'AxiosResponse<any, any, {}>'.
+src/composables/useAuth.ts(15,25): error TS2345: Argument of type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is not assignable to parameter of type 'User'.
+  Type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is missing the following properties from type 'User': bio, gender, birthday, followCount, and 5 more.
+src/composables/useAuth.ts(33,25): error TS2345: Argument of type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is not assignable to parameter of type 'User'.
+  Type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is missing the following properties from type 'User': bio, gender, birthday, followCount, and 5 more.
+src/composables/useOrientation.ts(40,34): error TS2339: Property 'lock' does not exist on type 'ScreenOrientation'.
+src/pages/discover/index.vue(328,17): error TS2322: Type 'Promise<AxiosResponse<ApiResponse<RankItem[]>, any, {}>>' is not assignable to type 'Promise<ApiResponse<RankItem[]>>'.
+  Type 'AxiosResponse<ApiResponse<RankItem[]>, any, {}>' is missing the following properties from type 'ApiResponse<RankItem[]>': code, message
+src/pages/discover/index.vue(352,17): error TS2322: Type 'Promise<AxiosResponse<ApiResponse<Tag[]>, any, {}>>' is not assignable to type 'Promise<ApiResponse<Tag[]>>'.
+  Type 'AxiosResponse<ApiResponse<Tag[]>, any, {}>' is missing the following properties from type 'ApiResponse<Tag[]>': code, message
+src/pages/discover/index.vue(462,13): error TS2322: Type 'Promise<AxiosResponse<ApiResponse<RankItem[]>, any, {}>>' is not assignable to type 'Promise<ApiResponse<RankItem[]>>'.
+  Type 'AxiosResponse<ApiResponse<RankItem[]>, any, {}>' is missing the following properties from type 'ApiResponse<RankItem[]>': code, message
+src/pages/discover/index.vue(485,13): error TS2322: Type 'Promise<AxiosResponse<ApiResponse<Tag[]>, any, {}>>' is not assignable to type 'Promise<ApiResponse<Tag[]>>'.
+  Type 'AxiosResponse<ApiResponse<Tag[]>, any, {}>' is missing the following properties from type 'ApiResponse<Tag[]>': code, message
+src/pages/groups/index.vue(113,23): error TS2339: Property 'navigateTo' does not exist on type 'CreateComponentPublicInstanceWithMixins<ToResolvedProps<{}, {}>, { avatarColor: (name: string) => string; userStore: Store<"user", Pick<{ token: Ref<string, string>; refreshToken: Ref<string, string>; ... 8 more ...; init: () => void; }, "token" | ... 2 more ... | "userInfo">, Pick<...>, Pick<...>>; ... 23 more ...;...'.
+src/pages/groups/index.vue(287,25): error TS2339: Property 'navigateTo' does not exist on type 'CreateComponentPublicInstanceWithMixins<ToResolvedProps<{}, {}>, { avatarColor: (name: string) => string; userStore: Store<"user", Pick<{ token: Ref<string, string>; refreshToken: Ref<string, string>; ... 8 more ...; init: () => void; }, "token" | ... 2 more ... | "userInfo">, Pick<...>, Pick<...>>; ... 23 more ...;...'.
+src/pages/groups/index.vue(355,21): error TS2339: Property 'navigateTo' does not exist on type 'CreateComponentPublicInstanceWithMixins<ToResolvedProps<{}, {}>, { avatarColor: (name: string) => string; userStore: Store<"user", Pick<{ token: Ref<string, string>; refreshToken: Ref<string, string>; ... 8 more ...; init: () => void; }, "token" | ... 2 more ... | "userInfo">, Pick<...>, Pick<...>>; ... 23 more ...;...'.
+src/pages/notifications/index.vue(83,65): error TS2339: Property 'senderAvatar' does not exist on type '{ id: number; conversationId: number; senderId: number; sender: { id: number; uid: string; uidUpdatedAt?: string | undefined; username: string; nickname: string; avatar: string; bio: string; email: string; ... 15 more ...; createdAt: string; }; content: string; type: MessageType; isRead: boolean; createdAt: string; }'.
+src/pages/notifications/index.vue(292,64): error TS2339: Property 'items' does not exist on type 'PageResult<Message>'.
+src/pages/search/index.vue(23,10): error TS2345: Argument of type '{ placeholder: string; class: string; ref: string; value: string; type: "text"; onKeydown: (loadMore?: boolean) => Promise<void>; onInput: () => void; onBlur: (payload: FocusEvent) => void; onFocus: (payload: FocusEvent) => void; }' is not assignable to parameter of type 'InputHTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ placeholder: string; class: string; ref: string; value: string; type: "text"; onKeydown: (loadMore?: boolean) => Promise<void>; onInput: () => void; onBlur: (payload: FocusEvent) => void; onFocus: (payload: FocusEvent) => void; }' is not assignable to type 'InputHTMLAttributes'.
+    Types of property 'onKeydown' are incompatible.
+      Type '(loadMore?: boolean) => Promise<void>' is not assignable to type '(payload: KeyboardEvent) => void'.
+        Types of parameters 'loadMore' and 'payload' are incompatible.
+          Type 'KeyboardEvent' is not assignable to type 'boolean | undefined'.
+src/pages/search/index.vue(56,10): error TS2345: Argument of type '{ placeholder: string; class: string; ref: string; value: string; type: "text"; onKeydown: (loadMore?: boolean) => Promise<void>; onInput: () => void; onBlur: (payload: FocusEvent) => void; onFocus: (payload: FocusEvent) => void; }' is not assignable to parameter of type 'InputHTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ placeholder: string; class: string; ref: string; value: string; type: "text"; onKeydown: (loadMore?: boolean) => Promise<void>; onInput: () => void; onBlur: (payload: FocusEvent) => void; onFocus: (payload: FocusEvent) => void; }' is not assignable to type 'InputHTMLAttributes'.
+    Types of property 'onKeydown' are incompatible.
+      Type '(loadMore?: boolean) => Promise<void>' is not assignable to type '(payload: KeyboardEvent) => void'.
+        Types of parameters 'loadMore' and 'payload' are incompatible.
+          Type 'KeyboardEvent' is not assignable to type 'boolean | undefined'.
+src/pages/search/index.vue(75,10): error TS2345: Argument of type '{ class: string; onClick: (loadMore?: boolean) => Promise<void>; }' is not assignable to parameter of type 'ButtonHTMLAttributes & ReservedProps & Record<string, unknown>'.
+  Type '{ class: string; onClick: (loadMore?: boolean) => Promise<void>; }' is not assignable to type 'ButtonHTMLAttributes'.
+    Types of property 'onClick' are incompatible.
+      Type '(loadMore?: boolean) => Promise<void>' is not assignable to type '(payload: PointerEvent) => void'.
+        Types of parameters 'loadMore' and 'payload' are incompatible.
+          Type 'PointerEvent' is not assignable to type 'boolean | undefined'.
+src/pages/user/[id].vue(210,44): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+src/pages/user/[id].vue(279,39): error TS2339: Property 'items' does not exist on type 'PageResult<Article>'.
+src/pages/user/[id]/followers.vue(55,48): error TS2339: Property 'items' does not exist on type 'PageResult<FollowUser>'.
+src/pages/user/[id]/following.vue(52,48): error TS2339: Property 'items' does not exist on type 'PageResult<FollowUser>'.
+src/plugins/api.ts(41,27): error TS2345: Argument of type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is not assignable to parameter of type 'User'.
+  Type '{ id: number; uid: string; username: string; nickname: string; avatar: string; role: string; email: string; phone: string; }' is missing the following properties from type 'User': bio, gender, birthday, followCount, and 5 more.
+src/stores/message.ts(128,25): error TS2352: Conversion of type 'Conversation[]' to type 'RawConversation[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Conversation' is missing the following properties from type 'RawConversation': userId, nickname, avatar, lastMessageTime
+src/stores/message.ts(155,25): error TS2352: Conversion of type 'Message[]' to type 'RawMessage[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Message' is not comparable to type 'RawMessage'.
+    Types of property 'isRead' are incompatible.
+      Type 'boolean' is not comparable to type 'number'.

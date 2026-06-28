@@ -20,6 +20,9 @@ public class CommentVO {
     /** 评论内容 */
     private String content;
 
+    /** 评论图片URL列表 */
+    private List<String> images;
+
     /** 评论状态 */
     private Integer status;
 

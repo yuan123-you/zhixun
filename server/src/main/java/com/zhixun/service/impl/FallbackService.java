@@ -3,6 +3,7 @@ package com.zhixun.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.result.PageResult;
+import com.zhixun.common.util.ServiceUtils;
 import com.zhixun.config.Slave;
 import com.zhixun.entity.Article;
 import com.zhixun.entity.User;
@@ -60,7 +61,7 @@ public class FallbackService {
         String cacheKey = FALLBACK_HOT_ARTICLES_KEY + ":page:" + page + ":size:" + pageSize;
         String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
         if (cachedIds != null && !cachedIds.isEmpty()) {
-            List<Long> articleIds = parseIds(cachedIds);
+            List<Long> articleIds = ServiceUtils.parseIds(cachedIds);
             if (!articleIds.isEmpty()) {
                 List<Article> articles = articleMapper.selectBatchIds(articleIds);
                 List<ArticleVO> voList = convertToSimpleVOList(articles);
@@ -230,7 +231,7 @@ public class FallbackService {
         String cacheKey = FALLBACK_RANK_KEY_PREFIX + period + ":" + (categoryId != null ? categoryId : "all");
         String cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
         if (cachedIds != null && !cachedIds.isEmpty()) {
-            List<Long> articleIds = parseIds(cachedIds);
+            List<Long> articleIds = ServiceUtils.parseIds(cachedIds);
             if (!articleIds.isEmpty()) {
                 List<Long> pageIds = articleIds.stream().limit(limit).collect(Collectors.toList());
                 List<Article> articles = articleMapper.selectBatchIds(pageIds);
@@ -278,22 +279,5 @@ public class FallbackService {
         }).collect(Collectors.toList());
     }
 
-    /**
-     * 解析缓存的ID字符串
-     */
-    private List<Long> parseIds(String idsStr) {
-        String[] parts = idsStr.split(",");
-        return java.util.Arrays.stream(parts)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(s -> {
-                    try {
-                        return Long.parseLong(s);
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
-                })
-                .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toList());
-    }
+
 }

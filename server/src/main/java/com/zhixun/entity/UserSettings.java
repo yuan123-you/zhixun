@@ -44,6 +44,27 @@ public class UserSettings {
     /** 保存浏览历史，对应 save_view_history */
     private Integer saveViewHistory;
 
+    /** 内容推荐，对应 content_recommend */
+    private Integer contentRecommend;
+
+    /** 自动播放视频，对应 auto_play_video */
+    private Integer autoPlayVideo;
+
+    /** 免打扰开关，对应 quiet_hours_enabled */
+    private Integer quietHoursEnabled;
+
+    /** 免打扰开始时间，对应 quiet_hours_start */
+    private String quietHoursStart;
+
+    /** 免打扰结束时间，对应 quiet_hours_end */
+    private String quietHoursEnd;
+
+    /** 显示阅读量，对应 show_view_count */
+    private Integer showViewCount;
+
+    /** 允许被搜索，对应 allow_search */
+    private Integer allowSearch;
+
     /** 字体大小，对应 font_size */
     private Integer fontSize;
 

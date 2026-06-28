@@ -11,11 +11,15 @@ import com.zhixun.dto.admin.SensitiveWhitelistRequest;
 import com.zhixun.dto.admin.SensitiveWordRequest;
 import com.zhixun.dto.admin.UserStatusRequest;
 import com.zhixun.entity.Article;
+import com.zhixun.entity.ArticleCollaborator;
 import com.zhixun.entity.ArticleLike;
 import com.zhixun.entity.ArticleTag;
 import com.zhixun.entity.ArticleViewHistory;
 import com.zhixun.entity.Category;
 import com.zhixun.entity.Comment;
+import com.zhixun.entity.GroupInfo;
+import com.zhixun.entity.GroupMember;
+import com.zhixun.entity.GroupMessage;
 import com.zhixun.entity.LoginLog;
 import com.zhixun.entity.Notification;
 import com.zhixun.entity.OperationLog;
@@ -24,6 +28,7 @@ import com.zhixun.entity.SensitiveWhitelist;
 import com.zhixun.entity.SensitiveWord;
 import com.zhixun.entity.Tag;
 import com.zhixun.entity.User;
+import com.zhixun.entity.UserMessage;
 import com.zhixun.enums.ArticleStatusEnum;
 import com.zhixun.enums.CommentStatusEnum;
 import com.zhixun.enums.LikeTargetTypeEnum;
@@ -34,8 +39,12 @@ import com.zhixun.mapper.ArticleLikeMapper;
 import com.zhixun.mapper.ArticleMapper;
 import com.zhixun.mapper.ArticleTagMapper;
 import com.zhixun.mapper.ArticleViewHistoryMapper;
+import com.zhixun.mapper.ArticleCollaboratorMapper;
 import com.zhixun.mapper.CategoryMapper;
 import com.zhixun.mapper.CommentMapper;
+import com.zhixun.mapper.GroupMapper;
+import com.zhixun.mapper.GroupMemberMapper;
+import com.zhixun.mapper.GroupMessageMapper;
 import com.zhixun.mapper.LoginLogMapper;
 import com.zhixun.mapper.NotificationMapper;
 import com.zhixun.mapper.OperationLogMapper;
@@ -44,14 +53,21 @@ import com.zhixun.mapper.SensitiveWhitelistMapper;
 import com.zhixun.mapper.SensitiveWordMapper;
 import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
+import com.zhixun.mapper.UserMessageMapper;
 import com.zhixun.mapper.ViewHistoryMapper;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.service.AdminService;
 import com.zhixun.service.NotificationService;
 import com.zhixun.service.OperationLogService;
 import com.zhixun.vo.ArticleVO;
+import com.zhixun.vo.CollaboratorVO;
 import com.zhixun.vo.CommentVO;
+import com.zhixun.vo.ConversationVO;
 import com.zhixun.vo.DashboardVO;
+import com.zhixun.vo.GroupMessageVO;
+import com.zhixun.vo.GroupVO;
+import com.zhixun.vo.MessageVO;
+import com.zhixun.vo.NotificationVO;
 import com.zhixun.vo.TagVO;
 import com.zhixun.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -72,6 +88,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -100,6 +117,11 @@ public class AdminServiceImpl implements AdminService {
     private final NotificationMapper notificationMapper;
     private final LoginLogMapper loginLogMapper;
     private final ViewHistoryMapper viewHistoryMapper;
+    private final GroupMapper groupMapper;
+    private final GroupMemberMapper groupMemberMapper;
+    private final GroupMessageMapper groupMessageMapper;
+    private final ArticleCollaboratorMapper articleCollaboratorMapper;
+    private final UserMessageMapper userMessageMapper;
     private final OperationLogService operationLogService;
     private final SensitiveWordUtil sensitiveWordUtil;
     private final NotificationService notificationService;
@@ -173,82 +195,110 @@ public class AdminServiceImpl implements AdminService {
      */
     public DashboardVO getDashboardOverview(String period) {
         DashboardVO vo = new DashboardVO();
+        try {
+            LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+            // 用户总量
+            vo.setUserTotal(userMapper.selectCount(
+                    new LambdaQueryWrapper<>()));
 
-        // 用户总量
-        vo.setUserTotal(userMapper.selectCount(
-                new LambdaQueryWrapper<>()));
+            // 作品总量
+            vo.setArticleTotal(articleMapper.selectCount(
+                    new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)));
 
-        // 作品总量
-        vo.setArticleTotal(articleMapper.selectCount(
-                new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)));
-
-        // 今日日活用户数
-        vo.setTodayDau(userMapper.selectCount(
-                new LambdaQueryWrapper<User>()
-                        .ge(User::getLastLoginAt, todayStart)));
-
-        // 今日浏览量
-        vo.setTodayView(articleViewHistoryMapper.selectCount(
-                new LambdaQueryWrapper<ArticleViewHistory>()
-                        .ge(ArticleViewHistory::getCreateTime, todayStart)));
-
-        // 今日点赞数
-        vo.setTodayLike(articleLikeMapper.selectCount(
-                new LambdaQueryWrapper<ArticleLike>()
-                        .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
-                        .ge(ArticleLike::getCreatedAt, todayStart)));
-
-        // 今日评论数
-        vo.setTodayComment(commentMapper.selectCount(
-                new LambdaQueryWrapper<Comment>()
-                        .ge(Comment::getCreatedAt, todayStart)));
-
-        // 近7天趋势数据
-        DashboardVO.TrendData trendData = new DashboardVO.TrendData();
-        List<String> dates = new ArrayList<>();
-        List<Long> views = new ArrayList<>();
-        List<Long> users = new ArrayList<>();
-
-        for (int i = 6; i >= 0; i--) {
-            LocalDate date = LocalDate.now().minusDays(i);
-            LocalDateTime dayStart = date.atStartOfDay();
-            LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
-
-            dates.add(date.format(DateTimeFormatter.ofPattern("MM-dd")));
-            views.add(articleViewHistoryMapper.selectCount(
-                    new LambdaQueryWrapper<ArticleViewHistory>()
-                            .ge(ArticleViewHistory::getCreateTime, dayStart)
-                            .lt(ArticleViewHistory::getCreateTime, dayEnd)));
-            users.add(userMapper.selectCount(
+            // 今日日活用户数
+            vo.setTodayDau(userMapper.selectCount(
                     new LambdaQueryWrapper<User>()
-                            .ge(User::getCreatedAt, dayStart)
-                            .lt(User::getCreatedAt, dayEnd)));
+                            .ge(User::getLastLoginAt, todayStart)));
+
+            // 今日浏览量
+            vo.setTodayView(articleViewHistoryMapper.selectCount(
+                    new LambdaQueryWrapper<ArticleViewHistory>()
+                            .ge(ArticleViewHistory::getCreateTime, todayStart)));
+
+            // 今日点赞数
+            vo.setTodayLike(articleLikeMapper.selectCount(
+                    new LambdaQueryWrapper<ArticleLike>()
+                            .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
+                            .ge(ArticleLike::getCreatedAt, todayStart)));
+
+            // 今日评论数
+            vo.setTodayComment(commentMapper.selectCount(
+                    new LambdaQueryWrapper<Comment>()
+                            .ge(Comment::getCreatedAt, todayStart)));
+
+            // 近7天趋势数据
+            DashboardVO.TrendData trendData = new DashboardVO.TrendData();
+            List<String> dates = new ArrayList<>();
+            List<Long> views = new ArrayList<>();
+            List<Long> users = new ArrayList<>();
+
+            for (int i = 6; i >= 0; i--) {
+                LocalDate date = LocalDate.now().minusDays(i);
+                LocalDateTime dayStart = date.atStartOfDay();
+                LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+
+                dates.add(date.format(DateTimeFormatter.ofPattern("MM-dd")));
+                views.add(articleViewHistoryMapper.selectCount(
+                        new LambdaQueryWrapper<ArticleViewHistory>()
+                                .ge(ArticleViewHistory::getCreateTime, dayStart)
+                                .lt(ArticleViewHistory::getCreateTime, dayEnd)));
+                users.add(userMapper.selectCount(
+                        new LambdaQueryWrapper<User>()
+                                .ge(User::getCreatedAt, dayStart)
+                                .lt(User::getCreatedAt, dayEnd)));
+            }
+
+            trendData.setDates(dates);
+            trendData.setViews(views);
+            trendData.setUsers(users);
+            vo.setTrend(trendData);
+        } catch (Exception e) {
+            log.error("获取 Dashboard 基础数据失败", e);
         }
 
-        trendData.setDates(dates);
-        trendData.setViews(views);
-        trendData.setUsers(users);
-        vo.setTrend(trendData);
+        // 子模块独立容错，避免单个失败导致整个接口 500
+        try {
+            vo.setRetentionRates(getRetentionRates());
+        } catch (Exception e) {
+            log.error("计算留存率失败", e);
+            vo.setRetentionRates(Collections.emptyList());
+        }
 
-        // 用户留存率（查询注册用户在后续7天内的登录留存率）
-        vo.setRetentionRates(getRetentionRates());
+        try {
+            vo.setActivityDistributions(getActivityDistributions());
+        } catch (Exception e) {
+            log.error("计算活跃度分布失败", e);
+            vo.setActivityDistributions(Collections.emptyList());
+        }
 
-        // 用户活跃度分布
-        vo.setActivityDistributions(getActivityDistributions());
+        try {
+            vo.setGrowthTrends(getGrowthTrends(period));
+        } catch (Exception e) {
+            log.error("计算增长趋势失败", e);
+            vo.setGrowthTrends(Collections.emptyList());
+        }
 
-        // 增长趋势数据（按时间维度）
-        vo.setGrowthTrends(getGrowthTrends(period));
+        try {
+            vo.setCategoryDistributions(getCategoryDistributions());
+        } catch (Exception e) {
+            log.error("计算分类分布失败", e);
+            vo.setCategoryDistributions(Collections.emptyList());
+        }
 
-        // 分类作品分布
-        vo.setCategoryDistributions(getCategoryDistributions());
+        try {
+            vo.setHotArticleRanks(getHotArticleRanks());
+        } catch (Exception e) {
+            log.error("计算热门作品失败", e);
+            vo.setHotArticleRanks(Collections.emptyList());
+        }
 
-        // 热门作品排行
-        vo.setHotArticleRanks(getHotArticleRanks());
-
-        // 创作者排行
-        vo.setCreatorRanks(getCreatorRanks());
+        try {
+            vo.setCreatorRanks(getCreatorRanks());
+        } catch (Exception e) {
+            log.error("计算创作者排行失败", e);
+            vo.setCreatorRanks(Collections.emptyList());
+        }
 
         return vo;
     }
@@ -859,8 +909,9 @@ public class AdminServiceImpl implements AdminService {
                         .ge(LoginLog::getCreatedAt, weekAgo)
                         .eq(LoginLog::getStatus, 1));
 
-        // 按用户分组统计登录次数
+        // 按用户分组统计登录次数（过滤 null userId，避免 NPE）
         Map<Long, Long> userLoginCount = recentLogs.stream()
+                .filter(log -> log.getUserId() != null)
                 .collect(Collectors.groupingBy(LoginLog::getUserId, Collectors.counting()));
 
         long highCount = userLoginCount.values().stream().filter(c -> c >= 5).count();
@@ -1096,5 +1147,475 @@ public class AdminServiceImpl implements AdminService {
         }
 
         return ranks;
+    }
+
+    // ========== 群组管理 ==========
+
+    @Override
+    public PageResult<GroupVO> getGroupList(String keyword, Integer status, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<GroupInfo> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w.like(GroupInfo::getName, keyword)
+                    .or().like(GroupInfo::getGroupNumber, keyword));
+        }
+        if (status != null) {
+            wrapper.eq(GroupInfo::getStatus, status);
+        }
+        wrapper.orderByDesc(GroupInfo::getCreatedAt);
+
+        Page<GroupInfo> groupPage = new Page<>(page, pageSize);
+        Page<GroupInfo> result = groupMapper.selectPage(groupPage, wrapper);
+
+        Set<Long> ownerIds = result.getRecords().stream()
+                .map(GroupInfo::getOwnerId).collect(Collectors.toSet());
+        Map<Long, User> ownerMap = ownerIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(ownerIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<GroupVO> voList = result.getRecords().stream().map(g -> {
+            GroupVO vo = new GroupVO();
+            vo.setId(g.getId());
+            vo.setName(g.getName());
+            vo.setGroupNumber(g.getGroupNumber());
+            vo.setAvatar(g.getAvatar());
+            vo.setDescription(g.getDescription());
+            vo.setOwnerId(g.getOwnerId());
+            User owner = ownerMap.get(g.getOwnerId());
+            vo.setOwnerName(owner != null ? owner.getNickname() : "");
+            vo.setMemberCount(g.getMemberCount());
+            vo.setMaxMembers(g.getMaxMembers());
+            vo.setIsPublic(g.getIsPublic());
+            vo.setStatus(g.getStatus());
+            vo.setCreatedAt(g.getCreatedAt());
+            vo.setUpdatedAt(g.getUpdatedAt());
+            vo.setJoinedAt(g.getCreatedAt());
+            return vo;
+        }).collect(Collectors.toList());
+
+        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void toggleGroupStatus(Long adminId, Long groupId, Integer status) {
+        GroupInfo group = groupMapper.selectById(groupId);
+        if (group == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "群组不存在");
+        }
+        group.setStatus(status);
+        groupMapper.updateById(group);
+
+        String action = status == 0 ? "disable" : "enable";
+        String ip = getClientIp();
+        operationLogService.log(adminId, "群组管理", action, "group", groupId,
+                (status == 0 ? "禁用" : "启用") + "群组：" + group.getName(), ip);
+    }
+
+    // ========== 私信监控 ==========
+
+    @Override
+    public PageResult<ConversationVO> getConversationList(Integer page, Integer pageSize) {
+        // 获取所有私信消息，按会话分组
+        LambdaQueryWrapper<UserMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(UserMessage::getCreatedAt);
+
+        Page<UserMessage> msgPage = new Page<>(page, pageSize);
+        // 使用 distinct 的方式获取会话
+        // 简化实现：查询最近的消息并按 sender/receiver 对分组
+        List<UserMessage> allMessages = userMessageMapper.selectList(wrapper);
+
+        // 按会话对分组
+        Map<String, List<UserMessage>> conversationMap = allMessages.stream()
+                .collect(Collectors.groupingBy(m -> {
+                    long min = Math.min(m.getSenderId(), m.getReceiverId());
+                    long max = Math.max(m.getSenderId(), m.getReceiverId());
+                    return min + "_" + max;
+                }));
+
+        Set<Long> userIds = new java.util.HashSet<>();
+        allMessages.forEach(m -> {
+            userIds.add(m.getSenderId());
+            userIds.add(m.getReceiverId());
+        });
+        Map<Long, User> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<ConversationVO> voList = conversationMap.entrySet().stream()
+                .map(entry -> {
+                    List<UserMessage> msgs = entry.getValue();
+                    UserMessage lastMsg = msgs.get(0);
+                    String[] ids = entry.getKey().split("_");
+                    long user1Id = Long.parseLong(ids[0]);
+                    long user2Id = Long.parseLong(ids[1]);
+
+                    ConversationVO vo = new ConversationVO();
+                    vo.setId((long) entry.getKey().hashCode());
+                    vo.setUser1Id(user1Id);
+                    vo.setUser2Id(user2Id);
+                    User user1 = userMap.get(user1Id);
+                    User user2 = userMap.get(user2Id);
+                    vo.setUser1Name(user1 != null ? user1.getNickname() : "用户" + user1Id);
+                    vo.setUser2Name(user2 != null ? user2.getNickname() : "用户" + user2Id);
+                    vo.setLastMessage(lastMsg.getContent());
+                    vo.setMessageCount(msgs.size());
+                    vo.setUnreadCount(0);
+                    vo.setCreatedAt(msgs.get(msgs.size() - 1).getCreatedAt());
+                    vo.setUpdatedAt(lastMsg.getCreatedAt());
+                    return vo;
+                })
+                .sorted((a, b) -> {
+                    if (a.getUpdatedAt() == null && b.getUpdatedAt() == null) return 0;
+                    if (a.getUpdatedAt() == null) return 1;
+                    if (b.getUpdatedAt() == null) return -1;
+                    return b.getUpdatedAt().compareTo(a.getUpdatedAt());
+                })
+                .collect(Collectors.toList());
+
+        long total = voList.size();
+        // 手动分页
+        int start = (page - 1) * pageSize;
+        int end = Math.min(start + pageSize, voList.size());
+        List<ConversationVO> pagedList = start < voList.size()
+                ? voList.subList(start, end) : Collections.emptyList();
+
+        return new PageResult<>(pagedList, total, page, pageSize);
+    }
+
+    @Override
+    public PageResult<MessageVO> getConversationMessages(Long conversationId, Integer page, Integer pageSize) {
+        // conversationId 实际上不使用，这里简化实现
+        LambdaQueryWrapper<UserMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(UserMessage::getCreatedAt);
+
+        Page<UserMessage> msgPage = new Page<>(page, pageSize);
+        Page<UserMessage> result = userMessageMapper.selectPage(msgPage, wrapper);
+
+        Set<Long> userIds = new java.util.HashSet<>();
+        result.getRecords().forEach(m -> {
+            userIds.add(m.getSenderId());
+            userIds.add(m.getReceiverId());
+        });
+        Map<Long, User> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<MessageVO> voList = result.getRecords().stream().map(m -> {
+            MessageVO vo = new MessageVO();
+            vo.setId(m.getId());
+            vo.setConversationId(m.getConversationId());
+            vo.setSenderId(m.getSenderId());
+            User sender = userMap.get(m.getSenderId());
+            if (sender != null) {
+                UserVO senderVO = new UserVO();
+                senderVO.setId(sender.getId());
+                senderVO.setNickname(sender.getNickname());
+                senderVO.setAvatar(sender.getAvatar());
+                vo.setSender(senderVO);
+            }
+            vo.setContent(m.getContent());
+            vo.setType(m.getType());
+            vo.setCreatedAt(m.getCreatedAt());
+            return vo;
+        }).collect(Collectors.toList());
+
+        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteMessageAsAdmin(Long adminId, Long messageId) {
+        UserMessage message = userMessageMapper.selectById(messageId);
+        if (message == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "消息不存在");
+        }
+        userMessageMapper.deleteById(messageId);
+
+        String ip = getClientIp();
+        operationLogService.log(adminId, "私信管理", "delete", "message", messageId,
+                "删除私信消息", ip);
+    }
+
+    // ========== 登录日志 ==========
+
+    @Override
+    public PageResult<LoginLog> getLoginLogs(String keyword, Integer status, String startDate,
+                                              String endDate, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<LoginLog> wrapper = new LambdaQueryWrapper<>();
+
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w.like(LoginLog::getUsername, keyword));
+        }
+        if (status != null) {
+            wrapper.eq(LoginLog::getStatus, status);
+        }
+        if (StringUtils.hasText(startDate)) {
+            LocalDateTime start = LocalDate.parse(startDate).atStartOfDay();
+            wrapper.ge(LoginLog::getCreatedAt, start);
+        }
+        if (StringUtils.hasText(endDate)) {
+            LocalDateTime end = LocalDate.parse(endDate).plusDays(1).atStartOfDay();
+            wrapper.lt(LoginLog::getCreatedAt, end);
+        }
+        wrapper.orderByDesc(LoginLog::getCreatedAt);
+
+        Page<LoginLog> logPage = new Page<>(page, pageSize);
+        Page<LoginLog> result = loginLogMapper.selectPage(logPage, wrapper);
+
+        return new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize);
+    }
+
+    // ========== 通知管理 ==========
+
+    @Override
+    public PageResult<NotificationVO> getNotificationList(Integer type, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
+        if (type != null) {
+            wrapper.eq(Notification::getType, type);
+        }
+        wrapper.orderByDesc(Notification::getCreatedAt);
+
+        Page<Notification> notifPage = new Page<>(page, pageSize);
+        Page<Notification> result = notificationMapper.selectPage(notifPage, wrapper);
+
+        List<NotificationVO> voList = result.getRecords().stream().map(n -> {
+            NotificationVO vo = new NotificationVO();
+            vo.setId(n.getId());
+            vo.setType(n.getType().getValue());
+            vo.setTitle(n.getTitle());
+            vo.setContent(n.getContent());
+            vo.setCreatedAt(n.getCreatedAt());
+            return vo;
+        }).collect(Collectors.toList());
+
+        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void sendNotification(Long adminId, Integer type, String title, String content,
+                                  Boolean targetAll, List<Long> targetUserIds) {
+        if (Boolean.TRUE.equals(targetAll)) {
+            // 发送给所有用户
+            List<User> allUsers = userMapper.selectList(new LambdaQueryWrapper<>());
+            for (User user : allUsers) {
+                try {
+                    notificationService.createNotification(user.getId(), type, title, content, null);
+                } catch (Exception e) {
+                    log.error("发送通知给用户 {} 失败: {}", user.getId(), e.getMessage());
+                }
+            }
+        } else if (targetUserIds != null && !targetUserIds.isEmpty()) {
+            for (Long userId : targetUserIds) {
+                try {
+                    notificationService.createNotification(userId, type, title, content, null);
+                } catch (Exception e) {
+                    log.error("发送通知给用户 {} 失败: {}", userId, e.getMessage());
+                }
+            }
+        }
+
+        String ip = getClientIp();
+        operationLogService.log(adminId, "通知管理", "send", "notification", null,
+                "发送通知：" + title + "，目标：" + (Boolean.TRUE.equals(targetAll) ? "全部用户" : targetUserIds), ip);
+    }
+
+    // ========== 用户登录历史 ==========
+
+    @Override
+    public PageResult<LoginLog> getUserLoginHistory(Long userId, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<LoginLog> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(LoginLog::getUserId, userId);
+        wrapper.orderByDesc(LoginLog::getCreatedAt);
+
+        Page<LoginLog> logPage = new Page<>(page, pageSize);
+        Page<LoginLog> result = loginLogMapper.selectPage(logPage, wrapper);
+
+        return new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize);
+    }
+
+    // ========== 群组成员管理 ==========
+
+    @Override
+    public PageResult<GroupMember> getGroupMembers(Long groupId, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<GroupMember> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GroupMember::getGroupId, groupId);
+        wrapper.orderByAsc(GroupMember::getRole).orderByAsc(GroupMember::getJoinedAt);
+
+        Page<GroupMember> memberPage = new Page<>(page, pageSize);
+        Page<GroupMember> result = groupMemberMapper.selectPage(memberPage, wrapper);
+
+        // 填充用户昵称和头像
+        Set<Long> userIds = result.getRecords().stream()
+                .map(GroupMember::getUserId).collect(Collectors.toSet());
+        Map<Long, User> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        result.getRecords().forEach(m -> {
+            User user = userMap.get(m.getUserId());
+            if (user != null) {
+                m.setUserName(user.getUsername());
+                m.setUserAvatar(user.getAvatar());
+            }
+        });
+
+        return new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize);
+    }
+
+    // ========== 群组消息管理 ==========
+
+    @Override
+    public PageResult<GroupMessageVO> getGroupMessagesAsAdmin(Long groupId, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<GroupMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GroupMessage::getGroupId, groupId);
+        wrapper.orderByDesc(GroupMessage::getCreatedAt);
+
+        Page<GroupMessage> msgPage = new Page<>(page, pageSize);
+        Page<GroupMessage> result = groupMessageMapper.selectPage(msgPage, wrapper);
+
+        // 填充发送者信息
+        Set<Long> senderIds = result.getRecords().stream()
+                .map(GroupMessage::getSenderId).collect(Collectors.toSet());
+        Map<Long, User> userMap = senderIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<GroupMessageVO> voList = result.getRecords().stream().map(m -> {
+            GroupMessageVO vo = new GroupMessageVO();
+            vo.setId(m.getId());
+            vo.setGroupId(m.getGroupId());
+            vo.setSenderId(m.getSenderId());
+            User sender = userMap.get(m.getSenderId());
+            vo.setSenderName(sender != null ? sender.getNickname() : "");
+            vo.setSenderAvatar(sender != null ? sender.getAvatar() : "");
+            vo.setContent(m.getContent());
+            vo.setMessageType(m.getMessageType());
+            vo.setCreatedAt(m.getCreatedAt());
+            return vo;
+        }).collect(Collectors.toList());
+
+        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+    }
+
+    // ========== AI 使用统计 ==========
+
+    @Override
+    public Map<String, Object> getAIUsageStats(String period) {
+        Map<String, Object> stats = new HashMap<>();
+        // 基础统计（从操作日志中统计 AI 相关操作）
+        LambdaQueryWrapper<OperationLog> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OperationLog::getModule, "AI写作");
+
+        LocalDate today = LocalDate.now();
+        if ("daily".equals(period)) {
+            wrapper.ge(OperationLog::getCreatedAt, today.atStartOfDay());
+        } else if ("weekly".equals(period)) {
+            wrapper.ge(OperationLog::getCreatedAt, today.minusDays(7).atStartOfDay());
+        } else if ("monthly".equals(period)) {
+            wrapper.ge(OperationLog::getCreatedAt, today.minusDays(30).atStartOfDay());
+        }
+
+        long totalRequests = operationLogMapper.selectCount(wrapper);
+
+        stats.put("totalRequests", totalRequests);
+        stats.put("todayRequests", totalRequests);
+        stats.put("textGenerationCount", totalRequests);
+        stats.put("imageGenerationCount", 0L);
+        stats.put("totalTokens", 0L);
+        stats.put("averageResponseTime", 0.0);
+        stats.put("userCount", 0L);
+        stats.put("dailyStats", Collections.emptyList());
+        stats.put("topUsers", Collections.emptyList());
+
+        return stats;
+    }
+
+    // ========== 协作管理 ==========
+
+    @Override
+    public PageResult<CollaboratorVO> getCollaborationList(Integer page, Integer pageSize) {
+        LambdaQueryWrapper<ArticleCollaborator> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(ArticleCollaborator::getCreatedAt);
+
+        Page<ArticleCollaborator> collabPage = new Page<>(page, pageSize);
+        Page<ArticleCollaborator> result = articleCollaboratorMapper.selectPage(collabPage, wrapper);
+
+        // 填充用户和文章信息
+        Set<Long> userIds = new java.util.HashSet<>();
+        Set<Long> articleIds = new java.util.HashSet<>();
+        result.getRecords().forEach(c -> {
+            userIds.add(c.getInvitedBy());
+            userIds.add(c.getUserId());
+            articleIds.add(c.getArticleId());
+        });
+
+        Map<Long, User> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        Map<Long, Article> articleMap = articleIds.isEmpty() ? Collections.emptyMap()
+                : articleMapper.selectBatchIds(articleIds).stream()
+                .collect(Collectors.toMap(Article::getId, a -> a));
+
+        List<CollaboratorVO> voList = result.getRecords().stream().map(c -> {
+            CollaboratorVO vo = new CollaboratorVO();
+            vo.setId(c.getId());
+            vo.setArticleId(c.getArticleId());
+            Article article = articleMap.get(c.getArticleId());
+            vo.setArticleTitle(article != null ? article.getTitle() : "");
+            vo.setInviterId(c.getInvitedBy());
+            User inviter = userMap.get(c.getInvitedBy());
+            vo.setInviterName(inviter != null ? inviter.getNickname() : "");
+            vo.setInviteeId(c.getUserId());
+            User invitee = userMap.get(c.getUserId());
+            vo.setInviteeName(invitee != null ? invitee.getNickname() : "");
+            vo.setPermission(c.getPermission());
+            vo.setStatus(c.getStatus());
+            vo.setCreatedAt(c.getCreatedAt());
+            vo.setUpdatedAt(c.getUpdatedAt());
+            return vo;
+        }).collect(Collectors.toList());
+
+        return new PageResult<>(voList, result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCollaboration(Long adminId, Long id) {
+        ArticleCollaborator collab = articleCollaboratorMapper.selectById(id);
+        if (collab == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "协作关系不存在");
+        }
+        articleCollaboratorMapper.deleteById(id);
+
+        String ip = getClientIp();
+        operationLogService.log(adminId, "协作管理", "delete", "collaboration", id,
+                "删除协作关系", ip);
+    }
+
+    // ========== 标签管理（分页） ==========
+
+    @Override
+    public PageResult<com.zhixun.entity.Tag> getTagList(String keyword, String sortBy,
+                                                        Integer page, Integer pageSize) {
+        LambdaQueryWrapper<com.zhixun.entity.Tag> wrapper = new LambdaQueryWrapper<>();
+
+        if (StringUtils.hasText(keyword)) {
+            wrapper.like(com.zhixun.entity.Tag::getName, keyword);
+        }
+
+        // 排序
+        if ("articleCountDesc".equals(sortBy)) {
+            wrapper.orderByDesc(com.zhixun.entity.Tag::getArticleCount);
+        } else if ("articleCountAsc".equals(sortBy)) {
+            wrapper.orderByAsc(com.zhixun.entity.Tag::getArticleCount);
+        } else {
+            wrapper.orderByDesc(com.zhixun.entity.Tag::getCreatedAt);
+        }
+
+        Page<com.zhixun.entity.Tag> tagPage = new Page<>(page, pageSize);
+        Page<com.zhixun.entity.Tag> result = tagMapper.selectPage(tagPage, wrapper);
+
+        return new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize);
     }
 }

@@ -84,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
     private static final long LOCK_MINUTES = 30;
 
     /** 访问令牌过期时间（秒） */
-    @Value("${jwt.access-expiration:7200}")
+    @Value("${jwt.access-expiration:604800}")
     private Long accessExpiration;
 
     /** Redis 操作最大重试次数 */

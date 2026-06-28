@@ -100,8 +100,10 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
      */
     private String[] listMigrationFiles() {
         return new String[] {
-            "V2__new_features.sql"
-            // Add future migrations here: "V3__xxx.sql", "V4__xxx.sql", etc.
+            "V2__new_features.sql",
+            "V3__group_settings.sql",
+            "V4__fix_sys_user_columns.sql"
+            // Add future migrations here: "V5__xxx.sql", etc.
         };
     }
 }

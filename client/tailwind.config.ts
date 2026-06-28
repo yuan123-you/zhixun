@@ -80,6 +80,18 @@ export default <Config>{
           900: '#7F1D1D',
           DEFAULT: '#EF4444',
         },
+        'input-accent': {
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          DEFAULT: '#0d9488',
+        },
       },
 
       // 自定义字体大小
@@ -94,9 +106,22 @@ export default <Config>{
         '128': '32rem',
       },
 
+      // 动态视口单位（解决移动端 100vh 含地址栏导致布局溢出的问题）
+      height: {
+        'dvh-screen': '100dvh',
+      },
+      minHeight: {
+        'dvh-screen': '100dvh',
+      },
+
       // 自定义圆角
       borderRadius: {
         '4xl': '2rem',
+      },
+
+      // 自定义边框宽度
+      borderWidth: {
+        '1.5': '1.5px',
       },
 
       // 自定义动画

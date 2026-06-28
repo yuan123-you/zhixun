@@ -5,18 +5,22 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.dto.group.GroupCreateRequest;
 import com.zhixun.dto.group.GroupInviteRequest;
 import com.zhixun.dto.group.GroupMessageRequest;
+import com.zhixun.common.exception.BusinessException;
+import com.zhixun.common.result.ErrorCode;
 import com.zhixun.entity.*;
 import com.zhixun.mapper.*;
 import com.zhixun.service.GroupService;
 import com.zhixun.vo.GroupMessageVO;
 import com.zhixun.vo.GroupVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
@@ -27,18 +31,62 @@ public class GroupServiceImpl implements GroupService {
 
     @Override @Transactional
     public Long createGroup(Long userId, GroupCreateRequest request) {
-        GroupInfo g = new GroupInfo();
-        g.setName(request.getName());
-        g.setDescription(request.getDescription());
-        g.setAvatar(request.getAvatar());
-        g.setOwnerId(userId);
-        g.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : 1);
-        groupMapper.insert(g);
-        GroupMember gm = new GroupMember();
-        gm.setGroupId(g.getId()); gm.setUserId(userId);
-        gm.setRole(GroupMember.ROLE_OWNER);
-        groupMemberMapper.insert(gm);
-        return g.getId();
+        // 最多重试5次以容忍 group_number 唯一索引的极小概率碰撞
+        for (int i = 0; i < 5; i++) {
+            try {
+                GroupInfo g = new GroupInfo();
+                g.setName(request.getName());
+                g.setDescription(request.getDescription());
+                g.setAvatar(request.getAvatar());
+                g.setOwnerId(userId);
+                g.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : 1);
+                g.setGroupNumber(generateUniqueGroupNumber());
+                groupMapper.insert(g);
+                GroupMember gm = new GroupMember();
+                gm.setGroupId(g.getId()); gm.setUserId(userId);
+                gm.setRole(GroupMember.ROLE_OWNER);
+                gm.setJoinedAt(java.time.LocalDateTime.now());
+                groupMemberMapper.insert(gm);
+                return g.getId();
+            } catch (org.springframework.dao.DuplicateKeyException e) {
+                // group_number 唯一冲突，重试
+                if (i == 4) throw e;
+            }
+        }
+        log.error("创建群组失败，group_number 唯一索引碰撞超过最大重试次数");
+        throw new BusinessException(ErrorCode.BUSINESS_ERROR, "创建群组失败，请重试");
+    }
+
+    /**
+     * 生成6-10位不重复的纯数字群号，长度严格<=10，碰撞自动重试10次。
+     * 使用 ThreadLocalRandom 避免并发争用；首位不能为 0，所以固定从 10^(digits-1) 起取整。
+     */
+    private String generateUniqueGroupNumber() {
+        java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+        for (int attempt = 0; attempt < 10; attempt++) {
+            int digits = 6 + random.nextInt(5); // 6..10
+            // digits=6: [100000, 999999]; digits=10: [1000000000, 9999999999] 共10位
+            long min = (long) Math.pow(10, digits - 1);
+            long max = (long) Math.pow(10, digits) - 1;
+            // bound = max - min + 1，nextLong(bound) 返回 [0, bound) 然后 + min
+            long bound = max - min + 1;
+            long num = min + (bound <= 0 ? 0 : random.nextLong(bound));
+            String groupNumber = String.valueOf(num);
+            // 长度安全检查，防止越界（digits=10 时 long 上限 9,223,372,036,854,775,807，远大于 1e10）
+            if (groupNumber.length() > 10) {
+                groupNumber = groupNumber.substring(groupNumber.length() - 10);
+                // 防止截取后首位为 0，丢弃重试
+                if (groupNumber.charAt(0) == '0') continue;
+            }
+            LambdaQueryWrapper<GroupInfo> w = new LambdaQueryWrapper<>();
+            w.eq(GroupInfo::getGroupNumber, groupNumber);
+            if (groupMapper.selectCount(w) == 0) {
+                return groupNumber;
+            }
+        }
+        // 兜底：用时间戳生成保证唯一
+        String fallback = String.valueOf(System.currentTimeMillis());
+        return fallback.substring(Math.max(0, fallback.length() - 10));
     }
 
     @Override
@@ -50,8 +98,30 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public Page<GroupVO> getMyGroups(Long userId, Integer page, Integer pageSize) {
-        List<GroupInfo> groups = groupMapper.selectByUserId(userId);
+        // 先通过 cms_group_member 查出用户加入的所有群组 ID
+        LambdaQueryWrapper<GroupMember> memberWrapper = new LambdaQueryWrapper<>();
+        memberWrapper.eq(GroupMember::getUserId, userId)
+                .select(GroupMember::getGroupId);
+        List<GroupMember> memberships = groupMemberMapper.selectList(memberWrapper);
+        if (memberships.isEmpty()) {
+            Page<GroupVO> empty = new Page<>(page, pageSize, 0L);
+            empty.setRecords(new ArrayList<>());
+            return empty;
+        }
+        List<Long> groupIds = memberships.stream()
+                .map(GroupMember::getGroupId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 用 IN 条件从 cms_group_info 查群组列表
+        LambdaQueryWrapper<GroupInfo> groupWrapper = new LambdaQueryWrapper<>();
+        groupWrapper.in(GroupInfo::getId, groupIds)
+                .eq(GroupInfo::getStatus, GroupInfo.STATUS_NORMAL)
+                .orderByDesc(GroupInfo::getUpdatedAt);
+        List<GroupInfo> groups = groupMapper.selectList(groupWrapper);
         List<GroupVO> vos = groups.stream().map(g -> toGroupVO(g, userId)).collect(Collectors.toList());
+
         // 手动分页
         int total = vos.size();
         int fromIndex = (page - 1) * pageSize;
@@ -65,10 +135,10 @@ public class GroupServiceImpl implements GroupService {
     @Override @Transactional
     public void joinGroup(Long userId, Long groupId) {
         GroupInfo g = groupMapper.selectById(groupId);
-        if (g == null) throw new RuntimeException("群组不存在");
+        if (g == null) throw new BusinessException(ErrorCode.NOT_FOUND, "群组不存在");
         LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
         w.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, userId);
-        if (groupMemberMapper.selectCount(w) > 0) throw new RuntimeException("已在群中");
+        if (groupMemberMapper.selectCount(w) > 0) throw new BusinessException(ErrorCode.CONFLICT, "已在群中");
         GroupMember gm = new GroupMember();
         gm.setGroupId(groupId); gm.setUserId(userId); gm.setRole(0);
         groupMemberMapper.insert(gm);
@@ -88,14 +158,14 @@ public class GroupServiceImpl implements GroupService {
     @Override @Transactional
     public void dismissGroup(Long userId, Long groupId) {
         GroupInfo g = groupMapper.selectById(groupId);
-        if (g == null || !g.getOwnerId().equals(userId)) throw new RuntimeException("鏃犳潈瑙ｆ暎缇ょ粍");
+        if (g == null || !g.getOwnerId().equals(userId)) throw new BusinessException(ErrorCode.FORBIDDEN, "无权解散群组");
         g.setStatus(1); groupMapper.updateById(g);
     }
 
     @Override @Transactional
     public void inviteMembers(Long userId, GroupInviteRequest request) {
         GroupInfo g = groupMapper.selectById(request.getGroupId());
-        if (g == null) throw new RuntimeException("群组不存在");
+        if (g == null) throw new BusinessException(ErrorCode.NOT_FOUND, "群组不存在");
         for (Long uid : request.getUserIds()) {
             LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
             w.eq(GroupMember::getGroupId, request.getGroupId()).eq(GroupMember::getUserId, uid);
@@ -112,7 +182,7 @@ public class GroupServiceImpl implements GroupService {
     @Override @Transactional
     public void kickMember(Long ownerId, Long groupId, Long targetUserId) {
         GroupInfo g = groupMapper.selectById(groupId);
-        if (g == null || !g.getOwnerId().equals(ownerId)) throw new RuntimeException("鏃犳潈鎿嶄綔");
+        if (g == null || !g.getOwnerId().equals(ownerId)) throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作");
         LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
         w.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, targetUserId);
         groupMemberMapper.delete(w);
@@ -122,7 +192,7 @@ public class GroupServiceImpl implements GroupService {
     @Override @Transactional
     public void setAdmin(Long ownerId, Long groupId, Long targetUserId, boolean isAdmin) {
         GroupInfo g = groupMapper.selectById(groupId);
-        if (g == null || !g.getOwnerId().equals(ownerId)) throw new RuntimeException("鏃犳潈鎿嶄綔");
+        if (g == null || !g.getOwnerId().equals(ownerId)) throw new BusinessException(ErrorCode.FORBIDDEN, "无权操作");
         LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
         w.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, targetUserId);
         GroupMember gm = groupMemberMapper.selectOne(w);
@@ -141,7 +211,12 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public List<GroupMessageVO> getMessages(Long groupId, Long userId, Long offset, int limit) {
-        List<GroupMessage> msgs = groupMessageMapper.selectByGroupId(groupId, offset, limit);
+        LambdaQueryWrapper<GroupMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GroupMessage::getGroupId, groupId)
+                .lt(GroupMessage::getId, offset > 0 ? offset : Long.MAX_VALUE)
+                .orderByDesc(GroupMessage::getId)
+                .last("LIMIT " + limit);
+        List<GroupMessage> msgs = groupMessageMapper.selectList(wrapper);
         return msgs.stream().map(this::toMessageVO).collect(Collectors.toList());
     }
 
@@ -156,6 +231,7 @@ public class GroupServiceImpl implements GroupService {
 
     private GroupVO toGroupVO(GroupInfo g, Long userId) {
         GroupVO vo = new GroupVO(); vo.setId(g.getId()); vo.setName(g.getName());
+        vo.setGroupNumber(g.getGroupNumber());
         vo.setAvatar(g.getAvatar()); vo.setDescription(g.getDescription());
         vo.setOwnerId(g.getOwnerId()); vo.setMemberCount(g.getMemberCount());
         vo.setMaxMembers(g.getMaxMembers()); vo.setIsPublic(g.getIsPublic());

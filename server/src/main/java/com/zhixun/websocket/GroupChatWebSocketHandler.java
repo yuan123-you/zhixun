@@ -39,6 +39,7 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
         if (senderId == null) return;
 
         try {
+            @SuppressWarnings("unchecked")
             Map<String, Object> payload = objectMapper.readValue(message.getPayload(), Map.class);
             Long groupId = Long.valueOf(payload.get("groupId").toString());
             String content = (String) payload.get("content");

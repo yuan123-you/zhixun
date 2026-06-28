@@ -12,7 +12,7 @@
 
 | 编号 | 问题 | 涉及文件 | 根因 | 修复要点 |
 |------|------|----------|------|----------|
-| P0-1 | CSRF UA绕过 | `CsrfFilter.java:148-153` | `isSsrRequest()` 通过 User-Agent 含 `nuxt`/`axios` 即放行，任何浏览器可伪造 | 删除 UA 检测分支，仅保留 `X-SSR-Request` 头 + `X-SSR-Secret` 密钥认证 |
+| P0-1 | CSRF UA绕过 | `CsrfFilter.java` | 旧版 `isSsrRequest()` 通过 User-Agent 含 `nuxt`/`axios` 即放行，任何浏览器可伪造 | 删除 UA 检测分支与 SSR 密钥通道，仅保留内网 IP 白名单 |
 | P0-2 | Admin无Token刷新 | `stores/user.ts`, `api/request.ts`, `utils/storage.ts` | 登录仅存 `accessToken`，无 `refreshToken` 持久化，无401自动刷新逻辑 | 补全 refreshToken 存储、响应拦截器 401→refresh→retry 流程 |
 | P0-3 | Client绕过统一API | `pages/index.vue:119-122` | 直接调用 `$fetch`，绕过 `useApi` 的 Token刷新/CSRF注入/统一错误处理 | 全部 `$fetch` 替换为 `useApi().get/post` |
 | P0-4 | SQL注入 | `FallbackService.java:130` | `wrapper.last("LIMIT " + page...)` 字符串拼接 | 改用 MyBatis-Plus `Page` + `IPage` 分页或参数化 `wrapper.last("LIMIT {0},{1}")` |
@@ -61,7 +61,7 @@
 
 | 文件路径 | 修改内容 |
 |----------|----------|
-| `server/src/.../security/CsrfFilter.java` | 删除 `isSsrRequest()` 中 User-Agent 分支（L148-155），仅保留 `X-SSR-Request` 头 + `X-SSR-Secret` |
+| `server/src/.../security/CsrfFilter.java` | 删除 `isSsrRequest()` 与 `X-SSR-Secret` 相关代码，仅保留内网 IP 白名单 |
 | `server/src/.../service/impl/FallbackService.java` | L130 `wrapper.last("LIMIT...")` → 使用 MyBatis-Plus `Page<Article>` 分页，消除 SQL 拼接 |
 | `server/src/.../controller/SearchController.java` | `clearHistory()` 添加 `@PreAuthorize("isAuthenticated()")`；`searchFallback()` 注入 `FallbackService` 调用 `getSearchFallback()` |
 | `server/src/.../service/impl/SearchServiceImpl.java` | `search()` 方法包裹 try-catch，OpenSearch 异常时调用 `FallbackService.getSearchFallback()` |
@@ -100,7 +100,7 @@
 
 | 文件路径 | 修改内容 |
 |----------|----------|
-| `client/pages/index.vue` | 所有 `$fetch(...)` → `const { get } = useApi(); get(...)`；删除手动构建 headers 的 `X-SSR-Request`（useApi 已内置） |
+| `client/pages/index.vue` | 所有 `$fetch(...)` → `const { get } = useApi(); get(...)`（useApi 已内置 CSRF 注入与统一错误处理） |
 | `client/composables/useApi.ts` | （可选）修正数据版本号逻辑：版本号比较后存储为字符串 |
 | `client/components/SearchBar.vue` | `handleInput()` 改用 `useDebounceFn(() => fetchSuggestions(), 300)` 替代手动 setTimeout |
 | `client/composables/useRequestCache.ts` | 确认版本号失效逻辑与 `useApi.ts` 中的 `x-data-version` 处理一致 |
@@ -166,8 +166,7 @@ interface ApiResponse<T> {
 
 - **Cookie**: `XSRF-TOKEN`（HttpOnly=false，前端可读）
 - **请求头**: `X-XSRF-TOKEN`（POST/PUT/DELETE/PATCH 时携带）
-- **SSR 标识**: `X-SSR-Request: true`（服务端渲染时跳过 CSRF 校验）
-- **SSR 密钥**: `X-SSR-Secret`（服务端间通信认证，替代 CSRF Token）
+- **内网白名单**: 同源服务器间调用（127.0.0.1、10.x、172.16-31.x、192.168.x）直接放行
 - **排除路径**: `/v1/auth/login`, `/register`, `/refresh`, `/send-code`, `/graph-captcha`, `/forgot-password`
 
 ### 4. Redis 降级策略

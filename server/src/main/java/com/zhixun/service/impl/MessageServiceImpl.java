@@ -63,15 +63,21 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(rollbackFor = Exception.class)
     public MessageVO sendMessage(Long senderId, MessageSendRequest request) {
         Long receiverId = request.getReceiverId();
+        String rawContent = request.getContent();
+
+        log.info("私信发送请求: senderId={}, receiverId={}, contentLength={}", senderId, receiverId,
+                rawContent != null ? rawContent.length() : 0);
 
         // 不能给自己发私信
         if (senderId.equals(receiverId)) {
+            log.warn("私信发送拒绝: 不能给自己发私信, senderId={}", senderId);
             throw new BusinessException(ErrorCode.BAD_REQUEST, "不能给自己发私信");
         }
 
         // 检查接收者是否存在
         User receiver = userMapper.selectById(receiverId);
         if (receiver == null) {
+            log.warn("私信发送失败: 接收者不存在, receiverId={}", receiverId);
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "接收者不存在");
         }
 
@@ -79,12 +85,19 @@ public class MessageServiceImpl implements MessageService {
         checkMessagePermission(senderId, receiverId);
 
         // 敏感词检查
-        if (sensitiveWordUtil.containsSensitiveWord(request.getContent())) {
+        if (sensitiveWordUtil.containsSensitiveWord(rawContent)) {
+            log.warn("私信发送拒绝: 包含敏感词, senderId={}, receiverId={}", senderId, receiverId);
             throw new BusinessException(ErrorCode.BAD_REQUEST, "消息内容包含敏感词，请修改后重新发送");
         }
 
         // AES-256-GCM 加密消息内容
-        String encryptedContent = aesUtil.encrypt(request.getContent());
+        String encryptedContent;
+        try {
+            encryptedContent = aesUtil.encrypt(rawContent);
+        } catch (Exception e) {
+            log.error("私信发送失败: AES加密异常, senderId={}, receiverId={}", senderId, receiverId, e);
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
+        }
 
         // 创建消息记录
         UserMessage message = new UserMessage();
@@ -92,7 +105,14 @@ public class MessageServiceImpl implements MessageService {
         message.setReceiverId(receiverId);
         message.setContent(encryptedContent);
         message.setIsRead(0);
-        userMessageMapper.insert(message);
+        try {
+            userMessageMapper.insert(message);
+        } catch (Exception e) {
+            log.error("私信发送失败: 数据库插入异常, senderId={}, receiverId={}", senderId, receiverId, e);
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
+        }
+
+        log.info("私信已持久化: messageId={}, senderId={}, receiverId={}", message.getId(), senderId, receiverId);
 
         // 更新 Redis 未读计数
         String unreadKey = UNREAD_COUNT_PREFIX + receiverId + ":" + senderId;
@@ -100,11 +120,11 @@ public class MessageServiceImpl implements MessageService {
         stringRedisTemplate.expire(unreadKey, 7, TimeUnit.DAYS);
 
         // 更新会话摘要缓存
-        updateConversationCache(senderId, receiverId, request.getContent());
+        updateConversationCache(senderId, receiverId, rawContent);
 
         // 构建 MessageVO
         MessageVO vo = buildMessageVO(message, senderId, receiverId);
-        vo.setContent(request.getContent()); // 返回明文给发送者
+        vo.setContent(rawContent); // 返回明文给发送者
 
         // 通过 RabbitMQ 异步推送给接收者
         try {
@@ -114,7 +134,7 @@ public class MessageServiceImpl implements MessageService {
                             "receiverId", receiverId,
                             "id", message.getId(),
                             "senderId", senderId,
-                            "content", request.getContent(),
+                            "content", rawContent,
                             "createdAt", message.getCreatedAt().toString()
                     )
             );
@@ -122,8 +142,9 @@ public class MessageServiceImpl implements MessageService {
                     RabbitMQConfig.CHAT_EXCHANGE,
                     "zhixun.chat.sent",
                     mqMessage);
+            log.info("私信MQ推送成功: messageId={}, receiverId={}", message.getId(), receiverId);
         } catch (Exception e) {
-            log.warn("RabbitMQ 推送私信失败: {}", e.getMessage());
+            log.warn("RabbitMQ 推送私信失败（消息已存储）: messageId={}, error={}", message.getId(), e.getMessage());
         }
 
         return vo;
@@ -217,21 +238,19 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public PageResult<MessageVO> getMessages(Long userId, Long targetUserId, Long beforeId, Integer limit) {
+    public PageResult<MessageVO> getMessages(Long userId, Long targetUserId, Integer page, Integer pageSize) {
+        // 使用 MyBatis-Plus 分页
+        Page<UserMessage> pageParam = new Page<>(page, pageSize);
+
         LambdaQueryWrapper<UserMessage> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> w
                         .eq(UserMessage::getSenderId, userId).eq(UserMessage::getReceiverId, targetUserId))
                 .or(w -> w
                         .eq(UserMessage::getSenderId, targetUserId).eq(UserMessage::getReceiverId, userId));
-
-        if (beforeId != null) {
-            wrapper.lt(UserMessage::getId, beforeId);
-        }
-
         wrapper.orderByDesc(UserMessage::getId);
-        wrapper.last("LIMIT " + limit);
 
-        List<UserMessage> messages = userMessageMapper.selectList(wrapper);
+        Page<UserMessage> result = userMessageMapper.selectPage(pageParam, wrapper);
+        List<UserMessage> messages = result.getRecords();
 
         // 标记已读
         markAsRead(userId, targetUserId);
@@ -244,7 +263,7 @@ public class MessageServiceImpl implements MessageService {
         // 反转列表，使最早的消息在前
         Collections.reverse(voList);
 
-        return new PageResult<>(voList, (long) messages.size(), 1, limit);
+        return new PageResult<>(voList, result.getTotal(), page, pageSize);
     }
 
     @Override
@@ -293,6 +312,9 @@ public class MessageServiceImpl implements MessageService {
 
     /**
      * 检查私信权限（是否允许陌生人私信）
+     * 业务语义：
+     * - messagePermission = 0：允许所有人（包括陌生人）
+     * - messagePermission = 1：仅互相关注的人
      */
     private void checkMessagePermission(Long senderId, Long receiverId) {
         // 查询接收者的设置
@@ -300,12 +322,16 @@ public class MessageServiceImpl implements MessageService {
         wrapper.eq(UserSettings::getUserId, receiverId);
         UserSettings settings = userSettingsMapper.selectOne(wrapper);
 
-        // 如果接收者关闭了私信权限，且双方不是互相关注
-        if (settings != null && settings.getMessagePermission() != null && settings.getMessagePermission() == 0) {
-            // 检查是否互相关注
+        // 未设置或显式允许所有人：直接放行
+        if (settings == null || settings.getMessagePermission() == null || settings.getMessagePermission() == 0) {
+            return;
+        }
+
+        // 设置为"仅互相关注的人"：必须双向关注
+        if (settings.getMessagePermission() == 1) {
             boolean isMutualFollow = isMutualFollow(senderId, receiverId);
             if (!isMutualFollow) {
-                throw new BusinessException(ErrorCode.FORBIDDEN, "对方未开启陌生人私信");
+                throw new BusinessException(ErrorCode.FORBIDDEN, "对方仅允许互相关注的人发送私信");
             }
         }
     }

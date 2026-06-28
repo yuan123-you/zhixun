@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <el-container class="admin-layout">
     <!-- 侧边栏 -->
     <el-aside :width="sidebarCollapsed ? '64px' : '220px'" class="sidebar">

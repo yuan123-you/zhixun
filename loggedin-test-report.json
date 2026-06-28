@@ -1,0 +1,108 @@
+{
+  "summary": {
+    "OK": 12,
+    "WARN": 0,
+    "ERROR": 0
+  },
+  "console_errors": [],
+  "warnings": [],
+  "js_errors": [],
+  "details": [
+    {
+      "name": "Editor",
+      "path": "/editor",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "EditorPreview",
+      "path": "/editor/preview",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "Notifications",
+      "path": "/notifications",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "Messages",
+      "path": "/messages",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "UserProfile",
+      "path": "/user",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "UserArticles",
+      "path": "/user/articles",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "UserEdit",
+      "path": "/user/edit",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "MyFollowers",
+      "path": "/user/followers",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "MyFollowing",
+      "path": "/user/following",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "UserSettings",
+      "path": "/user/settings",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "GroupChat",
+      "path": "/groups/1",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    },
+    {
+      "name": "MessageChat",
+      "path": "/messages/1",
+      "status": "OK",
+      "errs": 0,
+      "warns": 0,
+      "js": 0
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package com.zhixun.config;
 
 import com.zhixun.common.util.JwtUtil;
 import com.zhixun.websocket.ChatWebSocketHandler;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
@@ -57,9 +58,28 @@ public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBro
                                                    org.springframework.http.server.ServerHttpResponse response,
                                                    org.springframework.web.socket.WebSocketHandler wsHandler,
                                                    Map<String, Object> attributes) {
-                        // 握手前进行 Token 鉴权（应用层二次验证）
+                        // 握手前进行 Token 鉴权（优先从 Cookie 读取，其次从 URL 参数读取）
                         if (request instanceof ServletServerHttpRequest servletRequest) {
-                            String token = servletRequest.getServletRequest().getParameter("token");
+                            String token = null;
+
+                            // 优先从 Cookie 读取 accessToken
+                            Cookie[] cookies = servletRequest.getServletRequest().getCookies();
+                            if (cookies != null) {
+                                // 保存 Cookie 到 attributes，供后续 Handler 使用
+                                attributes.put("handshakeCookies", cookies);
+                                for (Cookie cookie : cookies) {
+                                    if ("accessToken".equals(cookie.getName())) {
+                                        token = cookie.getValue();
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Cookie 中无 token，尝试从 URL 参数读取（兼容旧版本）
+                            if (token == null || token.isEmpty()) {
+                                token = servletRequest.getServletRequest().getParameter("token");
+                            }
+
                             if (token == null || token.isEmpty()) {
                                 log.warn("WebSocket 握手拒绝：缺少 token，来源 IP: {}", request.getRemoteAddress());
                                 return false;

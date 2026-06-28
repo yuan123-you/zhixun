@@ -117,12 +117,18 @@ public class CollectServiceImpl implements CollectService {
         article = articleMapper.selectById(articleId);
         Long collectCount = article != null ? article.getCollectCount() : 0L;
 
-        // 更新 Redis 缓存
-        String statusKey = COLLECT_STATUS_PREFIX + userId + ":" + articleId;
-        stringRedisTemplate.opsForValue().set(statusKey, collected ? "1" : "0", 1, TimeUnit.HOURS);
-
-        // 清除作品相关缓存，确保列表和详情页数据一致
-        clearArticleCache(articleId);
+        // 更新 Redis 缓存（非关键操作，失败不影响数据库持久化）
+        try {
+            if (stringRedisTemplate != null) {
+                String statusKey = COLLECT_STATUS_PREFIX + userId + ":" + articleId;
+                stringRedisTemplate.opsForValue().set(statusKey, collected ? "1" : "0", 1, TimeUnit.HOURS);
+            }
+            // 清除作品相关缓存，确保列表和详情页数据一致
+            clearArticleCache(articleId);
+        } catch (Exception e) {
+            log.error("收藏后更新Redis缓存失败, userId={}, articleId={}: {}",
+                    userId, articleId, e.getMessage(), e);
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("isCollected", collected);

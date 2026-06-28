@@ -1,5 +1,7 @@
 package com.zhixun.controller;
 
+import com.zhixun.common.exception.BusinessException;
+import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
@@ -8,6 +10,7 @@ import com.zhixun.service.MessageService;
 import com.zhixun.vo.ConversationVO;
 import com.zhixun.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +27,7 @@ import java.util.Map;
  * 会话控制器
  * 对齐前端 social.ts 的 /conversations 系列端点
  */
+@Slf4j
 @RestController
 @RequestMapping("/v1/conversations")
 @RequiredArgsConstructor
@@ -47,16 +51,16 @@ public class ConversationController {
 
     /**
      * 获取与某用户的私信记录
-     * 前端: GET /conversations/{userId}/messages
+     * 前端: GET /conversations/{userId}/messages?page=1&pageSize=30
      */
     @GetMapping("/{userId}/messages")
     @PreAuthorize("isAuthenticated()")
     public R<PageResult<MessageVO>> getMessages(
             @PathVariable Long userId,
-            @RequestParam(required = false) Long beforeId,
-            @RequestParam(defaultValue = "20") Integer limit) {
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
         Long currentUserId = securityUtil.getCurrentUserId();
-        return R.ok(messageService.getMessages(currentUserId, userId, beforeId, limit));
+        return R.ok(messageService.getMessages(currentUserId, userId, page, pageSize));
     }
 
     /**
@@ -67,13 +71,39 @@ public class ConversationController {
     @PreAuthorize("isAuthenticated()")
     public R<MessageVO> sendMessage(
             @PathVariable Long userId,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, Object> body) {
         Long senderId = securityUtil.getCurrentUserId();
-        String content = body.get("content");
-        MessageSendRequest request = new MessageSendRequest();
-        request.setReceiverId(userId);
-        request.setContent(content);
-        return R.ok(messageService.sendMessage(senderId, request));
+        // 兼容 content 字段可能是 String / Number / Boolean，统一转为 String
+        Object rawContent = body == null ? null : body.get("content");
+        String content = rawContent == null ? null : String.valueOf(rawContent);
+
+        log.info("私信发送请求: senderId={}, receiverId={}, contentLength={}",
+                senderId, userId, content != null ? content.length() : 0);
+
+        // 参数校验
+        if (content == null || content.trim().isEmpty()) {
+            log.warn("私信发送失败: 内容为空, senderId={}, receiverId={}", senderId, userId);
+            return R.fail(ErrorCode.BAD_REQUEST, "消息内容不能为空");
+        }
+        if (content.length() > 1000) {
+            log.warn("私信发送失败: 内容超长, senderId={}, receiverId={}, length={}", senderId, userId, content.length());
+            return R.fail(ErrorCode.BAD_REQUEST, "消息内容最长1000个字符");
+        }
+
+        try {
+            MessageSendRequest request = new MessageSendRequest();
+            request.setReceiverId(userId);
+            request.setContent(content.trim());
+            MessageVO result = messageService.sendMessage(senderId, request);
+            log.info("私信发送成功: senderId={}, receiverId={}, messageId={}", senderId, userId, result.getId());
+            return R.ok(result);
+        } catch (BusinessException e) {
+            log.warn("私信发送业务异常: senderId={}, receiverId={}, error={}", senderId, userId, e.getMessage());
+            return R.fail(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("私信发送系统异常: senderId={}, receiverId={}", senderId, userId, e);
+            return R.fail(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
+        }
     }
 
     /**

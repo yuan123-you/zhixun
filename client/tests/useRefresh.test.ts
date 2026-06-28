@@ -107,7 +107,7 @@ describe('useRefresh', () => {
 
       await refresh()
 
-      expect(error.value).toBe('刷新失败，请稍后重试')
+      expect(error.value).toBe('刷新失败，请检查网络后重试')
     })
   })
 

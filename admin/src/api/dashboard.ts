@@ -1,12 +1,12 @@
 import { get } from './request'
-import type { DashboardData } from '@/types'
+import type { EnhancedDashboardData } from '@/types'
 
-/** 获取仪表盘数据 */
-export function getDashboardData() {
-  return get<DashboardData>('/dashboard')
+/** 获取仪表盘数据（支持时间维度） */
+export function getDashboardData(period: 'daily' | 'weekly' | 'monthly' = 'daily') {
+  return get<EnhancedDashboardData>('/admin/dashboard/overview', { period } as any)
 }
 
-/** 获取趋势数据 */
-export function getTrendData(params: { startDate: string; endDate: string }) {
-  return get('/dashboard/trend', params as unknown as Record<string, unknown>)
+/** @deprecated 使用 getDashboardData 替代 */
+export function getEnhancedDashboardData(period: 'daily' | 'weekly' | 'monthly' = 'daily') {
+  return getDashboardData(period)
 }

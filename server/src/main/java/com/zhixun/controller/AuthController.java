@@ -19,7 +19,9 @@ import com.zhixun.vo.GraphCaptchaVO;
 import com.zhixun.vo.TokenResponse;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,8 +56,10 @@ public class AuthController {
     @PostMapping("/register")
     @SentinelResource(value = "auth-register", blockHandler = "registerBlockHandler", blockHandlerClass = AuthController.BlockHandlers.class)
     @OperationLog(module = "认证", action = "注册")
-    public R<TokenResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return R.ok(authService.register(request));
+    public R<TokenResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
+        TokenResponse tokenResponse = authService.register(request);
+        setTokenCookies(response, tokenResponse);
+        return R.ok(tokenResponse);
     }
 
     /**
@@ -64,29 +68,55 @@ public class AuthController {
     @PostMapping("/login")
     @SentinelResource(value = "auth-login", blockHandler = "loginBlockHandler", blockHandlerClass = AuthController.BlockHandlers.class)
     @OperationLog(module = "认证", action = "登录")
-    public R<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        return R.ok(authService.login(request, httpRequest));
+    public R<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
+        TokenResponse tokenResponse = authService.login(request, httpRequest);
+        setTokenCookies(response, tokenResponse);
+        return R.ok(tokenResponse);
     }
 
     /**
      * 用户登出（需认证）
      */
     @PostMapping("/logout")
-    public R<Void> logout(HttpServletRequest httpRequest) {
+    public R<Void> logout(HttpServletRequest httpRequest, HttpServletResponse response) {
         authService.logout(httpRequest);
+        clearTokenCookies(response);
         return R.ok();
     }
 
     /**
      * 刷新 Token
+     * 优先从 httpOnly Cookie 读取 refreshToken，其次从请求体读取（兼容旧版本）
      */
     @PostMapping("/refresh")
-    public R<TokenResponse> refresh(@RequestBody Map<String, String> body) {
-        String refreshToken = body.get("refreshToken");
+    public R<TokenResponse> refresh(HttpServletRequest httpRequest, @RequestBody(required = false) Map<String, String> body, HttpServletResponse response) {
+        String refreshToken = null;
+
+        // 优先从 Cookie 读取 refreshToken
+        Cookie[] cookies = httpRequest.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        // Cookie 中无 refreshToken，尝试从请求体读取（兼容旧版本）
+        if (refreshToken == null || refreshToken.isBlank()) {
+            if (body != null) {
+                refreshToken = body.get("refreshToken");
+            }
+        }
+
         if (refreshToken == null || refreshToken.isBlank()) {
             return R.fail(ErrorCode.BAD_REQUEST.getCode(), "刷新令牌不能为空");
         }
-        return R.ok(authService.refreshToken(refreshToken));
+
+        TokenResponse tokenResponse = authService.refreshToken(refreshToken);
+        setTokenCookies(response, tokenResponse);
+        return R.ok(tokenResponse);
     }
 
     /**
@@ -143,8 +173,10 @@ public class AuthController {
      * 第三方登录
      */
     @PostMapping("/oauth/login")
-    public R<TokenResponse> oauthLogin(@Valid @RequestBody OAuthLoginRequest request) {
-        return R.ok(oAuthService.oauthLogin(request.getProvider(), request.getCode()));
+    public R<TokenResponse> oauthLogin(@Valid @RequestBody OAuthLoginRequest request, HttpServletResponse response) {
+        TokenResponse tokenResponse = oAuthService.oauthLogin(request.getProvider(), request.getCode());
+        setTokenCookies(response, tokenResponse);
+        return R.ok(tokenResponse);
     }
 
     /**
@@ -169,15 +201,61 @@ public class AuthController {
         return R.ok();
     }
 
+    // ========== Cookie 工具方法 ==========
+
+    /**
+     * 设置 Token Cookie
+     * accessToken: httpOnly Cookie（用于 WebSocket 连接，短期有效）
+     * refreshToken: httpOnly Cookie（长期有效，安全存储）
+     */
+    private void setTokenCookies(HttpServletResponse response, TokenResponse tokenResponse) {
+        // 设置 accessToken Cookie（短期有效，用于 WebSocket）
+        Cookie accessTokenCookie = new Cookie("accessToken", tokenResponse.getAccessToken());
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(true); // 生产环境强制 HTTPS
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(tokenResponse.getExpiresIn() != null ? tokenResponse.getExpiresIn().intValue() : 7 * 24 * 60 * 60);
+        accessTokenCookie.setAttribute("SameSite", "Strict"); // CSRF 防护
+        response.addCookie(accessTokenCookie);
+
+        // 设置 refreshToken Cookie（长期有效，httpOnly 安全存储）
+        Cookie refreshTokenCookie = new Cookie("refreshToken", tokenResponse.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7天
+        refreshTokenCookie.setAttribute("SameSite", "Strict");
+        response.addCookie(refreshTokenCookie);
+    }
+
+    /**
+     * 清除 Token Cookie
+     */
+    private void clearTokenCookies(HttpServletResponse response) {
+        Cookie accessTokenCookie = new Cookie("accessToken", "");
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(true);
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(0); // 立即过期
+        response.addCookie(accessTokenCookie);
+
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "");
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0);
+        response.addCookie(refreshTokenCookie);
+    }
+
     /**
      * Sentinel 限流降级处理
      */
     public static class BlockHandlers {
-        public static R<TokenResponse> registerBlockHandler(RegisterRequest request, BlockException e) {
+        public static R<TokenResponse> registerBlockHandler(RegisterRequest request, HttpServletResponse response, BlockException e) {
             return R.fail(429, "注册请求过于频繁，请稍后重试");
         }
 
-        public static R<TokenResponse> loginBlockHandler(LoginRequest request, HttpServletRequest httpRequest, BlockException e) {
+        public static R<TokenResponse> loginBlockHandler(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response, BlockException e) {
             return R.fail(429, "登录请求过于频繁，请稍后重试");
         }
 

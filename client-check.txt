@@ -1,4 +1,0 @@
-﻿[90m[[90mnuxt:tailwindcss[90m][39m [36mℹ[39m Using default Tailwind CSS file
-error TS2688: Cannot find type definition file for '@nuxt/types'.
-  The file is in the program because:
-    Entry point of type library '@nuxt/types' specified in compilerOptions

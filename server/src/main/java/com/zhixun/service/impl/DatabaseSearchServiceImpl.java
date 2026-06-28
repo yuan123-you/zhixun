@@ -5,6 +5,7 @@ import com.zhixun.entity.Article;
 import com.zhixun.entity.ArticleImage;
 import com.zhixun.entity.Tag;
 import com.zhixun.entity.User;
+import com.zhixun.enums.ArticleStatusEnum;
 import com.zhixun.mapper.ArticleImageMapper;
 import com.zhixun.mapper.ArticleMapper;
 import com.zhixun.mapper.TagMapper;
@@ -99,20 +100,20 @@ public class DatabaseSearchServiceImpl implements SearchService {
     }
 
     /**
-     * 作品搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
-     * MyBatis-Plus 的 .like() 自动添加 %keyword% 实现模糊搜索
+     * 作品搜索：标题 + 摘要 + 正文 多字段模糊匹配
+     * 注意：authorName / categoryName 是 @TableField(exist=false) 关联字段，
+     *      不能直接用于 LambdaQueryWrapper（会抛 can not find lambda cache）。
+     *      如需按作者/分类搜索，应改用 SQL JOIN 或专门的 ArticleQueryService。
      */
     private long searchArticles(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
-        // 多字段模糊搜索：标题、摘要、正文、作者名、分类名
+        // 多字段模糊搜索：标题、摘要、正文
         wrapper.and(w -> w
                 .like(Article::getTitle, keyword)
                 .or().like(Article::getSummary, keyword)
                 .or().like(Article::getContent, keyword)
-                .or().like(Article::getAuthorName, keyword)
-                .or().like(Article::getCategoryName, keyword)
         );
-        wrapper.eq(Article::getStatus, 1);
+        wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
         wrapper.isNull(Article::getDeletedAt);
         // 排序：置顶优先，再按时间倒序
         wrapper.orderByDesc(Article::getIsTop);
@@ -221,7 +222,7 @@ public class DatabaseSearchServiceImpl implements SearchService {
         // 先搜索作品标题匹配的作品ID
         LambdaQueryWrapper<Article> articleWrapper = new LambdaQueryWrapper<>();
         articleWrapper.like(Article::getTitle, keyword)
-                .eq(Article::getStatus, 1)
+                .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .isNull(Article::getDeletedAt)
                 .select(Article::getId);
         List<Article> matchedArticles = articleMapper.selectList(articleWrapper);
@@ -318,7 +319,17 @@ public class DatabaseSearchServiceImpl implements SearchService {
 
     @Override
     public List<String> getHotSearches() {
-        return Collections.emptyList();
+        // 读取 Redis 热门搜索词（SearchHistoryServiceImpl.getHotSearchKeywords 已处理异常）
+        if (searchHistoryService == null) {
+            return Collections.emptyList();
+        }
+        try {
+            List<String> hot = searchHistoryService.getHotSearchKeywords(10);
+            return hot != null ? hot : Collections.emptyList();
+        } catch (Exception e) {
+            log.warn("读取热门搜索词失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     @Override

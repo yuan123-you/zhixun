@@ -58,6 +58,27 @@ public class UserSettingsVO {
 
         /** 保存浏览历史：0-关闭，1-开启 */
         private Integer saveViewHistory;
+
+        /** 内容推荐：0-关闭，1-开启 */
+        private Integer contentRecommend;
+
+        /** 自动播放视频：0-关闭，1-仅WiFi，2-始终 */
+        private Integer autoPlayVideo;
+
+        /** 免打扰开关：0-关闭，1-开启 */
+        private Integer quietHoursEnabled;
+
+        /** 免打扰开始时间 */
+        private String quietHoursStart;
+
+        /** 免打扰结束时间 */
+        private String quietHoursEnd;
+
+        /** 显示阅读量：0-关闭，1-开启 */
+        private Integer showViewCount;
+
+        /** 允许被搜索：0-关闭，1-开启 */
+        private Integer allowSearch;
     }
 
     @Data

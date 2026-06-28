@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -81,8 +82,13 @@ public class RegisterWelcomeServiceImpl implements RegisterWelcomeService {
      */
     private volatile Long cachedOfficialAccountId;
 
+    /**
+     * 使用 REQUIRES_NEW 传播级别，欢迎流程在独立事务中执行。
+     * 这样即使欢迎流程失败（如官方账号不存在、MQ 推送失败等），
+     * 也绝不会影响注册主事务的提交，从根本上避免"静默回滚"问题。
+     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void handleNewUserRegistration(Long userId) {
         Long officialAccountId = resolveOfficialAccountId();
         if (officialAccountId == null) {

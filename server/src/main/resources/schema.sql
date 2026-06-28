@@ -1,28 +1,43 @@
-﻿-- 知讯平台数据库建表脚本 (MySQL 8.0+)
+-- 知讯平台数据库建表脚本 (MySQL 8.0+)
 
 -- 1. sys_user 用户表
 CREATE TABLE IF NOT EXISTS sys_user (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  nickname VARCHAR(50),
-  avatar VARCHAR(500),
-  email VARCHAR(100) UNIQUE,
-  phone VARCHAR(100) UNIQUE,
-  role VARCHAR(20) NOT NULL DEFAULT 'USER',
-  status TINYINT NOT NULL DEFAULT 1,
-  bio VARCHAR(500),
-  is_online TINYINT DEFAULT 0,
-  last_active_at DATETIME,
-  follow_count INT DEFAULT 0,
-  follower_count INT DEFAULT 0,
-  article_count INT DEFAULT 0,
-  last_login_at DATETIME,
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键，自增起始值 10000',
+  uid VARCHAR(30) NOT NULL COMMENT '用户自定义ID（大小写字母+数字+下划线，30天内可修改一次）',
+  uid_updated_at DATETIME COMMENT '上次修改UID时间',
+  username VARCHAR(50) NOT NULL COMMENT '用户名',
+  password_hash VARCHAR(255) NOT NULL COMMENT '密码哈希（BCrypt）',
+  nickname VARCHAR(50) COMMENT '昵称',
+  avatar VARCHAR(500) COMMENT '头像URL',
+  email VARCHAR(100) COMMENT '邮箱（AES加密存储）',
+  email_hash VARCHAR(64) COMMENT '邮箱MD5哈希（用于唯一性校验）',
+  phone VARCHAR(100) COMMENT '手机号（AES加密存储）',
+  phone_hash VARCHAR(64) COMMENT '手机号MD5哈希（用于唯一性校验）',
+  role VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT '角色：USER/ADMIN/SUPER_ADMIN',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-正常',
+  bio VARCHAR(500) COMMENT '个人简介',
+  gender TINYINT DEFAULT 0 COMMENT '性别：0=未知，1=男，2=女',
+  show_gender_on_profile TINYINT DEFAULT 0 COMMENT '是否在主页展示性别',
+  province VARCHAR(50) COMMENT '所属省份',
+  ip_location VARCHAR(100) COMMENT 'IP属地',
+  is_online TINYINT DEFAULT 0 COMMENT '是否在线',
+  last_active_at DATETIME COMMENT '最后活跃时间',
+  follow_count INT DEFAULT 0 COMMENT '关注数',
+  follower_count INT DEFAULT 0 COMMENT '粉丝数',
+  article_count INT DEFAULT 0 COMMENT '作品数',
+  wechat_openid VARCHAR(100) COMMENT '微信OpenID',
+  qq_openid VARCHAR(100) COMMENT 'QQ OpenID',
+  last_login_at DATETIME COMMENT '最后登录时间',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_username (username),
+  UNIQUE KEY uk_uid (uid),
+  UNIQUE KEY uk_email_hash (email_hash),
+  UNIQUE KEY uk_phone_hash (phone_hash)
+) ENGINE=InnoDB AUTO_INCREMENT=10000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 CREATE INDEX idx_sys_user_role ON sys_user(role);
 CREATE INDEX idx_sys_user_status ON sys_user(status);
+CREATE INDEX idx_sys_user_uid ON sys_user(uid);
 
 -- 2. cms_category 分类表
 CREATE TABLE IF NOT EXISTS cms_category (
@@ -265,6 +280,13 @@ CREATE TABLE IF NOT EXISTS user_settings (
   show_online_status TINYINT DEFAULT 1,
   message_permission TINYINT DEFAULT 0,
   save_view_history TINYINT DEFAULT 1,
+  content_recommend INT DEFAULT 1 COMMENT '内容推荐: 0关闭 1开启',
+  auto_play_video INT DEFAULT 1 COMMENT '自动播放视频: 0关闭 1仅WiFi 2始终',
+  quiet_hours_enabled INT DEFAULT 0 COMMENT '免打扰: 0关闭 1开启',
+  quiet_hours_start VARCHAR(5) DEFAULT '22:00' COMMENT '免打扰开始时间',
+  quiet_hours_end VARCHAR(5) DEFAULT '08:00' COMMENT '免打扰结束时间',
+  show_view_count INT DEFAULT 1 COMMENT '显示阅读量: 0关闭 1开启',
+  allow_search INT DEFAULT 1 COMMENT '允许被搜索: 0关闭 1开启',
   font_size TINYINT DEFAULT 1,
   theme VARCHAR(20) DEFAULT 'light',
   language VARCHAR(10) DEFAULT 'zh-CN',
@@ -346,6 +368,7 @@ CREATE TABLE IF NOT EXISTS cms_topic_follow (
 CREATE TABLE IF NOT EXISTS cms_group_info (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    group_number VARCHAR(10) DEFAULT NULL COMMENT '群号(6-10位纯数字)',
     avatar VARCHAR(500) DEFAULT NULL,
     description VARCHAR(500) DEFAULT NULL,
     owner_id BIGINT NOT NULL,
@@ -356,6 +379,7 @@ CREATE TABLE IF NOT EXISTS cms_group_info (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    UNIQUE INDEX uk_group_number (group_number),
     INDEX idx_group_owner (owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组表';
 
@@ -596,13 +620,11 @@ CREATE TABLE IF NOT EXISTS cms_repost (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='转发表';
 
 -- ============================================================
--- 兼容性修复：为已存在的表补充缺失列（MySQL 8.0+）
+-- 兼容性修复：为老版本数据库补充缺失列（MySQL 8.0+，幂等操作）
+-- 注意：sys_user 表已在上方 CREATE TABLE 中包含所有列，此处不再修补
 -- ============================================================
 ALTER TABLE cms_article ADD COLUMN IF NOT EXISTS share_count INT DEFAULT 0 COMMENT '分享数';
 ALTER TABLE cms_article ADD COLUMN IF NOT EXISTS device_info VARCHAR(100) NULL COMMENT '发布设备信息';
 ALTER TABLE cms_article ADD COLUMN IF NOT EXISTS location VARCHAR(255) NULL COMMENT '发布位置';
 ALTER TABLE cms_article ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45) NULL COMMENT 'IP属地';
 ALTER TABLE cms_article ADD COLUMN IF NOT EXISTS visibility TINYINT NOT NULL DEFAULT 0 COMMENT '可见性';
-ALTER TABLE sys_user ADD COLUMN IF NOT EXISTS uid VARCHAR(30) NULL UNIQUE AFTER id;
-ALTER TABLE sys_user ADD COLUMN IF NOT EXISTS uid_updated_at DATETIME NULL AFTER uid;
-ALTER TABLE sys_user ADD COLUMN IF NOT EXISTS province VARCHAR(50) NULL AFTER bio;

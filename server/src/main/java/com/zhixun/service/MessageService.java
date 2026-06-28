@@ -34,11 +34,11 @@ public interface MessageService {
      *
      * @param userId       当前用户ID
      * @param targetUserId 对方用户ID
-     * @param beforeId     早于此ID的消息（用于加载更多）
-     * @param limit        每页数量
+     * @param page         页码
+     * @param pageSize     每页数量
      * @return 消息列表
      */
-    PageResult<MessageVO> getMessages(Long userId, Long targetUserId, Long beforeId, Integer limit);
+    PageResult<MessageVO> getMessages(Long userId, Long targetUserId, Integer page, Integer pageSize);
 
     /**
      * 标记与某用户的私信已读

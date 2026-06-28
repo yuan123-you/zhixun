@@ -20,6 +20,7 @@ public class GroupInfo implements Serializable {
     private Long id;
 
     private String name;
+    private String groupNumber;
     private String avatar;
     private String description;
     private Long ownerId;

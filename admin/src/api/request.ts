@@ -2,6 +2,7 @@ import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosR
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ApiResponse } from '@/types'
 import { storage, STORAGE_KEYS } from '@/utils/storage'
+import { friendlyMessage, toFriendlyError } from '@/utils/friendlyError'
 import router from '@/router'
 
 // 扩展 Axios 类型，支持重试计数
@@ -148,7 +149,7 @@ service.interceptors.request.use(
 
 /**
  * 响应拦截器
- * - 统一错误处理
+ * - 统一错误处理（自动翻译为友好提示）
  * - 401 时自动尝试用 refreshToken 刷新并重试请求
  */
 service.interceptors.response.use(
@@ -156,18 +157,20 @@ service.interceptors.response.use(
     const res = response.data
     // 业务错误码处理
     if (res.code !== 0 && res.code !== 200) {
-      ElMessage.error(res.message || '操作失败，请稍后重试')
+      // 业务错误：用友好提示弹窗；不显示技术细节
+      showFriendlyError({ code: res.code, message: res.message })
       // Token 过期或无效 — 尝试刷新
       if (res.code === 401) {
         return handleTokenRefresh(response.config)
       }
-      return Promise.reject(new Error(res.message || '操作失败，请稍后重试'))
+      return Promise.reject(new Error(friendlyMessage({ code: res.code, message: res.message })))
     }
     return res as any
   },
   async (error) => {
     // HTTP 状态码错误处理
     const status = error.response?.status
+    const data = error.response?.data
 
     // 401 — 尝试刷新 Token 并重试
     if (status === 401) {
@@ -196,27 +199,45 @@ service.interceptors.response.use(
       }
     }
 
-    const messages: Record<number, string> = {
-      400: '请求参数有误，请检查后重试',
-      403: '暂无操作权限',
-      404: '请求的资源不存在',
-      500: '服务器繁忙，请稍后重试',
-    }
-    // 403 弹框友好提醒，其余状态码用轻提示
-    if (status === 403) {
-      ElMessageBox.alert(
-        '抱歉，您暂时没有权限执行此操作，如有疑问请联系管理员。',
-        '暂无权限',
-        { confirmButtonText: '我知道了', type: 'warning' }
-      ).catch(() => {})
-    } else {
-      const message = messages[status] || '操作失败，请稍后重试'
-      ElMessage.error(message)
-    }
+    // 友好化错误处理
+    showFriendlyError({ status, message: data?.message, raw: error })
 
     return Promise.reject(error)
   }
 )
+
+/**
+ * 友好错误提示：移动端适配、不溢出屏幕、大白话
+ *  - 业务码 → 业务码语义表
+ *  - HTTP 状态码 → 通用提示
+ *  - 403 单独处理为更显眼的弹框
+ *  - 其他错误 → ElMessage 顶部居中
+ */
+function showFriendlyError(opts: { code?: number | string; status?: number; message?: string; raw?: any }) {
+  const fe = toFriendlyError(opts)
+  // 403 用更显眼的弹框（强提示）
+  if (fe.status === 403 || fe.code === 403 || fe.code === '403') {
+    ElMessageBox.alert(
+      '抱歉，您暂时没有权限执行此操作。如有疑问请联系系统管理员。',
+      '暂无操作权限',
+      { confirmButtonText: '我知道了', type: 'warning' }
+    ).catch(() => {})
+    return
+  }
+  // 业务码 0/200 不弹窗
+  if (fe.code !== undefined && [0, 200, '0', '200'].includes(fe.code as any)) return
+  // 默认走顶部轻提示；Element Plus 默认就是顶部居中，配置 offset 后很显眼
+  ElMessage({
+    message: fe.title,
+    type: 'error',
+    // 长消息自动延长展示
+    duration: fe.title.length > 20 ? 4000 : 2200,
+    // 移动端也会换行 + 居中，不溢出
+    customClass: 'zhixun-friendly-message',
+    // Element Plus 的 grouping 让相同消息合并，但这里不去重
+    grouping: true,
+  })
+}
 
 /**
  * 处理 Token 刷新并重试原请求

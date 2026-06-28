@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS `cms_topic_follow` (
 CREATE TABLE IF NOT EXISTS `cms_group_info` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL,
+    `group_number` VARCHAR(10) DEFAULT NULL COMMENT '群号(6-10位纯数字)',
     `avatar` VARCHAR(500) DEFAULT NULL,
     `description` VARCHAR(500) DEFAULT NULL,
     `owner_id` BIGINT NOT NULL,
@@ -58,6 +59,7 @@ CREATE TABLE IF NOT EXISTS `cms_group_info` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
+    UNIQUE INDEX `uk_group_number` (`group_number`),
     INDEX `idx_owner_id` (`owner_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组表';
 

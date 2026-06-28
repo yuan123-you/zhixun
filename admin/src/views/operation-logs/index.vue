@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="operation-logs">
     <!-- 筛选条件 -->
     <el-card shadow="never" class="search-card">

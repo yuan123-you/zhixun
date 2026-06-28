@@ -8,9 +8,11 @@ import com.zhixun.vo.AIResponseVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.*;
 
 @Slf4j
@@ -19,13 +21,28 @@ import java.util.*;
 public class AIServiceImpl implements AIService {
 
     private final AIConfig aiConfig;
-    private final RestTemplate restTemplate = new RestTemplate();
+    /**
+     * 智谱 AI RestTemplate：配置连接/读取超时，避免被默认无限超时阻塞请求线程
+     */
+    private final RestTemplate restTemplate = createRestTemplate();
+
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout((int) Duration.ofSeconds(15).toMillis());
+        factory.setReadTimeout((int) Duration.ofSeconds(120).toMillis());
+        return new RestTemplate(factory);
+    }
 
     @Override
     public AIResponseVO generateText(AIWriteRequest request) {
         String apiKey = aiConfig.getApiKey();
         if (apiKey == null || apiKey.isEmpty() || "your-zhipu-api-key".equals(apiKey)) {
-            return mockTextResponse(request);
+            log.warn("ZHIPU_API_KEY not configured, refusing to mock - returning explicit error for mode={}", request.getMode());
+            // 不再静默回退到 mock 响应，避免误导用户以为 AI 功能可用
+            AIResponseVO vo = new AIResponseVO();
+            vo.setContent("AI 服务未配置 API Key");
+            vo.setUsage("error: api_key_missing");
+            return vo;
         }
         try {
             String url = aiConfig.getBaseUrl() + "/chat/completions";
@@ -33,6 +50,7 @@ public class AIServiceImpl implements AIService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + apiKey);
+            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("model", aiConfig.getModel());
@@ -43,9 +61,10 @@ public class AIServiceImpl implements AIService {
             body.put("max_tokens", 2000);
             body.put("temperature", 0.7);
 
-            log.info("Calling ZhiPuAI: model={}, mode={}, prompt={}",
-                aiConfig.getModel(), request.getMode(),
-                request.getPrompt() != null ? request.getPrompt().substring(0, Math.min(50, request.getPrompt().length())) : "");
+            String preview = request.getPrompt() != null
+                ? request.getPrompt().substring(0, Math.min(50, request.getPrompt().length()))
+                : "";
+            log.info("Calling ZhiPuAI: model={}, mode={}, prompt={}", aiConfig.getModel(), request.getMode(), preview);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
@@ -55,6 +74,8 @@ public class AIServiceImpl implements AIService {
                 throw new RuntimeException("ZhiPuAI returned null response");
             }
 
+            // 智谱免费模型（glm-4.7-flash）会返回 reasoning_content 字段；
+            // 我们只关心最终 content 字段。
             List<Map<String, Object>> choices = (List<Map<String, Object>>) result.get("choices");
             if (choices == null || choices.isEmpty()) {
                 throw new RuntimeException("ZhiPuAI returned no choices");
@@ -62,6 +83,13 @@ public class AIServiceImpl implements AIService {
 
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             String content = (String) message.get("content");
+            // glm-4.7-flash 等推理模型会将输出放在 reasoning_content 字段，content 可能为空
+            if (content == null || content.isEmpty()) {
+                content = (String) message.get("reasoning_content");
+            }
+            if (content == null || content.isEmpty()) {
+                throw new RuntimeException("ZhiPuAI returned empty content and reasoning_content");
+            }
             Map<String, Object> usage = (Map<String, Object>) result.get("usage");
 
             String usageInfo = usage != null
@@ -74,8 +102,12 @@ public class AIServiceImpl implements AIService {
             return buildResponse(content, usageInfo);
 
         } catch (Exception e) {
+            // 真实异常：记录日志但不再静默回退 mock，避免误导用户
             log.error("ZhiPuAI API call failed: {}", e.getMessage(), e);
-            return mockTextResponse(request);
+            AIResponseVO vo = new AIResponseVO();
+            vo.setContent("AI 服务调用失败：" + e.getMessage() + "。请检查网络或联系管理员。");
+            vo.setUsage("error: " + e.getClass().getSimpleName());
+            return vo;
         }
     }
 
@@ -122,6 +154,11 @@ public class AIServiceImpl implements AIService {
         return generateText(req);
     }
 
+    /**
+     * Mock 响应生成器（已废弃：当 ZHIPU_API_KEY 未配置时改为显式返回错误，不再静默回退 mock）。
+     * 保留此方法以便将来单元测试或离线开发场景使用。
+     */
+    @Deprecated
     private AIResponseVO mockTextResponse(AIWriteRequest request) {
         AIResponseVO vo = new AIResponseVO();
         String prompt = request.getPrompt();

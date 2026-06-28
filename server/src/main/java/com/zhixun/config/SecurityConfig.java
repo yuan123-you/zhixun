@@ -69,6 +69,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .formLogin(AbstractHttpConfigurer::disable)
                 // 关闭 HTTP Basic 认证
                 .httpBasic(AbstractHttpConfigurer::disable)
+                // 启用 CORS（依赖 CorsConfig 中定义的 CorsFilter Bean）
+                .cors(c -> {})
                 // 无状态会话
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 异常处理
@@ -93,7 +95,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                         // 公开静态资源/Swagger/WebSocket 放行
                         .requestMatchers("/doc.html", "/swagger-ui/**", "/swagger-resources/**",
                                 "/v3/api-docs/**", "/webjars/**", "/ws/**", "/static/**",
-                                "/uploads/**", "/favicon.ico", "/actuator/**").permitAll()
+                                "/uploads/**", "/v1/files/view/**",
+                                "/favicon.ico", "/actuator/**").permitAll()
                         // 作品列表和详情（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/articles", "/v1/articles/**").permitAll()
                         // 分类列表和分类树（公开）
@@ -112,6 +115,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.GET, "/v1/announcements").permitAll()
                         // 推荐用户（公开，需在 /v1/users/** ADMIN规则之前）
                         .requestMatchers(HttpMethod.GET, "/v1/users/recommend").permitAll()
+                        // 匿名 IP 属地查询（公开）
+                        .requestMatchers(HttpMethod.GET, "/v1/users/ip-location").permitAll()
                         // 用户关注/在线状态（需认证，需在 /v1/users/** ADMIN规则之前）
                         .requestMatchers(HttpMethod.POST, "/v1/users/{id}/follow").authenticated()
                         .requestMatchers(HttpMethod.GET, "/v1/users/{id}/following", "/v1/users/{id}/followers").permitAll()

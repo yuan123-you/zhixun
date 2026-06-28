@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="category-management">
     <el-card shadow="never">
       <template #header>

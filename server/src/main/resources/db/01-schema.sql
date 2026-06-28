@@ -1,32 +1,44 @@
-﻿-- 知讯平台数据库建表脚本 (MySQL 8.0+)
+-- 知讯平台数据库建表脚本 (MySQL 8.0+)
 
 -- 1. sys_user 用户表
 CREATE TABLE IF NOT EXISTS sys_user (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  nickname VARCHAR(50),
-  avatar VARCHAR(500),
-  email VARCHAR(100),
-  email_hash VARCHAR(64) UNIQUE,
-  phone VARCHAR(100),
-  phone_hash VARCHAR(64) UNIQUE,
-  role VARCHAR(20) NOT NULL DEFAULT 'USER',
-  status TINYINT NOT NULL DEFAULT 1,
-  bio VARCHAR(500),
-  is_online TINYINT DEFAULT 0,
-  last_active_at DATETIME,
-  follow_count INT DEFAULT 0,
-  follower_count INT DEFAULT 0,
-  article_count INT DEFAULT 0,
-  wechat_openid VARCHAR(100),
-  qq_openid VARCHAR(100),
-  last_login_at DATETIME,
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键，自增起始值 10000',
+  uid VARCHAR(30) NOT NULL COMMENT '用户自定义ID（大小写字母+数字+下划线，30天内可修改一次）',
+  uid_updated_at DATETIME COMMENT '上次修改UID时间',
+  username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
+  password_hash VARCHAR(255) NOT NULL COMMENT '密码哈希（BCrypt）',
+  nickname VARCHAR(50) COMMENT '昵称',
+  avatar VARCHAR(500) COMMENT '头像URL',
+  email VARCHAR(100) COMMENT '邮箱（AES加密存储）',
+  email_hash VARCHAR(64) UNIQUE COMMENT '邮箱MD5哈希（用于唯一性校验）',
+  phone VARCHAR(100) COMMENT '手机号（AES加密存储）',
+  phone_hash VARCHAR(64) UNIQUE COMMENT '手机号MD5哈希（用于唯一性校验）',
+  role VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT '角色：USER/ADMIN/SUPER_ADMIN',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-正常',
+  bio VARCHAR(500) COMMENT '个人简介',
+  gender TINYINT DEFAULT 0 COMMENT '性别：0=未知，1=男，2=女',
+  show_gender_on_profile TINYINT DEFAULT 0 COMMENT '是否在主页展示性别',
+  province VARCHAR(50) COMMENT '所属省份',
+  ip_location VARCHAR(100) COMMENT 'IP属地',
+  is_online TINYINT DEFAULT 0 COMMENT '是否在线',
+  last_active_at DATETIME COMMENT '最后活跃时间',
+  follow_count INT DEFAULT 0 COMMENT '关注数',
+  follower_count INT DEFAULT 0 COMMENT '粉丝数',
+  article_count INT DEFAULT 0 COMMENT '作品数',
+  wechat_openid VARCHAR(100) COMMENT '微信OpenID',
+  qq_openid VARCHAR(100) COMMENT 'QQ OpenID',
+  last_login_at DATETIME COMMENT '最后登录时间',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_username (username),
+  UNIQUE KEY uk_uid (uid),
+  UNIQUE KEY uk_email_hash (email_hash),
+  UNIQUE KEY uk_phone_hash (phone_hash)
+) ENGINE=InnoDB AUTO_INCREMENT=10000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 CREATE INDEX idx_sys_user_role ON sys_user(role);
 CREATE INDEX idx_sys_user_status ON sys_user(status);
+CREATE INDEX idx_sys_user_uid ON sys_user(uid);
+
 
 -- 2. cms_category 分类表
 CREATE TABLE IF NOT EXISTS cms_category (

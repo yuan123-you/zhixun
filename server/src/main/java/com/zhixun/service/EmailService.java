@@ -39,7 +39,7 @@ public class EmailService {
             mailSender.send(message);
             log.info("通知邮件发送成功: to={}", toEmail);
         } catch (Exception e) {
-            log.error("通知邮件发送失败: to={}", toEmail, e);
+            log.error("通知邮件发送失败: to={}, error={}", toEmail, e.getMessage(), e);
         }
     }
 
@@ -73,7 +73,7 @@ public class EmailService {
             mailSender.send(message);
             log.info("验证码邮件发送成功: to={}, purpose={}", toEmail, purpose);
         } catch (Exception e) {
-            log.error("验证码邮件发送失败: to={}, purpose={}, error={}", toEmail, purpose, e.getMessage());
+            log.error("验证码邮件发送失败: to={}, purpose={}, error={}", toEmail, purpose, e.getMessage(), e);
             // @Async 方法中抛出的异常无法被全局异常处理器捕获，仅记录日志
             // 验证码已存入 Redis，邮件发送失败不影响接口返回，用户可重新请求发送
         }

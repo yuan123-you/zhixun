@@ -472,7 +472,9 @@ public class SearchServiceImpl implements SearchService {
 
             result.setArticles(voList);
             return response.hits().total().value();
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // 改为 Throwable：OpenSearch 客户端不可用时可能抛出 NoClassDefFoundError（继承自 Error），
+            // 原 catch (Exception) 抓不住会导致整体搜索 503。
             log.warn("OpenSearch 不可用，降级到 MySQL 搜索: {}", e.getMessage());
             try {
                 SearchResultVO fallbackResult = fallbackService.getSearchFallback(keyword, page, pageSize);
@@ -587,7 +589,8 @@ public class SearchServiceImpl implements SearchService {
 
             result.setUsers(voList);
             return response.hits().total().value();
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // 改为 Throwable：OpenSearch 不可用时可能抛 Error（如 NoClassDefFoundError）
             log.warn("OpenSearch 用户搜索不可用，降级到 MySQL: {}", e.getMessage());
             try {
                 SearchResultVO fallbackResult = fallbackService.getUserSearchFallback(keyword, page, pageSize);
@@ -647,7 +650,8 @@ public class SearchServiceImpl implements SearchService {
 
             result.setImages(voList);
             return response.hits().total().value();
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // 改为 Throwable：OpenSearch 不可用时可能抛 Error
             log.error("OpenSearch 搜索图片失败: {}", e.getMessage());
             result.setImages(Collections.emptyList());
             return 0L;

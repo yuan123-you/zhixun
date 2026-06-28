@@ -40,8 +40,14 @@ public class MybatisPlusConfig {
 
         @Override
         public void insertFill(MetaObject metaObject) {
-            this.strictInsertFill(metaObject, "createdAt", LocalDateTime.class, LocalDateTime.now());
-            this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            this.strictInsertFill(metaObject, "createdAt", LocalDateTime.class, now);
+            this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, now);
+            // 群组成员加入时间（cms_group_member.joined_at 字段 NOT NULL）
+            this.strictInsertFill(metaObject, "joinedAt", LocalDateTime.class, now);
+            // 其它可能存在的 INSERT 填充时间字段
+            this.strictInsertFill(metaObject, "joined_at", LocalDateTime.class, now);
+            this.strictInsertFill(metaObject, "lastLoginAt", LocalDateTime.class, now);
         }
 
         @Override

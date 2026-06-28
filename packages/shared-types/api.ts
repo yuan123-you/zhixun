@@ -5,12 +5,14 @@ export interface ApiResponse<T = any> {
   data: T
 }
 
-/** 通用分页结果 */
+/** 通用分页结果（与后端 com.zhixun.common.result.PageResult 对齐） */
 export interface PageResult<T> {
-  records: T[]
+  /** 数据列表（后端字段名 list） */
+  list: T[]
+  /** 总记录数 */
   total: number
+  /** 当前页码 */
   page: number
-  pageSize: number
-  pages?: number
-  refresh_key?: string
+  /** 每页大小（后端字段名 page_size） */
+  page_size: number
 }

@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
+import com.zhixun.common.util.VOBuilder;
+import com.zhixun.config.Master;
 import com.zhixun.config.Slave;
 import com.zhixun.entity.User;
 import com.zhixun.entity.UserFollow;
@@ -42,6 +44,7 @@ public class FollowServiceImpl implements FollowService {
     private final NotificationService notificationService;
 
     @Override
+    @Master
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> toggleFollow(Long userId, Long targetUserId) {
         // 检查不能关注自己
@@ -226,7 +229,7 @@ public class FollowServiceImpl implements FollowService {
                 .collect(Collectors.toMap(UserFollow::getFollowerId, f -> true, (a, b) -> a));
 
         return users.stream().map(user -> {
-            UserVO vo = buildUserVO(user);
+            UserVO vo = VOBuilder.buildUserVO(user);
 
             // 判断互关：当前用户关注了对方，且对方也关注了当前用户
             boolean currentFollowsTarget = currentFollowingMap.getOrDefault(user.getId(), false);
@@ -241,26 +244,7 @@ public class FollowServiceImpl implements FollowService {
         }).collect(Collectors.toList());
     }
 
-    /**
-     * 构建用户 VO（脱敏）
-     */
-    private UserVO buildUserVO(User user) {
-        UserVO vo = new UserVO();
-        vo.setId(user.getId());
-        vo.setUsername(user.getUsername());
-        vo.setNickname(user.getNickname());
-        vo.setAvatar(user.getAvatar());
-        vo.setRole(user.getRole() != null ? user.getRole().name() : null);
-        vo.setStatus(user.getStatus());
-        vo.setCreatedAt(user.getCreatedAt());
-        vo.setFollowCount(user.getFollowCount());
-        vo.setFollowerCount(user.getFollowerCount());
-        vo.setArticleCount(user.getArticleCount());
-        vo.setBio(user.getBio());
-        vo.setProvince(user.getProvince());
-        vo.setIpLocation(user.getIpLocation());
-        return vo;
-    }
+
 
     /**
      * 发送关注通知

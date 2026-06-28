@@ -36,6 +36,9 @@ public class Comment {
     /** 评论内容 */
     private String content;
 
+    /** 评论图片列表（JSON 字符串存储） */
+    private String images;
+
     /** 评论状态 */
     private CommentStatusEnum status;
 

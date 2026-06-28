@@ -43,7 +43,7 @@ public class OAuthServiceImpl implements OAuthService {
     private static final String REFRESH_TOKEN_PREFIX = "auth:refresh:";
 
     /** 访问令牌过期时间（秒） */
-    @Value("${jwt.access-expiration:7200}")
+    @Value("${jwt.access-expiration:604800}")
     private Long accessExpiration;
 
     // ========== 微信配置 ==========

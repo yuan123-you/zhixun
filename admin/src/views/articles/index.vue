@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="article-management">
     <!-- 搜索筛选栏 -->
     <el-card shadow="never" class="search-card">

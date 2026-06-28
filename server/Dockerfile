@@ -45,8 +45,8 @@ USER appuser
 # 暴露端口
 EXPOSE 8080
 
-# JVM 参数：容器环境优化
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseContainerSupport"
+# JVM 参数：容器环境优化，显式指定 UTF-8 编码
+ENV JAVA_OPTS="-Dfile.encoding=UTF-8 -Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseContainerSupport"
 
 # 健康检查
 HEALTHCHECK --interval=15s --timeout=10s --start-period=60s --retries=3 \

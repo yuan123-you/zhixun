@@ -239,11 +239,25 @@
     @apply btn bg-transparent text-slate-500 hover:bg-slate-50 focus:ring-slate-400;
   }
 
-  /* 输入框样式 - 现代边框 */
+  /* 输入框样式 - 登录页风格效果，Teal 色调 */
   .input {
-    @apply w-full h-10 px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500;
+    @apply w-full h-11 px-3 py-2 rounded-[10px] bg-white text-slate-900 placeholder-slate-400 outline-none;
+    border: 1.5px solid #e2e8f0;
+    transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
     /* 防止移动端点击输入框时浏览器自动缩放 */
     font-size: 16px;
+    font-family: inherit;
+  }
+  .input:focus {
+    border-color: #0d9488;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+  }
+  .input::placeholder {
+    font-size: 13px;
+    color: #cbd5e1;
+  }
+  .dark .input::placeholder {
+    color: #475569;
   }
 
   /* 下拉选择框全局紧凑化 */

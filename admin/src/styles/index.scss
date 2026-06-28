@@ -126,3 +126,134 @@ body,
 .mb-16 {
   margin-bottom: 16px;
 }
+
+/* ==========================================================================
+   Element Plus 全局输入框增强（Teal 聚焦效果）
+   优化所有管理页面输入框，使用青绿色调聚焦光晕
+   ========================================================================== */
+/* ElInput 边框 + 聚焦光晕 */
+.el-input__wrapper {
+  border-width: 1.5px !important;
+  border-radius: 10px !important;
+  transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+}
+.el-input.is-focus .el-input__wrapper,
+.el-input__wrapper.is-focus {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1) !important;
+}
+.el-input__wrapper:hover {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.08) !important;
+}
+
+/* ElTextarea */
+.el-textarea__inner {
+  border-width: 1.5px !important;
+  border-radius: 10px !important;
+  transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  font-family: inherit !important;
+  line-height: 1.6 !important;
+}
+.el-textarea.is-focus .el-textarea__inner,
+.el-textarea__inner:focus {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1) !important;
+}
+.el-textarea__inner:hover {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.08) !important;
+}
+
+/* ElSelect */
+.el-select .el-input.is-focus .el-input__wrapper {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1) !important;
+}
+
+/* ElDatePicker */
+.el-date-editor .el-input__wrapper {
+  border-width: 1.5px !important;
+}
+
+/* ElInputNumber */
+.el-input-number .el-input__wrapper {
+  border-width: 1.5px !important;
+}
+
+/* ==========================================================================
+   Element Plus 全局提示样式（移动端适配 / 防溢出 / 显眼）
+   --------------------------------------------------------------------------
+   目标：所有 ElMessage 弹出的错误/警告/成功/信息都
+   1) 不溢出屏幕（移动端左右各 12px 边距）
+   2) 位置显眼（顶部 24px，强阴影 + 圆角）
+   3) 文本支持换行（普通用户也能读完）
+   4) 字号 / padding 适配移动端
+   ========================================================================== */
+.el-message {
+  /* 移动端贴边留 12px，桌面端最大 480px 居中 */
+  max-width: calc(100vw - 24px) !important;
+  min-width: 0 !important;
+  width: auto !important;
+  padding: 12px 16px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18) !important;
+  border: none !important;
+  background-color: var(--el-message-bg-color, #fff) !important;
+
+  .el-message__content {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+    white-space: pre-wrap !important;
+    color: var(--el-message-text-color, #303133) !important;
+  }
+
+  .el-message__icon {
+    font-size: 18px !important;
+    margin-right: 8px !important;
+  }
+}
+
+/* 桌面端：最大宽 480px 居中悬浮 */
+@media (min-width: 640px) {
+  .el-message {
+    max-width: 480px !important;
+  }
+}
+
+/* 友好错误消息：使用项目主色危险红背景，醒目 */
+.zhixun-friendly-message {
+  background: linear-gradient(135deg, #f56c6c 0%, #e6a23c 100%) !important;
+  color: #fff !important;
+  border: none !important;
+
+  .el-message__content {
+    color: #fff !important;
+  }
+
+  .el-message__icon {
+    color: #fff !important;
+  }
+}
+
+/* 移动端：ElMessageBox 弹框占满宽度留 16px 边距，不溢出 */
+@media (max-width: 640px) {
+  .el-message-box {
+    max-width: calc(100vw - 32px) !important;
+    width: calc(100vw - 32px) !important;
+    margin: 0 16px !important;
+
+    .el-message-box__content {
+      padding: 16px !important;
+    }
+
+    .el-message-box__btns {
+      padding: 0 16px 16px !important;
+    }
+  }
+}

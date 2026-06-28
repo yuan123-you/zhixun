@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="tag-management">
     <el-card shadow="never">
       <template #header>
@@ -387,9 +387,10 @@ function getHotLabel(count: number): string {
 async function loadTags(force = false) {
   loading.value = true
   try {
-    const result = await tagCache.request('/tags', queryParams as unknown as Record<string, unknown>, { force })
-    tagList.value = result.list
-    total.value = result.total
+    // 管理端标签列表走 /admin/tags（公开 /tags 返回 List<TagVO>，无分页）
+    const result = await tagCache.request('/admin/tags', queryParams as unknown as Record<string, unknown>, { force })
+    tagList.value = (result as any).list || (result as any).data || []
+    total.value = (result as any).total || 0
   } catch {
     // 错误已在拦截器中处理
   } finally {

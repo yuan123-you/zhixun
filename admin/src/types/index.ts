@@ -1,35 +1,46 @@
-﻿// 共享类型（来自 @zhixun/shared-types 统一类型包）
-// 注：ApiResponse / PageResult / UserInfo 与本地定义有差异，本地版本保留现有字段名，不在此处重导出
+// 共享类型（来自 @zhixun/shared-types 统一类型包）
 export {
   ErrorCode,
   ErrorMessage,
+  type ApiResponse,
+  type PageResult,
   type ArticleVO,
   type CategoryVO,
   type TagVO,
   type UserBrief,
   type ArticleCreateParams,
   type ArticleQueryParams,
+  // 群组相关
+  type GroupInfo,
+  type GroupMember,
+  type GroupMessage,
+  type GroupQuery,
+  // 私信相关
+  type ConversationInfo,
+  type MessageInfo,
+  type MessageQuery,
+  // 通知相关
+  NotificationType,
+  type NotificationBroadcast,
+  type NotificationQuery,
+  // 登录日志
+  type LoginLog,
+  type LoginLogQuery,
+  // 仪表盘
+  type DashboardData,
+  type TrendData,
+  type RetentionRate,
+  type ActivityDistribution,
+  type GrowthTrend,
+  type CategoryDistribution,
+  type HotArticleRank,
+  type CreatorRank,
 } from '@zhixun/shared-types'
 
 /** 通用分页请求参数 */
 export interface PageParams {
   page: number
   pageSize: number
-}
-
-/** 通用分页响应 */
-export interface PageResult<T> {
-  list: T[]
-  total: number
-  page: number
-  pageSize: number
-}
-
-/** 统一API响应结构 */
-export interface ApiResponse<T = unknown> {
-  code: number
-  message: string
-  data: T
 }
 
 /** 登录请求参数 */
@@ -241,35 +252,6 @@ export interface OperationLogQuery extends PageParams {
   endDate?: string
 }
 
-/** 仪表盘统计数据 */
-export interface DashboardData {
-  userCount: number
-  articleCount: number
-  dailyActive: number
-  viewCount: number
-  interactionCount: number
-  trendData: TrendData[]
-  hotArticles: HotArticle[]
-  pendingArticles: Article[]
-}
-
-/** 趋势数据 */
-export interface TrendData {
-  date: string
-  userCount: number
-  articleCount: number
-  viewCount: number
-}
-
-/** 热门作品 */
-export interface HotArticle {
-  id: number
-  title: string
-  viewCount: number
-  likeCount: number
-  commentCount: number
-}
-
 /** 系统设置 */
 export interface SystemSettings {
   siteName: string
@@ -318,6 +300,207 @@ export interface UploadResult {
 /** 审核操作参数 */
 export interface AuditParams {
   id: number
-  action: 'approve' | 'reject'
+  /** 状态值：2=通过(发布)，3=驳回 */
+  status: number
   reason?: string
+}
+
+// ========== 增强的仪表盘数据（继承共享 DashboardData，增加 pendingArticles） ==========
+
+/** 增强的仪表盘统计数据 */
+export interface EnhancedDashboardData extends DashboardData {
+  pendingArticles?: Article[]
+}
+
+// ========== AI 用量监控 ==========
+
+/** AI 使用统计 */
+export interface AIUsageStats {
+  totalRequests: number
+  todayRequests: number
+  textGenerationCount: number
+  imageGenerationCount: number
+  totalTokens: number
+  averageResponseTime: number
+  userCount: number
+  dailyStats: AIUsageDailyStat[]
+  topUsers: AIUsageUserStat[]
+}
+
+/** AI 日统计 */
+export interface AIUsageDailyStat {
+  date: string
+  requestCount: number
+  tokenCount: number
+}
+
+/** AI 用户用量 */
+export interface AIUsageUserStat {
+  userId: number
+  username: string
+  nickname: string
+  requestCount: number
+  tokenCount: number
+}
+
+// ========== 协作管理 ==========
+
+/** 协作信息 */
+export interface CollaborationInfo {
+  id: number
+  articleId: number
+  articleTitle: string
+  inviterId: number
+  inviterName: string
+  inviteeId: number
+  inviteeName: string
+  permission: string
+  status: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** 协作查询参数 */
+export interface CollaborationQuery extends PageParams {
+  articleId?: number
+  status?: number
+}
+
+// ========== 安全审计日志 ==========
+
+/** 安全审计日志 */
+export interface SecurityAuditLog {
+  id: number
+  eventType: string
+  userId: number
+  username: string
+  ip: string
+  userAgent: string
+  requestMethod: string
+  requestUri: string
+  requestBody: string
+  responseStatus: number
+  riskLevel: string
+  detail: string
+  createdAt: string
+}
+
+/** 安全审计日志查询参数 */
+export interface SecurityAuditLogQuery extends PageParams {
+  eventType?: string
+  userId?: number
+  ip?: string
+  riskLevel?: string
+  startDate?: string
+  endDate?: string
+}
+
+/** 安全审计统计 */
+export interface SecurityAuditStats {
+  total: number
+  eventTypeStats: { eventType: string; count: number }[]
+  dailyStats: { date: string; count: number }[]
+  topIps: { ip: string; count: number }[]
+}
+
+// ========== 缓存管理 ==========
+
+/** 缓存状态 */
+export interface CacheStatus {
+  cacheName: string
+  type: string
+  size: number
+  hitRate: number
+  missRate: number
+  evictionCount: number
+}
+
+/** 缓存一致性检查结果 */
+export interface CacheConsistencyResult {
+  articleDetail: {
+    checkedCount: number
+    inconsistentCount: number
+    details: { id: number; cacheVersion: number; dbVersion: number }[]
+  }
+  consistent: boolean
+  error?: string
+}
+
+// ========== 增强的用户信息 ==========
+
+/** 增强的用户详情（管理端查看） */
+export interface UserDetail extends UserInfo {
+  uid: string
+  followCount: number
+  followerCount: number
+  articleCount: number
+  totalLikeCount: number
+  province: string
+  ipLocation: string
+  gender: number
+  birthday: string
+  bio: string
+  lastLoginAt: string
+  lastLoginIp: string
+  loginCount: number
+  showGenderOnProfile: boolean
+  showOnlineStatus: boolean
+  messagePermission: number
+  settings: UserSettingsAdmin
+}
+
+/** 用户设置（管理端查看） */
+export interface UserSettingsAdmin {
+  notification: {
+    notifySystem: number
+    notifyInteract: number
+    notifyMessage: number
+    notifyFollow: number
+  }
+  privacy: {
+    showOnlineStatus: number
+    messagePermission: number
+    saveViewHistory: number
+    contentRecommend: number
+    showViewCount: number
+    allowSearch: number
+  }
+  display: {
+    fontSize: number
+    theme: string
+    language: string
+  }
+}
+
+// ========== 浏览历史统计 ==========
+
+/** 浏览历史统计 */
+export interface ViewHistoryStats {
+  totalViews: number
+  todayViews: number
+  uniqueVisitors: number
+  avgViewsPerUser: number
+  topArticles: { articleId: number; title: string; viewCount: number }[]
+  hourlyStats: { hour: number; count: number }[]
+}
+
+// ========== 搜索分析 ==========
+
+/** 搜索分析 */
+export interface SearchAnalytics {
+  totalSearches: number
+  todaySearches: number
+  avgResultCount: number
+  zeroResultRate: number
+  topKeywords: { keyword: string; count: number }[]
+  topNoResultKeywords: { keyword: string; count: number }[]
+}
+
+// ========== 收藏统计 ==========
+
+/** 收藏统计 */
+export interface CollectStats {
+  totalCollects: number
+  todayCollects: number
+  topCollectedArticles: { articleId: number; title: string; collectCount: number; authorName: string }[]
 }

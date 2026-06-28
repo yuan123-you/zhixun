@@ -9,6 +9,7 @@ import com.zhixun.dto.user.SettingsUpdateRequest;
 import com.zhixun.dto.user.UidUpdateRequest;
 import com.zhixun.service.CommentService;
 import com.zhixun.service.OnlineStatusService;
+import com.zhixun.service.TencentMapService;
 import com.zhixun.service.UserService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.CommentVO;
@@ -41,6 +42,7 @@ public class UserController {
     private final CommentService commentService;
     private final OnlineStatusService onlineStatusService;
     private final SecurityUtil securityUtil;
+    private final TencentMapService tencentMapService;
 
     /**
      * 获取个人资料
@@ -192,18 +194,28 @@ public class UserController {
 
     /**
      * 自动获取并更新IP属地
-     * 从请求中获取客户端IP，通过在线IP地理位置服务解析为属地信息并保存
+     * 从请求中获取客户端IP，通过腾讯地图 IP 定位服务解析为属地信息并保存
      */
     @PostMapping("/ip-location")
     @PreAuthorize("isAuthenticated()")
     public R<String> updateIpLocation(HttpServletRequest request) {
         Long userId = securityUtil.getCurrentUserId();
         String ip = getClientIp(request);
-        String location = resolveIpLocation(ip);
+        String location = tencentMapService.resolveIpLocation(ip);
         if (location != null) {
             userService.updateIpLocation(userId, location);
         }
         return R.ok(location);
+    }
+
+    /**
+     * 匿名查询当前请求 IP 的属地（仅返回，不入库）。
+     * 供前端在用户未登录时也能展示 IP 属地信息。
+     */
+    @GetMapping("/ip-location")
+    public R<String> getIpLocation(HttpServletRequest request) {
+        String ip = getClientIp(request);
+        return R.ok(tencentMapService.resolveIpLocation(ip));
     }
 
     /**
@@ -228,108 +240,5 @@ public class UserController {
             ip = ip.split(",")[0].trim();
         }
         return ip;
-    }
-
-    /**
-     * 解析IP属地
-     * 先用淘宝IP库，失败则用 ip-api
-     */
-    private String resolveIpLocation(String ip) {
-        if (ip == null || ip.isEmpty() || "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip)) {
-            return null;
-        }
-        // 尝试多种方式解析
-        String location = resolveByIpApi(ip);
-        if (location == null) {
-            location = resolveByTaoBaoIp(ip);
-        }
-        return location;
-    }
-
-    /**
-     * 通过 ip-api.com 解析IP属地（免费，每分钟45次）
-     */
-    private String resolveByIpApi(String ip) {
-        try {
-            java.net.URL url = new java.net.URL("http://ip-api.com/json/" + ip + "?lang=zh-CN&fields=regionName,city");
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(3000);
-            conn.setRequestMethod("GET");
-            if (conn.getResponseCode() == 200) {
-                try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                        new java.io.InputStreamReader(conn.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
-                    }
-                    String json = sb.toString();
-                    // 简单解析 JSON: {"regionName":"广东","city":"深圳"}
-                    String regionName = extractJsonString(json, "regionName");
-                    if (regionName != null && !regionName.isEmpty()) {
-                        return regionName;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // 解析失败，尝试其他方式
-        }
-        return null;
-    }
-
-    /**
-     * 通过淘宝IP库解析（备用）
-     */
-    private String resolveByTaoBaoIp(String ip) {
-        try {
-            java.net.URL url = new java.net.URL("https://ip.taobao.com/outGetIpInfo?ip=" + ip + "&accessKey=alibaba-inc");
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(3000);
-            conn.setRequestMethod("GET");
-            if (conn.getResponseCode() == 200) {
-                try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                        new java.io.InputStreamReader(conn.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
-                    }
-                    String json = sb.toString();
-                    String region = extractJsonString(json, "region");
-                    if (region != null && !region.isEmpty()) {
-                        return region;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // 解析失败
-        }
-        return null;
-    }
-
-    /**
-     * 简单JSON字符串提取（避免引入额外依赖）
-     */
-    private String extractJsonString(String json, String key) {
-        String searchKey = "\"" + key + "\"";
-        int keyIndex = json.indexOf(searchKey);
-        if (keyIndex == -1) {
-            return null;
-        }
-        int colonIndex = json.indexOf(":", keyIndex + searchKey.length());
-        if (colonIndex == -1) {
-            return null;
-        }
-        int valueStart = json.indexOf("\"", colonIndex);
-        if (valueStart == -1) {
-            return null;
-        }
-        int valueEnd = json.indexOf("\"", valueStart + 1);
-        if (valueEnd == -1) {
-            return null;
-        }
-        return json.substring(valueStart + 1, valueEnd);
     }
 }

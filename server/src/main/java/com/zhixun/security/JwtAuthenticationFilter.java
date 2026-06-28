@@ -85,13 +85,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = resolveToken(request);
             if (StringUtils.hasText(token) && jwtUtil.validateAccessToken(token)) {
                 // 检查令牌是否在黑名单中（登出时加入）- Redis不可用时跳过黑名单检查
-                if (stringRedisTemplate != null) {
-                    Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistPrefix + token);
-                    if (Boolean.TRUE.equals(isBlacklisted)) {
-                        log.debug("令牌已在黑名单中，拒绝访问");
-                        filterChain.doFilter(request, response);
-                        return;
+                try {
+                    if (stringRedisTemplate != null) {
+                        Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistPrefix + token);
+                        if (Boolean.TRUE.equals(isBlacklisted)) {
+                            log.debug("令牌已在黑名单中，拒绝访问");
+                            filterChain.doFilter(request, response);
+                            return;
+                        }
                     }
+                } catch (Exception redisEx) {
+                    log.warn("Redis 黑名单检查失败（Redis 不可用），跳过黑名单验证: {}", redisEx.getMessage());
                 }
 
                 Claims claims = jwtUtil.parseAccessToken(token);

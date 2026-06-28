@@ -29,6 +29,10 @@ public class LoginLog implements Serializable {
     /** 登录用户名 */
     private String username;
 
+    /** 用户昵称 */
+    @TableField(exist = false)
+    private String nickname;
+
     /** 登录状态：0-失败，1-成功 */
     private Integer status;
 

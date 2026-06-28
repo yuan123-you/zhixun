@@ -622,8 +622,9 @@ server {
     }
 
     # C端前端（默认路由）
+    # 端口来源：docs/PORTS.md → CLIENT_PORT=3500
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3500;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -634,14 +635,14 @@ server {
 
     # Nuxt 静态资源缓存
     location ~* ^/_nuxt/.*\.(js|css)\$ {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3500;
         expires 1y;
         add_header Cache-Control "public, immutable";
         access_log off;
     }
 
     location ~* ^/_nuxt/.*\.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3500;
         expires 30d;
         add_header Cache-Control "public";
         access_log off;

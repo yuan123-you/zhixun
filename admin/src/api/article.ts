@@ -1,4 +1,4 @@
-﻿import { get, post, put, del } from './request'
+import { get, post, put, del } from './request'
 import type { Article, ArticleQuery, PageResult, AuditParams } from '@/types'
 
 /** 获取作品列表 */
@@ -28,18 +28,18 @@ export function deleteArticle(id: number) {
 
 /** 审核作品（通过/驳回） */
 export function auditArticle(data: AuditParams) {
-  return post(`/articles/${data.id}/audit`, {
-    action: data.action,
+  return put(`/admin/articles/${data.id}/audit`, {
+    status: data.status,
     reason: data.reason,
-  })
+  } as unknown as Record<string, unknown>)
 }
 
 /** 下架作品 */
 export function offlineArticle(id: number) {
-  return put(`/articles/${id}/offline`)
+  return put(`/articles/${id}/status`, { status: 4 } as unknown as Record<string, unknown>)
 }
 
 /** 获取待审核作品列表 */
 export function getPendingArticles(params: ArticleQuery) {
-  return get<PageResult<Article>>('/articles/pending', params as unknown as Record<string, unknown>)
+  return get<PageResult<Article>>('/admin/articles/pending', params as unknown as Record<string, unknown>)
 }

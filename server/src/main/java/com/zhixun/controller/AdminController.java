@@ -8,6 +8,8 @@ import com.zhixun.dto.admin.AuditRequest;
 import com.zhixun.dto.admin.SensitiveWhitelistRequest;
 import com.zhixun.dto.admin.SensitiveWordRequest;
 import com.zhixun.dto.admin.UserStatusRequest;
+import com.zhixun.entity.LoginLog;
+import com.zhixun.entity.Notification;
 import com.zhixun.entity.OperationLog;
 import com.zhixun.entity.SensitiveWhitelist;
 import com.zhixun.entity.SensitiveWord;
@@ -15,13 +17,21 @@ import com.zhixun.entity.SecurityAuditLog;
 import com.zhixun.service.AdminService;
 import com.zhixun.service.ArticleService;
 import com.zhixun.service.CommentService;
+import com.zhixun.service.GroupService;
+import com.zhixun.service.LoginLogService;
+import com.zhixun.service.MessageService;
+import com.zhixun.service.NotificationService;
 import com.zhixun.service.OperationLogService;
 import com.zhixun.service.OpenSearchSyncService;
 import com.zhixun.service.OpenSearchStatusService;
 import com.zhixun.service.impl.SynonymService;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.CommentVO;
+import com.zhixun.vo.ConversationVO;
 import com.zhixun.vo.DashboardVO;
+import com.zhixun.vo.GroupVO;
+import com.zhixun.vo.MessageVO;
+import com.zhixun.vo.NotificationVO;
 import com.zhixun.vo.UserVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +70,10 @@ public class AdminController {
     private final OpenSearchSyncService openSearchSyncService;
     private final CommentService commentService;
     private final ArticleService articleService;
+    private final GroupService groupService;
+    private final MessageService messageService;
+    private final NotificationService notificationService;
+    private final LoginLogService loginLogService;
 
     @Autowired(required = false)
     private OpenSearchStatusService openSearchStatusService;
@@ -338,6 +352,141 @@ public class AdminController {
         return R.ok(operationLogService.getLogStats(startDate, endDate));
     }
 
+    // ========== 群组管理 ==========
+
+    /**
+     * 群组列表（管理员）
+     */
+    @GetMapping("/groups")
+    public R<PageResult<GroupVO>> groupList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(adminService.getGroupList(keyword, status, page, pageSize));
+    }
+
+    /**
+     * 群组详情（管理员）
+     */
+    @GetMapping("/groups/{id}")
+    public R<GroupVO> groupDetail(@PathVariable Long id) {
+        return R.ok(groupService.getGroupDetail(id, null));
+    }
+
+    /**
+     * 解散群组
+     */
+    @DeleteMapping("/groups/{id}")
+    public R<Void> disbandGroup(@PathVariable Long id) {
+        Long adminId = securityUtil.getCurrentUserId();
+        groupService.dismissGroup(adminId, id);
+        return R.ok();
+    }
+
+    /**
+     * 禁言/恢复群组
+     */
+    @PutMapping("/groups/{id}/status")
+    public R<Void> toggleGroupStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+        Long adminId = securityUtil.getCurrentUserId();
+        adminService.toggleGroupStatus(adminId, id, body.get("status"));
+        return R.ok();
+    }
+
+    // ========== 私信监控 ==========
+
+    /**
+     * 会话列表（管理员）
+     */
+    @GetMapping("/messages/conversations")
+    public R<PageResult<ConversationVO>> conversationList(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(adminService.getConversationList(page, pageSize));
+    }
+
+    /**
+     * 会话消息（管理员查看）
+     */
+    @GetMapping("/messages/conversations/{conversationId}")
+    public R<PageResult<MessageVO>> conversationMessages(
+            @PathVariable Long conversationId,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return R.ok(adminService.getConversationMessages(conversationId, page, pageSize));
+    }
+
+    /**
+     * 删除消息（管理员）
+     */
+    @DeleteMapping("/messages/{id}")
+    public R<Void> deleteMessage(@PathVariable Long id) {
+        Long adminId = securityUtil.getCurrentUserId();
+        adminService.deleteMessageAsAdmin(adminId, id);
+        return R.ok();
+    }
+
+    // ========== 登录日志 ==========
+
+    /**
+     * 登录日志列表
+     */
+    @GetMapping("/login-logs")
+    public R<PageResult<LoginLog>> loginLogs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(adminService.getLoginLogs(keyword, status, startDate, endDate, page, pageSize));
+    }
+
+    // ========== 通知管理 ==========
+
+    /**
+     * 通知列表（管理员）
+     */
+    @GetMapping("/notifications")
+    public R<PageResult<NotificationVO>> notificationList(
+            @RequestParam(required = false) Integer type,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(adminService.getNotificationList(type, page, pageSize));
+    }
+
+    /**
+     * 发送系统通知
+     */
+    @PostMapping("/notifications/send")
+    public R<Void> sendNotification(@RequestBody Map<String, Object> body) {
+        Long adminId = securityUtil.getCurrentUserId();
+        Integer type = (Integer) body.get("type");
+        String title = (String) body.get("title");
+        String content = (String) body.get("content");
+        Boolean targetAll = (Boolean) body.getOrDefault("targetAll", false);
+        @SuppressWarnings("unchecked")
+        List<Integer> targetUserIds = (List<Integer>) body.get("targetUserIds");
+
+        adminService.sendNotification(adminId, type, title, content, targetAll,
+                targetUserIds != null ? targetUserIds.stream().map(Long::valueOf).toList() : null);
+        return R.ok();
+    }
+
+    // ========== 用户详情 ==========
+
+    /**
+     * 用户详情（管理员，含登录历史）
+     */
+    @GetMapping("/users/{id}/login-history")
+    public R<PageResult<LoginLog>> userLoginHistory(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return R.ok(adminService.getUserLoginHistory(id, page, pageSize));
+    }
+
     /**
      * 缓存一致性检查
      * 对比 Redis 缓存中的数据与数据库中的最新数据，返回不一致的条目
@@ -396,5 +545,74 @@ public class AdminController {
             }
         }
         return R.ok(result);
+    }
+
+    // ========== 群组成员管理 ==========
+
+    /**
+     * 群组成员列表（管理员）
+     */
+    @GetMapping("/groups/{id}/members")
+    public R<PageResult<com.zhixun.entity.GroupMember>> groupMembers(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return R.ok(adminService.getGroupMembers(id, page, pageSize));
+    }
+
+    /**
+     * 群组消息列表（管理员）
+     */
+    @GetMapping("/groups/{id}/messages")
+    public R<PageResult<com.zhixun.vo.GroupMessageVO>> groupMessages(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return R.ok(adminService.getGroupMessagesAsAdmin(id, page, pageSize));
+    }
+
+    // ========== AI 使用统计 ==========
+
+    /**
+     * AI 使用统计
+     */
+    @GetMapping("/ai/stats")
+    public R<Map<String, Object>> aiUsageStats(
+            @RequestParam(required = false, defaultValue = "daily") String period) {
+        return R.ok(adminService.getAIUsageStats(period));
+    }
+
+    // ========== 协作管理 ==========
+
+    /**
+     * 协作列表（管理员）
+     */
+    @GetMapping("/collaborations")
+    public R<PageResult<com.zhixun.vo.CollaboratorVO>> collaborationList(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(adminService.getCollaborationList(page, pageSize));
+    }
+
+    /**
+     * 删除协作关系（管理员）
+     */
+    @DeleteMapping("/collaborations/{id}")
+    public R<Void> deleteCollaboration(@PathVariable Long id) {
+        Long adminId = securityUtil.getCurrentUserId();
+        adminService.deleteCollaboration(adminId, id);
+        return R.ok();
+    }
+
+    /**
+     * 标签列表（管理员分页）
+     */
+    @GetMapping("/tags")
+    public R<PageResult<com.zhixun.entity.Tag>> tagList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(adminService.getTagList(keyword, sortBy, page, pageSize));
     }
 }

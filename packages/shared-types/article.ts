@@ -1,4 +1,4 @@
-﻿/** 作品视图对象 */
+/** 作品视图对象 */
 export interface ArticleVO {
   id: number
   title: string

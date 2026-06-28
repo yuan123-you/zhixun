@@ -26,6 +26,14 @@ public class UserMessage {
     /** 接收者ID，对应 receiver_id */
     private Long receiverId;
 
+    /** 会话ID */
+    @TableField(exist = false)
+    private Long conversationId;
+
+    /** 消息类型 */
+    @TableField(exist = false)
+    private String type;
+
     /** 消息内容 */
     private String content;
 

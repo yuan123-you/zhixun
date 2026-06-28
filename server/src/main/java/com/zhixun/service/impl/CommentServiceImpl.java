@@ -3,11 +3,14 @@ package com.zhixun.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.common.util.SecurityUtil;
+import com.zhixun.common.util.VOBuilder;
 import com.zhixun.config.Slave;
 import com.zhixun.dto.comment.CommentCreateRequest;
 import com.zhixun.dto.comment.CommentReportRequest;
@@ -64,6 +67,7 @@ public class CommentServiceImpl implements CommentService {
     private final SensitiveWordUtil sensitiveWordUtil;
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
+    private final ObjectMapper objectMapper;
 
     /** Redis 模板（可选，Redis 不可用时为 null） */
     @Autowired(required = false)
@@ -81,8 +85,15 @@ public class CommentServiceImpl implements CommentService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
 
-        // 敏感词检测
-        if (sensitiveWordUtil.containsSensitiveWord(request.getContent())) {
+        // 校验：content 与 images 至少有一项非空
+        boolean hasContent = StringUtils.hasText(request.getContent());
+        boolean hasImages = request.getImages() != null && !request.getImages().isEmpty();
+        if (!hasContent && !hasImages) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "评论内容和图片不能同时为空");
+        }
+
+        // 敏感词检测（仅检测文本内容）
+        if (hasContent && sensitiveWordUtil.containsSensitiveWord(request.getContent())) {
             throw new BusinessException(ErrorCode.SENSITIVE_WORD_DETECTED, "评论内容包含敏感词");
         }
 
@@ -100,7 +111,16 @@ public class CommentServiceImpl implements CommentService {
         comment.setUserId(userId);
         comment.setParentId(request.getParentId() != null ? request.getParentId() : 0L);
         comment.setReplyToId(request.getReplyUserId());
-        comment.setContent(HtmlWhitelistFilter.escapePlainText(request.getContent()));
+        comment.setContent(hasContent ? HtmlWhitelistFilter.escapePlainText(request.getContent()) : "");
+        // 图片列表序列化为 JSON 存储
+        if (hasImages) {
+            try {
+                comment.setImages(objectMapper.writeValueAsString(request.getImages()));
+            } catch (Exception e) {
+                log.error("评论图片列表序列化失败: {}", e.getMessage(), e);
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "评论图片数据格式错误");
+            }
+        }
         // 自动审核：无敏感词直接通过，状态设为 NORMAL，作品评论数+1
         comment.setStatus(CommentStatusEnum.NORMAL);
         comment.setLikeCount(0);
@@ -609,41 +629,33 @@ public class CommentServiceImpl implements CommentService {
         vo.setParentId(comment.getParentId());
         vo.setCreatedAt(comment.getCreatedAt());
 
+        // 反序列化图片列表
+        if (StringUtils.hasText(comment.getImages())) {
+            try {
+                List<String> images = objectMapper.readValue(
+                        comment.getImages(), new TypeReference<List<String>>() {});
+                vo.setImages(images);
+            } catch (Exception e) {
+                log.warn("评论图片列表反序列化失败, commentId={}: {}", comment.getId(), e.getMessage());
+                vo.setImages(Collections.emptyList());
+            }
+        }
+
         // 设置评论用户信息
         User user = userMap.get(comment.getUserId());
         if (user != null) {
-            vo.setUser(buildUserVO(user));
+            vo.setUser(VOBuilder.buildUserVO(user));
         }
 
         // 设置回复目标用户信息
         if (comment.getReplyToId() != null) {
             User replyUser = userMap.get(comment.getReplyToId());
             if (replyUser != null) {
-                vo.setReplyUser(buildUserVO(replyUser));
+                vo.setReplyUser(VOBuilder.buildUserVO(replyUser));
             }
         }
 
         return vo;
     }
 
-    /**
-     * 构建用户 VO（脱敏）
-     */
-    private UserVO buildUserVO(User user) {
-        UserVO vo = new UserVO();
-        vo.setId(user.getId());
-        vo.setUsername(user.getUsername());
-        vo.setNickname(user.getNickname());
-        vo.setAvatar(user.getAvatar());
-        vo.setRole(user.getRole() != null ? user.getRole().name() : null);
-        vo.setStatus(user.getStatus());
-        vo.setCreatedAt(user.getCreatedAt());
-        vo.setFollowCount(user.getFollowCount());
-        vo.setFollowerCount(user.getFollowerCount());
-        vo.setArticleCount(user.getArticleCount());
-        vo.setBio(user.getBio());
-        vo.setProvince(user.getProvince());
-        vo.setIpLocation(user.getIpLocation());
-        return vo;
-    }
 }

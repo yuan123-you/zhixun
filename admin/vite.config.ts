@@ -27,12 +27,15 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3001,
+    // 端口与代理目标来源：docs/PORTS.md
+    port: Number(process.env.ADMIN_PORT) || 3001,
     cors: true,
     // 代理配置，将 /api 请求转发到后端服务
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        // 写死 127.0.0.1（IPv4）避免 localhost 双栈解析导致 ECONNREFUSED；
+        // 同时支持通过 VITE_API_TARGET 覆盖到其他环境（如 Docker 内网或远程后端）
+        target: process.env.VITE_API_TARGET || 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
     },

@@ -1,15 +1,24 @@
 package com.zhixun.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.dto.admin.AuditRequest;
 import com.zhixun.dto.admin.SensitiveWhitelistRequest;
 import com.zhixun.dto.admin.SensitiveWordRequest;
 import com.zhixun.dto.admin.UserStatusRequest;
+import com.zhixun.entity.LoginLog;
 import com.zhixun.entity.SecurityAuditLog;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.CommentVO;
+import com.zhixun.vo.ConversationVO;
 import com.zhixun.vo.DashboardVO;
+import com.zhixun.vo.GroupVO;
+import com.zhixun.vo.MessageVO;
+import com.zhixun.vo.NotificationVO;
 import com.zhixun.vo.UserVO;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 后台管理服务接口
@@ -163,4 +172,87 @@ public interface AdminService {
      * @return 统计数据
      */
     java.util.Map<String, Object> getSecurityAuditStats(String startDate, String endDate);
+
+    /**
+     * 群组列表（管理员）
+     */
+    PageResult<GroupVO> getGroupList(String keyword, Integer status, Integer page, Integer pageSize);
+
+    /**
+     * 禁言/恢复群组
+     */
+    void toggleGroupStatus(Long adminId, Long groupId, Integer status);
+
+    /**
+     * 会话列表（管理员）
+     */
+    PageResult<ConversationVO> getConversationList(Integer page, Integer pageSize);
+
+    /**
+     * 会话消息（管理员查看）
+     */
+    PageResult<MessageVO> getConversationMessages(Long conversationId, Integer page, Integer pageSize);
+
+    /**
+     * 删除消息（管理员）
+     */
+    void deleteMessageAsAdmin(Long adminId, Long messageId);
+
+    /**
+     * 登录日志列表
+     */
+    PageResult<LoginLog> getLoginLogs(String keyword, Integer status, String startDate, String endDate,
+                                       Integer page, Integer pageSize);
+
+    /**
+     * 通知列表（管理员）
+     */
+    PageResult<NotificationVO> getNotificationList(Integer type, Integer page, Integer pageSize);
+
+    /**
+     * 发送系统通知
+     */
+    void sendNotification(Long adminId, Integer type, String title, String content,
+                          Boolean targetAll, List<Long> targetUserIds);
+
+    /**
+     * 用户登录历史
+     */
+    PageResult<LoginLog> getUserLoginHistory(Long userId, Integer page, Integer pageSize);
+
+    /**
+     * 群组成员列表（管理员）
+     */
+    PageResult<com.zhixun.entity.GroupMember> getGroupMembers(Long groupId, Integer page, Integer pageSize);
+
+    /**
+     * 群组消息列表（管理员，不限用户）
+     */
+    PageResult<com.zhixun.vo.GroupMessageVO> getGroupMessagesAsAdmin(Long groupId, Integer page, Integer pageSize);
+
+    /**
+     * AI 使用统计
+     */
+    java.util.Map<String, Object> getAIUsageStats(String period);
+
+    /**
+     * 协作列表（管理员）
+     */
+    PageResult<com.zhixun.vo.CollaboratorVO> getCollaborationList(Integer page, Integer pageSize);
+
+    /**
+     * 删除协作关系（管理员）
+     */
+    void deleteCollaboration(Long adminId, Long id);
+
+    /**
+     * 标签列表（管理员分页）
+     *
+     * @param keyword  搜索关键词
+     * @param sortBy   排序方式
+     * @param page     页码
+     * @param pageSize 每页大小
+     * @return 标签分页结果
+     */
+    PageResult<com.zhixun.entity.Tag> getTagList(String keyword, String sortBy, Integer page, Integer pageSize);
 }

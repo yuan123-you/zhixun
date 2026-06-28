@@ -114,15 +114,20 @@ public class LikeServiceImpl implements LikeService {
         // 获取当前点赞数
         Long likeCount = getLikeCountFromDB(targetId, targetTypeEnum);
 
-        // 更新 Redis 缓存
-        String statusKey = LIKE_STATUS_PREFIX + userId + ":" + targetId + ":" + targetType;
-        stringRedisTemplate.opsForValue().set(statusKey, liked ? "1" : "0", 1, TimeUnit.HOURS);
-        String countKey = LIKE_COUNT_PREFIX + targetId + ":" + targetType;
-        stringRedisTemplate.opsForValue().set(countKey, String.valueOf(likeCount), 1, TimeUnit.HOURS);
+        // 更新 Redis 缓存（非关键操作，失败不影响数据库持久化）
+        try {
+            String statusKey = LIKE_STATUS_PREFIX + userId + ":" + targetId + ":" + targetType;
+            stringRedisTemplate.opsForValue().set(statusKey, liked ? "1" : "0", 1, TimeUnit.HOURS);
+            String countKey = LIKE_COUNT_PREFIX + targetId + ":" + targetType;
+            stringRedisTemplate.opsForValue().set(countKey, String.valueOf(likeCount), 1, TimeUnit.HOURS);
 
-        // 清除作品相关缓存，确保列表和详情页数据一致
-        if (targetTypeEnum == LikeTargetTypeEnum.ARTICLE) {
-            clearArticleCache(targetId);
+            // 清除作品相关缓存，确保列表和详情页数据一致
+            if (targetTypeEnum == LikeTargetTypeEnum.ARTICLE) {
+                clearArticleCache(targetId);
+            }
+        } catch (Exception e) {
+            log.error("点赞后更新Redis缓存失败, userId={}, targetId={}, targetType={}: {}",
+                    userId, targetId, targetType, e.getMessage(), e);
         }
 
         Map<String, Object> result = new HashMap<>();

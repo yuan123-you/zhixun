@@ -9,7 +9,7 @@
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green.svg)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen.svg)](https://vuejs.org/)
-[![Nuxt](https://img.shields.io/badge/Nuxt-3-00DC82.svg)](https://nuxt.com/)
+[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/License-Educational-blue.svg)](LICENSE)
 
 [功能特性](#-功能特性) · [快速开始](#-快速开始) · [技术架构](#-技术架构) · [部署指南](#-部署指南) · [API 文档](#-api-文档) · [贡献指南](#-贡献指南)
@@ -117,7 +117,7 @@
                │               │               │
         ┌──────┴──────┐ ┌──────┴──────┐ ┌──────┴──────┐
         │   Client    │ │    Admin    │ │   Server    │
-        │  Nuxt 3 SSR │ │  Vue 3 SPA │ │ Spring Boot │
+        │  Vue 3 SPA  │ │  Vue 3 SPA │ │ Spring Boot │
         └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
                │               │               │
                └───────────────┼───────────────┘
@@ -136,7 +136,7 @@
 |:-----|:-----|:-----|:-----|
 | **后端框架** | Spring Boot | 3.2.5 | RESTful API，Spring Security 认证授权 |
 | **ORM** | MyBatis-Plus | 3.5.5 | 增强版 MyBatis，简化数据访问 |
-| **C端前端** | Vue 3 + Nuxt 3 | 3.x | SSR/SSG 混合渲染，SEO 友好 |
+| **C端前端** | Vue 3 + Vite 6 | 3.x | SPA，Nginx 反代 + 动态 meta |
 | **管理后台** | Vue 3 + Element Plus | 3.x | Vite 构建，ECharts 数据看板 |
 | **CSS 框架** | Tailwind CSS | 3.x | 原子化 CSS，6 档响应式断点 |
 | **关系数据库** | MySQL | 8.0 | 主存储，1 主 2 从读写分离 |
@@ -174,7 +174,7 @@ zhixun/
 │   │   ├── opensearch/              # OpenSearch 索引映射
 │   │   └── application.yml          # 应用配置
 │   └── pom.xml
-├── client/                          # C端前端（Nuxt 3）
+├── client/                          # C端前端（Vue 3 + Vite 6 SPA）
 │   ├── api/                         # API 接口封装
 │   ├── components/                  # 公共组件（ArticleCard、ChatWindow、HotRank 等）
 │   ├── composables/                 # 组合式函数（useApi、useAuth、useBreakpoints）
@@ -183,7 +183,7 @@ zhixun/
 │   ├── pages/                       # 页面路由
 │   ├── plugins/                     # 插件（API、WebSocket）
 │   ├── stores/                      # Pinia 状态管理
-│   └── nuxt.config.ts
+│   └── vite.config.ts
 ├── admin/                           # 管理后台（Vue 3 + Element Plus）
 │   ├── src/api/                     # API 接口封装
 │   ├── src/components/              # 公共组件（RichTextEditor、ImageUpload、AuditDialog 等）
@@ -283,7 +283,7 @@ npm install
 # 启动开发服务器
 npm run dev
 
-# 访问 http://localhost:3000
+# 访问 http://localhost:3500（端口来源：docs/PORTS.md）
 ```
 
 </details>
@@ -350,7 +350,7 @@ mysql -u root -p zhixun < server/src/main/resources/db/01-schema.sql
 
 Nginx 配置文件位于 `nginx/nginx.conf`，已预配置：
 
-- `/` → C端前端（Nuxt 3 SSR）
+- `/` → C端前端（Vue 3 SPA）
 - `/admin` → 管理后台（Vue 3 SPA）
 - `/api` → 后端 API 服务
 - `/ws` → WebSocket 连接
@@ -522,7 +522,7 @@ Authorization: Bearer <token>
 
 | 层级 | 策略 |
 |:-----|:-----|
-| **前端** | Nuxt 3 SSR/SSG 混合渲染、路由懒加载、代码分割与 Tree Shaking、WebP 图片 + 懒加载、HTTP 强缓存 |
+| **前端** | Vue 3 SPA + 路由懒加载、代码分割与 Tree Shaking、WebP 图片 + 懒加载、HTTP 强缓存、Nginx 反向代理 |
 | **后端** | Redis + Caffeine 多级缓存、RabbitMQ 异步处理、HikariCP 连接池、接口聚合、Gzip 压缩 |
 | **数据库** | 索引优化、游标分页（避免深分页 OFFSET）、读写分离（1 主 2 从）、分表策略（浏览记录按月、私信按用户取模） |
 | **缓存** | Cache Aside 更新模式、缓存穿透（空值缓存 + 布隆过滤器）、缓存击穿（互斥锁）、缓存雪崩（TTL 随机偏移）、缓存预热 |

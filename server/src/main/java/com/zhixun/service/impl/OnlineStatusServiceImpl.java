@@ -52,22 +52,27 @@ public class OnlineStatusServiceImpl implements OnlineStatusService {
 
     @Override
     public Boolean getOnlineStatus(Long userId, Long requesterId) {
-        // 自己查看自己的在线状态不受隐私设置限制
-        if (requesterId != null && requesterId.equals(userId)) {
+        try {
+            // 自己查看自己的在线状态不受隐私设置限制
+            if (requesterId != null && requesterId.equals(userId)) {
+                String key = ONLINE_STATUS_PREFIX + userId;
+                String status = stringRedisTemplate.opsForValue().get(key);
+                return "1".equals(status);
+            }
+
+            // 检查目标用户的隐私设置：是否允许显示在线状态
+            if (!isShowOnlineStatus(userId)) {
+                return null; // 不可见
+            }
+
+            // 读取在线状态
             String key = ONLINE_STATUS_PREFIX + userId;
             String status = stringRedisTemplate.opsForValue().get(key);
             return "1".equals(status);
+        } catch (Exception e) {
+            log.warn("获取用户 {} 在线状态失败，默认返回离线: {}", userId, e.getMessage());
+            return false;
         }
-
-        // 检查目标用户的隐私设置：是否允许显示在线状态
-        if (!isShowOnlineStatus(userId)) {
-            return null; // 不可见
-        }
-
-        // 读取在线状态
-        String key = ONLINE_STATUS_PREFIX + userId;
-        String status = stringRedisTemplate.opsForValue().get(key);
-        return "1".equals(status);
     }
 
     @Override
@@ -145,26 +150,40 @@ public class OnlineStatusServiceImpl implements OnlineStatusService {
      * 优先从 Redis 缓存读取，缓存未命中则从数据库读取并写入缓存
      */
     private boolean isShowOnlineStatus(Long userId) {
-        // 1. 先从 Redis 缓存读取
         String cacheKey = SETTINGS_SHOW_ONLINE_PREFIX + userId;
-        String cached = stringRedisTemplate.opsForValue().get(cacheKey);
-        if (cached != null) {
-            return "1".equals(cached);
+
+        // 1. 先从 Redis 缓存读取
+        try {
+            String cached = stringRedisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return "1".equals(cached);
+            }
+        } catch (Exception e) {
+            log.debug("Redis 缓存读取失败，降级到数据库查询: {}", e.getMessage());
         }
 
         // 2. 从数据库读取
-        UserSettings settings = userSettingsMapper.selectOne(
-                new LambdaQueryWrapper<UserSettings>().eq(UserSettings::getUserId, userId));
+        try {
+            UserSettings settings = userSettingsMapper.selectOne(
+                    new LambdaQueryWrapper<UserSettings>().eq(UserSettings::getUserId, userId));
 
-        // 默认值为1（显示在线状态）
-        int showOnlineStatus = (settings != null && settings.getShowOnlineStatus() != null)
-                ? settings.getShowOnlineStatus() : 1;
+            // 默认值为1（显示在线状态）
+            int showOnlineStatus = (settings != null && settings.getShowOnlineStatus() != null)
+                    ? settings.getShowOnlineStatus() : 1;
 
-        // 3. 写入 Redis 缓存
-        stringRedisTemplate.opsForValue().set(cacheKey, String.valueOf(showOnlineStatus),
-                SETTINGS_CACHE_MINUTES, TimeUnit.MINUTES);
+            // 3. 写入 Redis 缓存（非关键操作）
+            try {
+                stringRedisTemplate.opsForValue().set(cacheKey, String.valueOf(showOnlineStatus),
+                        SETTINGS_CACHE_MINUTES, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                log.debug("Redis 缓存写入失败: {}", e.getMessage());
+            }
 
-        return showOnlineStatus == 1;
+            return showOnlineStatus == 1;
+        } catch (Exception e) {
+            log.warn("查询用户 {} 在线状态隐私设置失败，默认允许显示: {}", userId, e.getMessage());
+            return true; // 默认允许显示在线状态
+        }
     }
 
     @Override

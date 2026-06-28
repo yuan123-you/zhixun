@@ -26,7 +26,8 @@ PORTS_TO_CHECK=(80 443 3000 3001 8082 9000)
 REQUIRED_CONTAINERS=("mysql" "redis" "minio" "server" "client" "admin")
 
 # CORS：预期的允许来源（来自 docker-compose.yml 中的环境变量）
-EXPECTED_CORS_ORIGINS=("https://glint.novo.ccwu.cc" "http://glint.novo.ccwu.cc" "http://localhost:3000" "http://localhost:3001")
+# 端口来源：docs/PORTS.md → CLIENT_PORT=3500, ADMIN_PORT=3001
+EXPECTED_CORS_ORIGINS=("https://glint.novo.ccwu.cc" "http://glint.novo.ccwu.cc" "http://localhost:3500" "http://localhost:3001")
 
 # 静态资源目录（构建产物存放位置）
 STATIC_DIRS=(
@@ -629,7 +630,7 @@ cors_check() {
   local test_origins=(
     "https://glint.novo.ccwu.cc"
     "http://glint.novo.ccwu.cc"
-    "http://localhost:3000"
+    "http://localhost:3500"
   )
   for origin in "${test_origins[@]}"; do
     local resp_origin

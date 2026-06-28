@@ -64,10 +64,10 @@ public class MessageController {
     @PreAuthorize("isAuthenticated()")
     public R<PageResult<MessageVO>> getMessages(
             @PathVariable Long userId,
-            @RequestParam(required = false) Long beforeId,
-            @RequestParam(defaultValue = "20") Integer limit) {
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
         Long currentUserId = securityUtil.getCurrentUserId();
-        return R.ok(messageService.getMessages(currentUserId, userId, beforeId, limit));
+        return R.ok(messageService.getMessages(currentUserId, userId, page, pageSize));
     }
 
     /**

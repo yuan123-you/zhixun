@@ -7,6 +7,7 @@ import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.util.AesUtil;
+import com.zhixun.common.util.ServiceUtils;
 import com.zhixun.config.Slave;
 import com.zhixun.dto.user.ProfileUpdateRequest;
 import com.zhixun.dto.user.SettingsUpdateRequest;
@@ -254,11 +255,27 @@ public class UserServiceImpl implements UserService {
                 Long articleId = Long.valueOf(articleIdObj.toString());
                 Integer viewDuration = viewDurationObj != null ? Integer.valueOf(viewDurationObj.toString()) : null;
 
-                ViewHistory history = new ViewHistory();
-                history.setUserId(userId);
-                history.setArticleId(articleId);
-                history.setViewDuration(viewDuration);
-                viewHistoryMapper.insert(history);
+                // 去重：检查 (userId, articleId) 是否已存在
+                LambdaQueryWrapper<ViewHistory> existWrapper = new LambdaQueryWrapper<>();
+                existWrapper.eq(ViewHistory::getUserId, userId)
+                        .eq(ViewHistory::getArticleId, articleId)
+                        .last("LIMIT 1");
+                ViewHistory existing = viewHistoryMapper.selectOne(existWrapper);
+
+                if (existing != null) {
+                    // 已存在：更新浏览时长
+                    if (viewDuration != null && viewDuration > 0) {
+                        existing.setViewDuration(viewDuration);
+                        viewHistoryMapper.updateById(existing);
+                    }
+                } else {
+                    // 不存在：插入新记录
+                    ViewHistory history = new ViewHistory();
+                    history.setUserId(userId);
+                    history.setArticleId(articleId);
+                    history.setViewDuration(viewDuration);
+                    viewHistoryMapper.insert(history);
+                }
             } catch (Exception e) {
                 log.warn("批量同步浏览历史单条失败: {}", e.getMessage());
             }
@@ -296,10 +313,24 @@ public class UserServiceImpl implements UserService {
             privacy.setShowOnlineStatus(settings.getShowOnlineStatus());
             privacy.setMessagePermission(settings.getMessagePermission());
             privacy.setSaveViewHistory(settings.getSaveViewHistory());
+            privacy.setContentRecommend(settings.getContentRecommend() != null ? settings.getContentRecommend() : 1);
+            privacy.setAutoPlayVideo(settings.getAutoPlayVideo() != null ? settings.getAutoPlayVideo() : 1);
+            privacy.setQuietHoursEnabled(settings.getQuietHoursEnabled() != null ? settings.getQuietHoursEnabled() : 0);
+            privacy.setQuietHoursStart(settings.getQuietHoursStart() != null ? settings.getQuietHoursStart() : "22:00");
+            privacy.setQuietHoursEnd(settings.getQuietHoursEnd() != null ? settings.getQuietHoursEnd() : "08:00");
+            privacy.setShowViewCount(settings.getShowViewCount() != null ? settings.getShowViewCount() : 1);
+            privacy.setAllowSearch(settings.getAllowSearch() != null ? settings.getAllowSearch() : 1);
         } else {
             privacy.setShowOnlineStatus(1);
             privacy.setMessagePermission(0);
             privacy.setSaveViewHistory(1);
+            privacy.setContentRecommend(1);
+            privacy.setAutoPlayVideo(1);
+            privacy.setQuietHoursEnabled(0);
+            privacy.setQuietHoursStart("22:00");
+            privacy.setQuietHoursEnd("08:00");
+            privacy.setShowViewCount(1);
+            privacy.setAllowSearch(1);
         }
         vo.setPrivacy(privacy);
 
@@ -379,6 +410,13 @@ public class UserServiceImpl implements UserService {
             settings.setShowOnlineStatus(1);
             settings.setMessagePermission(0);
             settings.setSaveViewHistory(1);
+            settings.setContentRecommend(1);
+            settings.setAutoPlayVideo(1);
+            settings.setQuietHoursEnabled(0);
+            settings.setQuietHoursStart("22:00");
+            settings.setQuietHoursEnd("08:00");
+            settings.setShowViewCount(1);
+            settings.setAllowSearch(1);
             settings.setFontSize(1);
             settings.setTheme("light");
             settings.setLanguage("zh-CN");
@@ -414,6 +452,27 @@ public class UserServiceImpl implements UserService {
             }
             if (privacy.getSaveViewHistory() != null) {
                 settings.setSaveViewHistory(privacy.getSaveViewHistory());
+            }
+            if (privacy.getContentRecommend() != null) {
+                settings.setContentRecommend(privacy.getContentRecommend());
+            }
+            if (privacy.getAutoPlayVideo() != null) {
+                settings.setAutoPlayVideo(privacy.getAutoPlayVideo());
+            }
+            if (privacy.getQuietHoursEnabled() != null) {
+                settings.setQuietHoursEnabled(privacy.getQuietHoursEnabled());
+            }
+            if (privacy.getQuietHoursStart() != null) {
+                settings.setQuietHoursStart(privacy.getQuietHoursStart());
+            }
+            if (privacy.getQuietHoursEnd() != null) {
+                settings.setQuietHoursEnd(privacy.getQuietHoursEnd());
+            }
+            if (privacy.getShowViewCount() != null) {
+                settings.setShowViewCount(privacy.getShowViewCount());
+            }
+            if (privacy.getAllowSearch() != null) {
+                settings.setAllowSearch(privacy.getAllowSearch());
             }
         }
 
@@ -624,18 +683,18 @@ public class UserServiceImpl implements UserService {
 
         // 批量查询作者信息（带空安全和重复处理）
         Map<Long, User> userMap = CollectionUtils.isEmpty(userIds) ? Collections.emptyMap()
-                : safeToList(userMapper.selectBatchIds(userIds)).stream()
+                : ServiceUtils.safeToList(userMapper.selectBatchIds(userIds)).stream()
                 .collect(Collectors.toMap(User::getId, u -> u, (existing, replacement) -> existing));
         // 批量查询分类信息（带空安全和重复处理）
         Map<Long, Category> categoryMap = categoryIds.isEmpty() ? Collections.emptyMap()
-                : safeToList(categoryMapper.selectBatchIds(categoryIds)).stream()
+                : ServiceUtils.safeToList(categoryMapper.selectBatchIds(categoryIds)).stream()
                 .collect(Collectors.toMap(Category::getId, c -> c, (existing, replacement) -> existing));
 
-        List<ArticleTag> allArticleTags = safeToList(articleTagMapper.selectList(
+        List<ArticleTag> allArticleTags = ServiceUtils.safeToList(articleTagMapper.selectList(
                 new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds)));
         Set<Long> tagIds = allArticleTags.stream().map(ArticleTag::getTagId).collect(Collectors.toSet());
         Map<Long, Tag> tagMap = CollectionUtils.isEmpty(tagIds) ? Collections.emptyMap()
-                : safeToList(tagMapper.selectBatchIds(tagIds)).stream()
+                : ServiceUtils.safeToList(tagMapper.selectBatchIds(tagIds)).stream()
                 .collect(Collectors.toMap(Tag::getId, t -> t, (existing, replacement) -> existing));
         Map<Long, List<ArticleTag>> articleTagMap = allArticleTags.stream()
                 .collect(Collectors.groupingBy(ArticleTag::getArticleId));
@@ -643,7 +702,7 @@ public class UserServiceImpl implements UserService {
         // 批量查询作品图片
         Map<Long, List<String>> articleImageMap = new java.util.HashMap<>();
         try {
-            List<ArticleImage> allImages = safeToList(articleImageMapper.selectList(
+            List<ArticleImage> allImages = ServiceUtils.safeToList(articleImageMapper.selectList(
                     new LambdaQueryWrapper<ArticleImage>()
                             .in(ArticleImage::getArticleId, articleIds)
                             .orderByAsc(ArticleImage::getSortOrder)));
@@ -717,10 +776,4 @@ public class UserServiceImpl implements UserService {
         }).collect(Collectors.toList());
     }
 
-    /**
-     * 安全的 null 列表转空列表
-     */
-    private <T> List<T> safeToList(List<T> list) {
-        return list == null ? Collections.emptyList() : list;
-    }
 }
