@@ -1,6 +1,6 @@
 <template>
   <!-- 空白布局：登录/注册页使用，无导航栏和底部Tab -->
-  <div class="min-h-dvh bg-[var(--zh-bg)] flex flex-col items-center justify-center p-4 relative">
+  <div class="min-h-dvh bg-[var(--zh-bg)] flex flex-col items-center justify-center px-2 py-3 sm:p-3 relative">
     <!-- 返回按钮 -->
     <button class="absolute top-3 left-3 p-1.5 text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-hover)] rounded-lg transition-colors z-10" @click="goBack">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

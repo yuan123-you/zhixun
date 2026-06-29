@@ -1376,6 +1376,7 @@ public class ArticleServiceImpl implements ArticleService {
             ArticleViewHistory history = new ArticleViewHistory();
             history.setArticleId(articleId);
             history.setUserId(userId);
+            history.setCreateTime(LocalDateTime.now());
             articleViewHistoryMapper.insert(history);
         } catch (Exception e) {
             log.error("记录浏览历史失败: {}", e.getMessage());

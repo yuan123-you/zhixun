@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full max-w-sm mx-auto px-3">
+  <div class="w-full max-w-sm mx-auto px-1">
     <div class="card-auth">
       <!-- 品牌 -->
       <div class="auth-brand">
@@ -41,7 +41,7 @@
           <label class="input-label">
             <el-icon :size="16" class="input-label-icon"><Key /></el-icon>验证
           </label>
-          <div class="flex gap-2">
+          <div class="flex gap-1.5">
             <div class="input-field flex-1" :class="{ focused: activeField === 'captcha' }">
               <el-icon class="input-prefix" :size="18"><Key /></el-icon>
               <input v-model="form.captchaAnswer" type="text" class="input-control"
@@ -60,7 +60,7 @@
           <label class="input-label">
             <el-icon :size="16" class="input-label-icon"><Timer /></el-icon>验证码
           </label>
-          <div class="flex gap-2">
+          <div class="flex gap-1.5">
             <div class="input-field flex-1" :class="{ focused: activeField === 'code' }">
               <el-icon class="input-prefix" :size="18"><Unlock /></el-icon>
               <input v-model="form.code" type="text" class="input-control"
@@ -92,7 +92,7 @@
               <el-icon :size="18"><View v-if="!showPassword" /><Hide v-else /></el-icon>
             </button>
           </div>
-          <p class="text-xs text-[var(--zh-text-tertiary)] mt-1 ml-1">至少6位，需含字母和数字</p>
+          <p class="text-xs text-[var(--zh-text-tertiary)] mt-0.5 ml-1">至少6位，需含字母和数字</p>
         </div>
 
         <!-- 确认密码 -->
@@ -202,31 +202,31 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
   border: 1px solid var(--zh-border);
   border-radius: var(--zh-radius-xl);
   box-shadow: var(--zh-shadow-lg);
-  padding: 28px 24px 24px;
+  padding: 18px 16px 16px;
 }
-.auth-brand { text-align: center; margin-bottom: 24px; }
+.auth-brand { text-align: center; margin-bottom: 12px; }
 .auth-logo {
-  width: 48px; height: 48px;
+  width: 40px; height: 40px;
   border-radius: var(--zh-radius-lg);
   background: var(--zh-primary-gradient);
   color: #fff;
-  font-size: 24px; font-weight: 800;
+  font-size: 20px; font-weight: 800;
   display: inline-flex;
   align-items: center; justify-content: center;
   box-shadow: 0 4px 14px rgba(var(--zh-primary-rgb), 0.3);
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
-.auth-title { font-size: 22px; font-weight: 700; color: var(--zh-text); letter-spacing: -0.5px; }
-.auth-subtitle { font-size: 13px; color: var(--zh-text-tertiary); margin-top: 6px; }
-.auth-form { display: flex; flex-direction: column; gap: 16px; }
-.input-group { display: flex; flex-direction: column; gap: 6px; }
+.auth-title { font-size: 18px; font-weight: 700; color: var(--zh-text); letter-spacing: -0.5px; }
+.auth-subtitle { font-size: 12px; color: var(--zh-text-tertiary); margin-top: 3px; }
+.auth-form { display: flex; flex-direction: column; gap: 10px; }
+.input-group { display: flex; flex-direction: column; gap: 4px; }
 .input-label {
-  font-size: 13px; font-weight: 600; color: var(--zh-text-secondary);
-  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--zh-text-secondary);
+  display: inline-flex; align-items: center; gap: 4px;
 }
 .input-label-icon { color: var(--zh-text-tertiary); }
 .input-field {
-  display: flex; align-items: center; height: 44px;
+  display: flex; align-items: center; height: 40px;
   border: 1.5px solid var(--zh-border);
   border-radius: var(--zh-radius-md);
   background: var(--zh-bg);
@@ -253,14 +253,14 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 }
 .input-suffix:hover { color: var(--zh-text-secondary); }
 .auth-btn {
-  width: 100%; height: 44px; border: none; border-radius: var(--zh-radius-md);
+  width: 100%; height: 40px; border: none; border-radius: var(--zh-radius-md);
   background: var(--zh-primary-gradient); color: #fff;
   font-size: 15px; font-weight: 600; letter-spacing: 2px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: opacity var(--zh-transition-fast), transform var(--zh-transition-fast);
   box-shadow: 0 4px 14px rgba(var(--zh-primary-rgb), 0.25);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .auth-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
 .auth-btn:active:not(:disabled) { transform: scale(0.98); }
@@ -269,12 +269,12 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 .auth-link:hover { opacity: 0.75; }
 .auth-footer {
   text-align: center; font-size: 13px; color: var(--zh-text-tertiary);
-  margin-top: 20px; padding-top: 16px;
+  margin-top: 12px; padding-top: 10px;
   border-top: 1px solid var(--zh-border-light);
 }
 
 .captcha-img {
-  width: 120px; height: 44px; flex-shrink: 0;
+  width: 150px; height: 40px; flex-shrink: 0;
   border-radius: var(--zh-radius-md); overflow: hidden;
   border: 1.5px solid var(--zh-border);
   cursor: pointer; transition: border-color var(--zh-transition-fast);
@@ -283,17 +283,17 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 
 .input-addon {
   display: flex; align-items: center;
-  padding: 0 12px;
+  padding: 0 14px;
   height: 100%;
   background: var(--zh-bg-hover);
   border-left: 1.5px solid var(--zh-border);
-  font-size: 13px; color: var(--zh-text-secondary);
+  font-size: 14px; color: var(--zh-text-secondary);
   white-space: nowrap; flex-shrink: 0;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .code-btn {
-  height: 44px; padding: 0 16px; flex-shrink: 0;
+  height: 40px; padding: 0 14px; flex-shrink: 0;
   border: 1.5px solid var(--zh-border);
   border-radius: var(--zh-radius-md);
   background: var(--zh-bg-elevated);
