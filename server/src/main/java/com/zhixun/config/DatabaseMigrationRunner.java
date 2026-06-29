@@ -102,8 +102,9 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
         return new String[] {
             "V2__new_features.sql",
             "V3__group_settings.sql",
-            "V4__fix_sys_user_columns.sql"
-            // Add future migrations here: "V5__xxx.sql", etc.
+            "V4__fix_sys_user_columns.sql",
+            "V5__add_missing_tables_and_columns.sql"
+            // Add future migrations here: "V6__xxx.sql", etc.
         };
     }
 }
