@@ -601,23 +601,18 @@ const isReviewFailed = (text: string): boolean => {
 }
 
 const handleAIWrite = async (mode: string) => {
-  const textarea = getEditorTextarea()
-  const selectedText = (textarea && textarea.selectionStart !== textarea.selectionEnd)
-    ? form.content.substring(textarea.selectionStart, textarea.selectionEnd)
-    : form.content
-  if (!selectedText.trim()) {
-    showToast('请先在正文中输入或选中要处理的文字', 'error')
+  const content = form.content.trim()
+  if (!content) {
+    showToast('请先在正文中输入内容', 'error')
     return
   }
   aiLoading.value = true
   try {
-    // 审核模式使用独立的 reviewContent API
+    // 审核模式：读取正文内容，显示通过/不通过 toast
     if (mode === 'review') {
-      const { data } = await aiApi.reviewContent(selectedText)
+      const { data } = await aiApi.reviewContent(content)
       const result = data?.data?.content || ''
       const usage = data?.data?.usage || ''
-      // 识别后端是否走了 mock 回退（usage=mock / content 以 [AI / [passed] 开头）。
-      // 注意：真实 AI 也可能以 ✅ / ⚠️ 开头，因此不能仅凭表情符号判定 mock。
       const looksLikeMock =
         usage.includes('mock') ||
         result.startsWith('[AI ') ||
@@ -627,12 +622,10 @@ const handleAIWrite = async (mode: string) => {
         showToast('AI 写作功能暂未启用，请联系管理员', 'error')
         return
       }
-      // AI 服务异常检测（限流、不可用等），避免将错误文本当作审核结果展示
       if (usage.startsWith('error:') || /请稍后再试|请稍后重试|暂时不可用|请求过于频繁/.test(result)) {
         showToast(result || 'AI 服务暂时不可用，请稍后重试', 'error')
         return
       }
-      // 审核结果根据语义选择类型：合规=success，存在风险=error，避免误导用户
       if (isReviewFailed(result)) {
         showToast(`AI 审核未通过：${result}`, 'error', { duration: 5000 })
       } else {
@@ -641,11 +634,11 @@ const handleAIWrite = async (mode: string) => {
       return
     }
 
-    const { data } = await aiApi.generateText(selectedText, form.title.trim() || undefined, mode)
+    // 扩写/润色模式：读取正文全部内容，AI 输出直接覆盖正文
+    const { data } = await aiApi.generateText(content, form.title.trim() || undefined, mode)
     const result = data?.data?.content || ''
     const usage = data?.data?.usage || ''
     if (result) {
-      // 错误响应：后端 AI 服务异常时返回的错误文本（覆盖所有已知错误模式）
       const isAiError =
         result.startsWith('AI 服务调用失败') ||
         result.includes('请稍后再试') ||
@@ -656,12 +649,10 @@ const handleAIWrite = async (mode: string) => {
         showToast(result, 'error')
         return
       }
-      // 后端在缺 API Key 或其他严重错误时返回 error usage
       if (usage.startsWith('error:') || result.includes('AI 服务未配置 API Key')) {
         showToast('AI 写作功能暂未启用，请联系管理员', 'error')
         return
       }
-      // 兼容历史：旧版后端在缺 API Key 时回退到 mock
       const isMock =
         usage.includes('mock') ||
         result.startsWith('[AI ') ||
@@ -671,20 +662,13 @@ const handleAIWrite = async (mode: string) => {
         showToast('AI 写作功能暂未启用，请联系管理员', 'error')
         return
       }
-      if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
-        const before = form.content.substring(0, textarea.selectionStart)
-        const after = form.content.substring(textarea.selectionEnd)
-        form.content = before + result + after
-      } else {
-        form.content = result
-      }
+      form.content = result
       const label = mode === 'expand' ? '扩写' : '润色'
       showToast(`AI ${label}完成，已更新正文内容`, 'success')
     } else {
       showToast('AI 这次没有返回内容，请稍后再试', 'error')
     }
   } catch (err: any) {
-    // 优先展示后端 message，但过滤掉技术细节（如 "Request failed with status code 500"）
     const raw = err?.response?.data?.message
     const friendly = raw && !/^Request failed|^Error:|^\d{3}$/i.test(String(raw))
       ? String(raw)
