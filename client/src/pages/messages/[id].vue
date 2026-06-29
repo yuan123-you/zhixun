@@ -75,7 +75,7 @@
 
         <!-- 对方消息 -->
         <div v-if="msg.senderId !== myUserId" class="flex items-start gap-2 max-w-[75%]">
-          <button class="flex-shrink-0 mt-0.5 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(msg.sender?.id)">
+          <button class="flex-shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(msg.sender?.id)">
             <UserAvatar :src="msg.sender?.avatar" :alt="msg.sender?.nickname" size="sm" />
           </button>
           <div>
@@ -89,7 +89,7 @@
         </div>
 
         <!-- 我的消息 -->
-        <div v-else class="flex justify-end">
+        <div v-else class="flex items-start gap-2 justify-end">
           <div class="max-w-[75%]">
             <div class="bg-primary text-white rounded-2xl rounded-tr-sm px-3 py-2">
               <p class="text-sm whitespace-pre-wrap break-words">{{ msg.content }}</p>
@@ -98,6 +98,9 @@
               {{ formatMessageTime(msg.createdAt) }}
             </span>
           </div>
+          <button class="flex-shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(myUserId)">
+            <UserAvatar :src="userStore.userInfo?.avatar" :alt="userStore.userInfo?.nickname" size="sm" />
+          </button>
         </div>
       </template>
 

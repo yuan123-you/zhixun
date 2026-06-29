@@ -11,8 +11,9 @@ export interface GroupInfo {
   memberCount: number
   maxMembers: number
   isPublic: number
-  myRole: number
-  joinedAt: string
+  status?: number
+  myRole?: number | null
+  joinedAt?: string | null
 }
 
 export interface GroupMessage {
@@ -23,6 +24,29 @@ export interface GroupMessage {
   senderAvatar: string
   content: string
   messageType: string
+  createdAt: string
+}
+
+export interface GroupMember {
+  id: number
+  groupId: number
+  userId: number
+  userName: string
+  userAvatar: string
+  nickname: string
+  role: number
+  joinedAt: string
+}
+
+export interface GroupJoinRequestInfo {
+  id: number
+  groupId: number
+  groupName: string
+  userId: number
+  userName: string
+  userAvatar: string
+  message: string
+  status: number
   createdAt: string
 }
 
@@ -38,10 +62,6 @@ export const groupApi = {
   getMyGroups: (page = 1, pageSize = 20) => {
     const { get } = useApi()
     return get<PageResult<GroupInfo>>('/groups/my', { page, pageSize })
-  },
-  joinGroup: (id: number) => {
-    const { post } = useApi()
-    return post<void>(`/groups/${id}/join`)
   },
   leaveGroup: (id: number) => {
     const { post } = useApi()
@@ -74,5 +94,25 @@ export const groupApi = {
   searchGroups: (keyword: string, page = 1, pageSize = 20) => {
     const { get } = useApi()
     return get<PageResult<GroupInfo>>('/groups/search', { keyword, page, pageSize })
+  },
+  getMembers: (groupId: number) => {
+    const { get } = useApi()
+    return get<GroupMember[]>(`/groups/${groupId}/members`)
+  },
+  requestJoin: (groupId: number, message?: string) => {
+    const { post } = useApi()
+    return post<void>(`/groups/${groupId}/request-join`, null, { params: { message } })
+  },
+  getPendingRequests: (groupId: number) => {
+    const { get } = useApi()
+    return get<GroupJoinRequestInfo[]>(`/groups/${groupId}/requests`)
+  },
+  approveJoinRequest: (requestId: number) => {
+    const { post } = useApi()
+    return post<void>(`/groups/requests/${requestId}/approve`)
+  },
+  rejectJoinRequest: (requestId: number) => {
+    const { post } = useApi()
+    return post<void>(`/groups/requests/${requestId}/reject`)
   },
 }

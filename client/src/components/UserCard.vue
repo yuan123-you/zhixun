@@ -52,11 +52,13 @@ defineEmits<{
 .user-card {
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 12px;
+  overflow: hidden;
 }
 .user-card-body {
   display: flex;
   align-items: center;
   gap: 12px;
+  overflow: hidden;
 }
 .user-avatar-link,
 .user-avatar-placeholder {
@@ -71,6 +73,10 @@ defineEmits<{
   font-weight: 600;
   color: var(--el-text-color-primary);
   text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .user-name.hover:hover {
   color: var(--el-color-primary);

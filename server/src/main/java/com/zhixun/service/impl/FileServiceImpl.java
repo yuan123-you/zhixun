@@ -143,58 +143,76 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public String uploadFile(MultipartFile file) throws Exception {
-        // 校验文件是否为空
-        if (file == null || file.isEmpty()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件不能为空");
-        }
+        try {
+            // 校验文件是否为空
+            if (file == null || file.isEmpty()) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "文件不能为空");
+            }
 
-        // 校验文件大小
-        if (file.getSize() > FILE_MAX_SIZE) {
-            throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "附件大小不能超过20MB");
-        }
+            // 校验文件大小
+            if (file.getSize() > FILE_MAX_SIZE) {
+                throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "附件大小不能超过20MB");
+            }
 
-        // 获取文件扩展名
-        String originalFilename = file.getOriginalFilename();
-        String extension = getFileExtension(originalFilename);
-        if (!StringUtils.hasText(extension)) {
-            extension = "bin";
-        }
+            // 获取文件扩展名
+            String originalFilename = file.getOriginalFilename();
+            String extension = getFileExtension(originalFilename);
+            if (!StringUtils.hasText(extension)) {
+                extension = "bin";
+            }
 
-        // 生成文件路径
-        String filePath = generateFilePath("files", extension);
+            // 生成文件路径
+            String filePath = generateFilePath("files", extension);
 
-        // 上传文件（优先 MinIO，失败降级本地）
-        String contentType = file.getContentType();
-        if (!StringUtils.hasText(contentType)) {
-            contentType = "application/octet-stream";
+            // 上传文件（优先 MinIO，失败降级本地）
+            String contentType = file.getContentType();
+            if (!StringUtils.hasText(contentType)) {
+                contentType = "application/octet-stream";
+            }
+            return uploadWithFallback(file, filePath, contentType, "files");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("附件上传未知异常: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "文件上传失败，请稍后重试");
         }
-        return uploadWithFallback(file, filePath, contentType, "files");
     }
 
     @Override
     public String uploadVoice(MultipartFile file) throws Exception {
-        // 校验文件是否为空
-        if (file == null || file.isEmpty()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "语音文件不能为空");
+        try {
+            // 校验文件是否为空
+            if (file == null || file.isEmpty()) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "语音文件不能为空");
+            }
+
+            // 校验文件大小
+            if (file.getSize() > VOICE_MAX_SIZE) {
+                throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "语音文件大小不能超过10MB");
+            }
+
+            // 获取文件扩展名
+            String originalFilename = file.getOriginalFilename();
+            String extension = getFileExtension(originalFilename);
+            if (!StringUtils.hasText(extension) || !VOICE_EXTENSIONS.containsKey(extension.toLowerCase())) {
+                throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED,
+                        "仅支持 webm/wav/mp3/m4a/ogg 格式语音，当前文件: " +
+                                (StringUtils.hasText(originalFilename) ? originalFilename : "无文件名"));
+            }
+
+            // 生成文件路径
+            String filePath = generateFilePath("voices", extension);
+
+            log.info("语音上传请求: fileName={}, size={}", originalFilename, formatFileSize(file.getSize()));
+
+            // 上传文件（优先 MinIO，失败降级本地）
+            return uploadWithFallback(file, filePath, VOICE_EXTENSIONS.get(extension.toLowerCase()), "voices");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("语音上传未知异常: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "语音上传失败，请稍后重试");
         }
-
-        // 校验文件大小
-        if (file.getSize() > VOICE_MAX_SIZE) {
-            throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "语音文件大小不能超过10MB");
-        }
-
-        // 获取文件扩展名
-        String originalFilename = file.getOriginalFilename();
-        String extension = getFileExtension(originalFilename);
-        if (!StringUtils.hasText(extension) || !VOICE_EXTENSIONS.containsKey(extension.toLowerCase())) {
-            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持 webm/wav/mp3/m4a/ogg 格式语音");
-        }
-
-        // 生成文件路径
-        String filePath = generateFilePath("voices", extension);
-
-        // 上传文件（优先 MinIO，失败降级本地）
-        return uploadWithFallback(file, filePath, VOICE_EXTENSIONS.get(extension.toLowerCase()), "voices");
     }
 
     // ========== 核心：带降级的上传逻辑 ==========

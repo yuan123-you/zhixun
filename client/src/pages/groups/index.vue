@@ -323,7 +323,7 @@
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
-                    {{ joiningSet.has(group.id) ? '加入中' : '加入' }}
+                    {{ joiningSet.has(group.id) ? '申请中' : '申请加入' }}
                   </button>
                   <span
                     v-else-if="group.myRole && group.myRole > 0"
@@ -391,7 +391,7 @@
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
-                {{ joiningSet.has(group.id) ? '加入中' : '加入' }}
+                {{ joiningSet.has(group.id) ? '申请中' : '申请加入' }}
               </button>
               <span
                 v-else-if="group.myRole && group.myRole > 0"
@@ -533,6 +533,8 @@ const { setTitle } = usePageHeaderTitle()
 setTitle('群组广场')
 
 const userStore = useUserStore()
+const router = useRouter()
+const navigateTo = (path: string) => router.push(path)
 
 const activeTab = ref<'my' | 'search'>('my')
 const searchKeyword = ref('')
@@ -653,23 +655,21 @@ watch(searchKeyword, (val) => {
   searchTimer = setTimeout(handleSearch, 350)
 })
 
-// ======= 加入群组 =======
+// ======= 申请加入群组 =======
 const joiningSet = ref(new Set<number>())
 const handleJoin = async (groupId: number) => {
   if (joiningSet.value.has(groupId)) return
   joiningSet.value.add(groupId)
   try {
-    await groupApi.joinGroup(groupId)
-    showToast('加入成功', 'success', { position: 'top-center' })
-    loadMyGroups()
-    const updateRole = (list: GroupInfo[]) => {
-      const g = list.find(g => g.id === groupId)
-      if (g) g.myRole = 1
+    await groupApi.requestJoin(groupId)
+    showToast('申请已提交，等待群主审批', 'success', { position: 'top-center' })
+  } catch (e: any) {
+    const msg = e?.message || ''
+    if (msg.includes('已提交') || msg.includes('已是')) {
+      showToast(msg, 'info', { position: 'top-center' })
+    } else {
+      showToast('申请失败，请稍后重试', 'error', { position: 'top-center' })
     }
-    updateRole(searchResults.value)
-    updateRole(recommendedGroups.value)
-  } catch {
-    showToast('加入失败，请稍后重试', 'error', { position: 'top-center' })
   } finally {
     joiningSet.value.delete(groupId)
   }

@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -101,7 +102,9 @@ public class ContentBasedRecommendService {
         }
 
         List<Long> result = articleScores.entrySet().stream()
-                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .sorted((a, b) -> Double.compare(
+                        b.getValue() + ThreadLocalRandom.current().nextDouble(-0.15, 0.15),
+                        a.getValue() + ThreadLocalRandom.current().nextDouble(-0.15, 0.15)))
                 .limit(count)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());

@@ -34,6 +34,8 @@ declare module 'vue' {
     EmptyState: typeof import('./components/EmptyState.vue')['default']
     ErrorRetry: typeof import('./components/ErrorRetry.vue')['default']
     GroupChatWindow: typeof import('./components/GroupChatWindow.vue')['default']
+    GroupMemberPanel: typeof import('./components/GroupMemberPanel.vue')['default']
+    GroupSidebar: typeof import('./components/GroupSidebar.vue')['default']
     HotRank: typeof import('./components/HotRank.vue')['default']
     ImageGrid: typeof import('./components/ImageGrid.vue')['default']
     ImageZoom: typeof import('./components/ImageZoom.vue')['default']

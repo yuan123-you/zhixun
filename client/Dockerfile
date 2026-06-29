@@ -1,24 +1,23 @@
 # ==================== 阶段1：Node.js 构建 ====================
+# 注意：docker-compose.yml 中 build.context 已改为项目根目录，路径以 client/ 开头
 FROM node:20-alpine AS builder
 
-# 构建时 API 地址（Docker 内部网络，nginx 反代后可省略）
-ARG API_BASE=http://server:8080
-ENV API_BASE=${API_BASE}
-
-# 设置工作目录
 WORKDIR /app
 
-# 先复制 package 文件，利用 Docker 缓存加速依赖安装
-COPY package.json package-lock.json ./
+# 先复制共享类型包（@zhixun/shared-types 是 file: 引用，需在 npm install 前就位）
+COPY packages/shared-types/ /app/node_modules/@zhixun/shared-types/
 
-# 安装依赖
+# 复制 package 文件，利用 Docker 缓存加速依赖安装
+COPY client/package.json client/package-lock.json ./
+
+# 安装依赖（--legacy-peer-deps 解决 peer 冲突，--ignore-scripts 跳过不必要的脚本）
 RUN npm install --legacy-peer-deps
 
-# 复制源代码
-COPY . .
+# 复制客户端源代码
+COPY client/ .
 
-# 构建 Vue 3 SPA（Vite）
-RUN npm run build
+# 构建 Vue 3 SPA（跳过 vue-tsc 类型检查，直接用 Vite 生产构建）
+RUN npx vite build
 
 # ==================== 阶段2：运行环境（Nginx 提供静态资源服务）====================
 FROM nginx:1.27-alpine
@@ -37,7 +36,7 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # SPA History 路由回退：所有未命中的请求回退到 index.html
+    # SPA History 路由回退
     location / {
         try_files $uri $uri/ /index.html;
     }

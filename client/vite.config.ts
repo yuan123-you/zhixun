@@ -15,7 +15,7 @@ export default defineConfig({
       // 避免 ElementPlusResolver 在每个组件使用处再次注入单独的 CSS 文件导致 ERR_ABORTED
       resolvers: [ElementPlusResolver({ importStyle: false })],
       imports: ['vue', 'vue-router', 'pinia'],
-      // Auto-import custom composables (replacing Nuxt auto-imports)
+      // Auto-import custom composables and stores
       dirs: ['src/composables', 'src/stores'],
       dts: 'src/auto-imports.d.ts',
     }),

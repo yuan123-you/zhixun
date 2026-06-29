@@ -115,12 +115,12 @@ services:
       # 端口规划（与 docs/PORTS.md 一致）：HTTP REST 统一使用 9201
       # 历史原因：原 9200 → 9201 是为了让 OpenSearch 2.11 的 performance analyzer
       # 默认监听的 8080 端口不与 Spring Boot 后端（容器内 8080）冲突。
-      - "${OPENSEARCH_HTTP_PORT:-9201}:9201"
+      - "${OPENSEARCH_HTTP_PORT:-9200}:${OPENSEARCH_HTTP_PORT:-9200}"
       - "${OPENSEARCH_TRANSPORT_PORT:-9600}:9600"
     environment:
       discovery.type: single-node
       # 容器内部 HTTP 端口与 .env / application.yml / Vite 代理保持一致
-      OPENSEARCH_HTTP_PORT: "9201"
+      OPENSEARCH_HTTP_PORT: "${OPENSEARCH_HTTP_PORT:-9200}"
       OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
       DISABLE_SECURITY_PLUGIN: "true"
       bootstrap.memory_lock: "true"
@@ -136,7 +136,7 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: ["CMD-SHELL", "curl -sfo /dev/null http://localhost:9201 || exit 1"]
+      test: ["CMD-SHELL", "curl -sfo /dev/null http://localhost:${OPENSEARCH_HTTP_PORT:-9200} || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -188,7 +188,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET:-zhixun}
       # OpenSearch 连接信息（端口与 docs/PORTS.md 一致：HTTP 9201）
-      OPENSEARCH_HOSTS: http://opensearch:9201
+      OPENSEARCH_HOSTS: ${OPENSEARCH_HOSTS:-http://opensearch:9200}
       OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-}
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
       # JWT 密钥
@@ -229,6 +229,8 @@ services:
       SENTINEL_DASHBOARD: ${SENTINEL_DASHBOARD:-localhost:8080}
       # 数据版本号（控制客户端强更新）
       APP_DATA_VERSION: ${APP_DATA_VERSION:-20250625}
+      # SSR 通信密钥
+      SSR_SECRET: ${SSR_SECRET:-zhixun-ssr-dev-secret}
       # 时区
       TZ: Asia/Shanghai
     depends_on:
@@ -293,7 +295,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET:-zhixun}
       # OpenSearch 连接信息（端口与 docs/PORTS.md 一致：HTTP 9201）
-      OPENSEARCH_HOSTS: http://opensearch:9201
+      OPENSEARCH_HOSTS: ${OPENSEARCH_HOSTS:-http://opensearch:9200}
       OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-}
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
       # JWT 密钥
@@ -334,6 +336,8 @@ services:
       SENTINEL_DASHBOARD: ${SENTINEL_DASHBOARD:-localhost:8080}
       # 数据版本号（控制客户端强更新）
       APP_DATA_VERSION: ${APP_DATA_VERSION:-20250625}
+      # SSR 通信密钥
+      SSR_SECRET: ${SSR_SECRET:-zhixun-ssr-dev-secret}
       # 时区
       TZ: Asia/Shanghai
     depends_on:
@@ -359,8 +363,8 @@ services:
   # Vue 3 C端前端（SPA，由 nginx 提供静态资源服务）
   client:
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./client/Dockerfile
     container_name: zhixun-client
     restart: unless-stopped
     ports:
@@ -383,8 +387,8 @@ services:
   # Vue 3 + Element Plus 管理后台
   admin:
     build:
-      context: ./admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./admin/Dockerfile
     container_name: zhixun-admin
     restart: unless-stopped
     ports:

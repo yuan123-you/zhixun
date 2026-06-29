@@ -44,6 +44,9 @@
             <div class="bubble bubble-mine">{{ message.content }}</div>
             <span class="bubble-time mine-time">{{ formatTime(message.createdAt) }}</span>
           </div>
+          <span class="my-avatar" @click="navigateToUser(userStore.userInfo?.id)">
+            <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="sm" />
+          </span>
         </template>
       </div>
 
@@ -291,8 +294,15 @@ onUnmounted(() => observer?.disconnect())
   border-radius: 50%;
   flex-shrink: 0;
   margin-right: 8px;
-  margin-bottom: 4px;
-  align-self: flex-end;
+  align-self: flex-start;
+}
+
+.my-avatar {
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 8px;
+  align-self: flex-start;
 }
 
 .empty-messages {

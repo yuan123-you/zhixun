@@ -142,13 +142,11 @@ if (!isValidUserId.value) {
 
 /** 是否为自己的主页 */
 const isOwnProfile = computed(() => {
-  if (!true) return false
   return userStore.userInfo?.id === userId.value
 })
 
 // Toast 提示
 const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-  if (!true) return
   const toast = document.createElement('div')
   toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm transition-all duration-300 transform translate-x-0 opacity-100 ${
     type === 'success' ? 'bg-green-500' : 'bg-red-500'
@@ -207,7 +205,7 @@ const fetchUserData = async () => {
     if (userInfo.value) {
       const articlesRes = await userApi.getUserArticles(userId.value, { page: 1, pageSize: 20 })
       const data = articlesRes.data?.data
-      articles.value = data?.list || data?.items || []
+      articles.value = data?.list || []
       hasMore.value = articles.value.length >= 20
     }
   } catch (error: any) {
@@ -224,11 +222,14 @@ const fetchUserData = async () => {
 // 核心修复：动态路由参数变化时（点击头像切换用户主页）重新加载
 // 1. 清空 useRequestCache 中该用户的所有缓存，避免 SWR 返回旧数据
 // 2. 调用 fetchUserData 重新拉取
+// 3. 重置滚动位置（同路径下 scrollBehavior 返回 false，不会自动滚动到顶）
 watch(() => userId.value, async (newId, oldId) => {
   if (newId === oldId || !newId || isNaN(newId)) return
   // 强制清空该用户相关的请求缓存（包括 SWR 中的过期数据）
   invalidateByPrefix(`/user/profile/${oldId}`)
   invalidateByPrefix(`/user/articles/${oldId}`)
+  // 切换用户时重置滚动位置，使用 instant 覆盖 Tailwind 的 scroll-behavior:smooth
+  if (oldId) window.scrollTo({ top: 0, behavior: 'instant' })
   await fetchUserData()
   if (userStore.isLoggedIn) fetchOnlineStatus()
 }, { immediate: false })
@@ -276,7 +277,7 @@ const loadMore = async () => {
     const { userApi } = await import('@/api')
     const response = await userApi.getUserArticles(userId.value, { page: articlePage.value, pageSize: articlePageSize })
     const data = response.data.data
-    const items = data?.list || data?.items || []
+    const items = data?.list || []
     articles.value.push(...items)
     hasMore.value = items.length >= articlePageSize
   } catch {
@@ -318,7 +319,7 @@ const retryArticles = async () => {
       { page: 1, pageSize: 20 }
     )
     const data = response.data.data
-    articles.value = data?.list || data?.items || []
+    articles.value = data?.list || []
     hasMore.value = articles.value.length >= 20
   } catch (error: any) {
     articlesError.value = error.message || '作品加载失败，请稍后重试'

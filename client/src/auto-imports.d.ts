@@ -98,6 +98,7 @@ declare global {
   const useDraft: typeof import('./composables/useDraft')['useDraft']
   const useFriendlyError: typeof import('./composables/useFriendlyError')['default']
   const useGroupStore: typeof import('./stores/group')['useGroupStore']
+  const useGroupWebSocket: typeof import('./composables/useGroupWebSocket')['useGroupWebSocket']
   const useHead: typeof import('./composables/useHead')['useHead']
   const useId: typeof import('vue')['useId']
   const useInfiniteScroll: typeof import('./composables/useInfiniteScroll')['useInfiniteScroll']

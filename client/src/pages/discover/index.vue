@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5 animate-fade-in-up">
+  <div class="w-full max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5 overflow-hidden animate-fade-in-up">
 
     <!-- ===== 英雄横幅 ===== -->
     <section class="discover-hero mb-2">
@@ -327,7 +327,7 @@ const { refresh: refreshAll } = useRefresh({
         const res = await forceRequest<ApiResponse<RankItem[]>>(
           () => api.get<RankItem[]>(url, {
             params: { ...params, _t: Date.now() },
-          }),
+          }).then(r => r.data),
           url,
           params,
         )
@@ -351,7 +351,7 @@ const { refresh: refreshAll } = useRefresh({
         const res = await forceRequest<ApiResponse<Tag[]>>(
           () => api.get<Tag[]>(url, {
             params: { ...params, _t: Date.now() },
-          }),
+          }).then(r => r.data),
           url,
           params,
         )
@@ -459,7 +459,7 @@ const fetchHotRank = async () => {
     const params = { period: 'daily' }
     const api = useApi()
     const res = await cachedRequest<ApiResponse<RankItem[]>>(
-      () => api.get<RankItem[]>(url, { ...params, _t: Date.now() }),
+      () => api.get<RankItem[]>(url, { ...params, _t: Date.now() }).then(r => r.data),
       url,
       params,
     )
@@ -482,7 +482,7 @@ const fetchHotTags = async () => {
     const params = { limit: 20 }
     const api = useApi()
     const res = await cachedRequest<ApiResponse<Tag[]>>(
-      () => api.get<Tag[]>(url, { ...params, _t: Date.now() }),
+      () => api.get<Tag[]>(url, { ...params, _t: Date.now() }).then(r => r.data),
       url,
       params,
     )
@@ -1021,6 +1021,7 @@ useHead({
 .discover-user-card {
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: var(--zh-radius-md);
+  overflow: hidden;
 }
 
 .discover-user-card:hover {

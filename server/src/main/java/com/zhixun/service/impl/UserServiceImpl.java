@@ -205,7 +205,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Slave
+    // 注意：此方法紧跟在 batchSyncViewHistory(写主库) 之后被调用，
+    // 必须从主库读取，否则从库复制延迟会导致刚刚同步的记录查询不到。
     public PageResult<ArticleVO> getViewHistory(Long userId, String startDate, String endDate, Integer page, Integer pageSize) {
         LambdaQueryWrapper<ViewHistory> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ViewHistory::getUserId, userId);

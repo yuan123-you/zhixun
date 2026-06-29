@@ -37,7 +37,7 @@ export const useOrientation = (): OrientationState => {
     isOrientationApiSupported.value =
       typeof screen !== 'undefined' &&
       'orientation' in screen &&
-      typeof screen.orientation?.lock === 'function'
+      typeof (screen.orientation as any)?.lock === 'function'
   }
 
   // 监听方向变化

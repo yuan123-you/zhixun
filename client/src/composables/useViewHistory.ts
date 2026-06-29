@@ -8,35 +8,22 @@ interface ViewHistoryEntry {
   title: string
   /** 浏览时长（秒） */
   viewDuration: number
-  /** 访问IP（仅本地记录） */
-  ip?: string
   /** 用户代理（仅本地记录） */
   userAgent?: string
   /** 浏览时间戳 */
   visitedAt: number
-  /** 是否已同步到服务器 */
-  synced: boolean
 }
 
 /** 本地最大保留条目数 */
 const MAX_LOCAL_ENTRIES = 500
 
-/** 批量同步间隔（毫秒） */
-const SYNC_INTERVAL = 5 * 60 * 1000 // 5 分钟
-
 /**
- * 浏览历史本地化管理
- * - 本地存储完整浏览记录（含 IP、UA 等隐私字段）
- * - 定期批量同步精简数据到服务器（仅 article_id + view_duration）
- * - 使用 synced 标记防止重复同步
+ * 浏览历史本地化管理（纯本地方案，不再向服务器同步）
+ * - 所有记录仅存于 localStorage，浏览即记录，查看历史时直接读取
+ * - 隐私友好：IP、同步标记、服务器字段均不再涉及
  */
 export const useViewHistory = () => {
-  const { post } = useApi()
-  const userStore = useUserStore()
-
-  /**
-   * 获取本地浏览记录
-   */
+  /** 获取本地浏览记录 */
   const getLocalHistory = (): ViewHistoryEntry[] => {
     return storage.get<ViewHistoryEntry[]>(STORAGE_KEYS.VIEW_HISTORY_LOCAL) || []
   }
@@ -55,15 +42,13 @@ export const useViewHistory = () => {
     // 移除同一作品的旧记录（保留最新一次）
     const filtered = entries.filter((e) => e.articleId !== articleId)
 
-    // 新增记录（标记为未同步）
+    // 新增记录
     const entry: ViewHistoryEntry = {
       articleId,
       title,
       viewDuration: 0,
-      ip: '', // IP 由服务端在请求时获取，本地不记录
       userAgent: navigator.userAgent,
       visitedAt: Date.now(),
-      synced: false,
     }
 
     filtered.unshift(entry)
@@ -89,41 +74,7 @@ export const useViewHistory = () => {
     const entry = entries.find((e) => e.articleId === articleId)
     if (entry) {
       entry.viewDuration = durationSeconds
-      entry.synced = false // 重置同步标记，确保更新后的时长能被同步
       storage.set(STORAGE_KEYS.VIEW_HISTORY_LOCAL, entries, TTL.DAY_30)
-    }
-  }
-
-  /**
-   * 批量同步浏览记录到服务器（仅同步精简数据）
-   */
-  const syncToServer = async () => {
-    if (!userStore.isLoggedIn) return
-
-    const entries = getLocalHistory()
-    if (entries.length === 0) return
-
-    // 只同步尚未同步的记录
-    const toSync = entries
-      .filter((e) => !e.synced)
-      .map((e) => ({
-        articleId: e.articleId,
-        viewDuration: e.viewDuration,
-      }))
-
-    if (toSync.length === 0) return
-
-    try {
-      await post('/user/view-history/batch', { records: toSync })
-      // 同步成功后，标记所有已同步的记录
-      const syncedIds = new Set(toSync.map((r) => r.articleId))
-      const updated = entries.map((e) => ({
-        ...e,
-        synced: syncedIds.has(e.articleId) ? true : e.synced,
-      }))
-      storage.set(STORAGE_KEYS.VIEW_HISTORY_LOCAL, updated, TTL.DAY_30)
-    } catch {
-      // 同步失败，保留数据下次重试
     }
   }
 
@@ -134,39 +85,10 @@ export const useViewHistory = () => {
     storage.remove(STORAGE_KEYS.VIEW_HISTORY_LOCAL)
   }
 
-  /**
-   * 启动定时同步
-   */
-  const startAutoSync = () => {
-    if (typeof window === 'undefined') return
-
-    // 页面可见时同步
-    syncToServer()
-
-    // 定时同步
-    const timer = setInterval(() => {
-      syncToServer()
-    }, SYNC_INTERVAL)
-
-    // 页面卸载前同步
-    const beforeUnload = () => {
-      syncToServer()
-    }
-    window.addEventListener('beforeunload', beforeUnload)
-
-    // 返回清理函数
-    return () => {
-      clearInterval(timer)
-      window.removeEventListener('beforeunload', beforeUnload)
-    }
-  }
-
   return {
     getLocalHistory,
     recordView,
     updateDuration,
-    syncToServer,
     clearLocalHistory,
-    startAutoSync,
   }
 }

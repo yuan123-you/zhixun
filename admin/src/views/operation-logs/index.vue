@@ -164,7 +164,7 @@ function handleDetail(log: OperationLog) {
 async function loadLogs(force = false) {
   loading.value = true
   try {
-    const result = await logCache.request('/operation-logs', queryParams as unknown as Record<string, unknown>, { force })
+    const result = await logCache.request('/admin/operation-logs', queryParams as unknown as Record<string, unknown>, { force })
     logList.value = result.list
     total.value = result.total
   } catch {

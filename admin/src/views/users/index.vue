@@ -350,7 +350,7 @@ async function handleBan(user: UserInfo) {
     })
     await banUser(user.id)
     ElMessage.success('封禁成功')
-    userCache.invalidate('/users', queryParams as unknown as Record<string, unknown>)
+    userCache.invalidate('/admin/users', queryParams as unknown as Record<string, unknown>)
     loadUsers()
   } catch {
     // 用户取消或请求失败
@@ -362,7 +362,7 @@ async function handleUnban(user: UserInfo) {
   try {
     await unbanUser(user.id)
     ElMessage.success('解封成功')
-    userCache.invalidate('/users', queryParams as unknown as Record<string, unknown>)
+    userCache.invalidate('/admin/users', queryParams as unknown as Record<string, unknown>)
     loadUsers()
   } catch {
     // 错误已在拦截器中处理
@@ -384,7 +384,7 @@ async function confirmAssignRole() {
     await assignRole(currentUser.value.id, assignRole.value)
     ElMessage.success('角色分配成功')
     roleDialogVisible.value = false
-    userCache.invalidate('/users', queryParams as unknown as Record<string, unknown>)
+    userCache.invalidate('/admin/users', queryParams as unknown as Record<string, unknown>)
     loadUsers()
   } catch {
     // 错误已在拦截器中处理
@@ -441,7 +441,7 @@ async function loadUsers(force = false) {
   loading.value = true
   hasError.value = false
   try {
-    const result = await userCache.request('/users', queryParams as unknown as Record<string, unknown>, { force })
+    const result = await userCache.request('/admin/users', queryParams as unknown as Record<string, unknown>, { force })
     userList.value = result.list
     total.value = result.total
   } catch {

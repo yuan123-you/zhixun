@@ -68,6 +68,8 @@ const goBack = () => {
 .back-btn {
   width: 32px;
   height: 32px;
+  min-height: 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,6 +91,8 @@ const goBack = () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .back-btn-desktop {

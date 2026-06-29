@@ -203,6 +203,8 @@ const formatTime = (time: string) => {
 .comment-body {
   flex: 1;
   min-width: 0;
+  display: block;
+  width: 100%;
 }
 
 .comment-meta {
@@ -213,6 +215,7 @@ const formatTime = (time: string) => {
   font-size: 13px;
   color: var(--zh-text-tertiary);
   line-height: 1.4;
+  width: 100%;
 }
 .comment-author {
   font-size: 13px;
@@ -243,6 +246,7 @@ const formatTime = (time: string) => {
 }
 
 .comment-content {
+  display: block;
   font-size: 14.5px;
   color: var(--zh-text);
   margin: 4px 0 0;
@@ -282,6 +286,7 @@ const formatTime = (time: string) => {
   gap: 4px;
   margin-top: 8px;
   flex-wrap: wrap;
+  width: 100%;
 }
 .comment-action {
   display: inline-flex;

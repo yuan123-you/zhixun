@@ -219,7 +219,7 @@ async function confirmAdd() {
     await createSensitiveWord(addForm)
     ElMessage.success('添加成功')
     addDialogVisible.value = false
-    sensitiveWordCache.invalidateByPrefix('/sensitive-words')
+    sensitiveWordCache.invalidateByPrefix('/admin/sensitive-words')
     loadWords()
   } catch {
     // 错误已在拦截器中处理
@@ -245,7 +245,7 @@ async function confirmBatchAdd() {
     await batchCreateSensitiveWords({ words, level: batchForm.level })
     ElMessage.success('批量添加成功')
     batchDialogVisible.value = false
-    sensitiveWordCache.invalidateByPrefix('/sensitive-words')
+    sensitiveWordCache.invalidateByPrefix('/admin/sensitive-words')
     loadWords()
   } catch {
     // 错误已在拦截器中处理
@@ -269,7 +269,7 @@ async function confirmEditLevel() {
     await updateSensitiveWordLevel(currentWord.value.id, editLevel.value)
     ElMessage.success('修改成功')
     levelDialogVisible.value = false
-    sensitiveWordCache.invalidateByPrefix('/sensitive-words')
+    sensitiveWordCache.invalidateByPrefix('/admin/sensitive-words')
     loadWords()
   } catch {
     // 错误已在拦截器中处理
@@ -288,7 +288,7 @@ async function handleDelete(word: SensitiveWord) {
     })
     await deleteSensitiveWord(word.id)
     ElMessage.success('删除成功')
-    sensitiveWordCache.invalidateByPrefix('/sensitive-words')
+    sensitiveWordCache.invalidateByPrefix('/admin/sensitive-words')
     loadWords()
   } catch {
     // 用户取消或请求失败
@@ -299,7 +299,7 @@ async function handleDelete(word: SensitiveWord) {
 async function loadWords(force = false) {
   loading.value = true
   try {
-    const result = await sensitiveWordCache.request('/sensitive-words', queryParams as unknown as Record<string, unknown>, { force })
+    const result = await sensitiveWordCache.request('/admin/sensitive-words', queryParams as unknown as Record<string, unknown>, { force })
     wordList.value = result.list
     total.value = result.total
   } catch {

@@ -633,21 +633,6 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # Nuxt 静态资源缓存
-    location ~* ^/_nuxt/.*\.(js|css)\$ {
-        proxy_pass http://127.0.0.1:3500;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        access_log off;
-    }
-
-    location ~* ^/_nuxt/.*\.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
-        proxy_pass http://127.0.0.1:3500;
-        expires 30d;
-        add_header Cache-Control "public";
-        access_log off;
-    }
-
     location ~ /\. {
         deny all;
         access_log off;

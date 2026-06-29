@@ -135,6 +135,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/settings/index.vue'),
         meta: { title: '系统设置', icon: 'Setting' },
       },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/profile/index.vue'),
+        meta: { title: '个人中心', icon: 'UserFilled' },
+      },
     ],
   },
   // 404 页面

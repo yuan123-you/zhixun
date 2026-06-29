@@ -2,11 +2,11 @@
   <!-- 顶部导航栏 - 玻璃拟态 + 流畅动效 -->
   <header class="app-header">
     <div class="header-inner">
-      <!-- 左侧：返回按钮（移动端需要时显示）+ 品牌 -->
+      <!-- 左侧：返回按钮（子页面显示）+ 品牌 -->
       <div class="header-left">
         <button
           v-if="isBackButtonVisible"
-          class="back-btn-header md:hidden"
+          class="back-btn-header"
           aria-label="返回上一页"
           @click="goBack"
         >
@@ -105,7 +105,6 @@ const isBackButtonVisible = computed(() => {
   if (tabPages.includes(route.path)) return false
   if (/^\/messages\/\d+/.test(route.path)) return false
   if (/^\/groups\/\d+/.test(route.path)) return false
-  if (/^\/user\/\d+\/(followers|following)/.test(route.path)) return false
   return true
 })
 
@@ -197,6 +196,10 @@ const handleCommand = async (command: string) => {
 }
 .back-btn-header:hover { color: var(--zh-primary); background: var(--zh-bg-hover); }
 .back-btn-header:active { transform: scale(0.95); }
+@media (min-width: 768px) {
+  .back-btn-header { width: 36px; height: 36px; }
+  .back-btn-header svg { width: 18px; height: 18px; }
+}
 
 .brand-link {
   display: flex;

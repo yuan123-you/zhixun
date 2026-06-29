@@ -365,6 +365,7 @@ const fontSizes = [
 ]
 
 const sortOptions = [
+  { label: '推荐', value: 'recommend' as const },
   { label: '最新', value: 'latest' as const },
   { label: '热门', value: 'hot' as const },
 ]

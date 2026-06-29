@@ -195,6 +195,12 @@ public class AdminServiceImpl implements AdminService {
      */
     public DashboardVO getDashboardOverview(String period) {
         DashboardVO vo = new DashboardVO();
+        // 预置默认值，防止 try 块异常时 trend 为 null 导致前端崩溃
+        DashboardVO.TrendData defaultTrend = new DashboardVO.TrendData();
+        defaultTrend.setDates(Collections.emptyList());
+        defaultTrend.setViews(Collections.emptyList());
+        defaultTrend.setUsers(Collections.emptyList());
+        vo.setTrend(defaultTrend);
         try {
             LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 

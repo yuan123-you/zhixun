@@ -38,7 +38,7 @@ export function initApiPlugin() {
         const response = await authApi.refreshToken('')
         const authData = response.data.data
         userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
-        userStore.setUser(authData.userInfo)
+        userStore.setUser(authData.userInfo as unknown as User)
       } catch {
         userStore.logout()
       }

@@ -90,7 +90,7 @@
                 <!-- 对方消息（左） -->
                 <div v-if="!isMyMsg(msg)" class="flex items-start gap-1.5 max-w-[80%]">
                   <button class="shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(msg.sender?.id || msg.senderId)">
-                    <UserAvatar :src="msg.sender?.avatar || msg.senderAvatar" alt="" size="sm" />
+                    <UserAvatar :src="msg.sender?.avatar" alt="" size="sm" />
                   </button>
                   <div class="min-w-0 flex-1">
                     <div class="inline-block max-w-full bg-[var(--zh-bg-elevated)] rounded-xl rounded-bl-sm px-2.5 py-1.5 shadow-sm">
@@ -299,7 +299,7 @@ const selectConversation = async (conv: Conversation) => {
   try {
     const { data } = await socialApi.getMessages(targetUserId, { page: 1, pageSize: 30 })
     const me = userStore.userInfo
-    const rawList = (data.data && (data.data.list || data.data.items)) || []
+    const rawList = (data.data && data.data.list) || []
     messages.value = rawList.map((m: any) => transformMsg(m, me))
   } catch {
     showToast('消息记录加载失败，请重试', 'error')

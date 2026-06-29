@@ -216,12 +216,6 @@ const mainStyle = computed(() => {
   return base
 })
 
-// 启动浏览历史自动同步
-const { startAutoSync } = useViewHistory()
-onMounted(() => {
-  startAutoSync()
-})
-
 // 平板侧边栏状态
 const isTabletSidebarOpen = ref(false)
 

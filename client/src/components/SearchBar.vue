@@ -44,9 +44,9 @@
 
 <script setup lang="ts">
 import { Search as SearchIcon } from '@element-plus/icons-vue'
+import { useDebounceFn } from '@vueuse/core'
 
 const router = useRouter()
-const { searchApi } = useApi()
 const { getHistory, addHistory, clearHistory: clearSearchHistory } = useSearchHistory()
 
 const keyword = ref('')
@@ -60,7 +60,7 @@ const searchHistory = computed(() => getHistory().map((e) => e.keyword))
 
 const fetchSuggestions = async (query: string) => {
   if (query.trim()) {
-    try { const response = await searchApi.getSuggestions(query.trim()); suggestions.value = response.data.data }
+    try { const { searchApi } = await import('~/api'); const response = await searchApi.getSuggestions(query.trim()); suggestions.value = response.data.data }
     catch { suggestions.value = [] }
   } else { suggestions.value = [] }
 }
@@ -80,7 +80,7 @@ const selectSuggestion = (item: string) => { keyword.value = item; handleSearch(
 
 const clearHistory = async () => {
   clearSearchHistory()
-  try { await searchApi.clearHistory() } catch { /* ignore */ }
+  try { const { searchApi } = await import('~/api'); await searchApi.clearHistory() } catch { /* ignore */ }
 }
 
 const handleClickOutside = (event: MouseEvent) => {
@@ -88,7 +88,7 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 onMounted(async () => {
-  try { const response = await searchApi.getHotSearches(); hotSearches.value = response.data.data }
+  try { const { searchApi } = await import('~/api'); const response = await searchApi.getHotSearches(); hotSearches.value = response.data.data }
   catch { /* ignore */ }
   document.addEventListener('click', handleClickOutside)
 })

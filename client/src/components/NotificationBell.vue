@@ -58,8 +58,8 @@ const loading = ref(false)
 const notifications = ref<Notification[]>([])
 const bellRef = ref<HTMLElement | null>(null)
 
-const notifTypeClass = (type: string) => {
-  const map: Record<string, string> = {
+const notifTypeClass = (type: NotificationType) => {
+  const map: Record<NotificationType, string> = {
     [NotificationType.System]: 'icon-system', [NotificationType.Audit]: 'icon-audit',
     [NotificationType.Interact]: 'icon-interact', [NotificationType.Follow]: 'icon-follow',
     [NotificationType.Message]: 'icon-message', [NotificationType.CommentReply]: 'icon-reply',
@@ -68,7 +68,7 @@ const notifTypeClass = (type: string) => {
   return map[type] || 'icon-system'
 }
 
-const notifTypeIcon = (type: string) => { return Star }
+const notifTypeIcon = (type: NotificationType) => { return Star }
 
 const togglePanel = async () => { showPanel.value = !showPanel.value; if (showPanel.value) await fetchNotifications() }
 
@@ -78,7 +78,7 @@ const fetchNotifications = async () => {
     const { notificationApi } = await import('@/api/notification')
     const response = await notificationApi.getNotifications({ page: 1, pageSize: 10 })
     const data = response.data.data
-    notifications.value = data?.items || data?.list || []
+    notifications.value = data?.list || []
   } catch { /* ignore */ }
   loading.value = false
 }

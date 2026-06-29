@@ -67,4 +67,10 @@ public interface FeedService {
      * @param publishedAt   发布时间
      */
     void fanoutOnPublish(Long authorId, Long articleId, LocalDateTime publishedAt);
+
+    /**
+     * 清除全局 Feed 缓存（最新、热门、推荐），在新作品发布时调用，
+     * 确保新作品能及时出现在主页各列表中。
+     */
+    void clearFeedCaches();
 }

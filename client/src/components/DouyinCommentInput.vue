@@ -456,10 +456,10 @@ onUnmounted(() => {
   position: fixed;
   left: 0;
   right: 0;
-  /* 紧贴移动端 tabbar 上方（tabbar 高度 60px + 安全区） */
-  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  /* 紧贴移动端 tabbar 上方（tabbar 高度 50px + 安全区） */
+  bottom: calc(50px + env(safe-area-inset-bottom, 0px));
   z-index: 60;
-  padding: 8px 12px;
+  padding: 0;
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -503,6 +503,7 @@ onUnmounted(() => {
   gap: 8px;
   max-width: 920px;
   margin: 0 auto;
+  padding: 8px 12px;
 }
 
 .dy-input-field {

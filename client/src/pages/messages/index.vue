@@ -109,18 +109,20 @@
 
             <!-- 会话信息 -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center">
                 <span class="font-medium text-sm text-[var(--zh-text)] dark:text-gray-100 truncate">
                   {{ conv.user?.nickname }}
                 </span>
-                <span class="text-xs text-[var(--zh-text-tertiary)] dark:text-gray-500 flex-shrink-0 ml-2">
-                  {{ formatRelativeTime(conv.lastMessage?.createdAt || conv.updatedAt) }}
-                </span>
               </div>
-              <div class="flex items-center justify-between mt-0.5">
-                <p class="text-xs text-[var(--zh-text-secondary)] dark:text-gray-400 truncate preview-text">
-                  {{ getLastMessagePreview(conv) }}
-                </p>
+              <div class="flex items-center mt-0.5">
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-[var(--zh-text-secondary)] dark:text-gray-400 truncate preview-text">
+                    {{ getLastMessagePreview(conv) }}
+                  </p>
+                  <span class="text-[10px] text-[var(--zh-text-tertiary)] dark:text-gray-500 block leading-tight mt-px">
+                    {{ formatRelativeTime(conv.lastMessage?.createdAt || conv.updatedAt) }}
+                  </span>
+                </div>
                 <span
                   v-if="conv.unreadCount > 0"
                   class="unread-count animate-badge-pop text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1 flex-shrink-0 ml-2 font-semibold"

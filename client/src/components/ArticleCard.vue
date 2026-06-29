@@ -34,7 +34,7 @@
 
         <p v-if="article.matchType === 'content' && article.contentSnippet" class="content-snippet search-snippet" v-html="sanitizeHtml(article.contentSnippet)" />
         <p v-else-if="displayContent" class="content-snippet">
-          <span class="snippet-text">{{ displayContent }}</span><button v-if="hasContent" class="read-more" @click.stop="navigateToDetail">查看全文</button>
+          <span class="snippet-text">{{ displayContent }}</span><button v-if="hasContent" class="read-more" @click.stop="navigateToDetail">全文</button>
         </p>
       </div>
 
@@ -315,28 +315,8 @@ const shareToQQ = () => { showShareMenu.value = false; window.open(`https://conn
   display: inline;
   word-break: break-word;
 }
-.content-snippet .read-more {
-  /* inline-block 紧跟文本流,不会强制换行(满足"不占用新的一行");
-     float: right 让按钮始终贴右显示,文本会自动在按钮前换行;
-     配合父级 max-height:2.7em + overflow:hidden 实现 2 行截断;
-     不再用 position:absolute 避免遮挡文字 */
-  float: right;
-  display: inline-block;
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--zh-primary);
-  font-weight: 500;
-  background: var(--zh-bg-elevated);
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.content-snippet .read-more:hover { text-decoration: underline; }
-@media (min-width: 768px) { .content-snippet .read-more { font-size: 12px; } }
 
-/* 独立 .read-more 规则:未在 .content-snippet 内时也使用相同基础样式(避免被全局样式覆盖) */
+/* 查看全文按钮 - 紧跟 snippet-text 末尾 */
 .read-more {
   display: inline-block;
   font-size: 12px;
@@ -345,19 +325,22 @@ const shareToQQ = () => { showShareMenu.value = false; window.open(`https://conn
   background: none;
   border: none;
   padding: 0;
+  margin: 0;
+  min-height: 0;
+  min-width: 0;
   cursor: pointer;
   white-space: nowrap;
   line-height: 1.35;
 }
+.read-more:hover { text-decoration: underline; }
 
 /* 封面图 */
 .cover-image-wrap {
-  display: none;
-  width: 72px;
-  height: 56px;
+  width: 60px;
+  height: 46px;
   flex-shrink: 0;
 }
-@media (min-width: 640px) { .cover-image-wrap { display: block; } }
+@media (min-width: 640px) { .cover-image-wrap { width: 72px; height: 56px; } }
 @media (min-width: 768px) { .cover-image-wrap { width: 120px; height: 88px; } }
 
 .cover-image {
@@ -421,6 +404,8 @@ const shareToQQ = () => { showShareMenu.value = false; window.open(`https://conn
   padding: 0 4px;
   line-height: 1;
   height: 100%;
+  min-height: 0;
+  min-width: 0;
   font-size: 12px;
   color: var(--zh-text-tertiary);
   background: none;

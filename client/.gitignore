@@ -4,8 +4,6 @@ node_modules
 .pnp.js
 
 # 构建输出
-.nuxt
-.output
 dist
 
 # 环境变量

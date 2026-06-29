@@ -379,7 +379,7 @@ export interface UserSettingsLocal {
   fontSize: 'small' | 'medium' | 'large'
   language: string
   autoLoadImages: boolean
-  defaultSort: 'latest' | 'hot'
+  defaultSort: 'recommend' | 'latest' | 'hot'
 }
 
 /** 用户设置接口（合并服务器和本地设置） */

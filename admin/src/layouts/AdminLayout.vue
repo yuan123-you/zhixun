@@ -56,6 +56,7 @@
           </template>
           <el-menu-item index="/sensitive-words">敏感词管理</el-menu-item>
           <el-menu-item index="/operation-logs">操作日志</el-menu-item>
+          <el-menu-item index="/notifications">通知管理</el-menu-item>
           <el-menu-item index="/settings">系统设置</el-menu-item>
         </el-sub-menu>
       </el-menu>
@@ -82,7 +83,7 @@
         <div class="header-right">
           <!-- 通知 -->
           <el-badge :value="3" class="notification-badge">
-            <el-icon :size="20" class="header-icon"><Bell /></el-icon>
+            <el-icon :size="20" class="header-icon" @click="router.push('/notifications')"><Bell /></el-icon>
           </el-badge>
           <!-- 用户菜单 -->
           <el-dropdown trigger="click" @command="handleUserCommand">
@@ -110,16 +111,49 @@
       </el-main>
     </el-container>
 
+    <!-- 修改密码弹窗 -->
+    <el-dialog
+      v-model="passwordDialogVisible"
+      title="修改密码"
+      width="420px"
+      :close-on-click-modal="false"
+      @closed="resetPasswordForm"
+    >
+      <el-form
+        ref="passwordFormRef"
+        :model="passwordForm"
+        :rules="passwordRules"
+        label-width="90px"
+      >
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password placeholder="请输入原密码" />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="请输入新密码（至少6位）" />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="passwordSaving" @click="handleChangePassword">确认修改</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 返回顶部 -->
     <BackToTop />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
+import { changePasswordApi } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -140,14 +174,76 @@ function toggleSidebar() {
   appStore.toggleSidebar()
 }
 
+// ========== 修改密码 ==========
+
+const passwordDialogVisible = ref(false)
+const passwordFormRef = ref<FormInstance>()
+const passwordSaving = ref(false)
+
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const passwordRules: FormRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string, callback: Function) => {
+        if (value !== passwordForm.newPassword) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
+}
+
+function resetPasswordForm() {
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordFormRef.value?.resetFields()
+}
+
+async function handleChangePassword() {
+  const valid = await passwordFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  passwordSaving.value = true
+  try {
+    await changePasswordApi({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword,
+    })
+    ElMessage.success('密码修改成功，请重新登录')
+    passwordDialogVisible.value = false
+    resetPasswordForm()
+    userStore.logout()
+  } catch {
+    // 错误已在拦截器中处理
+  } finally {
+    passwordSaving.value = false
+  }
+}
+
 /** 用户菜单操作 */
 function handleUserCommand(command: string) {
   switch (command) {
     case 'profile':
-      // 跳转个人中心
+      router.push('/profile')
       break
     case 'password':
-      // 打开修改密码对话框
+      resetPasswordForm()
+      passwordDialogVisible.value = true
       break
     case 'logout':
       userStore.logout()

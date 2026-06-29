@@ -10,6 +10,8 @@ import com.zhixun.common.result.ErrorCode;
 import com.zhixun.entity.*;
 import com.zhixun.mapper.*;
 import com.zhixun.service.GroupService;
+import com.zhixun.vo.GroupJoinRequestVO;
+import com.zhixun.vo.GroupMemberVO;
 import com.zhixun.vo.GroupMessageVO;
 import com.zhixun.vo.GroupVO;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupMapper groupMapper;
     private final GroupMemberMapper groupMemberMapper;
     private final GroupMessageMapper groupMessageMapper;
+    private final GroupJoinRequestMapper groupJoinRequestMapper;
     private final UserMapper userMapper;
 
     @Override @Transactional
@@ -201,23 +204,84 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupMessageVO sendMessage(Long userId, GroupMessageRequest request) {
+        // 校验发送者是否为群组成员
+        if (!isMember(userId, request.getGroupId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "非群组成员无法发送消息");
+        }
         GroupMessage msg = new GroupMessage();
-        msg.setGroupId(request.getGroupId()); msg.setSenderId(userId);
+        msg.setGroupId(request.getGroupId());
+        msg.setSenderId(userId);
         msg.setContent(request.getContent());
         msg.setMessageType(request.getMessageType() != null ? request.getMessageType() : "text");
+        // 填充发送者信息
+        User sender = userMapper.selectById(userId);
+        if (sender != null) {
+            msg.setSenderName(sender.getNickname());
+            msg.setSenderAvatar(sender.getAvatar());
+        } else {
+            msg.setSenderName("未知用户");
+        }
         groupMessageMapper.insert(msg);
         return toMessageVO(msg);
     }
 
     @Override
     public List<GroupMessageVO> getMessages(Long groupId, Long userId, Long offset, int limit) {
+        // 校验是否为群组成员
+        if (!isMember(userId, groupId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "非群组成员无法查看消息");
+        }
         LambdaQueryWrapper<GroupMessage> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(GroupMessage::getGroupId, groupId)
                 .lt(GroupMessage::getId, offset > 0 ? offset : Long.MAX_VALUE)
                 .orderByDesc(GroupMessage::getId)
                 .last("LIMIT " + limit);
         List<GroupMessage> msgs = groupMessageMapper.selectList(wrapper);
+        // 填充每条消息的发送者信息（transient字段未持久化）
+        for (GroupMessage m : msgs) {
+            if (m.getSenderName() == null || m.getSenderName().isEmpty()) {
+                User s = userMapper.selectById(m.getSenderId());
+                if (s != null) {
+                    m.setSenderName(s.getNickname());
+                    m.setSenderAvatar(s.getAvatar());
+                }
+            }
+        }
         return msgs.stream().map(this::toMessageVO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GroupMemberVO> getMembers(Long groupId, Long userId) {
+        if (!isMember(userId, groupId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "非群组成员无法查看成员列表");
+        }
+        LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
+        w.eq(GroupMember::getGroupId, groupId).orderByAsc(GroupMember::getRole).orderByAsc(GroupMember::getJoinedAt);
+        List<GroupMember> members = groupMemberMapper.selectList(w);
+        return members.stream().map(m -> {
+            GroupMemberVO vo = new GroupMemberVO();
+            vo.setId(m.getId());
+            vo.setUserId(m.getUserId());
+            vo.setGroupId(m.getGroupId());
+            vo.setRole(m.getRole());
+            vo.setNickname(m.getNickname());
+            vo.setJoinedAt(m.getJoinedAt());
+            User u = userMapper.selectById(m.getUserId());
+            if (u != null) {
+                vo.setUserName(u.getNickname());
+                vo.setUserAvatar(u.getAvatar());
+            }
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 检查用户是否为群组成员
+     */
+    private boolean isMember(Long userId, Long groupId) {
+        LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
+        w.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, userId);
+        return groupMemberMapper.selectCount(w) > 0;
     }
 
     @Override
@@ -250,5 +314,109 @@ public class GroupServiceImpl implements GroupService {
         vo.setSenderName(m.getSenderName()); vo.setSenderAvatar(m.getSenderAvatar());
         vo.setContent(m.getContent()); vo.setMessageType(m.getMessageType());
         vo.setCreatedAt(m.getCreatedAt()); return vo;
+    }
+
+    @Override @Transactional
+    public void requestJoin(Long userId, Long groupId, String message) {
+        GroupInfo g = groupMapper.selectById(groupId);
+        if (g == null) throw new BusinessException(ErrorCode.NOT_FOUND, "群组不存在");
+        if (g.getStatus() == GroupInfo.STATUS_DISMISSED) throw new BusinessException(ErrorCode.BUSINESS_ERROR, "群组已解散");
+        // 已经是成员
+        if (isMember(userId, groupId)) {
+            throw new BusinessException(ErrorCode.CONFLICT, "您已是该群成员");
+        }
+        // 检查是否有待审批的申请
+        LambdaQueryWrapper<GroupJoinRequest> w = new LambdaQueryWrapper<>();
+        w.eq(GroupJoinRequest::getGroupId, groupId)
+         .eq(GroupJoinRequest::getUserId, userId)
+         .eq(GroupJoinRequest::getStatus, GroupJoinRequest.STATUS_PENDING);
+        if (groupJoinRequestMapper.selectCount(w) > 0) {
+            throw new BusinessException(ErrorCode.CONFLICT, "您已提交过入群申请，请等待审批");
+        }
+        GroupJoinRequest req = new GroupJoinRequest();
+        req.setGroupId(groupId);
+        req.setUserId(userId);
+        req.setMessage(message != null ? message : "");
+        req.setStatus(GroupJoinRequest.STATUS_PENDING);
+        req.setCreatedAt(java.time.LocalDateTime.now());
+        groupJoinRequestMapper.insert(req);
+    }
+
+    @Override @Transactional
+    public void approveJoinRequest(Long ownerId, Long requestId) {
+        GroupJoinRequest req = groupJoinRequestMapper.selectById(requestId);
+        if (req == null) throw new BusinessException(ErrorCode.NOT_FOUND, "申请不存在");
+        if (req.getStatus() != GroupJoinRequest.STATUS_PENDING) {
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "该申请已被处理");
+        }
+        GroupInfo g = groupMapper.selectById(req.getGroupId());
+        if (g == null || !g.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权审批入群申请");
+        }
+        // 更新申请状态
+        req.setStatus(GroupJoinRequest.STATUS_APPROVED);
+        groupJoinRequestMapper.updateById(req);
+        // 添加为群成员
+        if (!isMember(req.getUserId(), req.getGroupId())) {
+            GroupMember gm = new GroupMember();
+            gm.setGroupId(req.getGroupId());
+            gm.setUserId(req.getUserId());
+            gm.setRole(GroupMember.ROLE_MEMBER);
+            gm.setJoinedAt(java.time.LocalDateTime.now());
+            groupMemberMapper.insert(gm);
+            g.setMemberCount(g.getMemberCount() + 1);
+            groupMapper.updateById(g);
+        }
+    }
+
+    @Override @Transactional
+    public void rejectJoinRequest(Long ownerId, Long requestId) {
+        GroupJoinRequest req = groupJoinRequestMapper.selectById(requestId);
+        if (req == null) throw new BusinessException(ErrorCode.NOT_FOUND, "申请不存在");
+        if (req.getStatus() != GroupJoinRequest.STATUS_PENDING) {
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "该申请已被处理");
+        }
+        GroupInfo g = groupMapper.selectById(req.getGroupId());
+        if (g == null || !g.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权审批入群申请");
+        }
+        req.setStatus(GroupJoinRequest.STATUS_REJECTED);
+        groupJoinRequestMapper.updateById(req);
+    }
+
+    @Override
+    public List<GroupJoinRequestVO> getPendingRequests(Long groupId, Long userId) {
+        GroupInfo g = groupMapper.selectById(groupId);
+        if (g == null) throw new BusinessException(ErrorCode.NOT_FOUND, "群组不存在");
+        // 只有群主和管理员可以查看待审批列表
+        if (!g.getOwnerId().equals(userId)) {
+            LambdaQueryWrapper<GroupMember> mw = new LambdaQueryWrapper<>();
+            mw.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, userId);
+            GroupMember member = groupMemberMapper.selectOne(mw);
+            if (member == null || member.getRole() < GroupMember.ROLE_ADMIN) {
+                throw new BusinessException(ErrorCode.FORBIDDEN, "无权查看入群申请");
+            }
+        }
+        LambdaQueryWrapper<GroupJoinRequest> w = new LambdaQueryWrapper<>();
+        w.eq(GroupJoinRequest::getGroupId, groupId)
+         .eq(GroupJoinRequest::getStatus, GroupJoinRequest.STATUS_PENDING)
+         .orderByDesc(GroupJoinRequest::getCreatedAt);
+        List<GroupJoinRequest> requests = groupJoinRequestMapper.selectList(w);
+        return requests.stream().map(r -> {
+            GroupJoinRequestVO vo = new GroupJoinRequestVO();
+            vo.setId(r.getId());
+            vo.setGroupId(r.getGroupId());
+            vo.setUserId(r.getUserId());
+            vo.setMessage(r.getMessage());
+            vo.setStatus(r.getStatus());
+            vo.setCreatedAt(r.getCreatedAt());
+            User u = userMapper.selectById(r.getUserId());
+            if (u != null) {
+                vo.setUserName(u.getNickname());
+                vo.setUserAvatar(u.getAvatar());
+            }
+            vo.setGroupName(g.getName());
+            return vo;
+        }).collect(Collectors.toList());
     }
 }

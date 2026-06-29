@@ -54,12 +54,13 @@ function onInput(e: string | Event) {
   }
 }
 
-function onKeydown(e: KeyboardEvent) {
+function onKeydown(e: Event | KeyboardEvent) {
+  const ke = e as KeyboardEvent
   if (!showMentionList.value) return
-  if (e.key === 'ArrowDown') { e.preventDefault(); mentionIndex.value = Math.min(mentionIndex.value + 1, mentionResults.value.length - 1) }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); mentionIndex.value = Math.max(mentionIndex.value - 1, -1) }
-  else if (e.key === 'Enter' && mentionIndex.value >= 0) { e.preventDefault(); selectUser(mentionResults.value[mentionIndex.value]) }
-  else if (e.key === 'Escape') { showMentionList.value = false }
+  if (ke.key === 'ArrowDown') { ke.preventDefault(); mentionIndex.value = Math.min(mentionIndex.value + 1, mentionResults.value.length - 1) }
+  else if (ke.key === 'ArrowUp') { ke.preventDefault(); mentionIndex.value = Math.max(mentionIndex.value - 1, -1) }
+  else if (ke.key === 'Enter' && mentionIndex.value >= 0) { ke.preventDefault(); selectUser(mentionResults.value[mentionIndex.value]) }
+  else if (ke.key === 'Escape') { showMentionList.value = false }
 }
 
 function selectUser(user: any) {

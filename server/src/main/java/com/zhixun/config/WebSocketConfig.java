@@ -2,6 +2,7 @@ package com.zhixun.config;
 
 import com.zhixun.common.util.JwtUtil;
 import com.zhixun.websocket.ChatWebSocketHandler;
+import com.zhixun.websocket.GroupChatWebSocketHandler;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,16 +31,19 @@ import java.util.Map;
 public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBrokerConfigurer {
 
     private final ChatWebSocketHandler chatWebSocketHandler;
+    private final GroupChatWebSocketHandler groupChatWebSocketHandler;
     private final JwtUtil jwtUtil;
 
     // ========== WebSocketConfigurer（原始 WebSocket） ==========
 
     /**
-     * 注册原始 WebSocket 端点（用于私信功能）
+     * 注册原始 WebSocket 端点（用于私信和群聊功能）
      */
     @Override
     public void registerWebSocketHandlers(org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry registry) {
         registry.addHandler(chatWebSocketHandler, "/ws/chat")
+                .setAllowedOriginPatterns("*");
+        registry.addHandler(groupChatWebSocketHandler, "/ws/group-chat")
                 .setAllowedOriginPatterns("*");
     }
 

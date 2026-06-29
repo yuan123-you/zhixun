@@ -158,10 +158,10 @@ const confirmJump = async () => {
   confirmVisible.value = false
   const platform = pendingPlatform.value
   if (platform === 'wechat') { await handleWechatShare() }
-  else { handleQQOrWeiboShare(platform) }
+  else { handleQQOrWeiboShare(platform as 'qq' | 'weibo' | 'link') }
 }
 
-const handleQQOrWeiboShare = (platform: 'qq' | 'weibo') => {
+const handleQQOrWeiboShare = (platform: 'qq' | 'weibo' | 'link') => {
   try {
     const shareUrl = platform === 'qq' ? buildQQShareUrl(props.params) : buildWeiboShareUrl(props.params)
     const win = window.open(shareUrl, '_blank', 'noopener,noreferrer')

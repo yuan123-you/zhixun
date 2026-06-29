@@ -125,7 +125,7 @@ export const useMessageStore = defineStore('message', () => {
     try {
       const { data } = await socialApi.getConversations({ page: 1, pageSize: 100 })
       if (data.code === 0 || data.code === 200) {
-        const rawList = (data.data.list || []) as RawConversation[]
+        const rawList = (data.data.list || []) as unknown as RawConversation[]
         conversations.value = rawList.map(transformConversation)
         const ids = conversations.value.map(c => c.user.id)
         if (ids.length > 0) {
@@ -152,7 +152,7 @@ export const useMessageStore = defineStore('message', () => {
     try {
       const { data } = await socialApi.getMessages(userId, { page, pageSize: 30 })
       if (data.code === 0 || data.code === 200) {
-        const rawMsgs = (data.data.list || []) as RawMessage[]
+        const rawMsgs = (data.data.list || []) as unknown as RawMessage[]
         const msgs = rawMsgs.map(transformMessage)
         // 后端已按时间正序返回（最早在前），page=1是最新一页，page>1是更早的消息
         if (page === 1) {

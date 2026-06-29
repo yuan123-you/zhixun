@@ -4,6 +4,7 @@ import com.zhixun.common.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -133,9 +134,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 从请求头中解析令牌
      */
     private String resolveToken(HttpServletRequest request) {
+        // 优先从 Authorization 头读取（常规 XHR / fetch 请求）
         String bearerToken = request.getHeader(headerString);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(tokenPrefix + " ")) {
             return bearerToken.substring((tokenPrefix + " ").length());
+        }
+        // 回退：从 httpOnly Cookie 读取（登录时 AuthController 同时写入 accessToken Cookie，
+        // 供 navigator.sendBeacon 等无法自定义 Header 的场景使用）
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName())) {
+                    String v = cookie.getValue();
+                    if (StringUtils.hasText(v)) return v;
+                }
+            }
         }
         return null;
     }

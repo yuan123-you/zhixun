@@ -48,7 +48,7 @@ function showAuthToast() {
   }, 2000)
 }
 
-// 路由配置（基于原 Nuxt pages/ 文件路由迁移）
+// 路由配置
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -329,7 +329,11 @@ const router = createRouter({
     if (_from.path === to.path) {
       return false
     }
-    return { left: 0, top: 0 }
+    // 显式指定 behavior:'instant'，覆盖 Tailwind CSS 3.4 preflight 的 scroll-behavior:smooth。
+    // 否则 window.scrollTo 会触发 300~500ms 的平滑滚动，而页面过渡仅 180ms，
+    // 导致旧页面在淡出过程中缓慢上移，视觉上"残留原内容"。
+    // 'instant' 是浏览器实际支持的值，但 TS 的 ScrollBehavior 类型未包含，故用 as any。
+    return { left: 0, top: 0, behavior: 'instant' as any }
   },
 })
 

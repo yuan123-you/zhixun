@@ -7,6 +7,8 @@ import com.zhixun.dto.group.GroupCreateRequest;
 import com.zhixun.dto.group.GroupInviteRequest;
 import com.zhixun.dto.group.GroupMessageRequest;
 import com.zhixun.service.GroupService;
+import com.zhixun.vo.GroupJoinRequestVO;
+import com.zhixun.vo.GroupMemberVO;
 import com.zhixun.vo.GroupMessageVO;
 import com.zhixun.vo.GroupVO;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -46,7 +48,8 @@ public class GroupController {
     @PostMapping("/{id}/join")
     @PreAuthorize("isAuthenticated()")
     public R<Void> join(@PathVariable Long id) {
-        groupService.joinGroup(securityUtil.getCurrentUserId(), id);
+        // 已废弃直接加入，统一走入群申请审批流程
+        groupService.requestJoin(securityUtil.getCurrentUserId(), id, null);
         return R.ok();
     }
 
@@ -93,6 +96,12 @@ public class GroupController {
         return R.ok(groupService.getMessages(groupId, securityUtil.getCurrentUserId(), offset, limit));
     }
 
+    @GetMapping("/{groupId}/members")
+    @PreAuthorize("isAuthenticated()")
+    public R<List<GroupMemberVO>> members(@PathVariable Long groupId) {
+        return R.ok(groupService.getMembers(groupId, securityUtil.getCurrentUserId()));
+    }
+
     @PostMapping("/messages")
     @PreAuthorize("isAuthenticated()")
     public R<GroupMessageVO> sendMessage(@Valid @RequestBody GroupMessageRequest request) {
@@ -105,5 +114,32 @@ public class GroupController {
                                           @RequestParam(defaultValue = "20") Integer pageSize) {
         List<GroupVO> list = groupService.searchGroups(keyword, page, pageSize);
         return R.ok(new PageResult<>(list, (long) list.size(), page, pageSize));
+    }
+
+    @PostMapping("/{id}/request-join")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> requestJoin(@PathVariable Long id, @RequestParam(required = false) String message) {
+        groupService.requestJoin(securityUtil.getCurrentUserId(), id, message);
+        return R.ok();
+    }
+
+    @PostMapping("/requests/{requestId}/approve")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> approveRequest(@PathVariable Long requestId) {
+        groupService.approveJoinRequest(securityUtil.getCurrentUserId(), requestId);
+        return R.ok();
+    }
+
+    @PostMapping("/requests/{requestId}/reject")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> rejectRequest(@PathVariable Long requestId) {
+        groupService.rejectJoinRequest(securityUtil.getCurrentUserId(), requestId);
+        return R.ok();
+    }
+
+    @GetMapping("/{groupId}/requests")
+    @PreAuthorize("isAuthenticated()")
+    public R<List<GroupJoinRequestVO>> pendingRequests(@PathVariable Long groupId) {
+        return R.ok(groupService.getPendingRequests(groupId, securityUtil.getCurrentUserId()));
     }
 }

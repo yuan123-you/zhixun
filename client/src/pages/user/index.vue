@@ -110,7 +110,7 @@
             </div>
             <div v-else class="article-grid">
               <div v-for="(article, idx) in publishedArticles" :key="article.id" class="article-grid-item" :style="{ animationDelay: `${idx * 0.05}s` }">
-                <ArticleGridCard :article="article" :to="`/user/preview/${article.id}`" />
+                <ArticleGridCard :article="article" :to="`/articles/${article.id}`" />
                 <div class="grid-hover-overlay">
                   <div class="hover-overlay-content">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,13 +280,13 @@
 
           <!-- 历史 -->
           <ErrorRetry v-if="activeTab === 'history' && tabError && !historyArticles.length && !showLocalHistory" :message="tabError" :on-retry="retryTabData" />
-          <!-- 本地历史回退：服务器不可达时显示本地浏览记录 -->
+          <!-- 历史：纯本地浏览记录（仅存于本设备） -->
           <div v-if="activeTab === 'history' && showLocalHistory" class="local-history">
             <div class="local-history-notice">
               <svg class="local-history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
-              <span>显示本地浏览记录，连接恢复后自动同步</span>
+              <span>浏览记录仅保存在本设备</span>
             </div>
             <div v-for="entry in localHistoryEntries" :key="entry.articleId" class="local-history-item">
               <RouterLink :to="`/articles/${entry.articleId}`" class="local-history-link">
@@ -613,29 +613,25 @@ const loadTabData = async () => {
         break
       }
       case 'history': {
-        // 先同步本地浏览记录到服务器，确保历史列表数据完整
-        const { syncToServer, getLocalHistory } = useViewHistory()
-        await syncToServer()
-        try {
-          const { data } = await userApi.getViewHistory(params)
-          list = data?.data?.list || []
-          total = data?.data?.total || list.length
-          historyArticles.value = list
-          hasMore.value = list.length < total
+        // 纯本地方案：浏览记录仅存于 localStorage，不再请求服务器
+        // 保证“点击作品 → 历史页”在任何网络/后端状态下都能立即看到
+        const { getLocalHistory } = useViewHistory()
+        const localEntries = getLocalHistory()
+        if (localEntries.length > 0) {
+          localHistoryEntries.value = localEntries
+            .sort((a, b) => b.visitedAt - a.visitedAt)
+            .slice(0, 50)
+          showLocalHistory.value = true
+          historyArticles.value = []
+          hasMore.value = false
+          tabError.value = null
+        } else {
+          // 没有任何本地记录时，显示空态而非错误
           showLocalHistory.value = false
           localHistoryEntries.value = []
-        } catch {
-          // 服务器不可达时，回退到本地浏览记录
-          const localEntries = getLocalHistory()
-          if (localEntries.length > 0) {
-            localHistoryEntries.value = localEntries
-              .sort((a, b) => b.visitedAt - a.visitedAt)
-              .slice(0, 50)
-            showLocalHistory.value = true
-            tabError.value = null
-          } else {
-            tabError.value = '数据加载失败，请稍后重试'
-          }
+          historyArticles.value = []
+          hasMore.value = false
+          tabError.value = null
         }
         break
       }
@@ -698,13 +694,7 @@ const loadMore = async () => {
         break
       }
       case 'history': {
-        const { syncToServer } = useViewHistory()
-        await syncToServer()
-        const { data } = await userApi.getViewHistory(params)
-        list = data?.data?.list || []
-        total = data?.data?.total || list.length
-        historyArticles.value.push(...list)
-        hasMore.value = historyArticles.value.length < total
+        // 纯本地方案：没有分页，loadMore 直接跳过
         break
       }
     }

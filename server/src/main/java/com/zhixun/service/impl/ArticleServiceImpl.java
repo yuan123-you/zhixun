@@ -243,6 +243,12 @@ public class ArticleServiceImpl implements ArticleService {
             } catch (Exception e) {
                 log.error("推送粉丝时间线失败, articleId={}: {}", article.getId(), e.getMessage());
             }
+            // 清除全局 Feed 缓存（最新/热门/推荐），确保新作品立即出现在主页列表
+            try {
+                feedService.clearFeedCaches();
+            } catch (Exception e) {
+                log.warn("清除Feed缓存失败, articleId={}: {}", article.getId(), e.getMessage());
+            }
         }
 
         return article.getId();
@@ -982,6 +988,8 @@ public class ArticleServiceImpl implements ArticleService {
             if (!listKeys.isEmpty()) {
                 stringRedisTemplate.delete(listKeys);
             }
+            // 清除全局 Feed 缓存（最新/热门/推荐）
+            feedService.clearFeedCaches();
         } catch (Exception e) {
             log.warn("清除作品 {} 缓存失败: {}", articleId, e.getMessage());
         }

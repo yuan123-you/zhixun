@@ -501,7 +501,17 @@ async function loadDashboard() {
     const result = await dashboardCache.request('/admin/dashboard/overview', {
       period: period.value,
     } as any)
-    dashboardData.value = result
+    // 合并默认值，防止后端返回不完整数据时 computed 属性访问 undefined 崩溃
+    dashboardData.value = {
+      ...dashboardData.value,
+      ...result,
+      trend: {
+        dates: [],
+        views: [],
+        users: [],
+        ...(result as any)?.trend,
+      },
+    }
   } catch {
     // 错误已在拦截器中处理
   }

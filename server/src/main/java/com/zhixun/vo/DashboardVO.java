@@ -1,6 +1,5 @@
 package com.zhixun.vo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -13,55 +12,42 @@ import java.util.List;
 public class DashboardVO {
 
     /** 用户总数 */
-    @JsonProperty("user_total")
     private Long userTotal;
 
     /** 作品总数 */
-    @JsonProperty("article_total")
     private Long articleTotal;
 
     /** 今日日活用户数 */
-    @JsonProperty("today_dau")
     private Long todayDau;
 
     /** 今日浏览量 */
-    @JsonProperty("today_view")
     private Long todayView;
 
     /** 今日点赞数 */
-    @JsonProperty("today_like")
     private Long todayLike;
 
     /** 今日评论数 */
-    @JsonProperty("today_comment")
     private Long todayComment;
 
     /** 近7天趋势数据 */
-    @JsonProperty("trend")
     private TrendData trend;
 
     /** 用户留存率数据（第1-7天） */
-    @JsonProperty("retention_rates")
     private List<RetentionRate> retentionRates;
 
     /** 用户活跃度分布 */
-    @JsonProperty("activity_distributions")
     private List<ActivityDistribution> activityDistributions;
 
     /** 增长趋势数据（支持日/周/月维度） */
-    @JsonProperty("growth_trends")
     private List<GrowthTrend> growthTrends;
 
     /** 分类作品分布 */
-    @JsonProperty("category_distributions")
     private List<CategoryDistribution> categoryDistributions;
 
     /** 热门作品排行 */
-    @JsonProperty("hot_article_ranks")
     private List<HotArticleRank> hotArticleRanks;
 
     /** 创作者排行 */
-    @JsonProperty("creator_ranks")
     private List<CreatorRank> creatorRanks;
 
     /**

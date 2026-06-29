@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -54,6 +55,7 @@ import java.util.stream.Collectors;
  * - 冷启动处理：新用户使用偏好分类热门作品 + 全局热门 + 随机探索
  * - 多样性重排：MMR 启发的重排，避免推荐结果同质化
  * - 时效性提升：近期发布作品获得额外加分
+ * - 真正刷新：refresh=1 时清除子服务缓存并引入随机性，每次刷新展示不同作品
  */
 @Slf4j
 @Service
@@ -117,7 +119,10 @@ public class FeedServiceImpl implements FeedService {
 
         // 检查是否需要刷新批次
         String refreshKey = null;
-        if (refresh != null && refresh == 1) {
+        boolean isRefresh = refresh != null && refresh == 1;
+        if (isRefresh) {
+            // 清除子服务缓存，确保推荐管线产出真正新鲜的结果
+            invalidateRecommendCaches(userId);
             // 生成新的 refresh_key
             refreshKey = UUID.randomUUID().toString().replace("-", "");
             try {
@@ -197,7 +202,6 @@ public class FeedServiceImpl implements FeedService {
         // 缓存未命中，查询数据库
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
-                .orderByDesc(Article::getIsTop)
                 .orderByDesc(Article::getCreatedAt);
 
         Page<Article> articlePage = new Page<>(page, pageSize);
@@ -384,7 +388,53 @@ public class FeedServiceImpl implements FeedService {
         }
     }
 
+    @Override
+    public void clearFeedCaches() {
+        try {
+            Set<String> keysToDelete = new HashSet<>();
+            String[] patterns = {
+                    LATEST_FEED_KEY_PREFIX + "*",
+                    HOT_FEED_KEY_PREFIX + "*",
+                    RECOMMEND_KEY_PREFIX + "*"
+            };
+            for (String pattern : patterns) {
+                try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                        org.springframework.data.redis.core.ScanOptions.scanOptions()
+                                .match(pattern)
+                                .count(100)
+                                .build())) {
+                    while (cursor.hasNext()) {
+                        keysToDelete.add(cursor.next());
+                    }
+                }
+            }
+            if (!keysToDelete.isEmpty()) {
+                stringRedisTemplate.delete(keysToDelete);
+                log.info("已清除 Feed 缓存: {} 个 key", keysToDelete.size());
+            }
+        } catch (Exception e) {
+            log.warn("清除 Feed 缓存失败（不影响主流程）: {}", e.getMessage());
+        }
+    }
+
     // ========== 内部方法 ==========
+
+    /**
+     * 清除用户的推荐子服务缓存（协同过滤 + 内容相似度）
+     * 在 refresh=1 时调用，确保推荐管线从源头产出全新结果
+     */
+    private void invalidateRecommendCaches(Long userId) {
+        try {
+            // 清除协同过滤缓存（cf:recommend:{userId} + cf:similarity:{userId}）
+            stringRedisTemplate.delete("cf:recommend:" + userId);
+            stringRedisTemplate.delete("cf:similarity:" + userId);
+            // 清除内容相似度推荐缓存（cb:recommend:{userId}）
+            stringRedisTemplate.delete("cb:recommend:" + userId);
+            log.debug("已清除用户推荐子缓存: userId={}", userId);
+        } catch (Exception e) {
+            log.warn("清除推荐子缓存失败（不影响主流程）: userId={}, error={}", userId, e.getMessage());
+        }
+    }
 
     /**
      * 从数据库查询关注动态
@@ -611,7 +661,7 @@ public class FeedServiceImpl implements FeedService {
             articleIds.addAll(coldStartIds);
             log.debug("冷启动推荐作品数: {}", coldStartIds.size());
         } else if (articleIds.size() < 20) {
-            // Bandit冷启动推荐
+            // Bandit冷启动推荐（随机采样）
             try {
                 List<Long> banditCategoryIds = coldStartBanditService.recommendCategories(userId, 5);
                 if (!CollectionUtils.isEmpty(banditCategoryIds)) {
@@ -621,12 +671,16 @@ public class FeedServiceImpl implements FeedService {
                             .in(Article::getCategoryId, banditCategoryIds)
                             .notIn(!excludeIds.isEmpty(), Article::getId, excludeIds)
                             .orderByDesc(Article::getCreatedAt)
-                            .last("LIMIT 30");
-                    List<Article> banditArticles = articleMapper.selectList(banditWrapper);
-                    List<Long> banditArticleIds = banditArticles.stream()
-                            .map(Article::getId).collect(Collectors.toList());
-                    articleIds.addAll(banditArticleIds);
-                    log.debug("Bandit冷启动推荐作品数: {}", banditArticleIds.size());
+                            .last("LIMIT 80");
+                    List<Article> banditCandidates = articleMapper.selectList(banditWrapper);
+                    if (!banditCandidates.isEmpty()) {
+                        Collections.shuffle(banditCandidates);
+                        List<Long> banditArticleIds = banditCandidates.stream()
+                                .limit(30)
+                                .map(Article::getId).collect(Collectors.toList());
+                        articleIds.addAll(banditArticleIds);
+                        log.debug("Bandit冷启动推荐作品数: {}", banditArticleIds.size());
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Bandit冷启动推荐异常: {}", e.getMessage());
@@ -654,15 +708,30 @@ public class FeedServiceImpl implements FeedService {
             articleIds.addAll(preferenceIds);
         }
 
-        // ========== 第五阶段：热门作品补充 ==========
+        // ========== 第五阶段：热门作品补充（带随机采样） ==========
         if (articleIds.size() < 20) {
+            int need = 50 - articleIds.size();
+            // 拉取 3 倍候选，随机采样以实现每次刷新产出不同作品
             LambdaQueryWrapper<Article> hotWrapper = new LambdaQueryWrapper<>();
             hotWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                     .notIn(!articleIds.isEmpty(), Article::getId, articleIds)
                     .orderByDesc(Article::getViewCount)
-                    .last("LIMIT " + (50 - articleIds.size()));
-            List<Article> hotArticles = articleMapper.selectList(hotWrapper);
-            articleIds.addAll(hotArticles.stream().map(Article::getId).collect(Collectors.toList()));
+                    .last("LIMIT " + (need * 3));
+            List<Article> hotCandidates = articleMapper.selectList(hotWrapper);
+            if (!hotCandidates.isEmpty()) {
+                // 加权随机采样：浏览量越高的作品被选中概率越大，但不保证每次都一样
+                Collections.shuffle(hotCandidates);
+                hotCandidates.sort((a, b) -> {
+                    double scoreA = (a.getViewCount() != null ? a.getViewCount() : 0) + ThreadLocalRandom.current().nextDouble() * 1000;
+                    double scoreB = (b.getViewCount() != null ? b.getViewCount() : 0) + ThreadLocalRandom.current().nextDouble() * 1000;
+                    return Double.compare(scoreB, scoreA);
+                });
+                List<Long> sampledIds = hotCandidates.stream()
+                        .limit(need)
+                        .map(Article::getId)
+                        .collect(Collectors.toList());
+                articleIds.addAll(sampledIds);
+            }
         }
 
         // ========== 第六阶段：多样性重排 + 时效性提升 ==========
@@ -675,15 +744,15 @@ public class FeedServiceImpl implements FeedService {
      * 冷启动用户的推荐逻辑
      * <p>
      * 策略：
-     * 1. 用户注册时选择的偏好分类下的热门作品（50%）
-     * 2. 全局热门作品（30%）
+     * 1. 用户注册时选择的偏好分类下的热门作品（50%）— 随机采样
+     * 2. 全局热门作品（30%）— 随机采样
      * 3. 随机探索作品，来自不同分类（20%）
      */
     private List<Long> getColdStartArticleIds(Long userId, List<Long> excludeIds) {
         List<Long> result = new ArrayList<>();
         Set<Long> allExcludeIds = new HashSet<>(excludeIds);
 
-        // 1. 偏好分类下的热门作品
+        // 1. 偏好分类下的热门作品（随机采样）
         List<UserPreferredCategory> preferredCategories = userPreferredCategoryMapper.selectList(
                 new LambdaQueryWrapper<UserPreferredCategory>().eq(UserPreferredCategory::getUserId, userId));
         List<Long> categoryIds = preferredCategories.stream()
@@ -696,29 +765,35 @@ public class FeedServiceImpl implements FeedService {
                     .in(Article::getCategoryId, categoryIds)
                     .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
                     .orderByDesc(Article::getViewCount)
-                    .orderByDesc(Article::getCreatedAt)
-                    .last("LIMIT 25");
-            List<Article> categoryArticles = articleMapper.selectList(wrapper);
-            List<Long> categoryArticleIds = categoryArticles.stream()
-                    .map(Article::getId)
-                    .collect(Collectors.toList());
-            result.addAll(categoryArticleIds);
-            allExcludeIds.addAll(categoryArticleIds);
+                    .last("LIMIT 60");
+            List<Article> categoryCandidates = articleMapper.selectList(wrapper);
+            if (!categoryCandidates.isEmpty()) {
+                Collections.shuffle(categoryCandidates);
+                List<Long> categoryArticleIds = categoryCandidates.stream()
+                        .limit(25)
+                        .map(Article::getId)
+                        .collect(Collectors.toList());
+                result.addAll(categoryArticleIds);
+                allExcludeIds.addAll(categoryArticleIds);
+            }
         }
 
-        // 2. 全局热门作品
+        // 2. 全局热门作品（随机采样）
         LambdaQueryWrapper<Article> hotWrapper = new LambdaQueryWrapper<>();
         hotWrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                 .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
                 .orderByDesc(Article::getViewCount)
-                .orderByDesc(Article::getLikeCount)
-                .last("LIMIT 15");
-        List<Article> hotArticles = articleMapper.selectList(hotWrapper);
-        List<Long> hotArticleIds = hotArticles.stream()
-                .map(Article::getId)
-                .collect(Collectors.toList());
-        result.addAll(hotArticleIds);
-        allExcludeIds.addAll(hotArticleIds);
+                .last("LIMIT 40");
+        List<Article> hotCandidates = articleMapper.selectList(hotWrapper);
+        if (!hotCandidates.isEmpty()) {
+            Collections.shuffle(hotCandidates);
+            List<Long> hotArticleIds = hotCandidates.stream()
+                    .limit(15)
+                    .map(Article::getId)
+                    .collect(Collectors.toList());
+            result.addAll(hotArticleIds);
+            allExcludeIds.addAll(hotArticleIds);
+        }
 
         // 3. 随机探索作品（来自不同分类）
         int explorationCount = (int) (result.size() * COLD_START_EXPLORATION_RATIO / (1 - COLD_START_EXPLORATION_RATIO));
@@ -763,7 +838,7 @@ public class FeedServiceImpl implements FeedService {
         Map<Long, Article> articleMap = articles.stream()
                 .collect(Collectors.toMap(Article::getId, a -> a, (a, b) -> a));
 
-        // 1. 计算每篇作品的综合分数（基础分 + 时效性加分）
+        // 1. 计算每篇作品的综合分数（基础分 + 时效性加分 + 随机扰动）
         Map<Long, Double> scoreMap = new HashMap<>();
         for (Long articleId : articleIds) {
             Article article = articleMap.get(articleId);
@@ -780,7 +855,10 @@ public class FeedServiceImpl implements FeedService {
             // 时效性加分
             double recencyBoost = calculateRecencyBoost(article);
 
-            scoreMap.put(articleId, baseScore + recencyBoost);
+            // 随机扰动：让分数相近的作品每次刷新排列不同，但不颠覆整体质量排序
+            double perturbation = ThreadLocalRandom.current().nextDouble(-0.08, 0.08);
+
+            scoreMap.put(articleId, baseScore + recencyBoost + perturbation);
         }
 
         // 2. MMR 启发的多样性重排
@@ -854,7 +932,7 @@ public class FeedServiceImpl implements FeedService {
     }
 
     /**
-     * 基于用户偏好的作品推荐（兜底策略）
+     * 基于用户偏好的作品推荐（兜底策略，带随机采样）
      */
     private List<Long> getPreferenceBasedArticleIds(Long userId, List<Long> excludeIds) {
         List<Long> result = new ArrayList<>();
@@ -873,20 +951,26 @@ public class FeedServiceImpl implements FeedService {
                 .map(UserPreferredTag::getTagId)
                 .collect(Collectors.toList());
 
-        // 查询偏好分类下的作品
+        // 查询偏好分类下的作品（拉取 3 倍候选，随机采样）
         if (!CollectionUtils.isEmpty(categoryIds)) {
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                     .in(Article::getCategoryId, categoryIds)
                     .notIn(!excludeIds.isEmpty(), Article::getId, excludeIds)
                     .orderByDesc(Article::getViewCount)
-                    .orderByDesc(Article::getCreatedAt)
-                    .last("LIMIT 100");
-            List<Article> preferredArticles = articleMapper.selectList(wrapper);
-            result.addAll(preferredArticles.stream().map(Article::getId).collect(Collectors.toList()));
+                    .last("LIMIT 200");
+            List<Article> candidates = articleMapper.selectList(wrapper);
+            if (!candidates.isEmpty()) {
+                Collections.shuffle(candidates);
+                List<Long> sampledIds = candidates.stream()
+                        .limit(80)
+                        .map(Article::getId)
+                        .collect(Collectors.toList());
+                result.addAll(sampledIds);
+            }
         }
 
-        // 如果偏好标签不为空，查询包含这些标签的作品并追加
+        // 如果偏好标签不为空，查询包含这些标签的作品并追加（随机采样）
         if (!CollectionUtils.isEmpty(tagIds)) {
             List<ArticleTag> articleTags = articleTagMapper.selectList(
                     new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getTagId, tagIds));
@@ -903,9 +987,15 @@ public class FeedServiceImpl implements FeedService {
                         new LambdaQueryWrapper<Article>()
                                 .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                                 .in(Article::getId, tagArticleIds)
-                                .orderByDesc(Article::getViewCount)
-                                .last("LIMIT 50"));
-                result.addAll(tagArticles.stream().map(Article::getId).collect(Collectors.toList()));
+                                .last("LIMIT 100"));
+                if (!tagArticles.isEmpty()) {
+                    Collections.shuffle(tagArticles);
+                    List<Long> sampledTagIds = tagArticles.stream()
+                            .limit(40)
+                            .map(Article::getId)
+                            .collect(Collectors.toList());
+                    result.addAll(sampledTagIds);
+                }
             }
         }
 

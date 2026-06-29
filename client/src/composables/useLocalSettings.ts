@@ -14,7 +14,7 @@ export const useLocalSettings = () => {
       fontSize: 'medium',
       language: 'zh-CN',
       autoLoadImages: true,
-      defaultSort: 'latest',
+      defaultSort: 'recommend',
       ...(saved || {}),
     }
   }

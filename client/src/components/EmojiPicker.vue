@@ -2,7 +2,7 @@
   <!-- 表情选择器 -->
   <div class="emoji-picker-wrap">
     <el-button text @click="toggle" ref="triggerRef" title="插入表情" class="emoji-trigger">
-      <el-icon :size="14"><Sunny /></el-icon>
+      <span class="emoji-trigger-icon">😀</span>
     </el-button>
     <Teleport to="body">
       <div v-if="open" class="emoji-popup" :style="popupPosition">
@@ -18,11 +18,10 @@
 </template>
 
 <script setup lang="ts">
-import { Sunny } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['select'])
 const open = ref(false)
-const triggerRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<any>(null)
 const popupPosition = reactive({ top: '0px', left: '0px' })
 
 function toggle() {
@@ -50,10 +49,15 @@ function selectEmoji(emoji: string) {
 <style scoped>
 .emoji-picker-wrap { position: relative; display: inline-block; }
 .emoji-trigger {
-  padding: 4px !important;
+  padding: 2px !important;
   min-height: auto !important;
   border-radius: 4px !important;
   transition: all 0.15s;
+}
+.emoji-trigger-icon {
+  font-size: 14px;
+  line-height: 1;
+  display: block;
 }
 .emoji-trigger:hover {
   background: var(--zh-bg-hover, var(--el-fill-color-light)) !important;

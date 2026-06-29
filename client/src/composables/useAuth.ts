@@ -12,7 +12,7 @@ export const useAuth = () => {
       const response = await post<AuthResponse>('/auth/login', data)
       const authData = response.data.data
       userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
-      userStore.setUser(authData.userInfo)
+      userStore.setUser(authData.userInfo as unknown as User)
       return authData
     } catch (error: any) {
       throw new Error(error.message || '登录失败，请检查账号密码')
@@ -30,7 +30,7 @@ export const useAuth = () => {
       })
       const authData = response.data.data
       userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)
-      userStore.setUser(authData.userInfo)
+      userStore.setUser(authData.userInfo as unknown as User)
       return authData
     } catch (error: any) {
       throw new Error(error.message || '注册失败，请稍后重试')

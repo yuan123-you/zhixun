@@ -43,8 +43,12 @@ public class FeedController {
         } catch (Exception e) {
             // 未登录用户
         }
-        // 设置 Cache-Control：公共缓存，最大缓存60秒
-        response.setHeader("Cache-Control", "public, max-age=60");
+        // 刷新时禁用缓存，确保每次刷新都拿到全新的推荐结果
+        if (refresh != null && refresh == 1) {
+            response.setHeader("Cache-Control", "no-cache, no-store");
+        } else {
+            response.setHeader("Cache-Control", "public, max-age=60");
+        }
         return ResponseEntity.ok(R.ok(feedService.getRecommendFeed(userId, refresh, page, pageSize)));
     }
 

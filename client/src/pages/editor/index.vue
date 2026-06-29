@@ -3,62 +3,63 @@
   <div class="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-1.5 2xl:px-2 py-1.5 animate-fade-in-up">
 
     <!-- 页面标题栏 - 渐变背景 -->
-    <div class="editor-header relative overflow-hidden rounded-2xl mb-3 px-4 py-4 md:px-6 md:py-5">
+    <div class="editor-header relative overflow-hidden rounded-xl mb-1.5 md:mb-2 px-3 py-2 md:px-4 md:py-3">
       <!-- 渐变背景装饰 -->
       <div class="absolute inset-0 bg-gradient-to-r from-primary/8 via-primary/5 to-transparent pointer-events-none"></div>
-      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-primary/10 via-transparent to-transparent rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute bottom-0 left-1/4 w-32 h-32 bg-gradient-to-tr from-indigo-400/5 via-transparent to-transparent rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 via-transparent to-transparent rounded-full blur-3xl pointer-events-none"></div>
       <!-- 内容 -->
       <div class="relative flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
-            <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
+            <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </div>
           <div>
-            <h1 class="text-lg md:text-xl font-bold text-[var(--zh-text)]">创作中心</h1>
-            <div class="hidden sm:flex items-center gap-1.5 mt-0.5">
+            <h1 class="text-base md:text-lg font-bold text-[var(--zh-text)]">创作中心</h1>
+            <div class="hidden sm:flex items-center gap-1 mt-0.5">
               <span class="w-1.5 h-1.5 rounded-full" :class="writingStatusDotClass"></span>
-              <span class="text-xs" :class="writingStatusTextClass">{{ writingStatusText }}</span>
+              <span class="text-[10px]" :class="writingStatusTextClass">{{ writingStatusText }}</span>
             </div>
           </div>
         </div>
         <!-- 字数统计 -->
-        <div class="hidden sm:flex items-center gap-3 text-xs text-[var(--zh-text-tertiary)]">
+        <div class="hidden sm:flex items-center gap-2 text-xs text-[var(--zh-text-tertiary)]">
           <div class="text-right">
-            <div class="text-lg font-bold text-[var(--zh-text)] leading-none">{{ form.content.length }}</div>
-            <div class="text-[10px] mt-0.5">正文</div>
+            <div class="text-sm font-bold text-[var(--zh-text)] leading-none">{{ form.content.length }}</div>
+            <div class="text-[9px] mt-0.5">正文</div>
           </div>
-          <span class="w-px h-8 bg-[var(--zh-border)]"></span>
+          <span class="w-px h-6 bg-[var(--zh-border)]"></span>
           <div class="text-right">
-            <div class="text-lg font-bold text-primary leading-none">{{ totalCharCount }}</div>
-            <div class="text-[10px] mt-0.5">总计</div>
+            <div class="text-sm font-bold text-primary leading-none">{{ totalCharCount }}</div>
+            <div class="text-[9px] mt-0.5">总计</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 编辑器区域 -->
-    <div class="mb-3">
+    <div class="mb-1.5">
       <div class="editor-container editor-container-glow border border-[var(--zh-border)] rounded-xl shadow-[var(--zh-shadow-sm)] transition-all duration-300 hover:shadow-[var(--zh-shadow-md)]">
-        <!-- 工具栏 - 优化版：分组视觉 + tooltip浮动提示 + 横向滚动防止溢出 -->
-        <div class="editor-toolbar flex items-center gap-0.5 px-1 py-0 bg-[var(--zh-bg)] border-b border-[var(--zh-border)] flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin">
+        <!-- 工具栏容器 - 两行布局 -->
+        <div class="flex flex-col">
+          <!-- 主工具栏 - 文本格式 + 插入 -->
+          <div class="editor-toolbar flex items-center gap-0.5 px-1 py-0 bg-[var(--zh-bg)] border-b border-[var(--zh-border)] flex-nowrap overflow-x-auto scrollbar-thin">
           <!-- 文本格式组 -->
           <div class="toolbar-group shrink-0">
             <button class="toolbar-btn" data-tooltip="加粗 Ctrl+B" @click="insertMarkdown('**', '**')">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" /></svg>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" /></svg>
               <span class="toolbar-kbd">B</span>
             </button>
             <button class="toolbar-btn" data-tooltip="斜体 Ctrl+I" @click="insertMarkdown('*', '*')">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 4h4m-2 0v16m-4 0h8" /></svg>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 4h4m-2 0v16m-4 0h8" /></svg>
               <span class="toolbar-kbd">I</span>
             </button>
             <button class="toolbar-btn" data-tooltip="标题 H2" @click="insertMarkdown('## ', '')">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
             </button>
             <button class="toolbar-btn" data-tooltip="行内代码" @click="insertMarkdown('`', '`')">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
             </button>
           </div>
 
@@ -67,82 +68,80 @@
           <!-- 插入组 -->
           <div class="toolbar-group shrink-0">
             <button class="toolbar-btn" data-tooltip="插入链接" @click="insertMarkdown('[', '](url)')">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
             </button>
             <label class="toolbar-btn cursor-pointer" :class="{ 'opacity-50 pointer-events-none': imageUploading }" data-tooltip="上传图片到正文">
-              <svg v-if="!imageUploading" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              <span v-else class="inline-block w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+              <svg v-if="!imageUploading" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <span v-else class="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
               <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp" class="hidden" :disabled="imageUploading" @change="handleEditorImageUpload" />
             </label>
             <EmojiPicker @select="(emoji: string) => insertAtCursor(emoji)" />
           </div>
 
-          <span class="toolbar-divider shrink-0"></span>
+          <!-- 右侧：自动保存指示器 -->
+          <div class="ml-auto hidden md:flex items-center gap-1.5 shrink-0 pl-1">
+            <div v-if="autoSavePending" class="flex items-center gap-0.5 text-[9px] text-[var(--zh-text-tertiary)]">
+              <span class="w-1 h-1 rounded-full bg-amber-400 animate-breathe"></span>
+              <span>保存中</span>
+            </div>
+            <div v-else-if="lastAutoSaveTime" class="flex items-center gap-0.5 text-[9px] text-[var(--zh-text-tertiary)]">
+              <svg class="w-2 h-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              <span>已保存 {{ lastAutoSaveTime }}</span>
+            </div>
+          </div>
+        </div>
 
-          <!-- AI工具组 -->
-          <div class="toolbar-group shrink-0">
+          <!-- AI工具栏 - 独立第二行 -->
+          <div class="ai-toolbar flex items-center gap-1 px-1 py-0.5 bg-[var(--zh-bg)] border-b border-[var(--zh-border)]">
             <span class="toolbar-ai-label">AI</span>
             <button class="ai-tool-btn ai-tool-expand" :disabled="aiLoading" @click="handleAIWrite('expand')" data-tooltip="选中文本后AI帮你扩展完善内容">
-              <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
               扩写
             </button>
             <button class="ai-tool-btn ai-tool-polish" :disabled="aiLoading" @click="handleAIWrite('polish')" data-tooltip="选中文本后AI帮你优化文笔表达">润色</button>
             <button class="ai-tool-btn ai-tool-review" :disabled="aiLoading" @click="handleAIWrite('review')" data-tooltip="选中文本后AI帮你检查内容合规性">审核</button>
-          </div>
-
-          <!-- 右侧：自动保存 + AI加载指示器（移动端/平板隐藏，桌面端展示） -->
-          <div class="ml-auto hidden md:flex items-center gap-2 shrink-0 pl-1.5">
-            <!-- 自动保存指示器 -->
-            <div v-if="autoSavePending" class="flex items-center gap-1 text-[10px] text-[var(--zh-text-tertiary)]">
-              <span class="w-1 h-1 rounded-full bg-amber-400 animate-breathe"></span>
-              <span>自动保存中...</span>
-            </div>
-            <div v-else-if="lastAutoSaveTime" class="flex items-center gap-1 text-[10px] text-[var(--zh-text-tertiary)]">
-              <svg class="w-2.5 h-2.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-              <span>已自动保存 {{ lastAutoSaveTime }}</span>
-            </div>
             <!-- AI加载指示器 -->
-            <div v-if="aiLoading" class="flex items-center gap-1 text-[10px] text-purple-600">
-              <span class="w-2.5 h-2.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></span>
-              <span>AI 处理中...</span>
+            <div v-if="aiLoading" class="ml-auto flex items-center gap-0.5 text-[9px] text-purple-600">
+              <span class="w-2 h-2 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></span>
+              <span>AI处理中</span>
             </div>
           </div>
         </div>
 
         <!-- 已上传图片缩略图列表 -->
-        <div v-if="form.images.length > 0" class="flex items-center gap-2 px-3 py-2 bg-[var(--zh-bg)] border-b border-[var(--zh-border)] overflow-x-auto">
+        <div v-if="form.images.length > 0" class="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--zh-bg)] border-b border-[var(--zh-border)] overflow-x-auto">
           <div
             v-for="(img, idx) in form.images"
             :key="idx"
-            class="thumb-card relative w-14 h-14 shrink-0 group cursor-pointer"
+            class="thumb-card relative w-12 h-12 shrink-0 group cursor-pointer"
             @click="insertImageAtCursor(img)"
             title="点击插入到正文"
           >
-            <img :src="resolveUrl(img) || img" alt="" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center">
-              <span class="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">点击插入</span>
+            <img :src="resolveUrl(img) || img" alt="" class="w-full h-full object-cover rounded" />
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center rounded">
+              <span class="text-white text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">插入</span>
             </div>
             <button
-              class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:bg-red-600"
+              class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:bg-red-600"
               @click.stop="removeImage(idx)"
             >×</button>
           </div>
           <label
             v-if="form.images.length < 9"
-            class="thumb-add w-14 h-14 shrink-0 border-2 border-dashed border-[var(--zh-border)] rounded-xl flex items-center justify-center text-[var(--zh-text-tertiary)] hover:border-primary hover:text-primary cursor-pointer transition-all duration-200 hover:bg-primary-50/50"
+            class="thumb-add w-12 h-12 shrink-0 border-2 border-dashed border-[var(--zh-border)] rounded-lg flex items-center justify-center text-[var(--zh-text-tertiary)] hover:border-primary hover:text-primary cursor-pointer transition-all duration-200 hover:bg-primary-50/50"
             :class="{ 'opacity-50 pointer-events-none': imageUploading }"
           >
-            <svg v-if="!imageUploading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-            <span v-else class="inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+            <svg v-if="!imageUploading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            <span v-else class="inline-block w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
             <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp" class="hidden" :disabled="imageUploading" @change="handleEditorImageUpload" />
           </label>
         </div>
 
         <!-- 编辑区（已拆分为独立页面，预览区请通过"预览效果"按钮在新页面打开） -->
         <div>
-          <div class="hidden md:flex items-center justify-between px-3 py-1.5 bg-[var(--zh-bg)] border-b border-[var(--zh-border)] text-xs text-[var(--zh-text-secondary)] font-medium">
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          <div class="hidden md:flex items-center justify-between px-3 py-1 bg-[var(--zh-bg)] border-b border-[var(--zh-border)] text-xs text-[var(--zh-text-secondary)] font-medium">
+            <span class="flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
               编辑
             </span>
             <span class="text-[var(--zh-text-tertiary)]">Markdown 语法支持 · <a href="/editor/preview" target="_blank" class="text-primary hover:underline">新页面预览</a></span>
@@ -151,19 +150,19 @@
             <input
               v-model="form.title"
               type="text"
-              class="title-input w-full px-4 pt-3 pb-2 text-xl md:text-2xl font-bold text-[var(--zh-text)] bg-[var(--zh-bg-elevated)] outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600 border-b border-[var(--zh-border-light)] transition-all duration-300"
+              class="title-input w-full px-3 md:px-4 pt-2 pb-1.5 md:pt-2 md:pb-1.5 text-base md:text-xl font-bold text-[var(--zh-text)] bg-[var(--zh-bg-elevated)] outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600 border-b border-[var(--zh-border-light)] transition-all duration-300"
               placeholder="请输入作品标题..."
               maxlength="50"
             />
-            <div class="flex items-center justify-between px-4 py-0.5 bg-[var(--zh-bg-elevated)]">
-              <span class="text-xs text-[var(--zh-text-tertiary)]">{{ form.title.length }}/50</span>
+            <div class="flex items-center justify-between px-3 md:px-4 py-0.5 bg-[var(--zh-bg-elevated)]">
+              <span class="text-[10px] text-[var(--zh-text-tertiary)]">{{ form.title.length }}/50</span>
             </div>
             <MentionInput
               ref="editorRef"
               v-model="form.content"
               placeholder="开始写作..."
-              :rows="18"
-              class="editor-textarea w-full min-h-[400px] p-4 bg-[var(--zh-bg-elevated)] text-[var(--zh-text)] resize-none outline-none font-mono text-sm leading-relaxed"
+              :rows="isMobile ? 4 : 14"
+              class="editor-textarea w-full min-h-[100px] md:min-h-[300px] p-2 md:p-4 bg-[var(--zh-bg-elevated)] text-[var(--zh-text)] resize-none outline-none font-mono text-sm leading-relaxed"
             />
           </div>
         </div>
@@ -171,10 +170,10 @@
     </div>
 
     <!-- 分类和标签选择 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-1.5 md:gap-2 mb-1.5 md:mb-2">
       <div>
-        <label class="block text-xs md:text-sm font-medium text-[var(--zh-text-secondary)] mb-1.5 flex items-center gap-1">
-          <svg class="w-4 h-4 text-[var(--zh-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <label class="block text-xs md:text-sm font-medium text-[var(--zh-text-secondary)] mb-1 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-[var(--zh-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
           </svg>
           分类
@@ -182,15 +181,15 @@
         <input
           v-model="form.categoryName"
           type="text"
-          class="input !h-10 !text-sm !px-3"
+          class="input !h-9 !text-sm !px-3"
           placeholder="填写分类名称（选填，不填则默认分类）"
           maxlength="20"
         />
       </div>
 
       <div>
-        <label class="block text-xs md:text-sm font-medium text-[var(--zh-text-secondary)] mb-1.5 flex items-center gap-1">
-          <svg class="w-4 h-4 text-[var(--zh-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <label class="block text-xs md:text-sm font-medium text-[var(--zh-text-secondary)] mb-1 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-[var(--zh-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
           </svg>
           标签
@@ -199,18 +198,18 @@
           <input
             v-model="tagInput"
             type="text"
-            class="input !h-10 !text-sm !px-3 flex-1"
+            class="input !h-9 !text-sm !px-3 flex-1"
             placeholder="添加标签"
             @keydown.enter.prevent="addTag"
           />
           <button
-            class="px-3 py-2 text-sm bg-[var(--zh-bg-hover)] hover:bg-primary-50 hover:text-primary rounded-lg transition-colors font-medium border border-[var(--zh-border)]"
+            class="px-3 py-1.5 text-sm bg-[var(--zh-bg-hover)] hover:bg-primary-50 hover:text-primary rounded-lg transition-colors font-medium border border-[var(--zh-border)]"
             @click="addTag"
             :disabled="!tagInput.trim()"
           >添加</button>
         </div>
-        <div v-if="form.tags.length" class="flex flex-wrap gap-1.5 mt-2">
-          <span v-for="tag in form.tags" :key="tag" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-primary-50 text-primary-700 rounded-full border border-primary-100">
+        <div v-if="form.tags.length" class="flex flex-wrap gap-1 mt-1.5">
+          <span v-for="tag in form.tags" :key="tag" class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-full border border-primary-100">
             <span># {{ tag }}</span>
             <button class="hover:text-danger transition-colors" @click="removeTag(tag)">×</button>
           </span>
@@ -219,14 +218,14 @@
     </div>
 
     <!-- 发布位置 -->
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-[var(--zh-text-secondary)] mb-1.5 flex items-center gap-1">
-        <svg class="w-4 h-4 text-[var(--zh-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="mb-1.5 md:mb-2">
+      <label class="block text-xs font-medium text-[var(--zh-text-secondary)] mb-1 flex items-center gap-1">
+        <svg class="w-3.5 h-3.5 text-[var(--zh-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
         发布位置
-        <span class="text-xs text-[var(--zh-text-tertiary)] font-normal ml-1">(选填)</span>
+        <span class="text-[10px] text-[var(--zh-text-tertiary)] font-normal ml-1">(选填)</span>
       </label>
       <RegionSelector
         ref="regionSelectorRef"
@@ -240,47 +239,47 @@
     </div>
 
     <!-- 操作按钮区域 - 优化版 -->
-    <div class="sticky bottom-0 md:static bg-[var(--zh-bg)]/95 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none -mx-1.5 px-1.5 py-3 md:mx-0 md:px-0 md:py-0 border-t md:border-t-0 border-[var(--zh-border)]">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="sticky bottom-0 md:static bg-[var(--zh-bg)]/95 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none -mx-1.5 px-1.5 py-2 md:mx-0 md:px-0 md:py-0 border-t md:border-t-0 border-[var(--zh-border)]">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <!-- 左侧：定时发布 -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
           <label class="relative inline-flex items-center cursor-pointer" title="开启后可设置作品在指定时间自动发布">
             <input type="checkbox" v-model="scheduledPublish" class="sr-only peer" />
-            <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--zh-bg-elevated)] after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+            <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--zh-bg-elevated)] after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
           </label>
-          <span class="text-sm text-[var(--zh-text-secondary)] select-none">定时发布</span>
+          <span class="text-xs text-[var(--zh-text-secondary)] select-none">定时发布</span>
           <input
             v-if="scheduledPublish"
             type="datetime-local"
             v-model="publishAt"
-            class="input !h-9 !text-sm !w-auto"
+            class="input !h-8 !text-xs !w-auto"
             :min="minPublishAt"
           />
         </div>
 
         <!-- 右侧：操作按钮 -->
-        <div class="flex items-center gap-2">
-          <button class="btn-secondary text-sm" @click="saveDraft" :disabled="saving">
-            <span v-if="!saving" class="flex items-center gap-1.5">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        <div class="flex items-center gap-1.5">
+          <button class="btn-secondary text-xs" @click="saveDraft" :disabled="saving">
+            <span v-if="!saving" class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
               保存草稿
             </span>
-            <span v-else class="flex items-center gap-1.5">
-              <span class="inline-block w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
+            <span v-else class="flex items-center gap-1">
+              <span class="inline-block w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
               保存中...
             </span>
           </button>
-          <button class="btn-secondary text-sm" @click="openPreview">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-            预览效果
+          <button class="btn-secondary text-xs" @click="openPreview">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            预览
           </button>
-          <button class="btn-primary text-sm" :disabled="!canPublish || publishing" @click="publishArticle">
-            <span v-if="!publishing" class="flex items-center gap-1.5">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-              {{ scheduledPublish ? '定时发布' : '发布作品' }}
+          <button class="btn-primary text-xs" :disabled="!canPublish || publishing" @click="publishArticle">
+            <span v-if="!publishing" class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+              {{ scheduledPublish ? '定时发布' : '发布' }}
             </span>
-            <span v-else class="flex items-center gap-1.5">
-              <span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span v-else class="flex items-center gap-1">
+              <span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               {{ scheduledPublish ? '设置中...' : '发布中...' }}
             </span>
           </button>
@@ -297,12 +296,14 @@
 <script setup lang="ts">
 /** 作品编辑器页 - 优化版 */
 import { useLocation } from '@/composables/useLocation'
+import { useBreakpoints } from '@/composables/useBreakpoints'
 import { showToast } from '@/composables/useToast'
 import { aiApi } from '@/api/ai'
 
 const router = useRouter()
 const { resolveUrl } = useResourceUrl()
 const { post: apiPost } = useApi()
+const { isMobile } = useBreakpoints()
 
 // 写作状态
 const lastEditTime = ref(Date.now())
@@ -425,22 +426,31 @@ const removeTag = (tag: string) => {
   form.tags = form.tags.filter((t) => t !== tag)
 }
 
-// 获取当前聚焦的编辑器 textarea 引用
-const getEditorTextarea = () => {
+// 获取当前聚焦的编辑器 textarea 引用（确保返回原生 HTMLTextAreaElement）
+const getEditorTextarea = (): HTMLTextAreaElement | null => {
   const componentEl = editorRef.value
   if (!componentEl) {
-    const editorArea = document.querySelector('.editor-textarea') as HTMLTextAreaElement
+    const editorArea = document.querySelector('.editor-textarea textarea') as HTMLTextAreaElement | null
     if (editorArea) return editorArea
     return document.querySelector('textarea')
   }
-  const textarea = (componentEl as any)?.textareaRef
-  if (textarea) return textarea
+  // MentionInput 暴露的 textareaRef 实际是 el-input 组件实例
+  const elInputComp = (componentEl as any)?.textareaRef
+  if (elInputComp) {
+    // el-input 的 .textarea 属性指向原生 textarea DOM
+    if (elInputComp.textarea instanceof HTMLTextAreaElement) return elInputComp.textarea
+    // 从 el-input 的 DOM 根元素查找
+    const fromEl = elInputComp.$el?.querySelector?.('textarea')
+    if (fromEl) return fromEl
+  }
   const el = (componentEl as any)?.$el
   if (el) {
     if (el.tagName === 'TEXTAREA') return el
-    return el.querySelector?.('textarea') || el
+    const nested = el.querySelector?.('textarea')
+    if (nested) return nested
   }
-  return componentEl
+  // 全局兜底：查找 .editor-textarea 内的 textarea
+  return document.querySelector('.editor-textarea textarea') ?? document.querySelector('textarea')
 }
 
 // 插入Markdown语法
@@ -459,7 +469,9 @@ const insertMarkdown = (prefix: string, suffix: string) => {
   nextTick(() => {
     const ta = getEditorTextarea()
     ta?.focus()
-    ta?.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length)
+    if (ta && typeof ta.setSelectionRange === 'function') {
+      ta.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length)
+    }
   })
 }
 
@@ -472,7 +484,9 @@ const insertAtCursor = (text: string) => {
   nextTick(() => {
     const ta = getEditorTextarea()
     ta?.focus()
-    ta?.setSelectionRange(pos + text.length, pos + text.length)
+    if (ta && typeof ta.setSelectionRange === 'function') {
+      ta.setSelectionRange(pos + text.length, pos + text.length)
+    }
   })
 }
 
@@ -870,7 +884,7 @@ useHead({
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   position: relative;
-  z-index: 1;
+  z-index: 30;
 }
 .editor-toolbar::-webkit-scrollbar {
   height: 4px;
@@ -890,13 +904,22 @@ useHead({
   scrollbar-width: thin;
 }
 
+/* ========== AI 工具栏 - 独立行 ========== */
+.ai-toolbar {
+  position: relative;
+  z-index: 1;
+}
+.ai-toolbar:hover {
+  z-index: 60;
+}
+
 /* ========== 工具栏分组 ========== */
 .toolbar-group {
   @apply flex items-center gap-0 px-0;
   position: relative;
 }
 .toolbar-divider {
-  @apply w-px h-3.5 bg-[var(--zh-border)] mx-0.5;
+  @apply w-px h-3 bg-[var(--zh-border)] mx-0.5;
 }
 .toolbar-ai-label {
   @apply text-[9px] font-semibold px-0.5 uppercase tracking-wider;
@@ -925,11 +948,12 @@ useHead({
 
 /* ========== 工具栏按钮 ========== */
 .toolbar-btn {
-  @apply p-1 text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-hover)] hover:text-[var(--zh-text)] rounded transition-all duration-150;
+  @apply p-0.5 text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-hover)] hover:text-[var(--zh-text)] rounded transition-all duration-150;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  font-size: 11px;
 }
 .toolbar-btn:active {
   transform: scale(0.95);
@@ -993,33 +1017,46 @@ useHead({
 .toolbar-group:first-child .toolbar-btn:first-child:hover[data-tooltip]::after {
   transform: translateX(0) translateY(-2px);
 }
-.toolbar-group:last-child .toolbar-btn:last-child[data-tooltip]::after,
-.toolbar-group:has(.ai-tool-review) .ai-tool-review[data-tooltip]::after {
+.toolbar-group:last-child .toolbar-btn:last-child[data-tooltip]::after {
   left: auto;
   right: 0;
   transform: translateX(0);
 }
-.toolbar-group:last-child .toolbar-btn:last-child[data-tooltip]::before,
-.toolbar-group:has(.ai-tool-review) .ai-tool-review[data-tooltip]::before {
+.toolbar-group:last-child .toolbar-btn:last-child[data-tooltip]::before {
   left: auto;
   right: 8px;
   transform: translateX(0);
 }
-.toolbar-group:last-child .toolbar-btn:last-child:hover[data-tooltip]::after,
-.toolbar-group:has(.ai-tool-review) .ai-tool-review:hover[data-tooltip]::after {
+.toolbar-group:last-child .toolbar-btn:last-child:hover[data-tooltip]::after {
+  transform: translateX(0) translateY(-2px);
+}
+/* AI工具栏内审核按钮 tooltip 右边缘校正 */
+.ai-toolbar .ai-tool-review[data-tooltip]::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+.ai-toolbar .ai-tool-review[data-tooltip]::before {
+  left: auto;
+  right: 8px;
+  transform: translateX(0);
+}
+.ai-toolbar .ai-tool-review:hover[data-tooltip]::after {
   transform: translateX(0) translateY(-2px);
 }
 
 /* ========== AI 工具按钮 - 渐变紫色 ========== */
 .ai-tool-btn {
-  @apply px-1 py-px text-[9px] font-medium rounded transition-all duration-200;
+  @apply px-1.5 py-0.5 text-[10px] font-medium rounded transition-all duration-200;
   display: inline-flex;
   align-items: center;
-  gap: 1.5px;
+  gap: 2px;
   color: #fff;
   border: 1px solid transparent;
   position: relative;
-  line-height: 1.2;
+  line-height: 1.3;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* 扩写 - 紫色渐变 */
@@ -1081,7 +1118,7 @@ useHead({
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 50;
+  z-index: 9999;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .ai-tool-btn[data-tooltip]::before {
@@ -1095,7 +1132,7 @@ useHead({
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease;
-  z-index: 50;
+  z-index: 9999;
 }
 .ai-tool-btn:hover[data-tooltip]::after {
   opacity: 1;

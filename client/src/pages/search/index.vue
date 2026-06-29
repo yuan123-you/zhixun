@@ -29,7 +29,7 @@
           @focus="mobileSearchFocused = true"
           @blur="mobileSearchFocused = false"
           @input="handleInput"
-          @keydown.enter="doSearch"
+          @keydown.enter="() => doSearch()"
         />
         <button v-show="keyword" class="search-box-mobile__clear p-0.5 text-[var(--zh-text-tertiary)] hover:text-[var(--zh-text-secondary)] shrink-0" @click="clearKeyword">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +62,7 @@
           @focus="desktopSearchFocused = true"
           @blur="desktopSearchFocused = false"
           @input="handleInput"
-          @keydown.enter="doSearch"
+          @keydown.enter="() => doSearch()"
         />
         <button v-show="keyword" class="search-box-desktop__clear p-0.5 md:p-1 text-[var(--zh-text-tertiary)] hover:text-[var(--zh-text-secondary)] shrink-0" @click="clearKeyword">
           <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,7 +72,7 @@
         <!-- 清除按钮占位（保持搜索按钮位置固定） -->
         <span v-show="!keyword" class="w-5 md:w-6 h-3.5 md:h-4 shrink-0"></span>
         <!-- 搜索按钮 -->
-        <button class="search-btn ml-1.5 md:ml-2 px-3 md:px-4 py-1.5 md:py-2 text-white text-sm md:text-base rounded-full shrink-0" @click="doSearch">
+        <button class="search-btn ml-1.5 md:ml-2 px-3 md:px-4 py-1.5 md:py-2 text-white text-sm md:text-base rounded-full shrink-0" @click="() => doSearch()">
           搜索
         </button>
       </div>
