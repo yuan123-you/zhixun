@@ -153,7 +153,7 @@
               {{ formatMessageTime(msg.createdAt) }}
             </span>
           </div>
-          <button class="flex-shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(myUserId)">
+          <button class="my-msg-avatar-btn" @click="navigateToUser(myUserId)">
             <UserAvatar :src="userStore.userInfo?.avatar" :alt="userStore.userInfo?.nickname" size="sm" />
           </button>
         </div>
@@ -978,4 +978,22 @@ onUnmounted(() => {
   color: var(--zh-text-tertiary, #94a3b8);
   flex-shrink: 0;
 }
+
+/* 我的消息头像按钮 - 覆盖全局 pointer:coarse 44px min-height，确保 32px 头像正确对齐 */
+.my-msg-avatar-btn {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 0;
+  min-width: 0;
+  line-height: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.my-msg-avatar-btn:hover { opacity: 0.8; }
 </style>

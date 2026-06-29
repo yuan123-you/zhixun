@@ -43,6 +43,7 @@ const isLoading = ref(true)
 const isLoaded = ref(false)
 const hasError = ref(false)
 // 记录上一次解析后的 URL，避免相同 URL 重复触发加载动画
+// 初始化为当前解析 URL，避免首次 watch 触发不必要的加载状态重置
 const lastResolvedUrl = ref<string | null>(null)
 
 const sizeMap: Record<string, number> = { xs: 20, sm: 32, md: 40, lg: 48, xl: 80 }
@@ -54,6 +55,9 @@ const avatarStyle = computed(() => ({ width: `${avatarSize.value}px`, height: `$
 const avatarSrc = computed(() => {
   return resolveUrl(props.src) || DEFAULT_AVATAR
 })
+
+// 初始化 lastResolvedUrl 为当前解析 URL，避免首次 watch 触发不必要的加载状态重置
+lastResolvedUrl.value = avatarSrc.value
 
 const onLoad = () => { isLoading.value = false; isLoaded.value = true; hasError.value = false }
 const onError = () => { isLoading.value = false; isLoaded.value = false; hasError.value = true }

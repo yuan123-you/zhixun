@@ -720,11 +720,16 @@ onUnmounted(() => observer?.disconnect())
 }
 
 .my-avatar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   cursor: pointer;
   border-radius: 50%;
   flex-shrink: 0;
   margin-left: 8px;
   align-self: flex-start;
+  line-height: 1;
+  min-height: 0;
 }
 
 .empty-messages {

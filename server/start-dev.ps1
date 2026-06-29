@@ -27,6 +27,7 @@ Get-Content $envFile -Encoding UTF8 | ForEach-Object {
 Write-Host "[INFO] 已加载 .env 环境变量" -ForegroundColor Green
 Write-Host "[INFO] ZHIPU_API_KEY = $($env:ZHIPU_API_KEY.Substring(0, [Math]::Min(8, $env:ZHIPU_API_KEY.Length)))..." -ForegroundColor Cyan
 Write-Host "[INFO] ZHIPU_MODEL  = $env:ZHIPU_MODEL" -ForegroundColor Cyan
+Write-Host "[INFO] ZHIPU_FALLBACK_MODEL = $env:ZHIPU_FALLBACK_MODEL" -ForegroundColor Cyan
 Write-Host "[INFO] SPRING_PROFILES_ACTIVE = dev" -ForegroundColor Cyan
 Write-Host "[INFO] 启动 Spring Boot..." -ForegroundColor Green
 
