@@ -30,8 +30,7 @@ public class UserMessage {
     @TableField(exist = false)
     private Long conversationId;
 
-    /** 消息类型 */
-    @TableField(exist = false)
+    /** 消息类型: text/image/voice/file/system */
     private String type;
 
     /** 消息内容 */

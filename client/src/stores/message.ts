@@ -100,7 +100,7 @@ function transformMessage(raw: RawMessage): Message {
     senderId,
     sender,
     content: raw.content || '',
-    type: Number(raw.type) || 0,
+    type: raw.type != null ? String(raw.type) : 'text',
     isRead: raw.isRead === 1,
     createdAt: raw.createdAt || '',
   }
@@ -108,6 +108,12 @@ function transformMessage(raw: RawMessage): Message {
 
 /** 私信状态管理 Store */
 export const useMessageStore = defineStore('message', () => {
+  // ==================== 本地持久化（IndexedDB） ====================
+  const localDb = useChatLocalDb()
+  const userStoreRef = useUserStore()
+  /** 当前登录用户 ID，用于 IndexedDB 会话 key 计算 */
+  const myUserId = computed(() => userStoreRef.userInfo?.id ?? 0)
+
   // ==================== 状态 ====================
   const conversations = ref<Conversation[]>([])
   const unreadTotal = ref(0)
@@ -145,6 +151,18 @@ export const useMessageStore = defineStore('message', () => {
       currentMessages.value = []
       currentPage.value = 1
       hasMoreMessages.value = true
+
+      // 先从 IndexedDB 加载本地消息，实现即时显示
+      if (myUserId.value) {
+        try {
+          const localMsgs = await localDb.getMessages(myUserId.value, userId)
+          if (localMsgs.length > 0) {
+            currentMessages.value = localMsgs
+          }
+        } catch (e) {
+          console.warn('[MessageStore] IndexedDB 本地加载失败:', e)
+        }
+      }
     }
     if (loadingMessages.value) return
 
@@ -154,12 +172,22 @@ export const useMessageStore = defineStore('message', () => {
       if (data.code === 0 || data.code === 200) {
         const rawMsgs = (data.data.list || []) as unknown as RawMessage[]
         const msgs = rawMsgs.map(transformMessage)
+
+        // 将服务端消息保存到 IndexedDB
+        if (myUserId.value) {
+          localDb.saveMessages(msgs, myUserId.value, userId).catch(e =>
+            console.warn('[MessageStore] IndexedDB 保存失败:', e))
+        }
+
         // 后端已按时间正序返回（最早在前），page=1是最新一页，page>1是更早的消息
         if (page === 1) {
-          currentMessages.value = msgs
+          // 合并本地与服务端消息，服务端数据覆盖本地（更权威）
+          const merged = localDb.mergeMessages(currentMessages.value, msgs)
+          currentMessages.value = merged
         } else {
           // 加载更早的消息，插入到列表前面
-          currentMessages.value = [...msgs, ...currentMessages.value]
+          const merged = localDb.mergeMessages(currentMessages.value, msgs)
+          currentMessages.value = merged.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
         }
         hasMoreMessages.value = rawMsgs.length >= 30
         currentPage.value = page
@@ -172,12 +200,32 @@ export const useMessageStore = defineStore('message', () => {
   }
 
   const loadMoreMessages = async (userId: number) => {
-    if (!hasMoreMessages.value || loadingMessages.value) return
-    await fetchMessages(userId, currentPage.value + 1)
+    if (loadingMessages.value) return
+
+    if (hasMoreMessages.value) {
+      await fetchMessages(userId, currentPage.value + 1)
+      return
+    }
+
+    // 服务端已无更多消息，检查 IndexedDB 是否有更早的本地消息
+    if (!myUserId.value) return
+    try {
+      const allLocal = await localDb.getMessages(myUserId.value, userId)
+      if (allLocal.length <= currentMessages.value.length) return
+
+      // 找出本地有但当前列表中没有的消息（更早的历史消息）
+      const currentIds = new Set(currentMessages.value.map(m => m.id))
+      const olderLocal = allLocal.filter(m => !currentIds.has(m.id))
+      if (olderLocal.length > 0) {
+        currentMessages.value = [...olderLocal, ...currentMessages.value]
+      }
+    } catch (e) {
+      console.warn('[MessageStore] IndexedDB 加载更多失败:', e)
+    }
   }
 
   // ==================== 发送消息 ====================
-  const sendMessage = async (userId: number, content: string) => {
+  const sendMessage = async (userId: number, content: string, type: string = 'text') => {
     // 输入校验：避免发送空内容
     if (!content || !content.trim()) {
       const err = new Error('消息内容不能为空')
@@ -187,7 +235,7 @@ export const useMessageStore = defineStore('message', () => {
 
     let data: any
     try {
-      const resp = await socialApi.sendMessage(userId, { content: content.trim(), type: 0 })
+      const resp = await socialApi.sendMessage(userId, { content: content.trim(), type })
       data = resp.data
       console.debug('[MessageStore] 发送消息响应:', { userId, code: data?.code, hasData: !!data?.data })
     } catch (err: any) {
@@ -204,7 +252,12 @@ export const useMessageStore = defineStore('message', () => {
       if (!exists) {
         currentMessages.value.push(newMsg)
       }
-      updateConversationLastMessage(userId, content.trim())
+      // 同步保存到 IndexedDB
+      if (myUserId.value) {
+        localDb.saveMessages([newMsg], myUserId.value, userId).catch(e =>
+          console.warn('[MessageStore] IndexedDB 保存发送消息失败:', e))
+      }
+      updateConversationLastMessage(userId, content.trim(), type)
       return newMsg
     }
 
@@ -228,12 +281,13 @@ export const useMessageStore = defineStore('message', () => {
   }
 
   // ==================== 更新会话最后消息 ====================
-  const updateConversationLastMessage = (userId: number, content: string) => {
+  const updateConversationLastMessage = (userId: number, content: string, type?: string) => {
     const conv = conversations.value.find(c => c.user.id === userId)
     if (conv) {
       conv.lastMessage = {
         ...conv.lastMessage,
-        content,
+        content: type === 'image' ? '[图片]' : content,
+        type: type || 'text',
         createdAt: new Date().toISOString(),
       }
       conv.updatedAt = new Date().toISOString()
@@ -248,7 +302,7 @@ export const useMessageStore = defineStore('message', () => {
   // ==================== 处理 WebSocket 实时消息 ====================
   const handleIncomingMessage = (wsData: any) => {
     if (!wsData) return
-    const { senderId, content, messageId, senderNickname, senderAvatar, createdAt } = wsData
+    const { senderId, content, messageId, senderNickname, senderAvatar, createdAt, messageType } = wsData
 
     const newMsg: Message = {
       id: messageId || Date.now(),
@@ -273,9 +327,15 @@ export const useMessageStore = defineStore('message', () => {
         createdAt: '',
       },
       content,
-      type: 0,
+      type: messageType || 'text',
       isRead: false,
       createdAt: createdAt || new Date().toISOString(),
+    }
+
+    // 保存到 IndexedDB
+    if (myUserId.value) {
+      localDb.saveMessages([newMsg], myUserId.value, senderId).catch(e =>
+        console.warn('[MessageStore] IndexedDB 保存接收消息失败:', e))
     }
 
     if (currentChatUserId.value === senderId) {
@@ -285,7 +345,10 @@ export const useMessageStore = defineStore('message', () => {
 
     const conv = conversations.value.find(c => c.user.id === senderId)
     if (conv) {
-      conv.lastMessage = newMsg
+      conv.lastMessage = {
+        ...newMsg,
+        content: newMsg.type === 'image' ? '[图片]' : newMsg.content,
+      }
       if (currentChatUserId.value !== senderId) {
         conv.unreadCount = (conv.unreadCount || 0) + 1
       }
@@ -384,8 +447,26 @@ export const useMessageStore = defineStore('message', () => {
       currentMessages.value = []
       currentChatUserId.value = null
       unreadTotal.value = 0
+      // 退出登录时不再自动清理本地消息，改为手动清理模式
     }
   })
+
+  // ==================== 手动清理会话 ====================
+  const clearConversation = async (userId: number) => {
+    if (!myUserId.value) return 0
+    try {
+      const count = await localDb.deleteByConv(myUserId.value, userId)
+      // 如果正在查看该会话，清空当前显示
+      if (currentChatUserId.value === userId) {
+        currentMessages.value = []
+        hasMoreMessages.value = false
+      }
+      return count
+    } catch (e) {
+      console.error('[MessageStore] 清理会话失败:', e)
+      return 0
+    }
+  }
 
   return {
     conversations,
@@ -397,6 +478,8 @@ export const useMessageStore = defineStore('message', () => {
     hasMoreMessages,
     currentPage,
     onlineStatus,
+    myUserId,
+    localDb,
     fetchConversations,
     fetchMessages,
     loadMoreMessages,
@@ -407,5 +490,6 @@ export const useMessageStore = defineStore('message', () => {
     isUserOnline,
     setupWsListeners,
     cleanupWsListeners,
+    clearConversation,
   }
 })

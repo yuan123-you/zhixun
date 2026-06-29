@@ -19,4 +19,7 @@ public class MessageSendRequest {
     @NotBlank(message = "消息内容不能为空")
     @Size(max = 1000, message = "消息内容最长1000个字符")
     private String content;
+
+    /** 消息类型: text/image (默认text) */
+    private String type;
 }

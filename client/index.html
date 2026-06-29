@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="pre-hydration">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="知讯 - 发现优质内容，分享知识与见解" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="preconnect" href="/api" />
+    <title>知讯 - 优质内容平台</title>
+    <!-- 关键 CSS 内联：防止 FOUC（未样式化内容闪现） -->
+    <style>
+      /* 防止页面在 JS/CSS 加载前闪烁白色背景 */
+      html.pre-hydration, html.pre-hydration body {
+        margin: 0;
+        padding: 0;
+        background-color: #f8fafc;
+        color: #0f172a;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+      /* 应用加载封面 - 内联样式确保即时渲染 */
+      #app-splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a78bfa 100%);
+        transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #app-splash.fade-out { opacity: 0; pointer-events: none; }
+      #app-splash .splash-content {
+        position: relative; z-index: 1;
+        display: flex; flex-direction: column; align-items: center;
+        animation: splash-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      #app-splash .splash-logo {
+        width: 80px; height: 80px;
+        animation: splash-pulse 2.5s ease-in-out infinite;
+      }
+      #app-splash .splash-brand {
+        margin-top: 20px; font-size: 28px; font-weight: 700;
+        color: white; letter-spacing: 4px;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      }
+      #app-splash .splash-tagline {
+        margin-top: 8px; font-size: 14px; color: rgba(255,255,255,0.75);
+        letter-spacing: 2px;
+      }
+      #app-splash .splash-loader {
+        margin-top: 32px; width: 120px; height: 3px;
+        background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden;
+      }
+      #app-splash .splash-loader-bar {
+        width: 40%; height: 100%; background: white; border-radius: 2px;
+        animation: splash-shimmer 1.4s ease-in-out infinite;
+      }
+      @keyframes splash-fade-in {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes splash-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        50% { box-shadow: 0 0 0 8px rgba(255,255,255,0.08); }
+      }
+      @keyframes splash-shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+      /* 确保 #app 初始不可见，等 Vue 挂载后再显示 */
+      #app {
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+      #app.app-ready {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 应用加载封面 -->
+    <div id="app-splash">
+      <div class="splash-content">
+        <div class="splash-logo">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="80" height="80" rx="20" fill="white" fill-opacity="0.2"/>
+            <path d="M25 55V25L40 35L55 25V55L40 45L25 55Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="splash-brand">知 讯</div>
+        <div class="splash-tagline">发现优质内容</div>
+        <div class="splash-loader">
+          <div class="splash-loader-bar"></div>
+        </div>
+      </div>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

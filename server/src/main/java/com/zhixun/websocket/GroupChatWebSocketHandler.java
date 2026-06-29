@@ -4,7 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhixun.common.util.JwtUtil;
 import com.zhixun.dto.group.GroupMessageRequest;
+import com.zhixun.entity.GroupInfo;
+import com.zhixun.entity.User;
+import com.zhixun.mapper.GroupMapper;
+import com.zhixun.mapper.UserMapper;
 import com.zhixun.service.GroupService;
+import com.zhixun.service.NotificationService;
 import com.zhixun.vo.GroupMessageVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,16 +21,16 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 群组聊天 WebSocket 处理器
  * 连接路径: /ws/group-chat?token=xxx&groupId=xxx
  *
  * 消息格式（客户端→服务端）:
- *   {"type":"CHAT","data":{"groupId":1,"content":"hello"}}
+ *   {"type":"CHAT","data":{"groupId":1,"content":"hello","messageType":"text","mentionedUserIds":[1,2]}}
  *   {"type":"JOIN","data":{"groupId":1}}
  *
  * 消息格式（服务端→客户端）:
@@ -40,6 +45,9 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     private final GroupService groupService;
     private final JwtUtil jwtUtil;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
+    private final GroupMapper groupMapper;
+    private final UserMapper userMapper;
 
     /** groupId -> (sessionId -> WebSocketSession) */
     private static final Map<Long, Map<String, WebSocketSession>> GROUP_SESSIONS = new ConcurrentHashMap<>();
@@ -125,6 +133,7 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     private void handleChatMessage(WebSocketSession session, Long senderId, JsonNode data) throws IOException {
         Long groupId = data.path("groupId").asLong();
         String content = data.path("content").asText();
+        String messageType = data.path("messageType").asText("text");
 
         if (content == null || content.trim().isEmpty()) {
             sendError(session, "消息内容不能为空");
@@ -134,13 +143,58 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
         GroupMessageRequest req = new GroupMessageRequest();
         req.setGroupId(groupId);
         req.setContent(content.trim());
+        req.setMessageType(messageType);
+
+        // 解析 mentionedUserIds
+        JsonNode mentionNode = data.path("mentionedUserIds");
+        if (mentionNode.isArray() && mentionNode.size() > 0) {
+            List<Long> mentionedIds = new ArrayList<>();
+            for (JsonNode idNode : mentionNode) {
+                mentionedIds.add(idNode.asLong());
+            }
+            req.setMentionedUserIds(mentionedIds);
+        }
 
         try {
             GroupMessageVO msgVO = groupService.sendMessage(senderId, req);
             String response = objectMapper.writeValueAsString(Map.of("type", "CHAT", "data", msgVO));
             broadcastToGroup(groupId, response, null);
+
+            // 发送@提及通知（异步，不阻塞消息发送）
+            if (msgVO.getMentionedUserIds() != null && !msgVO.getMentionedUserIds().isEmpty()) {
+                sendMentionNotifications(senderId, groupId, msgVO);
+            }
         } catch (Exception e) {
             sendError(session, e.getMessage());
+        }
+    }
+
+    private void sendMentionNotifications(Long senderId, Long groupId, GroupMessageVO msgVO) {
+        try {
+            // 获取群组名称
+            GroupInfo group = groupMapper.selectById(groupId);
+            String groupName = group != null ? group.getName() : "未知群组";
+
+            // 获取发送者名称
+            User sender = userMapper.selectById(senderId);
+            String senderName = sender != null ? sender.getNickname() : "未知用户";
+
+            for (Long targetUserId : msgVO.getMentionedUserIds()) {
+                if (targetUserId.equals(senderId)) continue; // 不给自己发通知
+                try {
+                    notificationService.createNotification(
+                            targetUserId,
+                            7, // MENTION type
+                            "有人在群组中@了你",
+                            senderName + " 在群组「" + groupName + "」中@了你",
+                            groupId
+                    );
+                } catch (Exception e) {
+                    log.warn("发送@提及通知失败: targetUserId={}, error={}", targetUserId, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("发送@提及通知异常: groupId={}, error={}", groupId, e.getMessage());
         }
     }
 

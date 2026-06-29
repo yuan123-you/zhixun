@@ -24,6 +24,7 @@ export interface GroupMessage {
   senderAvatar: string
   content: string
   messageType: string
+  mentionedUserIds: number[]
   createdAt: string
 }
 
@@ -87,9 +88,17 @@ export const groupApi = {
     const { get } = useApi()
     return get<GroupMessage[]>(`/groups/${groupId}/messages`, { offset, limit })
   },
-  sendMessage: (groupId: number, content: string, messageType = 'text') => {
+  sendMessage: (groupId: number, content: string, messageType = 'text', mentionedUserIds?: number[]) => {
     const { post } = useApi()
-    return post<GroupMessage>('/groups/messages', { groupId, content, messageType })
+    return post<GroupMessage>('/groups/messages', { groupId, content, messageType, mentionedUserIds })
+  },
+  searchMessages: (groupId: number, params: { keyword?: string; messageType?: string; startDate?: string; endDate?: string; senderId?: number; offset?: number; limit?: number }) => {
+    const { get } = useApi()
+    return get<GroupMessage[]>(`/groups/${groupId}/messages/search`, params)
+  },
+  sendAIMessage: (groupId: number, question: string) => {
+    const { post } = useApi()
+    return post<GroupMessage>('/groups/messages/ai', { groupId, question })
   },
   searchGroups: (keyword: string, page = 1, pageSize = 20) => {
     const { get } = useApi()

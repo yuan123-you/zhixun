@@ -22,6 +22,7 @@ public class GroupMessage implements Serializable {
     private Long senderId;
     private String content;
     private String messageType = "text";
+    private String mentionedUserIds;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

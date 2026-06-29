@@ -94,6 +94,18 @@ public class ConversationController {
             MessageSendRequest request = new MessageSendRequest();
             request.setReceiverId(userId);
             request.setContent(content.trim());
+
+            // 读取消息类型（text/image），默认 text
+            Object rawType = body != null ? body.get("type") : null;
+            String msgType = "text";
+            if (rawType != null) {
+                String t = String.valueOf(rawType).trim().toLowerCase();
+                if ("image".equals(t) || "1".equals(t)) {
+                    msgType = "image";
+                }
+            }
+            request.setType(msgType);
+
             MessageVO result = messageService.sendMessage(senderId, request);
             log.info("私信发送成功: senderId={}, receiverId={}, messageId={}", senderId, userId, result.getId());
             return R.ok(result);

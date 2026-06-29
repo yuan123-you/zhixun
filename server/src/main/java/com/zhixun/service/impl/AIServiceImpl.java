@@ -194,6 +194,10 @@ public class AIServiceImpl implements AIService {
 
     private String getSystemPrompt(String mode) {
         switch (mode) {
+            case "chat":
+                return "你是知讯群组的AI助手。请用简洁、友好的中文回答用户的问题。" +
+                       "回答要准确、有条理，必要时可以使用列表或分点说明。" +
+                       "如果不确定答案，请诚实说明。";
             case "summarize":
                 return "\u4f60\u662f\u4e00\u4e2a\u4e13\u4e1a\u7684\u6587\u672c\u6458\u8981\u52a9\u624b\u3002" +
                        "\u8bf7\u7528\u7b80\u6d01\u7684\u8bed\u8a00\u603b\u7ed3\u4ee5\u4e0b\u5185\u5bb9\uff0c" +

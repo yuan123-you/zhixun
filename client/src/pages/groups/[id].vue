@@ -50,9 +50,11 @@
             :current-user-id="currentUserId"
             :current-user-avatar="currentUserAvatar"
             :current-user-name="currentUserName"
+            :members="members"
             @close="goBack"
             @toggle-members="showMembers = !showMembers"
             @message-sent="onMessageSent"
+            @leave="handleLeave"
           />
         </div>
 

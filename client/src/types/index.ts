@@ -183,17 +183,17 @@ export interface Message {
   senderId: number
   sender: User
   content: string
-  type: MessageType
+  type: string  // 'text' | 'image' | 'system' 等
   isRead: boolean
   createdAt: string
 }
 
-/** 消息类型枚举 */
-export enum MessageType {
-  Text = 0,
-  Image = 1,
-  System = 2,
-}
+/** 消息类型常量 */
+export const MessageType = {
+  Text: 'text',
+  Image: 'image',
+  System: 'system',
+} as const
 
 /** 会话接口 */
 export interface Conversation {

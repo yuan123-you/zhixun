@@ -92,6 +92,7 @@ declare global {
   const useBreakpoints: typeof import('./composables/useBreakpoints')['useBreakpoints']
   const useCache: typeof import('./composables/useCache')['useCache']
   const useCacheInvalidation: typeof import('./composables/useCacheInvalidation')['useCacheInvalidation']
+  const useChatLocalDb: typeof import('./composables/useChatLocalDb')['useChatLocalDb']
   const useColorMode: typeof import('./composables/useColorMode')['useColorMode']
   const useCssModule: typeof import('vue')['useCssModule']
   const useCssVars: typeof import('vue')['useCssVars']

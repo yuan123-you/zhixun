@@ -280,4 +280,8 @@ export const STORAGE_KEYS = {
   VIEW_HISTORY_LOCAL: 'view_history_local',
   /** 数据版本号 */
   DATA_VERSION: 'data_version',
+  /** 聊天备注前缀（key = chat_remark_{myUserId}_{targetUserId}） */
+  CHAT_REMARK_PREFIX: 'chat_remark_',
+  /** 聊天设置前缀（key = chat_settings_{myUserId}_{targetUserId}） */
+  CHAT_SETTINGS_PREFIX: 'chat_settings_',
 } as const

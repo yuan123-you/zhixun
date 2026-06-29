@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class GroupMessageVO {
@@ -14,6 +15,7 @@ public class GroupMessageVO {
     private String senderAvatar;
     private String content;
     private String messageType;
+    private List<Long> mentionedUserIds;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 }

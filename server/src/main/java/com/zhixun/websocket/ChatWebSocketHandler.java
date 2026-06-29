@@ -180,20 +180,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private void handleChatMessage(Long senderId, JsonNode data) {
         Long receiverId = data.path("receiverId").asLong();
         String content = data.path("content").asText();
+        String messageType = data.path("messageType").asText("text");
 
-        // XSS 过滤
-        content = HtmlWhitelistFilter.escapePlainText(content);
+        // 仅对文本消息做 XSS 过滤（图片消息 content 是 URL，无需过滤）
+        if (!"image".equals(messageType)) {
+            content = HtmlWhitelistFilter.escapePlainText(content);
 
-        // 敏感词检查
-        if (sensitiveWordUtil.containsSensitiveWord(content)) {
-            log.warn("消息包含敏感词，拒绝发送: senderId={}, receiverId={}", senderId, receiverId);
-            return;
+            // 敏感词检查（仅文本）
+            if (sensitiveWordUtil.containsSensitiveWord(content)) {
+                log.warn("消息包含敏感词，拒绝发送: senderId={}, receiverId={}", senderId, receiverId);
+                return;
+            }
         }
 
         // 持久化消息
         MessageSendRequest request = new MessageSendRequest();
         request.setReceiverId(receiverId);
         request.setContent(content);
+        request.setType(messageType);
         MessageVO messageVO = messageService.sendMessage(senderId, request);
 
         // 查询发送者信息
@@ -210,6 +214,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                         "data", Map.of(
                                 "senderId", senderId,
                                 "content", content,
+                                "messageType", messageType,
                                 "senderNickname", senderNickname,
                                 "senderAvatar", senderAvatar,
                                 "createdAt", messageVO.getCreatedAt().toString()

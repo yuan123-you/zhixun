@@ -31,6 +31,19 @@
           </p>
         </div>
       </div>
+
+      <!-- 更多菜单按钮 -->
+      <button
+        class="p-2 -mr-2 text-[var(--zh-text-secondary)] dark:text-[var(--zh-text-tertiary)] hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+        title="聊天设置"
+        @click="router.push(`/messages/chat-settings/${targetUserId}`)"
+      >
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="5" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+        </svg>
+      </button>
     </div>
 
     <!-- 消息列表 -->
@@ -79,7 +92,10 @@
             <UserAvatar :src="msg.sender?.avatar" :alt="msg.sender?.nickname" size="sm" />
           </button>
           <div>
-            <div class="bg-slate-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
+            <div v-if="msg.type === 'image'" class="msg-image-wrap">
+              <img :src="resolveMsgUrl(msg.content)" alt="图片" class="msg-image" @click="previewImage(msg.content)" />
+            </div>
+            <div v-else class="bg-slate-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
               <p class="text-sm text-[var(--zh-text)] dark:text-gray-100 whitespace-pre-wrap break-words">{{ msg.content }}</p>
             </div>
             <span class="text-[10px] text-[var(--zh-text-tertiary)] dark:text-[var(--zh-text-secondary)] mt-0.5 block">
@@ -91,7 +107,10 @@
         <!-- 我的消息 -->
         <div v-else class="flex items-start gap-2 justify-end">
           <div class="max-w-[75%]">
-            <div class="bg-primary text-white rounded-2xl rounded-tr-sm px-3 py-2">
+            <div v-if="msg.type === 'image'" class="msg-image-wrap msg-image-wrap-mine">
+              <img :src="resolveMsgUrl(msg.content)" alt="图片" class="msg-image" @click="previewImage(msg.content)" />
+            </div>
+            <div v-else class="bg-primary text-white rounded-2xl rounded-tr-sm px-3 py-2">
               <p class="text-sm whitespace-pre-wrap break-words">{{ msg.content }}</p>
             </div>
             <span class="text-[10px] text-[var(--zh-text-tertiary)] dark:text-[var(--zh-text-secondary)] mt-0.5 block text-right">
@@ -110,7 +129,21 @@
 
     <!-- 消息输入区 -->
     <div class="flex-shrink-0 border-t border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 px-3 py-2 safe-bottom">
+      <!-- 图片上传中提示 -->
+      <div v-if="imageUploading" class="flex items-center gap-2 px-2 py-1 mb-1 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 rounded-lg">
+        <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        图片上传中...
+      </div>
       <div class="flex items-center gap-2">
+        <!-- 表情按钮 -->
+        <EmojiPicker @select="onEmojiSelect" />
+        <!-- 图片按钮 -->
+        <button class="input-action-btn" title="发送图片" @click="triggerImageUpload" :disabled="imageUploading">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <input ref="imageInputRef" type="file" accept="image/*" style="display:none" @change="onImageSelected" />
+        </button>
         <div class="input-field-msg" :class="{ focused: inputFocused }">
           <input
             ref="inputRef"
@@ -137,17 +170,26 @@
         </button>
       </div>
     </div>
+
+    <!-- 图片预览弹层 -->
+    <Teleport to="body">
+      <div v-if="previewImageUrl" class="image-preview-overlay" @click="previewImageUrl = ''">
+        <img :src="resolveMsgUrl(previewImageUrl)" class="image-preview-img" alt="预览" @click.stop />
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useMessageStore } from '@/stores/message'
+import { fileApi } from '@/api/file'
 import { sanitizeText } from '@/utils/sanitize'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const messageStore = useMessageStore()
+const { resolveUrl } = useResourceUrl()
 
 const {
   currentMessages,
@@ -165,9 +207,62 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const bottomSentinelRef = ref<HTMLElement | null>(null)
 const isOnline = ref(false)
 const isInitialLoad = ref(true)
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const imageUploading = ref(false)
+const previewImageUrl = ref('')
 
 const targetUserId = computed(() => Number(route.params.id))
 const myUserId = computed(() => userStore.userInfo?.id)
+
+/** 解析消息中的资源 URL */
+const resolveMsgUrl = (url: string) => resolveUrl(url) || url
+
+/** 点击图片消息预览 */
+const previewImage = (url: string) => { previewImageUrl.value = url }
+
+/** 表情选择回调 */
+const onEmojiSelect = (emoji: string) => {
+  inputContent.value += emoji
+  inputRef.value?.focus()
+}
+
+/** 触发图片文件选择 */
+const triggerImageUpload = () => {
+  imageInputRef.value?.click()
+}
+
+/** 图片选择后上传并发送 */
+const onImageSelected = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  input.value = ''
+
+  if (!file.type.startsWith('image/')) {
+    showAlert('请选择图片文件')
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showAlert('图片大小不能超过10MB')
+    return
+  }
+
+  imageUploading.value = true
+  try {
+    const imageUrl = await fileApi.uploadSingleImage(file)
+    if (!imageUrl) {
+      throw new Error('图片上传失败')
+    }
+    await messageStore.sendMessage(targetUserId.value, imageUrl, 'image')
+    await nextTick()
+    scrollToBottom()
+  } catch (err: any) {
+    showAlert(err.message || '图片发送失败，请稍后重试')
+    console.error('[Messages] 发送图片失败:', err.message || err)
+  } finally {
+    imageUploading.value = false
+  }
+}
 
 // 点击头像跳转用户主页
 const navigateToUser = (userId?: number) => {
@@ -233,7 +328,7 @@ const onSend = async () => {
   inputContent.value = ''
 
   try {
-    await messageStore.sendMessage(targetUserId.value, content)
+    await messageStore.sendMessage(targetUserId.value, content, 'text')
     await nextTick()
     scrollToBottom()
   } catch (err: any) {
@@ -437,5 +532,72 @@ onUnmounted(() => {
 .send-btn-msg:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* 操作按钮（表情/图片） */
+.input-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--zh-text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+}
+.input-action-btn:hover:not(:disabled) {
+  background: var(--zh-bg-hover);
+  color: var(--zh-primary);
+}
+.input-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 图片消息 */
+.msg-image-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.msg-image-wrap-mine {
+  text-align: right;
+}
+.msg-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 12px;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+  transition: transform 0.15s ease;
+}
+.msg-image:hover {
+  transform: scale(1.02);
+}
+
+/* 图片预览弹层 */
+.image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+}
+.image-preview-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  object-fit: contain;
+  cursor: default;
 }
 </style>

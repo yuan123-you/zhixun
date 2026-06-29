@@ -9,6 +9,11 @@ import com.zhixun.common.exception.BusinessException;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.entity.*;
 import com.zhixun.mapper.*;
+import com.zhixun.service.AIService;
+import com.zhixun.dto.ai.AIWriteRequest;
+import com.zhixun.vo.AIResponseVO;
+import com.zhixun.security.HtmlWhitelistFilter;
+import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.service.GroupService;
 import com.zhixun.vo.GroupJoinRequestVO;
 import com.zhixun.vo.GroupMemberVO;
@@ -18,7 +23,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +38,8 @@ public class GroupServiceImpl implements GroupService {
     private final GroupMessageMapper groupMessageMapper;
     private final GroupJoinRequestMapper groupJoinRequestMapper;
     private final UserMapper userMapper;
+    private final AIService aiService;
+    private final SensitiveWordUtil sensitiveWordUtil;
 
     @Override @Transactional
     public Long createGroup(Long userId, GroupCreateRequest request) {
@@ -208,11 +217,27 @@ public class GroupServiceImpl implements GroupService {
         if (!isMember(userId, request.getGroupId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "非群组成员无法发送消息");
         }
+        String messageType = request.getMessageType() != null ? request.getMessageType() : "text";
+        String content = request.getContent();
+
+        // 仅对文本消息进行XSS过滤和敏感词检查
+        if ("text".equals(messageType)) {
+            content = HtmlWhitelistFilter.escapePlainText(content);
+            if (sensitiveWordUtil.containsSensitiveWord(content)) {
+                throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息包含敏感词，请修改后重试");
+            }
+        }
+
         GroupMessage msg = new GroupMessage();
         msg.setGroupId(request.getGroupId());
         msg.setSenderId(userId);
-        msg.setContent(request.getContent());
-        msg.setMessageType(request.getMessageType() != null ? request.getMessageType() : "text");
+        msg.setContent(content);
+        msg.setMessageType(messageType);
+        // 处理@提及的用户ID列表
+        if (request.getMentionedUserIds() != null && !request.getMentionedUserIds().isEmpty()) {
+            msg.setMentionedUserIds(request.getMentionedUserIds().stream()
+                    .map(String::valueOf).collect(Collectors.joining(",")));
+        }
         // 填充发送者信息
         User sender = userMapper.selectById(userId);
         if (sender != null) {
@@ -313,7 +338,86 @@ public class GroupServiceImpl implements GroupService {
         vo.setGroupId(m.getGroupId()); vo.setSenderId(m.getSenderId());
         vo.setSenderName(m.getSenderName()); vo.setSenderAvatar(m.getSenderAvatar());
         vo.setContent(m.getContent()); vo.setMessageType(m.getMessageType());
-        vo.setCreatedAt(m.getCreatedAt()); return vo;
+        vo.setCreatedAt(m.getCreatedAt());
+        // 转换 mentionedUserIds: 逗号分隔字符串 → List<Long>
+        if (m.getMentionedUserIds() != null && !m.getMentionedUserIds().isEmpty()) {
+            try {
+                vo.setMentionedUserIds(Arrays.stream(m.getMentionedUserIds().split(","))
+                        .map(String::trim).filter(s -> !s.isEmpty())
+                        .map(Long::parseLong).collect(Collectors.toList()));
+            } catch (NumberFormatException e) {
+                vo.setMentionedUserIds(new ArrayList<>());
+            }
+        } else {
+            vo.setMentionedUserIds(new ArrayList<>());
+        }
+        return vo;
+    }
+
+    @Override
+    public List<GroupMessageVO> searchMessages(Long groupId, Long userId, String keyword, String messageType,
+                                                LocalDateTime startDate, LocalDateTime endDate, Long senderId,
+                                                int offset, int limit) {
+        if (!isMember(userId, groupId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "非群组成员无法搜索消息");
+        }
+        LambdaQueryWrapper<GroupMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GroupMessage::getGroupId, groupId);
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.like(GroupMessage::getContent, keyword);
+        }
+        if (messageType != null && !messageType.isEmpty()) {
+            wrapper.eq(GroupMessage::getMessageType, messageType);
+        }
+        if (startDate != null) {
+            wrapper.ge(GroupMessage::getCreatedAt, startDate);
+        }
+        if (endDate != null) {
+            wrapper.le(GroupMessage::getCreatedAt, endDate.plusDays(1));
+        }
+        if (senderId != null) {
+            wrapper.eq(GroupMessage::getSenderId, senderId);
+        }
+        wrapper.orderByDesc(GroupMessage::getId)
+                .last("LIMIT " + limit + " OFFSET " + offset);
+        List<GroupMessage> msgs = groupMessageMapper.selectList(wrapper);
+        for (GroupMessage m : msgs) {
+            if (m.getSenderName() == null || m.getSenderName().isEmpty()) {
+                User s = userMapper.selectById(m.getSenderId());
+                if (s != null) {
+                    m.setSenderName(s.getNickname());
+                    m.setSenderAvatar(s.getAvatar());
+                }
+            }
+        }
+        return msgs.stream().map(this::toMessageVO).collect(Collectors.toList());
+    }
+
+    @Override
+    public GroupMessageVO sendAIMessage(Long groupId, Long userId, String question) {
+        if (!isMember(userId, groupId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "非群组成员无法使用AI助手");
+        }
+        // 调用AI服务
+        AIWriteRequest aiReq = new AIWriteRequest();
+        aiReq.setPrompt(question);
+        aiReq.setMode("chat");
+        AIResponseVO aiResp = aiService.generateText(aiReq);
+
+        // 获取提问者信息
+        User asker = userMapper.selectById(userId);
+        String askerName = asker != null ? asker.getNickname() : "未知用户";
+
+        // 将AI回复持久化为群组消息
+        GroupMessage msg = new GroupMessage();
+        msg.setGroupId(groupId);
+        msg.setSenderId(0L); // AI机器人
+        msg.setSenderName("AI助手");
+        msg.setSenderAvatar(""); // 前端使用默认机器人头像
+        msg.setContent(aiResp.getContent());
+        msg.setMessageType("ai_reply");
+        groupMessageMapper.insert(msg);
+        return toMessageVO(msg);
     }
 
     @Override @Transactional

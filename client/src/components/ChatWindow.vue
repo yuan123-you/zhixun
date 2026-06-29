@@ -15,6 +15,18 @@
           {{ isOnline ? '在线' : '离线' }}
         </p>
       </div>
+      <!-- 更多菜单按钮 -->
+      <button
+        class="more-menu-btn"
+        title="聊天设置"
+        @click="router.push(`/messages/chat-settings/${conversation.user?.id}`)"
+      >
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="5" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+        </svg>
+      </button>
     </div>
 
     <!-- 消息列表 -->
@@ -35,13 +47,19 @@
             <UserAvatar :src="message.sender?.avatar" alt="头像" size="sm" />
           </span>
           <div class="message-bubble-wrap">
-            <div class="bubble bubble-other">{{ message.content }}</div>
+            <div v-if="message.type === 'image'" class="bubble bubble-other bubble-image">
+              <img :src="resolveMsgUrl(message.content)" alt="图片" class="msg-image" @click="previewImage(message.content)" />
+            </div>
+            <div v-else class="bubble bubble-other">{{ message.content }}</div>
             <span class="bubble-time">{{ formatTime(message.createdAt) }}</span>
           </div>
         </template>
         <template v-else>
           <div class="message-bubble-wrap">
-            <div class="bubble bubble-mine">{{ message.content }}</div>
+            <div v-if="message.type === 'image'" class="bubble bubble-mine bubble-image">
+              <img :src="resolveMsgUrl(message.content)" alt="图片" class="msg-image" @click="previewImage(message.content)" />
+            </div>
+            <div v-else class="bubble bubble-mine">{{ message.content }}</div>
             <span class="bubble-time mine-time">{{ formatTime(message.createdAt) }}</span>
           </div>
           <span class="my-avatar" @click="navigateToUser(userStore.userInfo?.id)">
@@ -65,7 +83,22 @@
           <button class="send-error-close" @click="sendError = ''">&times;</button>
         </div>
       </Transition>
+      <!-- 图片上传进度提示 -->
+      <Transition name="send-error-fade">
+        <div v-if="imageUploading" class="send-error-tip" style="background:#eff6ff;border-color:#bfdbfe;color:#2563eb;">
+          <span>图片上传中...</span>
+        </div>
+      </Transition>
       <div class="chat-input-row">
+        <!-- 表情按钮 -->
+        <EmojiPicker @select="onEmojiSelect" />
+        <!-- 图片上传按钮 -->
+        <button class="input-action-btn" title="发送图片" @click="triggerImageUpload" :disabled="imageUploading">
+          <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <input ref="imageInputRef" type="file" accept="image/*" style="display:none" @change="onImageSelected" />
+        </button>
         <div class="input-field-chat" :class="{ focused: inputFocused }">
           <input
             v-model="inputContent"
@@ -91,24 +124,33 @@
         </div>
       </div>
     </div>
+
+    <!-- 图片预览弹层 -->
+    <Teleport to="body">
+      <div v-if="previewImageUrl" class="image-preview-overlay" @click="previewImageUrl = ''">
+        <img :src="resolveMsgUrl(previewImageUrl)" class="image-preview-img" alt="预览" @click.stop />
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Conversation, Message } from '@/types'
 import { socialApi } from '@/api'
+import { fileApi } from '@/api/file'
 import { ArrowLeft, Loading } from '@element-plus/icons-vue'
 import { sanitizeText } from '@/utils/sanitize'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { resolveUrl } = useResourceUrl()
 
 const props = withDefaults(defineProps<{
   conversation: Conversation | null
   messages: Message[]
   loadingMore?: boolean
   hasMore?: boolean
-  onSend?: (content: string) => Promise<any>
+  onSend?: (content: string, type?: string) => Promise<any>
 }>(), { loadingMore: false, hasMore: true, onSend: undefined })
 
 const emit = defineEmits<{ back: []; loadMore: [] }>()
@@ -121,9 +163,72 @@ const messageListRef = ref<HTMLElement | null>(null)
 const topSentinelRef = ref<HTMLElement | null>(null)
 const bottomRef = ref<HTMLElement | null>(null)
 const isOnline = ref(false)
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const imageUploading = ref(false)
+const previewImageUrl = ref('')
 
 const navigateToUser = (userId?: number) => { if (userId) router.push(`/user/${userId}`) }
 const isMine = (message: Message) => message.senderId === userStore.userInfo?.id
+
+/** 解析消息中的资源 URL（用于图片消息） */
+const resolveMsgUrl = (url: string) => resolveUrl(url) || url
+
+/** 点击图片消息放大预览 */
+const previewImage = (url: string) => { previewImageUrl.value = url }
+
+/** 表情选择回调 */
+const onEmojiSelect = (emoji: string) => {
+  inputContent.value += emoji
+}
+
+/** 触发图片文件选择 */
+const triggerImageUpload = () => {
+  imageInputRef.value?.click()
+}
+
+/** 图片文件选择后上传并发送 */
+const onImageSelected = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  input.value = '' // 重置以允许重复选择同一文件
+
+  // 校验文件类型和大小
+  if (!file.type.startsWith('image/')) {
+    sendError.value = '请选择图片文件'
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    sendError.value = '图片大小不能超过10MB'
+    return
+  }
+
+  imageUploading.value = true
+  sendError.value = ''
+
+  try {
+    // 上传图片到服务器
+    const imageUrl = await fileApi.uploadSingleImage(file)
+    if (!imageUrl) {
+      throw new Error('图片上传失败，返回地址为空')
+    }
+
+    // 发送图片消息
+    if (props.onSend) {
+      await props.onSend(imageUrl, 'image')
+    } else {
+      sendError.value = '消息发送功能暂不可用，请刷新页面后重试'
+      return
+    }
+    await nextTick()
+    scrollToBottom()
+  } catch (err: any) {
+    sendError.value = err.message || '图片发送失败，请稍后重试'
+    console.error('[ChatWindow] 发送图片失败:', err.message || err)
+  } finally {
+    imageUploading.value = false
+  }
+}
 
 const sendMessage = async () => {
   const rawContent = inputContent.value.trim()
@@ -138,7 +243,7 @@ const sendMessage = async () => {
 
   try {
     if (props.onSend) {
-      await props.onSend(content)
+      await props.onSend(content, 'text')
     } else {
       console.warn('[ChatWindow] 未提供 onSend 回调，消息无法发送')
       sendError.value = '消息发送功能暂不可用，请刷新页面后重试'
@@ -239,6 +344,27 @@ onUnmounted(() => observer?.disconnect())
 }
 .chat-status { font-size: 12px; color: var(--zh-text-tertiary); }
 .chat-status.online { color: var(--zh-success); }
+
+/* 更多菜单按钮 */
+.more-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--zh-text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.more-menu-btn:hover {
+  background: var(--zh-bg-hover);
+  color: var(--zh-primary);
+}
 
 .chat-messages {
   flex: 1;
@@ -362,6 +488,75 @@ onUnmounted(() => observer?.disconnect())
 .chat-input-row {
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+
+/* 操作按钮（表情/图片） */
+.input-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--zh-text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+}
+.input-action-btn:hover:not(:disabled) {
+  background: var(--zh-bg-hover);
+  color: var(--zh-primary);
+}
+.input-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.action-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* 图片消息 */
+.bubble-image {
+  padding: 4px !important;
+  background: transparent !important;
+}
+.msg-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 12px;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+  transition: transform 0.15s ease;
+}
+.msg-image:hover {
+  transform: scale(1.02);
+}
+
+/* 图片预览弹层 */
+.image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+}
+.image-preview-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  object-fit: contain;
+  cursor: default;
 }
 
 /* 统一输入框样式 - 匹配登录页交互 */

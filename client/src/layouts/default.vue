@@ -137,6 +137,9 @@
     <!-- 返回顶部 -->
     <BackToTop />
 
+    <!-- @提及通知弹窗 -->
+    <MentionNotification />
+
     <!-- 移动端底部Tab导航栏 -->
     <MobileNav />
 

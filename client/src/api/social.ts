@@ -44,10 +44,12 @@ export const socialApi = {
   },
 
   /** 发送私信（userId为对方用户ID） */
-  sendMessage: (userId: number, data: { content: string; type?: number | string }) => {
+  sendMessage: (userId: number, data: { content: string; type?: string }) => {
     const { post } = useApi()
-    // 仅向后端发送 content 字段，避免 Map<String, String> 接收 number 类型导致反序列化失败（400）
-    return post<Message>(`/conversations/${userId}/messages`, { content: data.content })
+    return post<Message>(`/conversations/${userId}/messages`, {
+      content: data.content,
+      type: data.type || 'text',
+    })
   },
 
   /** 获取会话列表 */

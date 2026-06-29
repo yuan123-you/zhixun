@@ -104,6 +104,7 @@ public class MessageServiceImpl implements MessageService {
         message.setSenderId(senderId);
         message.setReceiverId(receiverId);
         message.setContent(encryptedContent);
+        message.setType(request.getType() != null ? request.getType() : "text");
         message.setIsRead(0);
         try {
             userMessageMapper.insert(message);
@@ -128,6 +129,11 @@ public class MessageServiceImpl implements MessageService {
 
         // 通过 RabbitMQ 异步推送给接收者
         try {
+            // 查询发送者信息用于 WS 推送
+            User senderUser = userMapper.selectById(senderId);
+            String senderNickname = senderUser != null ? senderUser.getNickname() : "";
+            String senderAvatar = senderUser != null ? senderUser.getAvatar() : "";
+
             Map<String, Object> mqMessage = Map.of(
                     "type", "CHAT",
                     "data", Map.of(
@@ -135,6 +141,9 @@ public class MessageServiceImpl implements MessageService {
                             "id", message.getId(),
                             "senderId", senderId,
                             "content", rawContent,
+                            "messageType", message.getType(),
+                            "senderNickname", senderNickname,
+                            "senderAvatar", senderAvatar,
                             "createdAt", message.getCreatedAt().toString()
                     )
             );
@@ -370,6 +379,7 @@ public class MessageServiceImpl implements MessageService {
         vo.setId(message.getId());
         vo.setSenderId(message.getSenderId());
         vo.setReceiverId(message.getReceiverId());
+        vo.setType(message.getType() != null ? message.getType() : "text");
         vo.setIsRead(message.getIsRead());
         vo.setCreatedAt(message.getCreatedAt());
 

@@ -14,9 +14,15 @@ import com.zhixun.vo.GroupVO;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/groups")
@@ -106,6 +112,36 @@ public class GroupController {
     @PreAuthorize("isAuthenticated()")
     public R<GroupMessageVO> sendMessage(@Valid @RequestBody GroupMessageRequest request) {
         return R.ok(groupService.sendMessage(securityUtil.getCurrentUserId(), request));
+    }
+
+    @GetMapping("/{groupId}/messages/search")
+    @PreAuthorize("isAuthenticated()")
+    public R<List<GroupMessageVO>> searchMessages(@PathVariable Long groupId,
+                                                   @RequestParam(required = false) String keyword,
+                                                   @RequestParam(required = false) String messageType,
+                                                   @RequestParam(required = false) String startDate,
+                                                   @RequestParam(required = false) String endDate,
+                                                   @RequestParam(required = false) Long senderId,
+                                                   @RequestParam(defaultValue = "0") int offset,
+                                                   @RequestParam(defaultValue = "50") int limit) {
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+        if (startDate != null && !startDate.isEmpty()) {
+            start = LocalDate.parse(startDate).atStartOfDay();
+        }
+        if (endDate != null && !endDate.isEmpty()) {
+            end = LocalDate.parse(endDate).atTime(LocalTime.MAX);
+        }
+        return R.ok(groupService.searchMessages(groupId, securityUtil.getCurrentUserId(),
+                keyword, messageType, start, end, senderId, offset, limit));
+    }
+
+    @PostMapping("/messages/ai")
+    @PreAuthorize("isAuthenticated()")
+    public R<GroupMessageVO> sendAIMessage(@RequestBody Map<String, Object> body) {
+        Long groupId = Long.valueOf(body.get("groupId").toString());
+        String question = (String) body.get("question");
+        return R.ok(groupService.sendAIMessage(groupId, securityUtil.getCurrentUserId(), question));
     }
 
     @GetMapping("/search")

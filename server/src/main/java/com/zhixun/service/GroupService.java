@@ -9,6 +9,7 @@ import com.zhixun.vo.GroupMemberVO;
 import com.zhixun.vo.GroupMessageVO;
 import com.zhixun.vo.GroupVO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface GroupService {
@@ -23,6 +24,10 @@ public interface GroupService {
     void setAdmin(Long ownerId, Long groupId, Long targetUserId, boolean isAdmin);
     GroupMessageVO sendMessage(Long userId, GroupMessageRequest request);
     List<GroupMessageVO> getMessages(Long groupId, Long userId, Long offset, int limit);
+    List<GroupMessageVO> searchMessages(Long groupId, Long userId, String keyword, String messageType,
+                                         LocalDateTime startDate, LocalDateTime endDate, Long senderId,
+                                         int offset, int limit);
+    GroupMessageVO sendAIMessage(Long groupId, Long userId, String question);
     List<GroupMemberVO> getMembers(Long groupId, Long userId);
     List<GroupVO> searchGroups(String keyword, Integer page, Integer pageSize);
     void requestJoin(Long userId, Long groupId, String message);

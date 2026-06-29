@@ -260,6 +260,7 @@ CREATE TABLE IF NOT EXISTS user_message (
   sender_id BIGINT NOT NULL,
   receiver_id BIGINT NOT NULL,
   content TEXT NOT NULL,
+  type VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型: text/image/voice/file/system',
   is_read TINYINT DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (sender_id) REFERENCES sys_user(id) ON DELETE CASCADE,

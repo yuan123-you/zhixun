@@ -30,6 +30,9 @@ public class DataRetentionConfig {
     /** 登录日志保留天数 */
     private static final int LOGIN_LOG_RETENTION_DAYS = 180;
 
+    /** 私信保留天数 */
+    private static final int PRIVATE_MESSAGE_RETENTION_DAYS = 7;
+
     /**
      * 每天凌晨 3 点清理过期的浏览历史
      * 保留最近 90 天的数据
@@ -91,11 +94,32 @@ public class DataRetentionConfig {
     }
 
     /**
+     * 每天凌晨 2 点清理过期的私信消息
+     * 保留最近 7 天的数据，过期消息已由客户端 IndexedDB 持久化
+     */
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void cleanUpPrivateMessages() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(PRIVATE_MESSAGE_RETENTION_DAYS);
+        try {
+            int deleted = jdbcTemplate.update(
+                    "DELETE FROM user_message WHERE created_at < ?",
+                    cutoff
+            );
+            if (deleted > 0) {
+                log.info("清理私信消息：删除 {} 条记录（{} 天以前）", deleted, PRIVATE_MESSAGE_RETENTION_DAYS);
+            }
+            // Redis 未读计数 key 已设 TTL=7天，会自然过期，无需额外清理
+        } catch (Exception e) {
+            log.error("清理私信消息失败", e);
+        }
+    }
+
+    /**
      * 每周日凌晨 5 点优化表（清理碎片空间）
      */
     @Scheduled(cron = "0 0 5 ? * SUN")
     public void optimizeTables() {
-        String[] tables = {"cms_view_history", "sys_operation_log", "sys_login_log"};
+        String[] tables = {"cms_view_history", "sys_operation_log", "sys_login_log", "user_message"};
         for (String table : tables) {
             try {
                 jdbcTemplate.execute("OPTIMIZE TABLE " + table);

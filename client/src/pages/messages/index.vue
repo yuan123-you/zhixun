@@ -232,9 +232,9 @@ const openConversation = async (conv: Conversation) => {
 }
 
 // ==================== 发送消息 ====================
-const onSendMessage = async (content: string) => {
+const onSendMessage = async (content: string, type?: string) => {
   if (!activeConversation.value) return
-  return messageStore.sendMessage(activeConversation.value.user.id, content)
+  return messageStore.sendMessage(activeConversation.value.user.id, content, type)
 }
 
 // ==================== 加载更多历史消息 ====================
@@ -254,6 +254,7 @@ const isUserOnline = (userId: number) => messageStore.isUserOnline(userId)
 
 const getLastMessagePreview = (conv: Conversation) => {
   if (!conv.lastMessage) return ''
+  if (conv.lastMessage.type === 'image') return '[图片]'
   const content = conv.lastMessage.content || ''
   return content.length > 30 ? content.slice(0, 30) + '...' : content
 }
