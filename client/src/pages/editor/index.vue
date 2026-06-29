@@ -597,7 +597,7 @@ const aiLoading = ref(false)
  */
 const isReviewFailed = (text: string): boolean => {
   if (!text) return false
-  return /不通过|违规|敏感|风险|警告|⚠️|❌|reject|rejected|denied|敏感内容/.test(text)
+  return /不通过|违规|敏感|风险|警告|⚠️|❌|reject|rejected|denied|敏感内容|请稍后再试|请稍后重试|暂时不可用|请求过于频繁/.test(text)
 }
 
 const handleAIWrite = async (mode: string) => {
@@ -627,6 +627,11 @@ const handleAIWrite = async (mode: string) => {
         showToast('AI 写作功能暂未启用，请联系管理员', 'error')
         return
       }
+      // AI 服务异常检测（限流、不可用等），避免将错误文本当作审核结果展示
+      if (usage.startsWith('error:') || /请稍后再试|请稍后重试|暂时不可用|请求过于频繁/.test(result)) {
+        showToast(result || 'AI 服务暂时不可用，请稍后重试', 'error')
+        return
+      }
       // 审核结果根据语义选择类型：合规=success，存在风险=error，避免误导用户
       if (isReviewFailed(result)) {
         showToast(`AI 审核未通过：${result}`, 'error', { duration: 5000 })
@@ -640,13 +645,19 @@ const handleAIWrite = async (mode: string) => {
     const result = data?.data?.content || ''
     const usage = data?.data?.usage || ''
     if (result) {
-      // 错误响应：后端在异常时会返回 "AI 服务调用失败：xxx" 文本
-      if (result.startsWith('AI 服务调用失败')) {
-        showToast('AI 服务暂时不可用，请稍后重试', 'error')
+      // 错误响应：后端 AI 服务异常时返回的错误文本（覆盖所有已知错误模式）
+      const isAiError =
+        result.startsWith('AI 服务调用失败') ||
+        result.includes('请稍后再试') ||
+        result.includes('请稍后重试') ||
+        result.includes('暂时不可用') ||
+        result.includes('请求过于频繁')
+      if (isAiError) {
+        showToast(result, 'error')
         return
       }
-      // 后端在缺 API Key 时显式返回错误标识（usage=error: api_key_missing）
-      if (usage.startsWith('error: api_key_missing') || result.includes('AI 服务未配置 API Key')) {
+      // 后端在缺 API Key 或其他严重错误时返回 error usage
+      if (usage.startsWith('error:') || result.includes('AI 服务未配置 API Key')) {
         showToast('AI 写作功能暂未启用，请联系管理员', 'error')
         return
       }

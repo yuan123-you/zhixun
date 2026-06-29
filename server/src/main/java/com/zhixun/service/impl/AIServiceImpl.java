@@ -34,9 +34,9 @@ public class AIServiceImpl implements AIService {
     }
 
     /** 最大重试次数（429 限流时） */
-    private static final int MAX_RETRIES = 2;
+    private static final int MAX_RETRIES = 3;
     /** 重试基础延迟（毫秒），实际延迟 = base * 2^attempt */
-    private static final long RETRY_BASE_DELAY_MS = 1000;
+    private static final long RETRY_BASE_DELAY_MS = 2000;
 
     @Override
     public AIResponseVO generateText(AIWriteRequest request) {
