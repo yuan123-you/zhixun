@@ -101,11 +101,23 @@
             <div v-else-if="msg.type === 'image'" class="msg-image-wrap">
               <img :src="resolveMsgUrl(msg.content)" alt="图片" class="msg-image" @click="previewImage(msg.content)" />
             </div>
+            <a v-else-if="msg.type === 'file'" :href="getFileUrl(msg.content)" target="_blank" rel="noopener" class="file-card-msg">
+              <div class="file-card-icon">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              </div>
+              <div class="file-card-info">
+                <span class="file-card-name">{{ getFileName(msg.content) }}</span>
+                <span v-if="getFileSize(msg.content)" class="file-card-size">{{ getFileSize(msg.content) }}</span>
+              </div>
+              <div class="file-card-dl">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              </div>
+            </a>
             <div v-else-if="msg.type === 'voice'" class="voice-bubble-other">
               <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="false" />
             </div>
-            <div v-else class="bg-slate-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
-              <p class="text-sm text-[var(--zh-text)] dark:text-gray-100 whitespace-pre-wrap break-words">{{ msg.content }}</p>
+            <div v-else class="rounded-2xl rounded-tl-sm px-3 py-2" style="background:#498FE8;color:#fff">
+              <p class="text-sm whitespace-pre-wrap break-words">{{ msg.content }}</p>
             </div>
             <span class="text-[10px] text-[var(--zh-text-tertiary)] dark:text-[var(--zh-text-secondary)] mt-0.5 block">
               {{ formatMessageTime(msg.createdAt) }}
@@ -119,10 +131,22 @@
             <div v-if="msg.type === 'image'" class="msg-image-wrap msg-image-wrap-mine">
               <img :src="resolveMsgUrl(msg.content)" alt="图片" class="msg-image" @click="previewImage(msg.content)" />
             </div>
+            <a v-else-if="msg.type === 'file'" :href="getFileUrl(msg.content)" target="_blank" rel="noopener" class="file-card-msg file-card-mine">
+              <div class="file-card-icon">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              </div>
+              <div class="file-card-info">
+                <span class="file-card-name">{{ getFileName(msg.content) }}</span>
+                <span v-if="getFileSize(msg.content)" class="file-card-size">{{ getFileSize(msg.content) }}</span>
+              </div>
+              <div class="file-card-dl">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              </div>
+            </a>
             <div v-else-if="msg.type === 'voice'" class="voice-bubble-mine">
               <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
             </div>
-            <div v-else class="bg-primary text-white rounded-2xl rounded-tr-sm px-3 py-2">
+            <div v-else class="bg-white text-slate-800 rounded-2xl rounded-tr-sm px-3 py-2 shadow-sm border border-slate-100">
               <p class="text-sm whitespace-pre-wrap break-words">{{ msg.content }}</p>
             </div>
             <span class="text-[10px] text-[var(--zh-text-tertiary)] dark:text-[var(--zh-text-secondary)] mt-0.5 block text-right">
@@ -184,6 +208,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <input ref="imageInputRef" type="file" accept="image/*" style="display:none" @change="onImageSelected" />
+        </button>
+        <!-- 文件按钮 -->
+        <button class="input-action-btn" title="发送文件" @click="triggerFileUpload" :disabled="fileUploading">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+          <input ref="fileInputRef" type="file" style="display:none" @change="onFileSelected" />
         </button>
         <!-- 语音按钮 -->
         <button class="input-action-btn" :class="{ 'ai-active': voiceRecorder.isRecording.value }" title="语音消息" @click="startVoiceRecord">
@@ -274,6 +305,8 @@ const isOnline = ref(false)
 const isInitialLoad = ref(true)
 const imageInputRef = ref<HTMLInputElement | null>(null)
 const imageUploading = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const fileUploading = ref(false)
 const previewImageUrl = ref('')
 const aiMode = ref(false)
 const aiThinking = ref(false)
@@ -282,9 +315,15 @@ const aiThinking = ref(false)
 const voiceRecorder = useVoiceRecorder()
 const voiceUploading = ref(false)
 
-/** 解析语音消息内容 */
+/** 解析语音消息内容 - 兼容 JSON {url, duration} 和纯 URL 字符串，解析 MinIO 地址 */
 const getVoiceUrl = (content: string): string => {
-  try { const data = JSON.parse(content); return data.url || content } catch { return content }
+  try {
+    const data = JSON.parse(content)
+    const url = data.url || content
+    return resolveUrl(url) || url
+  } catch {
+    return resolveUrl(content) || content
+  }
 }
 const getVoiceDuration = (content: string): number => {
   try { const data = JSON.parse(content); return data.duration || 0 } catch { return 0 }
@@ -294,9 +333,8 @@ const startVoiceRecord = () => { voiceRecorder.startRecording() }
 
 const finishVoiceRecord = async () => {
   const duration = voiceRecorder.recordingTime.value
-  voiceRecorder.stopRecording()
-  const finalBlob = voiceRecorder.audioBlob.value
-  if (!finalBlob) return
+  const finalBlob = await voiceRecorder.stopRecording()
+  if (!finalBlob) { cancelVoiceRecord(); return }
   voiceUploading.value = true
   try {
     const voiceUrl = await fileApi.uploadSingleVoice(finalBlob)
@@ -330,6 +368,23 @@ const myUserId = computed(() => userStore.userInfo?.id)
 /** 解析消息中的资源 URL */
 const resolveMsgUrl = (url: string) => resolveUrl(url) || url
 
+/** 从文件消息JSON中提取URL */
+const getFileUrl = (content: string) => {
+  try { const data = JSON.parse(content); return resolveUrl(data.url) || data.url } catch { return resolveUrl(content) || content }
+}
+/** 从文件消息JSON中提取文件名 */
+const getFileName = (content: string) => {
+  try { return JSON.parse(content).name || '未知文件' } catch { return '文件' }
+}
+/** 从文件消息JSON中提取文件大小 */
+const getFileSize = (content: string) => {
+  try {
+    const size = JSON.parse(content).size
+    if (!size) return ''
+    return size > 1048576 ? (size / 1048576).toFixed(1) + ' MB' : (size / 1024).toFixed(1) + ' KB'
+  } catch { return '' }
+}
+
 /** 点击图片消息预览 */
 const previewImage = (url: string) => { previewImageUrl.value = url }
 
@@ -342,6 +397,36 @@ const onEmojiSelect = (emoji: string) => {
 /** 触发图片文件选择 */
 const triggerImageUpload = () => {
   imageInputRef.value?.click()
+}
+
+/** 触发文件选择 */
+const triggerFileUpload = () => {
+  fileInputRef.value?.click()
+}
+
+/** 文件选择后上传并发送 */
+const onFileSelected = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  input.value = ''
+
+  fileUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fileApi.uploadFile(formData)
+    const url = res.data.data
+    const content = JSON.stringify({ url, name: file.name, size: file.size })
+    await messageStore.sendMessage(targetUserId.value, content, 'file')
+    await nextTick()
+    scrollToBottom()
+  } catch (err: any) {
+    showAlert(err.message || '文件上传失败，请稍后重试')
+    console.error('[Messages] 发送文件失败:', err.message || err)
+  } finally {
+    fileUploading.value = false
+  }
 }
 
 /** 图片选择后上传并发送 */
@@ -833,15 +918,64 @@ onUnmounted(() => {
 
 /* 语音消息气泡 */
 .voice-bubble-other {
-  background: var(--zh-bg-hover, #f1f5f9);
   border-radius: 18px 18px 18px 4px;
-  padding: 4px 6px;
-  min-width: 100px;
+  padding: 2px 4px;
+  min-width: 90px;
 }
 .voice-bubble-mine {
-  background: var(--zh-primary, #6366f1);
   border-radius: 18px 18px 4px 18px;
-  padding: 4px 6px;
-  min-width: 100px;
+  padding: 2px 4px;
+  min-width: 90px;
+}
+
+/* 文件消息卡片 */
+.file-card-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--zh-bg-hover, #f1f5f9);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 200px;
+  max-width: 260px;
+  transition: background 0.15s;
+}
+.file-card-msg:hover {
+  background: var(--zh-bg, #e2e8f0);
+}
+.file-card-mine {
+  background: rgba(255, 255, 255, 0.9);
+}
+.file-card-mine:hover {
+  background: rgba(255, 255, 255, 1);
+}
+.file-card-icon {
+  color: var(--zh-primary, #6366f1);
+  flex-shrink: 0;
+}
+.file-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.file-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--zh-text, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-card-size {
+  font-size: 11px;
+  color: var(--zh-text-tertiary, #94a3b8);
+}
+.file-card-dl {
+  color: var(--zh-text-tertiary, #94a3b8);
+  flex-shrink: 0;
 }
 </style>

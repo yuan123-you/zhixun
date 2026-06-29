@@ -262,6 +262,9 @@ const isUserOnline = (userId: number) => messageStore.isUserOnline(userId)
 const getLastMessagePreview = (conv: Conversation) => {
   if (!conv.lastMessage) return ''
   if (conv.lastMessage.type === 'image') return '[图片]'
+  if (conv.lastMessage.type === 'voice') return '[语音]'
+  if (conv.lastMessage.type === 'file') return '[文件]'
+  if (conv.lastMessage.type === 'ai_reply') return '[AI回复]'
   const content = conv.lastMessage.content || ''
   return content.length > 30 ? content.slice(0, 30) + '...' : content
 }

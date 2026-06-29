@@ -45,6 +45,8 @@ export default defineConfig({
         // 同时支持通过 VITE_API_TARGET 覆盖到其他环境（如 Docker 内网或远程后端）。
         target: process.env.VITE_API_TARGET || 'http://[::1]:8080',
         changeOrigin: true,
+        // AI 接口后端 read timeout 120s + 重试延迟，代理超时须大于前端 axios timeout(130s)
+        timeout: 135_000,
       },
       // 腾讯地图 WebService API 已迁移到后端代理（/api/v1/users/ip-location-detail、
       // /api/v1/users/reverse-geocode），由服务端持有 Key + Redis 缓存 + IP 限流，

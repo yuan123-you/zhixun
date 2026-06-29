@@ -15,6 +15,9 @@ public class AIConfig {
     /** ZhiPuAI base URL */
     private String baseUrl = "https://open.bigmodel.cn/api/paas/v4";
 
-    /** ZhiPuAI 免费模型 glm-4.7-flash（300亿参数MoE） */
-    private String model = "glm-4.7-flash";
+    /** ZhiPuAI 主模型（免费，速率限制较宽松） */
+    private String model = "glm-4-flash";
+
+    /** ZhiPuAI 降级模型（主模型限流时自动切换） */
+    private String fallbackModel = "glm-4.7-flash";
 }

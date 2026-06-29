@@ -9,7 +9,6 @@
 
     <!-- 主内容区 -->
     <main
-      class="flex-1 pb-[calc(3.125rem+env(safe-area-inset-bottom,0px))]"
       :class="{ 'pt-[52px] md:pt-16': showHeaderInner }"
     >
       <router-view v-slot="{ Component, route: r }">

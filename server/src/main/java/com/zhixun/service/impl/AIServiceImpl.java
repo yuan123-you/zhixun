@@ -53,28 +53,29 @@ public class AIServiceImpl implements AIService {
         String preview = request.getPrompt() != null
             ? request.getPrompt().substring(0, Math.min(50, request.getPrompt().length()))
             : "";
-        log.info("Calling ZhiPuAI: model={}, mode={}, prompt={}", aiConfig.getModel(), request.getMode(), preview);
+        String primaryModel = aiConfig.getModel();
+        String fallbackModel = aiConfig.getFallbackModel();
+        log.info("Calling ZhiPuAI: model={}, fallback={}, mode={}, prompt={}", primaryModel, fallbackModel, request.getMode(), preview);
 
-        Exception lastException = null;
-        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-            try {
-                return doCallZhiPuAI(url, apiKey, request);
-            } catch (RateLimitException e) {
-                // 429 限流：指数退避重试
-                lastException = e;
-                if (attempt < MAX_RETRIES) {
-                    long delay = RETRY_BASE_DELAY_MS * (1L << attempt); // 1s, 2s
-                    log.warn("ZhiPuAI 429 限流, 第{}次重试, 等待{}ms: {}", attempt + 1, delay, e.getMessage());
-                    try { Thread.sleep(delay); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
-                }
-            } catch (Exception e) {
-                lastException = e;
-                break; // 非限流异常不重试
-            }
+        // 1. 先尝试主模型（含重试）
+        TryResult primaryResult = tryWithModel(url, apiKey, request, primaryModel);
+        if (primaryResult.isSuccess()) {
+            return primaryResult.result;
         }
 
-        // 所有重试耗尽或不可重试的异常
-        log.error("ZhiPuAI API call failed after {} attempts: {}", MAX_RETRIES + 1, lastException != null ? lastException.getMessage() : "unknown");
+        // 2. 主模型全部重试失败且为限流错误，尝试降级模型
+        Exception lastException = primaryResult.exception;
+        if (lastException instanceof RateLimitException && fallbackModel != null && !fallbackModel.isEmpty() && !fallbackModel.equals(primaryModel)) {
+            log.warn("主模型 {} 限流，降级到备用模型 {}", primaryModel, fallbackModel);
+            TryResult fallbackResult = tryWithModel(url, apiKey, request, fallbackModel);
+            if (fallbackResult.isSuccess()) {
+                return fallbackResult.result;
+            }
+            lastException = fallbackResult.exception;
+        }
+
+        // 3. 所有尝试均失败
+        log.error("ZhiPuAI API call failed for all models: {}", lastException != null ? lastException.getMessage() : "unknown");
         AIResponseVO vo = new AIResponseVO();
         String userMsg = (lastException instanceof RateLimitException)
             ? "AI 服务当前请求过于频繁，请稍后再试"
@@ -85,17 +86,48 @@ public class AIServiceImpl implements AIService {
     }
 
     /**
+     * 线程安全的调用结果：成功时持有 result，失败时持有 exception
+     */
+    private static class TryResult {
+        final AIResponseVO result;
+        final Exception exception;
+        TryResult(AIResponseVO result) { this.result = result; this.exception = null; }
+        TryResult(Exception exception) { this.result = null; this.exception = exception; }
+        boolean isSuccess() { return result != null; }
+    }
+
+    private TryResult tryWithModel(String url, String apiKey, AIWriteRequest request, String model) {
+        Exception lastException = null;
+        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return new TryResult(doCallZhiPuAI(url, apiKey, request, model));
+            } catch (RateLimitException e) {
+                lastException = e;
+                if (attempt < MAX_RETRIES) {
+                    long delay = RETRY_BASE_DELAY_MS * (1L << attempt);
+                    log.warn("ZhiPuAI [{}] 429 限流, 第{}次重试, 等待{}ms: {}", model, attempt + 1, delay, e.getMessage());
+                    try { Thread.sleep(delay); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+                }
+            } catch (Exception e) {
+                lastException = e;
+                break; // 非限流异常不重试
+            }
+        }
+        return new TryResult(lastException);
+    }
+
+    /**
      * 单次调用智谱 API，限流时抛出 RateLimitException 以便外层重试
      */
     @SuppressWarnings("unchecked")
-    private AIResponseVO doCallZhiPuAI(String url, String apiKey, AIWriteRequest request) throws Exception {
+    private AIResponseVO doCallZhiPuAI(String url, String apiKey, AIWriteRequest request, String model) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + apiKey);
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", aiConfig.getModel());
+        body.put("model", model);
         body.put("messages", List.of(
             Map.of("role", "system", "content", getSystemPrompt(request.getMode())),
             Map.of("role", "user", "content", buildUserPrompt(request))

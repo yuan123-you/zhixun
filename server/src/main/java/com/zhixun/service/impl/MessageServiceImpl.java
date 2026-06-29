@@ -394,6 +394,12 @@ public class MessageServiceImpl implements MessageService {
         aiReq.setMode("chat");
         AIResponseVO aiResp = aiService.generateText(aiReq);
 
+        // 2.5 检查AI服务是否返回错误（避免将错误信息存入数据库）
+        if (aiResp.getUsage() != null && aiResp.getUsage().startsWith("error:")) {
+            log.warn("AI服务调用失败: usage={}, content={}", aiResp.getUsage(), aiResp.getContent());
+            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂时不可用，请稍后再试");
+        }
+
         // 3. 保存AI回复消息（senderId=0 代表AI助手）
         UserMessage message = new UserMessage();
         message.setSenderId(0L);

@@ -220,13 +220,14 @@ app:
   data-version: ${APP_DATA_VERSION:20250625}
   # 知讯官方账号ID（新用户注册后将自动关注该账号并接收欢迎消息）
   official-account-id: ${OFFICIAL_ACCOUNT_ID:1}
-# 智谱AI 配置 (ZhiPuAI glm-4.7-flash)
+# 智谱AI 配置 (ZhiPuAI)
 zhixun:
   ai:
     api-key: ${ZHIPU_API_KEY:}
     base-url: ${ZHIPU_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
-    # 智谱免费模型：glm-4.7-flash（300亿参数MoE，https://open.bigmodel.cn/ ）
-    model: ${ZHIPU_MODEL:glm-4.7-flash}
+    # 智谱免费模型：glm-4-flash（速率限制宽松）；glm-4.7-flash 作为降级备选
+    model: ${ZHIPU_MODEL:glm-4-flash}
+    fallback-model: ${ZHIPU_FALLBACK_MODEL:glm-4.7-flash}
   # 腾讯地图配置（用于 IP 定位 / 逆地理编码）
   map:
     tencent:

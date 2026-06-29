@@ -351,9 +351,8 @@ const startVoiceRecord = () => { voiceRecorder.startRecording() }
 
 const finishVoiceRecord = async () => {
   const duration = voiceRecorder.recordingTime.value
-  voiceRecorder.stopRecording()
-  const finalBlob = voiceRecorder.audioBlob.value
-  if (!finalBlob) return
+  const finalBlob = await voiceRecorder.stopRecording()
+  if (!finalBlob) { cancelVoiceRecord(); return }
   voiceUploading.value = true
   try {
     const voiceUrl = await fileApi.uploadSingleVoice(finalBlob)

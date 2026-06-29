@@ -295,10 +295,8 @@ const startVoiceRecord = () => { voiceRecorder.startRecording() }
 /** 结束录制并上传发送 */
 const finishVoiceRecord = async () => {
   const duration = voiceRecorder.recordingTime.value
-  voiceRecorder.stopRecording()
-  // stopRecording 触发 onstop（同步），此时 audioBlob 已设置
-  const finalBlob = voiceRecorder.audioBlob.value
-  if (!finalBlob) return
+  const finalBlob = await voiceRecorder.stopRecording()
+  if (!finalBlob) { cancelVoiceRecord(); return }
   voiceUploading.value = true
   try {
     const voiceUrl = await fileApi.uploadSingleVoice(finalBlob)
@@ -693,13 +691,15 @@ onUnmounted(() => observer?.disconnect())
   white-space: pre-wrap;
 }
 .bubble-other {
-  background: var(--zh-bg-hover);
-  color: var(--zh-text);
+  background: #498FE8;
+  color: #fff;
   border-bottom-left-radius: 6px;
 }
 .bubble-mine {
-  background: var(--zh-primary-gradient);
-  color: #fff;
+  background: #fff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
   border-bottom-right-radius: 6px;
 }
 
@@ -951,7 +951,7 @@ onUnmounted(() => observer?.disconnect())
   color: var(--zh-primary, #6366f1);
 }
 .bubble-mine .file-card-icon {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--zh-primary, #6366f1);
 }
 .bubble-file .file-card-info {
   flex: 1;
@@ -973,14 +973,14 @@ onUnmounted(() => observer?.disconnect())
   color: var(--zh-text-tertiary, #94a3b8);
 }
 .bubble-mine .file-size {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--zh-text-tertiary, #94a3b8);
 }
 .bubble-file .file-card-download {
   flex-shrink: 0;
   color: var(--zh-text-tertiary, #94a3b8);
 }
 .bubble-mine .file-card-download {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--zh-text-tertiary, #94a3b8);
 }
 
 /* 上传遮罩 */
