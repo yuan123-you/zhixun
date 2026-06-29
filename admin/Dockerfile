@@ -6,6 +6,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # 先复制共享类型包（@zhixun/shared-types 是 file: 引用，需在 npm install 前就位）
+# npm install 会按 file:../packages/shared-types 解析，即 /packages/shared-types
+COPY packages/shared-types/ /packages/shared-types/
 COPY packages/shared-types/ /app/node_modules/@zhixun/shared-types/
 
 # 先复制 package 文件，利用 Docker 缓存加速依赖安装
