@@ -19,6 +19,9 @@ import com.zhixun.mapper.UserMapper;
 import com.zhixun.mapper.UserMessageMapper;
 import com.zhixun.mapper.UserSettingsMapper;
 import com.zhixun.service.MessageService;
+import com.zhixun.service.AIService;
+import com.zhixun.dto.ai.AIWriteRequest;
+import com.zhixun.vo.AIResponseVO;
 import com.zhixun.vo.ConversationVO;
 import com.zhixun.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +56,7 @@ public class MessageServiceImpl implements MessageService {
     private final SensitiveWordUtil sensitiveWordUtil;
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
+    private final AIService aiService;
 
     /** 未读消息数 Redis Key 前缀 */
     private static final String UNREAD_COUNT_PREFIX = "message:unread:";
@@ -226,11 +230,12 @@ public class MessageServiceImpl implements MessageService {
                 vo.setAvatar(otherUser.getAvatar());
             }
 
-            // 解密消息内容
+            // 解密消息内容（兼容加密前的明文数据）
             try {
                 vo.setLastMessage(aesUtil.decrypt(latestMsg.getContent()));
             } catch (Exception e) {
-                vo.setLastMessage("[消息解密失败]");
+                // 解密失败时使用原始内容（可能是加密功能上线前的明文消息，或密钥变更后的旧密文）
+                vo.setLastMessage(latestMsg.getContent());
             }
 
             vo.setLastMessageTime(latestMsg.getCreatedAt());
@@ -372,6 +377,42 @@ public class MessageServiceImpl implements MessageService {
     }
 
     /**
+     * 发送AI助手消息（私信场景）
+     * 调用AI服务生成回复，以AI助手身份(senderId=0)保存到会话中
+     */
+    @Override
+    public MessageVO sendAIMessage(Long senderId, Long targetUserId, String question) {
+        // 1. 校验接收者存在
+        User receiver = userMapper.selectById(targetUserId);
+        if (receiver == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+
+        // 2. 调用AI服务
+        AIWriteRequest aiReq = new AIWriteRequest();
+        aiReq.setPrompt(question);
+        aiReq.setMode("chat");
+        AIResponseVO aiResp = aiService.generateText(aiReq);
+
+        // 3. 保存AI回复消息（senderId=0 代表AI助手）
+        UserMessage message = new UserMessage();
+        message.setSenderId(0L);
+        message.setReceiverId(senderId); // AI回复给提问者
+        message.setType("ai_reply");
+        message.setContent(aesUtil.encrypt(aiResp.getContent()));
+        message.setIsRead(0);
+        userMessageMapper.insert(message);
+
+        // 4. 构建VO，覆盖AI助手头像和昵称
+        MessageVO vo = buildMessageVO(message, 0L, senderId);
+        vo.setSenderNickname("AI助手");
+        vo.setSenderAvatar("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiM2MzY2ZjEiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiPkFJPC90ZXh0Pjwvc3ZnPg==");
+        vo.setContent(aiResp.getContent()); // 返回明文
+
+        return vo;
+    }
+
+    /**
      * 构建消息 VO
      */
     private MessageVO buildMessageVO(UserMessage message, Long currentUserId, Long targetUserId) {
@@ -383,11 +424,12 @@ public class MessageServiceImpl implements MessageService {
         vo.setIsRead(message.getIsRead());
         vo.setCreatedAt(message.getCreatedAt());
 
-        // 解密消息内容
+        // 解密消息内容（兼容加密前的明文数据）
         try {
             vo.setContent(aesUtil.decrypt(message.getContent()));
         } catch (Exception e) {
-            vo.setContent("[消息解密失败]");
+            // 解密失败时使用原始内容（可能是加密功能上线前的明文消息，或密钥变更后的旧密文）
+            vo.setContent(message.getContent());
         }
 
         // 查询发送者和接收者信息

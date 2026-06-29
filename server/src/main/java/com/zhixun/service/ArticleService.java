@@ -8,6 +8,7 @@ import com.zhixun.dto.article.ArticleStatusRequest;
 import com.zhixun.dto.article.ArticleUpdateRequest;
 import com.zhixun.dto.article.ArticleVisibilityRequest;
 import com.zhixun.vo.ArticleDetailVO;
+import com.zhixun.vo.ArticleInteractionUserVO;
 import com.zhixun.vo.ArticleVO;
 
 import java.util.List;
@@ -125,4 +126,26 @@ public interface ArticleService {
      * @return 一致性检查结果（包含不一致条目数、修复条目数等）
      */
     Map<String, Object> checkArticleDetailConsistency();
+
+    /**
+     * 获取作品浏览者列表（仅作者可查看）
+     *
+     * @param articleId     作品ID
+     * @param currentUserId 当前用户ID
+     * @param page          页码
+     * @param pageSize      每页大小
+     * @return 浏览者分页列表
+     */
+    PageResult<ArticleInteractionUserVO> getArticleViewers(Long articleId, Long currentUserId, int page, int pageSize);
+
+    /**
+     * 获取作品点赞者列表（仅作者可查看）
+     *
+     * @param articleId     作品ID
+     * @param currentUserId 当前用户ID
+     * @param page          页码
+     * @param pageSize      每页大小
+     * @return 点赞者分页列表
+     */
+    PageResult<ArticleInteractionUserVO> getArticleLikers(Long articleId, Long currentUserId, int page, int pageSize);
 }

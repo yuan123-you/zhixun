@@ -1,6 +1,6 @@
 <template>
   <!-- 私信首页：会话列表 + 桌面端聊天面板 -->
-  <div class="messages-page h-[calc(100dvh-3.75rem)] md:h-[calc(100dvh-4rem)] flex bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
+  <div class="messages-page h-[calc(100dvh-3.75rem-3.125rem)] md:h-[calc(100dvh-4rem-3.125rem)] flex bg-[var(--zh-bg-elevated)] dark:bg-gray-900" style="padding-bottom:env(safe-area-inset-bottom,0px)">
     <!-- ==================== 左侧会话列表 ==================== -->
     <div
       class="conversation-panel flex-shrink-0 w-full md:w-[380px] lg:w-[400px] flex flex-col relative"
@@ -80,7 +80,7 @@
         <!-- 会话项 -->
         <div v-else class="conversation-list">
           <button
-            v-for="(conv, index) in conversations"
+            v-for="(conv, index) in sortedConversations"
             :key="conv.id || conv.user.id"
             class="conversation-item w-full flex items-center gap-3 px-4 py-3 text-left relative"
             :class="{
@@ -109,20 +109,18 @@
 
             <!-- 会话信息 -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-center">
+              <div class="flex items-center justify-between">
                 <span class="font-medium text-sm text-[var(--zh-text)] dark:text-gray-100 truncate">
                   {{ conv.user?.nickname }}
                 </span>
+                <span class="text-[10px] text-[var(--zh-text-tertiary)] dark:text-gray-500 flex-shrink-0 ml-2">
+                  {{ formatRelativeTime(conv.lastMessage?.createdAt || conv.updatedAt) }}
+                </span>
               </div>
               <div class="flex items-center mt-0.5">
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs text-[var(--zh-text-secondary)] dark:text-gray-400 truncate preview-text">
-                    {{ getLastMessagePreview(conv) }}
-                  </p>
-                  <span class="text-[10px] text-[var(--zh-text-tertiary)] dark:text-gray-500 block leading-tight mt-px">
-                    {{ formatRelativeTime(conv.lastMessage?.createdAt || conv.updatedAt) }}
-                  </span>
-                </div>
+                <p class="flex-1 min-w-0 text-xs text-[var(--zh-text-secondary)] dark:text-gray-400 truncate preview-text">
+                  {{ getLastMessagePreview(conv) }}
+                </p>
                 <span
                   v-if="conv.unreadCount > 0"
                   class="unread-count animate-badge-pop text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1 flex-shrink-0 ml-2 font-semibold"
@@ -216,6 +214,15 @@ const {
 } = storeToRefs(messageStore)
 
 const activeConversation = ref<Conversation | null>(null)
+
+// ==================== 按时间降序排列会话 ====================
+const sortedConversations = computed(() => {
+  return [...conversations.value].sort((a, b) => {
+    const timeA = new Date(a.lastMessage?.createdAt || a.updatedAt || 0).getTime()
+    const timeB = new Date(b.lastMessage?.createdAt || b.updatedAt || 0).getTime()
+    return timeB - timeA // 最新的排最前
+  })
+})
 
 // ==================== 初始化 ====================
 onMounted(async () => {

@@ -113,14 +113,9 @@
           <div
             v-for="(img, idx) in form.images"
             :key="idx"
-            class="thumb-card relative w-12 h-12 shrink-0 group cursor-pointer"
-            @click="insertImageAtCursor(img)"
-            title="点击插入到正文"
+            class="thumb-card relative w-12 h-12 shrink-0 group"
           >
             <img :src="resolveUrl(img) || img" alt="" class="w-full h-full object-cover rounded" />
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center rounded">
-              <span class="text-white text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">插入</span>
-            </div>
             <button
               class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:bg-red-600"
               @click.stop="removeImage(idx)"
@@ -549,13 +544,7 @@ const handleEditorImageUpload = async (event: Event) => {
     const imageUrl = uploadRes.data?.data
     if (imageUrl) {
       form.images.push(imageUrl)
-      const textarea = getEditorTextarea()
-      if (textarea) {
-        insertAtCursor(`\n![图片](${imageUrl})\n`)
-        showToast('图片上传成功，已自动插入到正文中', 'success')
-      } else {
-        showToast('图片上传成功，点击下方缩略图可插入正文', 'success')
-      }
+      showToast('图片上传成功', 'success')
     } else {
       showToast('图片上传失败，请稍后重试', 'error')
     }
@@ -582,10 +571,6 @@ const handleEditorImageUpload = async (event: Event) => {
 
 const removeImage = (idx: number) => {
   form.images.splice(idx, 1)
-}
-
-const insertImageAtCursor = (imageUrl: string) => {
-  insertAtCursor(`\n![图片](${imageUrl})\n`)
 }
 
 // AI 写作

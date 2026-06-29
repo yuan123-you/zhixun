@@ -15,6 +15,7 @@ import com.zhixun.vo.AIResponseVO;
 import com.zhixun.security.HtmlWhitelistFilter;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.service.GroupService;
+import com.zhixun.websocket.GroupChatWebSocketHandler;
 import com.zhixun.vo.GroupJoinRequestVO;
 import com.zhixun.vo.GroupMemberVO;
 import com.zhixun.vo.GroupMessageVO;
@@ -23,10 +24,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,6 +44,7 @@ public class GroupServiceImpl implements GroupService {
     private final UserMapper userMapper;
     private final AIService aiService;
     private final SensitiveWordUtil sensitiveWordUtil;
+    private final ObjectMapper objectMapper;
 
     @Override @Transactional
     public Long createGroup(Long userId, GroupCreateRequest request) {
@@ -398,26 +403,41 @@ public class GroupServiceImpl implements GroupService {
         if (!isMember(userId, groupId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "非群组成员无法使用AI助手");
         }
-        // 调用AI服务
-        AIWriteRequest aiReq = new AIWriteRequest();
-        aiReq.setPrompt(question);
-        aiReq.setMode("chat");
-        AIResponseVO aiResp = aiService.generateText(aiReq);
 
-        // 获取提问者信息
-        User asker = userMapper.selectById(userId);
-        String askerName = asker != null ? asker.getNickname() : "未知用户";
+        // 异步生成AI回复，不阻塞HTTP请求
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 调用AI服务
+                AIWriteRequest aiReq = new AIWriteRequest();
+                aiReq.setPrompt(question);
+                aiReq.setMode("chat");
+                AIResponseVO aiResp = aiService.generateText(aiReq);
 
-        // 将AI回复持久化为群组消息
-        GroupMessage msg = new GroupMessage();
-        msg.setGroupId(groupId);
-        msg.setSenderId(0L); // AI机器人
-        msg.setSenderName("AI助手");
-        msg.setSenderAvatar(""); // 前端使用默认机器人头像
-        msg.setContent(aiResp.getContent());
-        msg.setMessageType("ai_reply");
-        groupMessageMapper.insert(msg);
-        return toMessageVO(msg);
+                // 将AI回复持久化为群组消息
+                GroupMessage msg = new GroupMessage();
+                msg.setGroupId(groupId);
+                msg.setSenderId(0L); // AI机器人
+                msg.setSenderName("AI助手");
+                msg.setSenderAvatar("");
+                msg.setContent(aiResp.getContent());
+                msg.setMessageType("ai_reply");
+                groupMessageMapper.insert(msg);
+
+                // 通过WebSocket广播AI回复给所有群组成员
+                GroupMessageVO vo = toMessageVO(msg);
+                String wsPayload = objectMapper.writeValueAsString(
+                        Map.of("type", "CHAT", "data", vo)
+                );
+                GroupChatWebSocketHandler.broadcastAIMessage(groupId, wsPayload);
+
+                log.info("AI回复已生成并广播: groupId={}, msgId={}", groupId, msg.getId());
+            } catch (Exception e) {
+                log.error("异步生成AI回复失败: groupId={}, userId={}, error={}", groupId, userId, e.getMessage(), e);
+            }
+        });
+
+        // 立即返回null，AI回复将通过WebSocket推送
+        return null;
     }
 
     @Override @Transactional

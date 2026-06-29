@@ -119,6 +119,35 @@ public class ConversationController {
     }
 
     /**
+     * 发送AI助手消息（私信场景）
+     * 前端: POST /conversations/{userId}/ai
+     */
+    @PostMapping("/{userId}/ai")
+    @PreAuthorize("isAuthenticated()")
+    public R<MessageVO> sendAIMessage(
+            @PathVariable Long userId,
+            @RequestBody Map<String, Object> body) {
+        Long senderId = securityUtil.getCurrentUserId();
+        String question = (String) body.get("question");
+        if (question == null || question.trim().isEmpty()) {
+            return R.fail(ErrorCode.BAD_REQUEST, "提问内容不能为空");
+        }
+        if (question.length() > 1000) {
+            return R.fail(ErrorCode.BAD_REQUEST, "提问内容最长1000个字符");
+        }
+        try {
+            MessageVO result = messageService.sendAIMessage(senderId, userId, question.trim());
+            return R.ok(result);
+        } catch (BusinessException e) {
+            log.warn("AI私信业务异常: senderId={}, targetUserId={}, error={}", senderId, userId, e.getMessage());
+            return R.fail(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("AI私信系统异常: senderId={}, targetUserId={}", senderId, userId, e);
+            return R.fail(ErrorCode.BUSINESS_ERROR, "AI回复失败，请稍后重试");
+        }
+    }
+
+    /**
      * 标记与某用户的私信已读
      * 前端: PUT /conversations/{userId}/read
      */

@@ -74,7 +74,7 @@
         <div class="flex-1 flex flex-col min-w-0" :class="{ 'hidden md:flex': !activeConversation }">
           <template v-if="activeConversation">
             <!-- 聊天头部 -->
-            <div class="flex items-center gap-2 px-3 py-2 border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0">
+            <div class="flex items-center gap-2 px-3 py-2 border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0 sticky top-0 z-10">
               <button class="shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(activeConversation.user?.id)">
                 <UserAvatar :src="activeConversation.user?.avatar" alt="" size="sm" />
               </button>
@@ -93,7 +93,10 @@
                     <UserAvatar :src="msg.sender?.avatar" alt="" size="sm" />
                   </button>
                   <div class="min-w-0 flex-1">
-                    <div class="inline-block max-w-full bg-[var(--zh-bg-elevated)] rounded-xl rounded-bl-sm px-2.5 py-1.5 shadow-sm">
+                    <div v-if="msg.type === 'voice'" class="inline-block max-w-full bg-[var(--zh-bg-elevated)] rounded-xl rounded-bl-sm px-1.5 py-1 shadow-sm">
+                      <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="false" />
+                    </div>
+                    <div v-else class="inline-block max-w-full bg-[var(--zh-bg-elevated)] rounded-xl rounded-bl-sm px-2.5 py-1.5 shadow-sm">
                       <p class="text-sm text-[var(--zh-text)] leading-snug whitespace-pre-wrap break-all">{{ msg.content }}</p>
                     </div>
                     <p class="text-2xs text-[var(--zh-text-tertiary)] mt-0.5 ml-1 leading-none">{{ formatMsgTime(msg.createdAt) }}</p>
@@ -101,7 +104,10 @@
                 </div>
                 <!-- 我的消息（右） -->
                 <div v-else class="max-w-[80%]">
-                  <div class="inline-block max-w-full bg-primary text-white rounded-xl rounded-br-sm px-2.5 py-1.5">
+                  <div v-if="msg.type === 'voice'" class="inline-block max-w-full bg-primary rounded-xl rounded-br-sm px-1.5 py-1">
+                    <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
+                  </div>
+                  <div v-else class="inline-block max-w-full bg-primary text-white rounded-xl rounded-br-sm px-2.5 py-1.5">
                     <p class="text-sm leading-snug whitespace-pre-wrap break-all">{{ msg.content }}</p>
                   </div>
                   <p class="text-2xs text-[var(--zh-text-tertiary)] mt-0.5 mr-1 text-right leading-none">{{ formatMsgTime(msg.createdAt) }}</p>
@@ -118,7 +124,7 @@
             <div class="px-2 py-2 border-t border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0 safe-bottom">
               <div class="flex items-center gap-1.5">
                 <EmojiPicker @select="(emoji: string) => inputContent += emoji" />
-                <VoiceRecorderButton @send="(blob: Blob) => handleVoiceSend(blob)" />
+                <VoiceRecorderButton @send="(data: any) => handleVoiceSend(data)" />
                 <input
                   v-model="inputContent"
                   type="text"
@@ -144,6 +150,327 @@
         </div>
       </div>
     </template>
+
+    <!-- ===== 群组Tab ===== -->
+    <template v-if="activeMainTab === 'groups'">
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- 群组内部操作栏 -->
+        <div class="flex items-center justify-between px-4 py-2 border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0">
+          <div class="flex items-center gap-3">
+            <button
+              class="text-sm font-semibold transition-colors relative pb-0.5"
+              :class="groupActiveTab === 'my' ? 'text-primary' : 'text-[var(--zh-text-tertiary)] hover:text-[var(--zh-text-secondary)]'"
+              @click="switchGroupTab('my')"
+            >
+              我的群组
+              <span v-if="myGroups.length && groupActiveTab !== 'my'" class="ml-0.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{{ myGroups.length }}</span>
+            </button>
+            <button
+              class="text-sm font-semibold transition-colors relative pb-0.5"
+              :class="groupActiveTab === 'search' ? 'text-primary' : 'text-[var(--zh-text-tertiary)] hover:text-[var(--zh-text-secondary)]'"
+              @click="switchGroupTab('search')"
+            >发现群组</button>
+          </div>
+          <button
+            v-if="userStore.isLoggedIn"
+            class="flex items-center gap-1 px-2.5 py-1 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-600 active:scale-95 transition-all"
+            @click="showCreateGroupModal = true"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            创建群组
+          </button>
+        </div>
+
+        <!-- 群组内容区 -->
+        <div class="flex-1 overflow-y-auto">
+          <Transition name="tab-fade" mode="out-in">
+            <!-- 我的群组 -->
+            <div v-if="groupActiveTab === 'my'" key="my" class="p-3 space-y-2.5">
+              <!-- 未登录 -->
+              <div v-if="!userStore.isLoggedIn" class="text-center py-16">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-gray-800 dark:to-gray-750">
+                  <svg class="w-11 h-11 text-slate-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-[15px] font-semibold text-[var(--zh-text)] mb-2">登录后查看我的群组</h3>
+                <p class="text-sm text-[var(--zh-text-tertiary)] mb-6">加入群组，与社区成员互动交流</p>
+                <RouterLink to="/login" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all">立即登录</RouterLink>
+              </div>
+
+              <!-- 加载中 -->
+              <div v-else-if="myGroupsLoading" class="space-y-2.5">
+                <div v-for="i in 5" :key="i" class="card animate-pulse overflow-hidden">
+                  <div class="flex items-center gap-3.5 p-4">
+                    <div class="w-12 h-12 bg-[var(--zh-border)] dark:bg-gray-700 rounded-xl shrink-0"></div>
+                    <div class="flex-1 space-y-2.5">
+                      <div class="h-4 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-40"></div>
+                      <div class="flex items-center gap-3">
+                        <div class="h-3 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-16"></div>
+                        <div class="h-3 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-12"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 空状态 -->
+              <div v-else-if="myGroups.length === 0" class="text-center py-16">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/15">
+                  <svg class="w-11 h-11 text-primary/35 dark:text-primary/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                </div>
+                <h3 class="text-[15px] font-semibold text-[var(--zh-text)] mb-2">还没有加入任何群组</h3>
+                <p class="text-sm text-[var(--zh-text-tertiary)] mb-6">探索更多群组，找到你的兴趣圈子</p>
+                <button class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all" @click="switchGroupTab('search')">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  发现群组
+                </button>
+              </div>
+
+              <!-- 我的群组列表 -->
+              <div v-else class="space-y-2.5">
+                <div v-for="group in myGroups" :key="group.id" class="group-card" @click="router.push(`/groups/${group.id}`)">
+                  <div class="group-card-inner">
+                    <div class="relative shrink-0">
+                      <img v-if="group.avatar" :src="group.avatar" :alt="group.name" class="group-card-avatar" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }" />
+                      <div :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
+                        <span v-if="group.myRole === 2" class="role-badge role-badge-owner">群主</span>
+                        <span v-else-if="group.myRole === 1" class="role-badge role-badge-admin">管理员</span>
+                      </div>
+                      <div class="flex items-center gap-3 mt-1.5">
+                        <span v-if="group.groupNumber" class="text-xs text-[var(--zh-text-tertiary)] font-mono tracking-wide">群号: {{ group.groupNumber }}</span>
+                        <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)]">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                          {{ group.memberCount }} 人
+                        </span>
+                        <span v-if="group.description" class="text-xs text-[var(--zh-text-tertiary)] truncate hidden sm:inline">{{ group.description }}</span>
+                      </div>
+                    </div>
+                    <svg class="group-card-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 发现群组 -->
+            <div v-else key="search" class="p-3">
+              <!-- 搜索栏 -->
+              <div class="relative mb-5">
+                <div class="search-wrapper" :class="{ 'search-wrapper-focused': groupSearchFocused }">
+                  <svg class="search-icon" :class="{ 'text-primary': groupSearchFocused }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input ref="groupSearchInputRef" v-model="groupSearchKeyword" type="text" class="search-input" placeholder="搜索群组名称或关键词..." @focus="groupSearchFocused = true" @blur="groupSearchFocused = false" @keydown.enter="handleGroupSearch" />
+                  <button v-if="groupSearchKeyword" class="search-clear-btn" @click="clearGroupSearch" title="清除搜索">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                  <button class="search-submit-btn" @click="handleGroupSearch" title="搜索">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <span class="hidden sm:inline">搜索</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 搜索加载 -->
+              <div v-if="groupSearchLoading && groupSearchPage === 1" class="space-y-2.5">
+                <div v-for="i in 4" :key="i" class="card animate-pulse overflow-hidden">
+                  <div class="flex items-center gap-3.5 p-4">
+                    <div class="w-12 h-12 bg-[var(--zh-border)] dark:bg-gray-700 rounded-xl shrink-0"></div>
+                    <div class="flex-1 space-y-2.5">
+                      <div class="h-4 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-40"></div>
+                      <div class="flex items-center gap-3">
+                        <div class="h-3 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-24"></div>
+                        <div class="h-3 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-16"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 搜索无结果 -->
+              <div v-else-if="groupSearchKeyword && groupSearchResults.length === 0 && !groupSearchLoading" class="text-center py-16">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10">
+                  <svg class="w-11 h-11 text-amber-400 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-[15px] font-semibold text-[var(--zh-text)] mb-2">未找到相关群组</h3>
+                <p class="text-sm text-[var(--zh-text-tertiary)] mb-6">换个关键词试试，或者创建你自己的群组</p>
+                <button v-if="userStore.isLoggedIn" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all" @click="showCreateGroupModal = true">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                  创建群组
+                </button>
+              </div>
+
+              <!-- 无搜索关键词：推荐群组 -->
+              <div v-else-if="!groupSearchKeyword">
+                <div v-if="discoverLoading" class="space-y-2.5">
+                  <div v-for="i in 4" :key="i" class="card animate-pulse overflow-hidden">
+                    <div class="flex items-center gap-3.5 p-4">
+                      <div class="w-12 h-12 bg-[var(--zh-border)] dark:bg-gray-700 rounded-xl shrink-0"></div>
+                      <div class="flex-1 space-y-2.5">
+                        <div class="h-4 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-40"></div>
+                        <div class="h-3 bg-[var(--zh-border)] dark:bg-gray-700 rounded w-32"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else>
+                  <div class="flex items-center gap-2 mb-4">
+                    <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                      <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>
+                    </div>
+                    <span class="text-sm font-semibold text-[var(--zh-text)]">推荐群组</span>
+                    <span class="text-xs text-[var(--zh-text-tertiary)]">{{ recommendedGroups.length }} 个群组</span>
+                  </div>
+                  <div v-if="recommendedGroups.length === 0" class="text-center py-12">
+                    <div class="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-gray-800 dark:to-gray-750">
+                      <svg class="w-11 h-11 text-slate-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                    </div>
+                    <h3 class="text-[15px] font-semibold text-[var(--zh-text)] mb-2">暂无推荐群组</h3>
+                    <p class="text-sm text-[var(--zh-text-tertiary)]">你可以通过上方搜索栏查找感兴趣的群组</p>
+                  </div>
+                  <div v-else class="space-y-2.5">
+                    <div v-for="group in recommendedGroups" :key="group.id" class="group-card" @click="router.push(`/groups/${group.id}`)">
+                      <div class="group-card-inner">
+                        <div class="relative shrink-0">
+                          <img v-if="group.avatar" :src="group.avatar" :alt="group.name" class="group-card-avatar" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }" />
+                          <div :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
+                          <div class="flex items-center gap-3 mt-1.5">
+                            <span v-if="group.groupNumber" class="text-xs text-[var(--zh-text-tertiary)] font-mono tracking-wide">群号: {{ group.groupNumber }}</span>
+                            <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)]">
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                              {{ group.memberCount }} 人
+                            </span>
+                            <span v-if="group.ownerName" class="text-xs text-[var(--zh-text-tertiary)] hidden sm:inline">群主 {{ group.ownerName }}</span>
+                            <span v-if="group.description" class="text-xs text-[var(--zh-text-tertiary)] truncate hidden sm:inline">{{ group.description }}</span>
+                          </div>
+                        </div>
+                        <button v-if="userStore.isLoggedIn && group.myRole === 0" class="join-btn" :disabled="joiningSet.has(group.id)" @click.stop="handleJoinGroup(group.id)">
+                          <svg v-if="joiningSet.has(group.id)" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                          {{ joiningSet.has(group.id) ? '申请中' : '申请加入' }}
+                        </button>
+                        <span v-else-if="group.myRole && group.myRole > 0" class="joined-badge">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                          已加入
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 搜索结果列表 -->
+              <div v-else class="space-y-2.5">
+                <div class="flex items-center gap-2 mb-3 px-1">
+                  <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                  <p class="text-xs text-[var(--zh-text-tertiary)]">搜索 "<span class="text-[var(--zh-text)] font-medium">{{ groupSearchKeyword }}</span>" 共找到 <span class="text-primary font-semibold">{{ groupSearchResultTotal || groupSearchResults.length }}</span> 个群组</p>
+                </div>
+                <div v-for="group in groupSearchResults" :key="group.id" class="group-card" @click="router.push(`/groups/${group.id}`)">
+                  <div class="group-card-inner">
+                    <div class="relative shrink-0">
+                      <img v-if="group.avatar" :src="group.avatar" :alt="group.name" class="group-card-avatar" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }" />
+                      <div :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
+                      <div class="flex items-center gap-3 mt-1.5">
+                        <span v-if="group.groupNumber" class="text-xs text-[var(--zh-text-tertiary)] font-mono tracking-wide">群号: {{ group.groupNumber }}</span>
+                        <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)]">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                          {{ group.memberCount }} 人
+                        </span>
+                        <span v-if="group.ownerName" class="text-xs text-[var(--zh-text-tertiary)] hidden sm:inline">群主 {{ group.ownerName }}</span>
+                        <span v-if="group.description" class="text-xs text-[var(--zh-text-tertiary)] truncate hidden sm:inline">{{ group.description }}</span>
+                      </div>
+                    </div>
+                    <button v-if="userStore.isLoggedIn && group.myRole === 0" class="join-btn" :disabled="joiningSet.has(group.id)" @click.stop="handleJoinGroup(group.id)">
+                      <svg v-if="joiningSet.has(group.id)" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                      {{ joiningSet.has(group.id) ? '申请中' : '申请加入' }}
+                    </button>
+                    <span v-else-if="group.myRole && group.myRole > 0" class="joined-badge">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                      已加入
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 搜索无限滚动哨兵 -->
+              <div ref="groupSearchSentinelRef" class="h-0.5"></div>
+              <div v-if="groupSearchLoading" class="text-center py-4">
+                <span class="text-xs text-[var(--zh-text-tertiary)]">
+                  <svg class="animate-spin inline w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                  加载中...
+                </span>
+              </div>
+              <div v-else-if="!groupSearchHasMore && groupSearchResults.length > 0" class="text-center py-4">
+                <span class="text-xs text-[var(--zh-text-tertiary)]">没有更多了</span>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </div>
+    </template>
+
+    <!-- 创建群组弹窗 -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showCreateGroupModal" class="modal-overlay" @click.self="showCreateGroupModal = false">
+          <div class="modal-backdrop"></div>
+          <div class="modal-panel">
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="text-lg font-bold text-[var(--zh-text)]">创建群组</h3>
+              <button class="modal-close-btn" @click="showCreateGroupModal = false">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div class="space-y-4 mb-6">
+              <div>
+                <label class="input-label">群组名称 <span class="text-danger">*</span></label>
+                <input ref="createGroupNameInputRef" v-model="createGroupForm.name" type="text" class="input" placeholder="给你的群组取个名字" maxlength="30" @keydown.enter="handleCreateGroup" />
+                <p class="text-right text-[10px] text-[var(--zh-text-tertiary)] mt-1">{{ createGroupForm.name.length }}/30</p>
+              </div>
+              <div>
+                <label class="input-label">群组简介 <span class="text-slate-300 font-normal">(选填)</span></label>
+                <textarea v-model="createGroupForm.description" class="input resize-none" rows="3" placeholder="介绍一下这个群组..." maxlength="200"></textarea>
+                <p class="text-right text-[10px] text-[var(--zh-text-tertiary)] mt-1">{{ createGroupForm.description.length }}/200</p>
+              </div>
+              <div>
+                <label class="input-label">可见性</label>
+                <div class="flex gap-2">
+                  <button class="visibility-option" :class="createGroupForm.isPublic ? 'visibility-option-active' : 'visibility-option-inactive'" @click="createGroupForm.isPublic = 1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    公开
+                  </button>
+                  <button class="visibility-option" :class="!createGroupForm.isPublic ? 'visibility-option-active' : 'visibility-option-inactive'" @click="createGroupForm.isPublic = 0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    私密
+                  </button>
+                </div>
+                <p class="text-[10px] text-[var(--zh-text-tertiary)] mt-1.5">{{ createGroupForm.isPublic ? '所有人都可以发现和加入' : '仅群主和管理员可邀请成员加入' }}</p>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <button class="flex-1 modal-cancel-btn" @click="showCreateGroupModal = false">取消</button>
+              <button class="flex-1 modal-submit-btn" :disabled="!createGroupForm.name.trim() || groupCreating" @click="handleCreateGroup">
+                <svg v-if="groupCreating" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                {{ groupCreating ? '创建中...' : '创建群组' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- ===== 通知Tab ===== -->
     <template v-if="activeMainTab === 'notifications'">
@@ -220,29 +547,45 @@
 </template>
 
 <script setup lang="ts">
-/** 消息中心 - QQ风格：私信 + 通知 */
+/** 消息中心 - QQ风格：私信 + 群组 + 通知 */
 import type { Conversation, Message, Notification } from '@/types'
 import { notificationApi } from '@/api/notification'
 import { socialApi } from '@/api'
+import { groupApi } from '@/api/group'
+import type { GroupInfo } from '@/api/group'
+import { avatarColor } from '@/utils/color'
 import { showToast } from '@/composables/useToast'
+import VoiceMessage from '@/components/VoiceMessage.vue'
 
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
 const router = useRouter()
 
+/** 解析语音消息内容 - 兼容 JSON {url, duration} 和纯 URL 字符串 */
+const getVoiceUrl = (content: string): string => {
+  try { const data = JSON.parse(content); return data.url || content } catch { return content }
+}
+const getVoiceDuration = (content: string): number => {
+  try { const data = JSON.parse(content); return data.duration || 0 } catch { return 0 }
+}
+
 // ===== 主Tab =====
-const activeMainTab = ref<'messages' | 'notifications'>('messages')
+const activeMainTab = ref<'messages' | 'groups' | 'notifications'>('messages')
 // 未读私信数直接从会话列表计算，避免接口异常导致角标错误
 const msgUnread = computed(() => conversations.value.reduce((sum, c) => sum + (c.unreadCount || 0), 0))
 
 const mainTabs = computed(() => [
   { key: 'messages' as const, label: '私信', unread: msgUnread.value },
+  { key: 'groups' as const, label: '群组', unread: 0 },
   { key: 'notifications' as const, label: '通知', unread: notiUnreadTotal.value },
 ])
 
-const switchMainTab = (key: string) => {
-  activeMainTab.value = key as 'messages' | 'notifications'
+const switchMainTab = (key: 'messages' | 'groups' | 'notifications') => {
+  activeMainTab.value = key
+  if (key === 'groups' && userStore.isLoggedIn && myGroups.value.length === 0 && !myGroupsLoading.value) {
+    loadMyGroups()
+  }
 }
 
 // ===== 私信模块 =====
@@ -313,6 +656,8 @@ const selectConversation = async (conv: Conversation) => {
       // 标记已读失败不影响浏览消息，静默处理
     }
   }
+  await nextTick()
+  if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight
 }
 
 const sendMessage = async () => {
@@ -364,8 +709,9 @@ const sendMessage = async () => {
   }
 }
 
-const handleVoiceSend = async (blob: Blob) => {
+const handleVoiceSend = async (data: { blob: Blob; duration: number }) => {
   if (!activeConversation.value || sendingMessage.value) return
+  const { blob, duration } = data
   // 兼容扁平结构与嵌套结构
   const targetUserId = (activeConversation.value as any).user?.id ?? (activeConversation.value as any).userId
   if (!targetUserId) return
@@ -389,7 +735,8 @@ const handleVoiceSend = async (blob: Blob) => {
     const uploadRes = await upload<any>('/files/upload/voice', formData)
     const voiceUrl = uploadRes.data?.data
     if (voiceUrl) {
-      const { data } = await socialApi.sendMessage(targetUserId, { content: voiceUrl, type: 1 })
+      const content = JSON.stringify({ url: voiceUrl, duration: duration || 0 })
+      const { data } = await socialApi.sendMessage(targetUserId, { content, type: 'voice' })
       if (data && data.data) {
         const idx = messages.value.length
         const real = transformMsg(data.data, me)
@@ -436,8 +783,12 @@ const getConvLastMessage = (conv: any): string => {
   if (typeof lm === 'string') return lm || '暂无消息'
   if (typeof lm === 'object') {
     const type = lm.type
-    if (type === 1) return '[图片]'
-    if (type === 2) return '[系统消息]'
+    // 兼容旧版数字类型
+    if (type === 1 || type === 'image') return '[图片]'
+    if (type === 2 || type === 'system') return '[系统消息]'
+    if (type === 'voice') return '[语音]'
+    if (type === 'file') return '[文件]'
+    if (type === 'ai_reply') return '[AI回复]'
     return lm.content || '暂无消息'
   }
   return '暂无消息'
@@ -497,6 +848,187 @@ const transformMsg = (raw: any, me: any): Message => {
     createdAt: raw?.createdAt || new Date().toISOString(),
   }
 }
+
+// ===== 群组模块 =====
+const groupActiveTab = ref<'my' | 'search'>('my')
+const groupSearchKeyword = ref('')
+const groupSearchInputRef = ref<HTMLInputElement | null>(null)
+const groupSearchSentinelRef = ref<HTMLElement | null>(null)
+const groupSearchFocused = ref(false)
+
+// 我的群组
+const myGroups = ref<GroupInfo[]>([])
+const myGroupsLoading = ref(false)
+
+// 推荐群组 / 发现群组
+const recommendedGroups = ref<GroupInfo[]>([])
+const discoverLoading = ref(false)
+
+// 搜索
+const groupSearchResults = ref<GroupInfo[]>([])
+const groupSearchLoading = ref(false)
+const groupSearchPage = ref(1)
+const groupSearchHasMore = ref(false)
+const groupSearchResultTotal = ref(0)
+
+// 创建弹窗
+const showCreateGroupModal = ref(false)
+const groupCreating = ref(false)
+const createGroupNameInputRef = ref<HTMLInputElement | null>(null)
+const createGroupForm = reactive({ name: '', description: '', isPublic: 1 })
+
+const switchGroupTab = (tab: 'my' | 'search') => {
+  groupActiveTab.value = tab
+  if (tab === 'my') {
+    loadMyGroups()
+  } else {
+    loadRecommendedGroups()
+    nextTick(() => groupSearchInputRef.value?.focus())
+  }
+}
+
+const loadMyGroups = async () => {
+  myGroupsLoading.value = true
+  try {
+    const { data } = await groupApi.getMyGroups()
+    myGroups.value = data?.data?.list || data?.data || []
+  } catch {
+    myGroups.value = []
+    showToast('加载失败，请稍后重试', 'error', { position: 'top-center' })
+  } finally {
+    myGroupsLoading.value = false
+  }
+}
+
+const loadRecommendedGroups = async () => {
+  if (recommendedGroups.value.length > 0) return
+  discoverLoading.value = true
+  try {
+    const { data } = await groupApi.searchGroups('', 1, 20)
+    const list = data?.data?.list || data?.data || []
+    recommendedGroups.value = Array.isArray(list) ? list : []
+  } catch {
+    recommendedGroups.value = []
+  } finally {
+    discoverLoading.value = false
+  }
+}
+
+const clearGroupSearch = () => {
+  groupSearchKeyword.value = ''
+  groupSearchResults.value = []
+  groupSearchHasMore.value = false
+  groupSearchResultTotal.value = 0
+  groupSearchInputRef.value?.focus()
+}
+
+const handleGroupSearch = async () => {
+  const keyword = groupSearchKeyword.value.trim()
+  if (!keyword) { clearGroupSearch(); return }
+  groupSearchPage.value = 1
+  groupSearchLoading.value = true
+  try {
+    const { data } = await groupApi.searchGroups(keyword, 1, 20)
+    const list = data?.data?.list || data?.data || []
+    groupSearchResults.value = Array.isArray(list) ? list : []
+    groupSearchHasMore.value = groupSearchResults.value.length >= 20
+    groupSearchResultTotal.value = data?.data?.total || groupSearchResults.value.length
+  } catch {
+    groupSearchResults.value = []
+    showToast('搜索失败，请稍后重试', 'error', { position: 'top-center' })
+  } finally {
+    groupSearchLoading.value = false
+  }
+}
+
+const loadMoreGroupSearch = async () => {
+  groupSearchPage.value++
+  groupSearchLoading.value = true
+  try {
+    const { data } = await groupApi.searchGroups(groupSearchKeyword.value.trim(), groupSearchPage.value, 20)
+    const list = data?.data?.list || data?.data || []
+    const arr = Array.isArray(list) ? list : []
+    groupSearchResults.value.push(...arr)
+    groupSearchHasMore.value = arr.length >= 20
+  } catch {
+    groupSearchPage.value--
+    showToast('加载失败，请稍后重试', 'error', { position: 'top-center' })
+  } finally {
+    groupSearchLoading.value = false
+  }
+}
+
+// 搜索防抖
+let groupSearchTimer: ReturnType<typeof setTimeout> | null = null
+watch(groupSearchKeyword, (val) => {
+  if (groupSearchTimer) clearTimeout(groupSearchTimer)
+  if (!val.trim()) { groupSearchResults.value = []; groupSearchHasMore.value = false; groupSearchResultTotal.value = 0; return }
+  groupSearchTimer = setTimeout(handleGroupSearch, 350)
+})
+
+// 申请加入群组
+const joiningSet = ref(new Set<number>())
+const handleJoinGroup = async (groupId: number) => {
+  if (joiningSet.value.has(groupId)) return
+  joiningSet.value.add(groupId)
+  try {
+    await groupApi.requestJoin(groupId)
+    showToast('申请已提交，等待群主审批', 'success', { position: 'top-center' })
+  } catch (e: any) {
+    const msg = e?.message || ''
+    if (msg.includes('已提交') || msg.includes('已是')) {
+      showToast(msg, 'info', { position: 'top-center' })
+    } else {
+      showToast('申请失败，请稍后重试', 'error', { position: 'top-center' })
+    }
+  } finally {
+    joiningSet.value.delete(groupId)
+  }
+}
+
+// 创建群组
+const handleCreateGroup = async () => {
+  if (!createGroupForm.name.trim()) return
+  groupCreating.value = true
+  try {
+    const { data } = await groupApi.createGroup({
+      name: createGroupForm.name.trim(),
+      description: createGroupForm.description.trim() || undefined,
+      isPublic: createGroupForm.isPublic,
+    })
+    showToast('群组创建成功', 'success', { position: 'top-center' })
+    showCreateGroupModal.value = false
+    createGroupForm.name = ''
+    createGroupForm.description = ''
+    createGroupForm.isPublic = 1
+    loadMyGroups()
+    router.push(`/groups/${data?.data}`)
+  } catch {
+    showToast('创建失败，请稍后重试', 'error', { position: 'top-center' })
+  } finally {
+    groupCreating.value = false
+  }
+}
+
+watch(showCreateGroupModal, (val) => {
+  if (val) nextTick(() => createGroupNameInputRef.value?.focus())
+})
+
+// 搜索结果无限滚动
+let groupSearchObserver: IntersectionObserver | null = null
+onMounted(() => {
+  nextTick(() => {
+    if (groupSearchSentinelRef.value) {
+      groupSearchObserver = new IntersectionObserver((entries) => {
+        if (entries[0]?.isIntersecting && groupSearchHasMore.value && !groupSearchLoading.value) {
+          loadMoreGroupSearch()
+        }
+      }, { rootMargin: '200px' })
+      groupSearchObserver.observe(groupSearchSentinelRef.value)
+    }
+  })
+})
+onUnmounted(() => groupSearchObserver?.disconnect())
 
 // ===== 通知模块 =====
 const notiTabs = [
@@ -626,3 +1158,226 @@ onUnmounted(() => io?.disconnect())
 
 useHead({ title: () => '消息' + ' - 知讯' })
 </script>
+
+<style scoped>
+/* ==================== Tab 切换动画 ==================== */
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* ==================== 搜索栏 ==================== */
+.search-wrapper {
+  @apply relative flex items-center;
+}
+.search-wrapper-focused .search-input {
+  border-color: var(--zh-primary);
+  box-shadow: 0 0 0 3px rgba(var(--zh-primary-rgb), 0.08);
+}
+
+.search-icon {
+  @apply absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--zh-text-tertiary)] pointer-events-none z-10 transition-colors duration-200;
+}
+
+.search-input {
+  @apply w-full h-11 pl-11 pr-24 rounded-xl border-1.5 border-[var(--zh-border)] dark:border-gray-600
+         bg-[var(--zh-bg)] dark:bg-gray-800 text-sm text-[var(--zh-text)]
+         placeholder:text-[var(--zh-text-tertiary)] placeholder:text-sm
+         focus:outline-none
+         transition-all duration-200;
+}
+
+.search-clear-btn {
+  @apply absolute right-[72px] top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center
+         rounded-lg text-[var(--zh-text-tertiary)] hover:text-[var(--zh-text-secondary)]
+         hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors z-10;
+}
+
+.search-submit-btn {
+  @apply absolute right-1.5 top-1/2 -translate-y-1/2 h-8 flex items-center gap-1 px-3
+         rounded-lg bg-primary text-white text-xs font-semibold
+         hover:bg-primary-600 active:scale-95 transition-all duration-200 z-10;
+}
+
+/* ==================== 群组卡片 ==================== */
+.group-card {
+  @apply card cursor-pointer overflow-hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 3px solid transparent;
+}
+
+.group-card:hover {
+  border-left-color: var(--color-primary, #6366F1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  transform: translateX(3px);
+}
+
+.group-card:active {
+  transform: scale(0.995);
+  transition: transform 0.1s ease;
+}
+
+.group-card-inner {
+  @apply flex items-center gap-3.5 p-4;
+}
+
+.group-card-avatar {
+  @apply w-12 h-12 rounded-xl object-cover ring-2 ring-[var(--zh-border)] dark:ring-gray-600;
+}
+
+.group-card-avatar-placeholder {
+  @apply w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-bold
+         ring-2 ring-white/20;
+}
+
+.group-card-arrow {
+  @apply w-5 h-5 text-slate-300 dark:text-gray-500 shrink-0 transition-transform duration-200;
+}
+
+.group-card:hover .group-card-arrow {
+  transform: translateX(2px);
+  color: var(--color-primary, #6366F1);
+}
+
+/* ==================== 角色徽章 ==================== */
+.role-badge {
+  @apply shrink-0 text-[10px] px-1.5 py-0.5 rounded-md font-semibold;
+}
+
+.role-badge-owner {
+  @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400;
+}
+
+.role-badge-admin {
+  @apply bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400;
+}
+
+/* ==================== 加入按钮 ==================== */
+.join-btn {
+  @apply shrink-0 flex items-center gap-1 px-4 py-1.5 rounded-lg text-xs font-semibold
+         bg-primary text-white hover:bg-primary-600 active:scale-95
+         transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+.joined-badge {
+  @apply shrink-0 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium;
+}
+
+/* ==================== 弹窗 ==================== */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+}
+
+.modal-backdrop {
+  @apply absolute inset-0 bg-black/50 backdrop-blur-sm;
+}
+
+.modal-panel {
+  @apply relative bg-[var(--zh-bg-elevated)] dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md
+         shadow-2xl border border-[var(--zh-border)] dark:border-gray-700;
+}
+
+.modal-close-btn {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg
+         text-[var(--zh-text-tertiary)] hover:text-[var(--zh-text-secondary)]
+         hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors;
+}
+
+.input-label {
+  @apply block text-xs font-semibold text-[var(--zh-text-secondary)] dark:text-gray-300 mb-1.5;
+}
+
+.visibility-option {
+  @apply flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium
+         border-2 transition-all duration-200;
+}
+
+.visibility-option-active {
+  @apply border-primary bg-primary/5 text-primary;
+}
+
+.visibility-option-inactive {
+  @apply border-[var(--zh-border)] dark:border-gray-600
+         text-[var(--zh-text-secondary)] dark:text-gray-400
+         hover:border-gray-300 dark:hover:border-gray-500;
+}
+
+.modal-cancel-btn {
+  @apply py-2.5 rounded-xl text-sm font-semibold
+         text-[var(--zh-text-secondary)] dark:text-gray-300
+         bg-slate-100 dark:bg-gray-700
+         hover:bg-slate-200 dark:hover:bg-gray-600
+         transition-colors duration-200;
+}
+
+.modal-submit-btn {
+  @apply py-2.5 rounded-xl text-sm font-semibold
+         bg-primary text-white
+         hover:bg-primary-600 active:scale-[0.98]
+         transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+         flex items-center justify-center gap-1.5;
+}
+
+/* ==================== 弹窗动画 ==================== */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.25s ease;
+}
+.modal-enter-active .modal-panel,
+.modal-leave-active .modal-panel {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from .modal-panel {
+  transform: scale(0.95) translateY(10px);
+  opacity: 0;
+}
+.modal-leave-to .modal-panel {
+  transform: scale(0.95) translateY(10px);
+  opacity: 0;
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 640px) {
+  .search-input {
+    @apply pl-10 pr-20 text-sm;
+  }
+
+  .search-submit-btn {
+    @apply px-2;
+  }
+
+  .search-submit-btn span {
+    @apply hidden;
+  }
+
+  .search-clear-btn {
+    right: 56px;
+  }
+
+  .group-card-inner {
+    @apply p-3;
+  }
+
+  .group-card-avatar,
+  .group-card-avatar-placeholder {
+    @apply w-10 h-10 rounded-lg;
+  }
+
+  .join-btn {
+    @apply px-3 py-1 text-[11px];
+  }
+}
+</style>

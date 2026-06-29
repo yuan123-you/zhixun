@@ -12,6 +12,7 @@ import com.zhixun.dto.article.ArticleUpdateRequest;
 import com.zhixun.dto.article.ArticleVisibilityRequest;
 import com.zhixun.service.ArticleService;
 import com.zhixun.vo.ArticleDetailVO;
+import com.zhixun.vo.ArticleInteractionUserVO;
 import com.zhixun.vo.ArticleVO;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
@@ -167,6 +168,32 @@ public class ArticleController {
     public R<Void> share(@PathVariable Long id) {
         articleService.incrementShareCount(id);
         return R.ok();
+    }
+
+    /**
+     * 获取作品浏览者列表（需认证，仅作者）
+     */
+    @GetMapping("/{id}/viewers")
+    @PreAuthorize("isAuthenticated()")
+    public R<PageResult<ArticleInteractionUserVO>> viewers(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "100") Integer pageSize) {
+        Long userId = securityUtil.getCurrentUserId();
+        return R.ok(articleService.getArticleViewers(id, userId, page, pageSize));
+    }
+
+    /**
+     * 获取作品点赞者列表（需认证，仅作者）
+     */
+    @GetMapping("/{id}/likers")
+    @PreAuthorize("isAuthenticated()")
+    public R<PageResult<ArticleInteractionUserVO>> likers(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "100") Integer pageSize) {
+        Long userId = securityUtil.getCurrentUserId();
+        return R.ok(articleService.getArticleLikers(id, userId, page, pageSize));
     }
 
     /**

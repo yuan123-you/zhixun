@@ -192,6 +192,8 @@ export interface Message {
 export const MessageType = {
   Text: 'text',
   Image: 'image',
+  Voice: 'voice',
+  File: 'file',
   System: 'system',
 } as const
 

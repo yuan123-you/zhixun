@@ -26,7 +26,10 @@ const emit = defineEmits(['send'])
 const recorder = useVoiceRecorder()
 
 function sendVoice() {
-  if (recorder.audioBlob.value) { emit('send', recorder.audioBlob.value); cancelVoice() }
+  if (recorder.audioBlob.value) {
+    emit('send', { blob: recorder.audioBlob.value, duration: recorder.recordingTime.value })
+    cancelVoice()
+  }
 }
 
 function cancelVoice() {

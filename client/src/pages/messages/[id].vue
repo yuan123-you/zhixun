@@ -1,8 +1,8 @@
 <template>
   <!-- 私信聊天页面（移动端全屏 / 桌面端备选入口） -->
-  <div class="chat-page h-[calc(100dvh-3.75rem)] md:h-[calc(100dvh-4rem)] flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
+  <div class="chat-page h-[calc(100dvh-3.75rem-3.125rem)] md:h-[calc(100dvh-4rem-3.125rem)] flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900" style="padding-bottom:env(safe-area-inset-bottom,0px)">
     <!-- 聊天头部 -->
-    <div class="flex items-center gap-3 px-4 py-3 border-b border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 flex-shrink-0">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 flex-shrink-0 sticky top-0 z-10">
       <!-- 返回按钮 -->
       <button
         class="p-2 -ml-2 text-[var(--zh-text-secondary)] dark:text-[var(--zh-text-tertiary)] hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -88,12 +88,21 @@
 
         <!-- 对方消息 -->
         <div v-if="msg.senderId !== myUserId" class="flex items-start gap-2 max-w-[75%]">
-          <button class="flex-shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(msg.sender?.id)">
-            <UserAvatar :src="msg.sender?.avatar" :alt="msg.sender?.nickname" size="sm" />
+          <button class="flex-shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="msg.type === 'ai_reply' ? null : navigateToUser(msg.sender?.id)">
+            <img v-if="msg.type === 'ai_reply'" :src="aiAvatarUrl" alt="AI" class="w-8 h-8 rounded-full object-cover" />
+            <UserAvatar v-else :src="msg.sender?.avatar" :alt="msg.sender?.nickname" size="sm" />
           </button>
           <div>
-            <div v-if="msg.type === 'image'" class="msg-image-wrap">
+            <!-- AI回复消息 -->
+            <div v-if="msg.type === 'ai_reply'" class="bg-slate-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2 border-l-3 border-indigo-500">
+              <span class="block text-[11px] font-semibold text-indigo-500 mb-0.5">AI助手</span>
+              <p class="text-sm text-[var(--zh-text)] dark:text-gray-100 whitespace-pre-wrap break-words">{{ msg.content }}</p>
+            </div>
+            <div v-else-if="msg.type === 'image'" class="msg-image-wrap">
               <img :src="resolveMsgUrl(msg.content)" alt="图片" class="msg-image" @click="previewImage(msg.content)" />
+            </div>
+            <div v-else-if="msg.type === 'voice'" class="voice-bubble-other">
+              <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="false" />
             </div>
             <div v-else class="bg-slate-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
               <p class="text-sm text-[var(--zh-text)] dark:text-gray-100 whitespace-pre-wrap break-words">{{ msg.content }}</p>
@@ -110,6 +119,9 @@
             <div v-if="msg.type === 'image'" class="msg-image-wrap msg-image-wrap-mine">
               <img :src="resolveMsgUrl(msg.content)" alt="图片" class="msg-image" @click="previewImage(msg.content)" />
             </div>
+            <div v-else-if="msg.type === 'voice'" class="voice-bubble-mine">
+              <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
+            </div>
             <div v-else class="bg-primary text-white rounded-2xl rounded-tr-sm px-3 py-2">
               <p class="text-sm whitespace-pre-wrap break-words">{{ msg.content }}</p>
             </div>
@@ -123,18 +135,47 @@
         </div>
       </template>
 
+      <!-- AI助手正在思考 -->
+      <div v-if="aiThinking" class="flex items-start gap-2 max-w-[75%]">
+        <button class="flex-shrink-0 rounded-full hover:opacity-80 transition-opacity">
+          <img :src="aiAvatarUrl" alt="AI" class="w-8 h-8 rounded-full object-cover" />
+        </button>
+        <div>
+          <div class="bg-slate-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
+            <span class="block text-[11px] font-semibold text-indigo-500 mb-1">AI助手</span>
+            <div class="flex items-center gap-1 py-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0s"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0.2s"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0.4s"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 底部哨兵：用于自动滚到底 -->
       <div ref="bottomSentinelRef" class="h-0"></div>
     </div>
 
     <!-- 消息输入区 -->
-    <div class="flex-shrink-0 border-t border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 px-3 py-2 safe-bottom">
+    <div class="flex-shrink-0 border-t border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 px-3 py-2">
       <!-- 图片上传中提示 -->
       <div v-if="imageUploading" class="flex items-center gap-2 px-2 py-1 mb-1 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 rounded-lg">
         <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         图片上传中...
       </div>
-      <div class="flex items-center gap-2">
+      <!-- 语音上传中提示 -->
+      <div v-if="voiceUploading" class="flex items-center gap-2 px-2 py-1 mb-1 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 rounded-lg">
+        <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        语音上传中...
+      </div>
+      <!-- 语音录制中 -->
+      <div v-if="voiceRecorder.isRecording.value" class="voice-recording-bar">
+        <span class="voice-rec-dot" />
+        <span class="voice-rec-time">{{ voiceRecorder.formatTime(voiceRecorder.recordingTime.value) }}</span>
+        <button class="voice-rec-stop" @click="finishVoiceRecord">发送</button>
+        <button class="voice-rec-cancel" @click="cancelVoiceRecord">取消</button>
+      </div>
+      <div v-else class="flex items-center gap-2">
         <!-- 表情按钮 -->
         <EmojiPicker @select="onEmojiSelect" />
         <!-- 图片按钮 -->
@@ -144,13 +185,33 @@
           </svg>
           <input ref="imageInputRef" type="file" accept="image/*" style="display:none" @change="onImageSelected" />
         </button>
+        <!-- 语音按钮 -->
+        <button class="input-action-btn" :class="{ 'ai-active': voiceRecorder.isRecording.value }" title="语音消息" @click="startVoiceRecord">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
+        <!-- AI助手按钮 -->
+        <button class="input-action-btn" :class="{ 'ai-active': aiMode }" title="AI助手" @click="toggleAIMode">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="8" width="14" height="11" rx="3"/>
+            <circle cx="9.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+            <path d="M10 16.5h4"/>
+            <path d="M12 3v3"/>
+            <circle cx="12" cy="2.5" r="1.5" fill="currentColor" stroke="none"/>
+            <path d="M3 12.5h2M19 12.5h2"/>
+            <path d="M20 4l.5 1.5L22 6l-1.5.5L20 8l-.5-1.5L18 6l1.5-.5z" fill="currentColor" stroke="none" opacity="0.6"/>
+            <path d="M3.5 18l.4 1L5 19.4l-1.1.4L3.5 21l-.4-1.2L2 19.4l1.1-.4z" fill="currentColor" stroke="none" opacity="0.5"/>
+          </svg>
+        </button>
         <div class="input-field-msg" :class="{ focused: inputFocused }">
           <input
             ref="inputRef"
             v-model="inputContent"
             type="text"
             class="input-control-msg"
-            placeholder="输入消息..."
+            :placeholder="aiMode ? '向AI助手提问...' : '输入消息...'"
             :disabled="sending"
             @focus="inputFocused = true"
             @blur="inputFocused = false"
@@ -182,8 +243,12 @@
 
 <script setup lang="ts">
 import { useMessageStore } from '@/stores/message'
+import { socialApi } from '@/api'
 import { fileApi } from '@/api/file'
 import { sanitizeText } from '@/utils/sanitize'
+import type { Message } from '@/types'
+import VoiceMessage from '@/components/VoiceMessage.vue'
+import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
 
 const route = useRoute()
 const router = useRouter()
@@ -210,6 +275,54 @@ const isInitialLoad = ref(true)
 const imageInputRef = ref<HTMLInputElement | null>(null)
 const imageUploading = ref(false)
 const previewImageUrl = ref('')
+const aiMode = ref(false)
+const aiThinking = ref(false)
+
+/** 语音录制 */
+const voiceRecorder = useVoiceRecorder()
+const voiceUploading = ref(false)
+
+/** 解析语音消息内容 */
+const getVoiceUrl = (content: string): string => {
+  try { const data = JSON.parse(content); return data.url || content } catch { return content }
+}
+const getVoiceDuration = (content: string): number => {
+  try { const data = JSON.parse(content); return data.duration || 0 } catch { return 0 }
+}
+
+const startVoiceRecord = () => { voiceRecorder.startRecording() }
+
+const finishVoiceRecord = async () => {
+  const duration = voiceRecorder.recordingTime.value
+  voiceRecorder.stopRecording()
+  const finalBlob = voiceRecorder.audioBlob.value
+  if (!finalBlob) return
+  voiceUploading.value = true
+  try {
+    const voiceUrl = await fileApi.uploadSingleVoice(finalBlob)
+    if (!voiceUrl) throw new Error('语音上传失败')
+    const content = JSON.stringify({ url: voiceUrl, duration: duration || 0 })
+    await messageStore.sendMessage(targetUserId.value, content, 'voice')
+    await nextTick()
+    scrollToBottom()
+  } catch (err: any) {
+    showAlert(err.message || '语音发送失败，请稍后重试')
+  } finally {
+    voiceUploading.value = false
+    voiceRecorder.cancelRecording()
+  }
+}
+
+const cancelVoiceRecord = () => { voiceRecorder.cancelRecording() }
+
+/** AI助手头像 - 机器人脸+渐变背景+星芒装饰 */
+const aiAvatarUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjODE4Y2Y4Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNjM2NmYxIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJ1cmwoI2JnKSIgcng9IjIwIi8+PHJlY3QgeD0iMTEiIHk9IjE1IiB3aWR0aD0iMTgiIGhlaWdodD0iMTQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjk1Ii8+PHJlY3QgeD0iMTUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxyZWN0IHg9IjIxLjUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxwYXRoIGQ9Ik0xNS41IDI2aDkiIHN0cm9rZT0iIzYzNjZmMSIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxyZWN0IHg9IjE5IiB5PSI4IiB3aWR0aD0iMiIgaGVpZ2h0PSI3IiByeD0iMSIgZmlsbD0id2hpdGUiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjciIHI9IjIuNSIgZmlsbD0iI2E1YjRmYyIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iNyIgcj0iMS4yIiBmaWxsPSJ3aGl0ZSIvPjxyZWN0IHg9IjcuNSIgeT0iMjAiIHdpZHRoPSIzLjUiIGhlaWdodD0iNCIgcng9IjEuNSIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC43NSIvPjxyZWN0IHg9IjI5IiB5PSIyMCIgd2lkdGg9IjMuNSIgaGVpZ2h0PSI0IiByeD0iMS41IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjc1Ii8+PHBhdGggZD0iTTMyIDEwbC44IDIuMkwzNSAxM2wtMi4yLjhMMzIgMTZsLS44LTIuMkwyOSAxM2wyLjItLjh6IiBmaWxsPSIjYzdkMmZlIiBmaWxsLW9wYWNpdHk9IjAuOCIvPjxwYXRoIGQ9Ik04IDMwbC42IDEuNUwxMCAzMmwtMS40LjVMOCAzNGwtLjYtMS41TDYgMzJsMS40LS41eiIgZmlsbD0iI2M3ZDJmZSIgZmlsbC1vcGFjaXR5PSIwLjYiLz48L3N2Zz4='
+
+/** 切换AI助手模式 */
+const toggleAIMode = () => {
+  aiMode.value = !aiMode.value
+  inputRef.value?.focus()
+}
 
 const targetUserId = computed(() => Number(route.params.id))
 const myUserId = computed(() => userStore.userInfo?.id)
@@ -320,6 +433,65 @@ onUnmounted(() => {
 const onSend = async () => {
   const rawContent = inputContent.value.trim()
   if (!rawContent || sending.value) return
+
+  // 检测是否为AI助手模式
+  const isAIMention = rawContent.includes('@AI助手')
+  if (aiMode.value || isAIMention) {
+    const question = rawContent.replace(/@AI助手\s*/g, '').trim()
+    if (!question) return
+
+    sending.value = true
+    inputContent.value = ''
+
+    try {
+      // 1. 先发送用户消息（带 @AI助手 前缀）
+      const contentWithPrefix = '@AI助手 ' + question
+      await messageStore.sendMessage(targetUserId.value, sanitizeText(contentWithPrefix), 'text')
+      await nextTick()
+      scrollToBottom()
+
+      // 2. 显示AI思考指示器，调用AI接口
+      aiThinking.value = true
+      const res = await socialApi.sendAIMessage(targetUserId.value, question)
+      aiThinking.value = false
+      const raw: any = res.data?.data
+      if (raw) {
+        const aiMsg: Message = {
+          id: Number(raw.id) || Date.now(),
+          conversationId: Number(raw.conversationId) || 0,
+          senderId: 0,
+          sender: {
+            id: 0, uid: '0',
+            username: raw.senderNickname || 'AI助手',
+            nickname: raw.senderNickname || 'AI助手',
+            avatar: raw.senderAvatar || aiAvatarUrl,
+            bio: '', email: '', phone: '', gender: 0 as any,
+            birthday: '', followCount: 0, followerCount: 0,
+            articleCount: 0, likeCount: 0, isFollowing: false, createdAt: '',
+          },
+          content: raw.content || '',
+          type: 'ai_reply',
+          isRead: false,
+          createdAt: raw.createdAt || new Date().toISOString(),
+        }
+        if (!messageStore.currentMessages.some(m => m.id === aiMsg.id)) {
+          messageStore.currentMessages.push(aiMsg)
+        }
+      }
+      aiMode.value = false
+      await nextTick()
+      scrollToBottom()
+    } catch (err: any) {
+      aiThinking.value = false
+      inputContent.value = rawContent
+      showAlert(err.message || 'AI回复失败，请稍后重试')
+      console.error('[Messages] AI消息失败:', err.message || err)
+    } finally {
+      sending.value = false
+      inputRef.value?.focus()
+    }
+    return
+  }
 
   // 客户端输入净化：移除所有 HTML 标签，防止 XSS
   const content = sanitizeText(rawContent)
@@ -560,6 +732,10 @@ onUnmounted(() => {
   opacity: 0.4;
   cursor: not-allowed;
 }
+.input-action-btn.ai-active {
+  background: var(--zh-primary-bg, rgba(99, 102, 241, 0.1));
+  color: var(--zh-primary, #6366f1);
+}
 
 /* 图片消息 */
 .msg-image-wrap {
@@ -599,5 +775,73 @@ onUnmounted(() => {
   border-radius: 8px;
   object-fit: contain;
   cursor: default;
+}
+
+/* 语音录制栏 */
+.voice-recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--zh-bg-hover, #f1f5f9);
+  border-radius: 24px;
+  border: 1.5px solid var(--zh-border, #e5e7eb);
+}
+.voice-rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: voice-pulse 1s infinite;
+  flex-shrink: 0;
+}
+@keyframes voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.voice-rec-time {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--zh-text, #1e293b);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+}
+.voice-rec-stop {
+  padding: 4px 16px;
+  border: none;
+  border-radius: 16px;
+  background: var(--zh-primary, #6366f1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-left: auto;
+}
+.voice-rec-stop:hover { opacity: 0.85; }
+.voice-rec-cancel {
+  padding: 4px 12px;
+  border: 1px solid var(--zh-border, #e5e7eb);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--zh-text-secondary, #64748b);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.voice-rec-cancel:hover { background: var(--zh-bg-hover, #f1f5f9); }
+
+/* 语音消息气泡 */
+.voice-bubble-other {
+  background: var(--zh-bg-hover, #f1f5f9);
+  border-radius: 18px 18px 18px 4px;
+  padding: 4px 6px;
+  min-width: 100px;
+}
+.voice-bubble-mine {
+  background: var(--zh-primary, #6366f1);
+  border-radius: 18px 18px 4px 18px;
+  padding: 4px 6px;
+  min-width: 100px;
 }
 </style>

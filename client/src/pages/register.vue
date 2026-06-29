@@ -183,10 +183,16 @@ const handleRegister = async () => {
   if (form.password.length < 6) return showAlert('密码至少6位')
   if (!/[a-zA-Z]/.test(form.password) || !/\d/.test(form.password)) return showAlert('密码需含字母和数字')
   loading.value = true
+  // 超时保护：8秒后提示用户，避免长时间转圈造成困惑
+  const timeoutId = setTimeout(() => {
+    showAlert('注册处理中，请稍候…如长时间无响应，注册可能已在后台完成，请尝试直接登录')
+  }, 8000)
   try {
     await register(form)
+    clearTimeout(timeoutId)
     router.push('/')
   } catch (err: any) {
+    clearTimeout(timeoutId)
     showAlert(err.message || '注册失败')
   } finally { loading.value = false }
 }

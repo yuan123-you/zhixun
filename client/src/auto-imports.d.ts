@@ -101,6 +101,7 @@ declare global {
   const useGroupStore: typeof import('./stores/group')['useGroupStore']
   const useGroupWebSocket: typeof import('./composables/useGroupWebSocket')['useGroupWebSocket']
   const useHead: typeof import('./composables/useHead')['useHead']
+  const useHeaderVisibility: typeof import('./composables/useHeaderVisibility')['useHeaderVisibility']
   const useId: typeof import('vue')['useId']
   const useInfiniteScroll: typeof import('./composables/useInfiniteScroll')['useInfiniteScroll']
   const useLazyData: typeof import('./composables/useLazyData')['useLazyData']

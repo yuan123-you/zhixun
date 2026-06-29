@@ -138,10 +138,11 @@ public class GroupController {
 
     @PostMapping("/messages/ai")
     @PreAuthorize("isAuthenticated()")
-    public R<GroupMessageVO> sendAIMessage(@RequestBody Map<String, Object> body) {
+    public R<Void> sendAIMessage(@RequestBody Map<String, Object> body) {
         Long groupId = Long.valueOf(body.get("groupId").toString());
         String question = (String) body.get("question");
-        return R.ok(groupService.sendAIMessage(groupId, securityUtil.getCurrentUserId(), question));
+        groupService.sendAIMessage(groupId, securityUtil.getCurrentUserId(), question);
+        return R.ok();
     }
 
     @GetMapping("/search")

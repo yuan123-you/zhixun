@@ -58,6 +58,7 @@ declare module 'vue' {
     TopicBadge: typeof import('./components/TopicBadge.vue')['default']
     UserAvatar: typeof import('./components/UserAvatar.vue')['default']
     UserCard: typeof import('./components/UserCard.vue')['default']
+    VoiceMessage: typeof import('./components/VoiceMessage.vue')['default']
     VoiceRecorderButton: typeof import('./components/VoiceRecorderButton.vue')['default']
   }
 }

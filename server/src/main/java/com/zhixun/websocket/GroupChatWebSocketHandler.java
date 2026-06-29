@@ -214,6 +214,25 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
         log.info("用户{}加入群组房间{}", userId, groupId);
     }
 
+    /**
+     * 公开静态方法：向群组广播AI助手回复消息
+     * 供 GroupServiceImpl 异步生成AI回复后调用
+     */
+    public static void broadcastAIMessage(Long groupId, String jsonMessage) {
+        Map<String, WebSocketSession> room = GROUP_SESSIONS.get(groupId);
+        if (room == null) return;
+        TextMessage textMsg = new TextMessage(jsonMessage);
+        room.forEach((sid, s) -> {
+            if (s.isOpen()) {
+                try {
+                    s.sendMessage(textMsg);
+                } catch (IOException e) {
+                    log.error("AI回复广播失败: groupId={}, sessionId={}", groupId, sid, e);
+                }
+            }
+        });
+    }
+
     private void broadcastToGroup(Long groupId, String message, String excludeSessionId) {
         Map<String, WebSocketSession> room = GROUP_SESSIONS.get(groupId);
         if (room == null) return;

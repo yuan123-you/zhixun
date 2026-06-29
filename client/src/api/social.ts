@@ -52,6 +52,12 @@ export const socialApi = {
     })
   },
 
+  /** 发送AI助手消息（私信场景，userId为会话目标用户ID） */
+  sendAIMessage: (userId: number, question: string) => {
+    const { post } = useApi()
+    return post<Message>(`/conversations/${userId}/ai`, { question })
+  },
+
   /** 获取会话列表 */
   getConversations: (params?: PaginationParams) => {
     const { get } = useApi()

@@ -52,7 +52,7 @@ const isActive = (path: string) => {
   left: 0;
   right: 0;
   z-index: 100;
-  display: none;
+  display: block;
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -64,13 +64,20 @@ const isActive = (path: string) => {
   background: rgba(15, 23, 42, 0.88);
   backdrop-filter: blur(20px) saturate(120%);
 }
-@media (max-width: 767.98px) { .mobile-nav { display: block; } }
 
 .tab-list {
   display: flex;
   align-items: center;
   justify-content: space-around;
   height: 50px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+@media (min-width: 768px) {
+  .tab-list { height: 54px; }
+}
+@media (min-width: 1024px) {
+  .tab-list { height: 56px; max-width: 640px; }
 }
 
 .tab-item {
@@ -107,6 +114,12 @@ const isActive = (path: string) => {
   margin-top: 2px;
   line-height: 1;
   font-weight: 500;
+}
+@media (min-width: 768px) {
+  .tab-label { font-size: 11px; }
+}
+@media (min-width: 1024px) {
+  .tab-label { font-size: 12px; }
 }
 
 /* 发布按钮:从突出的圆形按钮改为平面的实心矩形,

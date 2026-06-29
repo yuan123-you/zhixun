@@ -47,6 +47,7 @@ import com.zhixun.service.ArticleService;
 import com.zhixun.service.FeedService;
 import com.zhixun.service.OpenSearchSyncService;
 import com.zhixun.vo.ArticleDetailVO;
+import com.zhixun.vo.ArticleInteractionUserVO;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.TagVO;
 import lombok.RequiredArgsConstructor;
@@ -317,6 +318,18 @@ public class ArticleServiceImpl implements ArticleService {
         if (currentUserId == null) {
             ArticleDetailVO cached = getArticleDetailFromCache(articleId);
             if (cached != null) {
+                // 叠加 Redis 中尚未刷回 DB 的浏览量增量
+                try {
+                    String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + articleId);
+                    if (viewCountStr != null) {
+                        long pending = Long.parseLong(viewCountStr);
+                        if (cached.getViewCount() != null) {
+                            cached.setViewCount(cached.getViewCount() + pending);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("缓存命中时叠加Redis浏览量失败: {}", e.getMessage());
+                }
                 // 记录浏览历史（异步）
                 recordViewHistoryAsync(articleId, currentUserId);
                 // 增加浏览量（异步）
@@ -1625,6 +1638,118 @@ public class ArticleServiceImpl implements ArticleService {
         result.put("inconsistentCount", inconsistentIds.size());
         result.put("fixedCount", fixedCount);
         result.put("inconsistentIds", inconsistentIds);
+        return result;
+    }
+
+    @Override
+    public PageResult<ArticleInteractionUserVO> getArticleViewers(Long articleId, Long currentUserId, int page, int pageSize) {
+        // 验证作品存在且当前用户是作者
+        Article article = getArticleOrThrow(articleId);
+        if (!article.getAuthorId().equals(currentUserId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "仅作者可查看浏览记录");
+        }
+
+        // 分页查询浏览历史（按时间倒序，去重取每个用户最近一次浏览）
+        Page<ArticleViewHistory> historyPage = new Page<>(page, pageSize);
+        LambdaQueryWrapper<ArticleViewHistory> wrapper = new LambdaQueryWrapper<ArticleViewHistory>()
+                .eq(ArticleViewHistory::getArticleId, articleId)
+                .isNotNull(ArticleViewHistory::getUserId)
+                .orderByDesc(ArticleViewHistory::getCreateTime);
+        articleViewHistoryMapper.selectPage(historyPage, wrapper);
+
+        // 按userId去重，保留最新的浏览记录
+        Map<Long, ArticleViewHistory> uniqueViewers = new java.util.LinkedHashMap<>();
+        for (ArticleViewHistory h : historyPage.getRecords()) {
+            uniqueViewers.putIfAbsent(h.getUserId(), h);
+        }
+
+        // 填充用户信息和关注关系
+        List<ArticleInteractionUserVO> voList = buildInteractionUserVOs(
+                new ArrayList<>(uniqueViewers.keySet()), currentUserId);
+
+        long total = uniqueViewers.size();
+        return new PageResult<>(voList, total, page, pageSize);
+    }
+
+    @Override
+    public PageResult<ArticleInteractionUserVO> getArticleLikers(Long articleId, Long currentUserId, int page, int pageSize) {
+        // 验证作品存在且当前用户是作者
+        Article article = getArticleOrThrow(articleId);
+        if (!article.getAuthorId().equals(currentUserId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "仅作者可查看点赞记录");
+        }
+
+        // 分页查询点赞记录
+        Page<ArticleLike> likePage = new Page<>(page, pageSize);
+        LambdaQueryWrapper<ArticleLike> wrapper = new LambdaQueryWrapper<ArticleLike>()
+                .eq(ArticleLike::getTargetId, articleId)
+                .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
+                .orderByDesc(ArticleLike::getCreatedAt);
+        articleLikeMapper.selectPage(likePage, wrapper);
+
+        List<Long> userIds = likePage.getRecords().stream()
+                .map(ArticleLike::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<ArticleInteractionUserVO> voList = buildInteractionUserVOs(userIds, currentUserId);
+
+        long total = likePage.getTotal();
+        return new PageResult<>(voList, total, page, pageSize);
+    }
+
+    /**
+     * 构建互动用户VO列表（包含用户信息和互关状态）
+     */
+    private List<ArticleInteractionUserVO> buildInteractionUserVOs(List<Long> userIds, Long currentUserId) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return Collections.emptyList();
+        }
+        // 批量查询用户信息
+        List<User> users = userMapper.selectBatchIds(userIds);
+        Map<Long, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+
+        // 批量查询当前用户对这些人的关注关系
+        Set<Long> followingSet = new HashSet<>();
+        try {
+            List<UserFollow> follows = userFollowMapper.selectList(
+                    new LambdaQueryWrapper<UserFollow>()
+                            .eq(UserFollow::getFollowerId, currentUserId)
+                            .in(UserFollow::getFollowingId, userIds));
+            followingSet = follows.stream()
+                    .map(UserFollow::getFollowingId)
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            log.warn("查询关注关系失败: {}", e.getMessage());
+        }
+
+        // 批量查询这些人对当前用户的关注关系（用于判断互关）
+        Set<Long> followerSet = new HashSet<>();
+        try {
+            List<UserFollow> reverseFollows = userFollowMapper.selectList(
+                    new LambdaQueryWrapper<UserFollow>()
+                            .in(UserFollow::getFollowerId, userIds)
+                            .eq(UserFollow::getFollowingId, currentUserId));
+            followerSet = reverseFollows.stream()
+                    .map(UserFollow::getFollowerId)
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            log.warn("查询反向关注关系失败: {}", e.getMessage());
+        }
+
+        List<ArticleInteractionUserVO> result = new ArrayList<>();
+        for (Long uid : userIds) {
+            User user = userMap.get(uid);
+            if (user == null) continue;
+            ArticleInteractionUserVO vo = new ArticleInteractionUserVO();
+            vo.setId(user.getId());
+            vo.setNickname(user.getNickname());
+            vo.setAvatar(user.getAvatar());
+            // 互相关注 = 我关注了他 且 他关注了我
+            vo.setIsMutualFollow(followingSet.contains(uid) && followerSet.contains(uid));
+            result.add(vo);
+        }
         return result;
     }
 

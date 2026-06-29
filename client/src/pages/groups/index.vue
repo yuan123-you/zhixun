@@ -128,26 +128,32 @@
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2">
-                    <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
-                    <span
-                      v-if="group.myRole === 2"
-                      class="role-badge role-badge-owner"
-                    >群主</span>
-                    <span
-                      v-else-if="group.myRole === 1"
-                      class="role-badge role-badge-admin"
-                    >管理员</span>
-                  </div>
-                  <div class="flex items-center gap-3 mt-1.5">
-                    <span v-if="group.groupNumber" class="text-xs text-[var(--zh-text-tertiary)] font-mono tracking-wide">群号: {{ group.groupNumber }}</span>
-                    <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)]">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                      {{ group.memberCount }} 人
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
+                      <span
+                        v-if="group.myRole === 2"
+                        class="role-badge role-badge-owner"
+                      >群主</span>
+                      <span
+                        v-else-if="group.myRole === 1"
+                        class="role-badge role-badge-admin"
+                      >管理员</span>
+                      <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)] flex-shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        {{ group.memberCount }} 人
+                      </span>
+                    </div>
+                    <span class="text-[10px] text-[var(--zh-text-tertiary)] flex-shrink-0 ml-2">
+                      {{ formatRelativeTime(groupLastMessages[group.id]?.time) }}
                     </span>
-                    <span v-if="group.description" class="text-xs text-[var(--zh-text-tertiary)] truncate hidden sm:inline">{{ group.description }}</span>
+                  </div>
+                  <div class="flex items-center mt-1.5">
+                    <p class="text-xs text-[var(--zh-text-secondary)] truncate">
+                      {{ getGroupLastMessagePreview(group.id) }}
+                    </p>
                   </div>
                 </div>
 
@@ -300,17 +306,24 @@
                     >{{ group.name.charAt(0) }}</div>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
-                    <div class="flex items-center gap-3 mt-1.5">
-                      <span v-if="group.groupNumber" class="text-xs text-[var(--zh-text-tertiary)] font-mono tracking-wide">群号: {{ group.groupNumber }}</span>
-                      <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)]">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        {{ group.memberCount }} 人
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
+                        <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)] flex-shrink-0">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                          {{ group.memberCount }} 人
+                        </span>
+                      </div>
+                      <span class="text-[10px] text-[var(--zh-text-tertiary)] flex-shrink-0 ml-2">
+                        {{ formatRelativeTime(groupLastMessages[group.id]?.time) }}
                       </span>
-                      <span v-if="group.ownerName" class="text-xs text-[var(--zh-text-tertiary)] hidden sm:inline">群主 {{ group.ownerName }}</span>
-                      <span v-if="group.description" class="text-xs text-[var(--zh-text-tertiary)] truncate hidden sm:inline">{{ group.description }}</span>
+                    </div>
+                    <div class="flex items-center mt-1.5">
+                      <p class="text-xs text-[var(--zh-text-secondary)] truncate">
+                        {{ getGroupLastMessagePreview(group.id) }}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -368,17 +381,24 @@
                 >{{ group.name.charAt(0) }}</div>
               </div>
               <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
-                <div class="flex items-center gap-3 mt-1.5">
-                  <span v-if="group.groupNumber" class="text-xs text-[var(--zh-text-tertiary)] font-mono tracking-wide">群号: {{ group.groupNumber }}</span>
-                  <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)]">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    {{ group.memberCount }} 人
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
+                    <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)] flex-shrink-0">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      {{ group.memberCount }} 人
+                    </span>
+                  </div>
+                  <span class="text-[10px] text-[var(--zh-text-tertiary)] flex-shrink-0 ml-2">
+                    {{ formatRelativeTime(groupLastMessages[group.id]?.time) }}
                   </span>
-                  <span v-if="group.ownerName" class="text-xs text-[var(--zh-text-tertiary)] hidden sm:inline">群主 {{ group.ownerName }}</span>
-                  <span v-if="group.description" class="text-xs text-[var(--zh-text-tertiary)] truncate hidden sm:inline">{{ group.description }}</span>
+                </div>
+                <div class="flex items-center mt-1.5">
+                  <p class="text-xs text-[var(--zh-text-secondary)] truncate">
+                    {{ getGroupLastMessagePreview(group.id) }}
+                  </p>
                 </div>
               </div>
               <button
@@ -525,7 +545,7 @@
 <script setup lang="ts">
 /** 群组广场页 */
 import { groupApi } from '@/api/group'
-import type { GroupInfo } from '@/api/group'
+import type { GroupInfo, GroupMessage } from '@/api/group'
 import { showToast } from '@/composables/useToast'
 import { avatarColor } from '@/utils/color'
 
@@ -563,6 +583,67 @@ const creating = ref(false)
 const createNameInputRef = ref<HTMLInputElement | null>(null)
 const createForm = reactive({ name: '', description: '', isPublic: 1 })
 
+// 群组最后一条消息信息
+const groupLastMessages = reactive<Record<number, { content: string; time: string; type?: string }>>({})
+
+// 批量获取群组最新消息
+const fetchGroupLastMessages = async (groups: GroupInfo[]) => {
+  if (!groups.length) return
+  await Promise.all(groups.map(async (g) => {
+    if (groupLastMessages[g.id]) return // 已缓存
+    try {
+      const { data } = await groupApi.getMessages(g.id, 0, 50)
+      const raw = data?.data || data
+      const msgs = Array.isArray(raw) ? raw : (raw?.list || [])
+      if (msgs.length > 0) {
+        // 取最后一条作为最新消息（无论正序/倒序，取首或尾中时间最新的那条）
+        const first = msgs[0] as GroupMessage
+        const last = msgs[msgs.length - 1] as GroupMessage
+        const target = new Date(first.createdAt || 0).getTime() > new Date(last.createdAt || 0).getTime() ? first : last
+        groupLastMessages[g.id] = {
+          content: target.content || '',
+          time: target.createdAt || '',
+          type: target.messageType,
+        }
+      }
+    } catch {
+      // 静默失败
+    }
+  }))
+}
+
+const getGroupLastMessagePreview = (groupId: number) => {
+  const msg = groupLastMessages[groupId]
+  if (!msg || !msg.content) return '暂无消息'
+  if (msg.type === 'image') return '[图片]'
+  return msg.content.length > 30 ? msg.content.slice(0, 30) + '...' : msg.content
+}
+
+/** 相对时间格式化 */
+const formatRelativeTime = (timeStr?: string) => {
+  if (!timeStr) return ''
+  const now = Date.now()
+  const time = new Date(timeStr).getTime()
+  if (isNaN(time)) return ''
+  const diff = now - time
+
+  if (diff < 60 * 1000) return '刚刚'
+  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))}分钟前`
+  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}小时前`
+
+  const date = new Date(timeStr)
+  const nowDate = new Date()
+  const pad = (n: number) => n.toString().padStart(2, '0')
+
+  if (date.getFullYear() === nowDate.getFullYear()) {
+    if (date.getDate() === nowDate.getDate() - 1) {
+      return `昨天 ${pad(date.getHours())}:${pad(date.getMinutes())}`
+    }
+    return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+  }
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 const switchTab = (tab: 'my' | 'search') => {
   activeTab.value = tab
   if (tab === 'my') {
@@ -579,6 +660,7 @@ const loadMyGroups = async () => {
   try {
     const { data } = await groupApi.getMyGroups()
     myGroups.value = data?.data?.list || data?.data || []
+    await fetchGroupLastMessages(myGroups.value)
   } catch {
     myGroups.value = []
     showToast('加载失败，请稍后重试', 'error', { position: 'top-center' })
@@ -595,6 +677,7 @@ const loadRecommendedGroups = async () => {
     const { data } = await groupApi.searchGroups('', 1, 20)
     const list = data?.data?.list || data?.data || []
     recommendedGroups.value = Array.isArray(list) ? list : []
+    await fetchGroupLastMessages(recommendedGroups.value)
   } catch {
     recommendedGroups.value = []
   } finally {
@@ -622,6 +705,7 @@ const handleSearch = async () => {
     searchResults.value = Array.isArray(list) ? list : []
     searchHasMore.value = searchResults.value.length >= 20
     searchResultTotal.value = data?.data?.total || searchResults.value.length
+    await fetchGroupLastMessages(searchResults.value)
   } catch {
     searchResults.value = []
     showToast('搜索失败，请稍后重试', 'error', { position: 'top-center' })
@@ -639,6 +723,7 @@ const loadMoreSearch = async () => {
     const arr = Array.isArray(list) ? list : []
     searchResults.value.push(...arr)
     searchHasMore.value = arr.length >= 20
+    await fetchGroupLastMessages(arr)
   } catch {
     searchPage.value--
     showToast('加载失败，请稍后重试', 'error', { position: 'top-center' })

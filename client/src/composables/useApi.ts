@@ -67,7 +67,9 @@ export const useApi = () => {
   const instance: AxiosInstance = axios.create({
     baseURL: BASE_URL,
     timeout: 15000,
-    headers: { 'Content-Type': 'application/json' },
+    // 不设置默认 Content-Type：axios transformRequest 会自动为 plain object 设置 application/json，
+    // 而 FormData 上传时由浏览器自动设置 multipart/form-data 及 boundary，
+    // 避免默认 application/json 覆盖 FormData 的 Content-Type 导致后端 MultipartException
   })
 
   // 全局Token刷新
@@ -249,6 +251,7 @@ function createApiMethods(instance: AxiosInstance) {
   const upload = <T = any>(url: string, formData: FormData, onProgress?: (percent: number) => void): Promise<AxiosResponse<ApiResponse<T>>> => {
     return instance.post<ApiResponse<T>>(url, formData, {
       timeout: 60000, // 上传超时60秒
+      headers: { 'Content-Type': undefined }, // 显式清除，让浏览器自动设置 multipart/form-data + boundary
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total && onProgress) {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)

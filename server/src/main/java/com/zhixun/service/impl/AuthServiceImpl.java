@@ -181,13 +181,26 @@ public class AuthServiceImpl implements AuthService {
         userSettings.setNotifyInteract(1);
         userSettingsMapper.insert(userSettings);
 
-        // 新用户注册欢迎流程：自动关注知讯官方账号 + 欢迎通知 + 欢迎私信
-        // 与注册在同一事务中，通知/私信采用 best-effort 降级策略
+        // 新用户注册欢迎流程：推迟到事务提交后执行，避免事务死锁
+        // 原因：registerWelcomeService 使用 REQUIRES_NEW 开启独立事务，会挂起当前事务（但保持行锁），
+        // 而欢迎流程中的 autoFollowOfficialAccount 需要 UPDATE 刚插入的用户行 → 经典死锁。
+        // 修复：在事务提交后（所有锁已释放）再执行欢迎流程，彻底消除死锁。
+        Long welcomeUserId = user.getId();
         try {
-            registerWelcomeService.handleNewUserRegistration(user.getId());
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            registerWelcomeService.handleNewUserRegistration(welcomeUserId);
+                        } catch (Exception e) {
+                            log.warn("新用户注册欢迎流程执行失败（已降级）: userId={}, error={}", welcomeUserId, e.getMessage());
+                        }
+                    }
+                });
+            }
         } catch (Exception e) {
-            // 欢迎流程异常不影响注册主流程，降级处理
-            log.warn("新用户注册欢迎流程执行失败（已降级）: userId={}, error={}", user.getId(), e.getMessage());
+            log.warn("注册欢迎流程事务同步回调注册失败, userId={}: {}", welcomeUserId, e.getMessage());
         }
 
         // 同步到 OpenSearch（事务提交后异步执行，失败不影响注册结果）

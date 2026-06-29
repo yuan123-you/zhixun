@@ -20,6 +20,16 @@ public interface MessageService {
     MessageVO sendMessage(Long senderId, MessageSendRequest request);
 
     /**
+     * 发送AI助手消息（私信场景）
+     *
+     * @param senderId     当前用户ID
+     * @param targetUserId 会话目标用户ID
+     * @param question     AI提问内容
+     * @return AI回复消息视图
+     */
+    MessageVO sendAIMessage(Long senderId, Long targetUserId, String question);
+
+    /**
      * 获取会话列表
      *
      * @param userId   用户ID

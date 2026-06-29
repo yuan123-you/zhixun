@@ -284,9 +284,13 @@ export const useMessageStore = defineStore('message', () => {
   const updateConversationLastMessage = (userId: number, content: string, type?: string) => {
     const conv = conversations.value.find(c => c.user.id === userId)
     if (conv) {
+      let previewContent = content
+      if (type === 'image') previewContent = '[图片]'
+      else if (type === 'voice') previewContent = '[语音]'
+      else if (type === 'file') previewContent = '[文件]'
       conv.lastMessage = {
         ...conv.lastMessage,
-        content: type === 'image' ? '[图片]' : content,
+        content: previewContent,
         type: type || 'text',
         createdAt: new Date().toISOString(),
       }
@@ -347,7 +351,10 @@ export const useMessageStore = defineStore('message', () => {
     if (conv) {
       conv.lastMessage = {
         ...newMsg,
-        content: newMsg.type === 'image' ? '[图片]' : newMsg.content,
+        content: newMsg.type === 'image' ? '[图片]'
+          : newMsg.type === 'file' ? '[文件]'
+          : newMsg.type === 'voice' ? '[语音]'
+          : newMsg.content,
       }
       if (currentChatUserId.value !== senderId) {
         conv.unreadCount = (conv.unreadCount || 0) + 1

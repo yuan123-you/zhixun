@@ -97,12 +97,16 @@
                 <!-- 文本消息 -->
                 <p v-if="msg.messageType === 'text'" class="qq-msg-text" v-html="renderMentions(msg.content, msg.mentionedUserIds)"></p>
                 <!-- 图片消息 -->
-                <div v-else-if="msg.messageType === 'image'" class="qq-img-msg" @click="previewImage(msg.content)">
-                  <img :src="msg.content" alt="图片" class="qq-msg-image" loading="lazy" />
+                <div v-else-if="msg.messageType === 'image'" class="qq-img-msg" @click="previewImage(resolveMsgUrl(msg.content))">
+                  <img :src="resolveMsgUrl(msg.content)" alt="图片" class="qq-msg-image" loading="lazy" />
                 </div>
                 <!-- 文件消息 -->
                 <div v-else-if="msg.messageType === 'file'" class="qq-file-msg">
-                  <FileCard :content="msg.content" />
+                  <FileCard :content="msg.content" :resolve-url="resolveMsgUrl" />
+                </div>
+                <!-- 语音消息 -->
+                <div v-else-if="msg.messageType === 'voice'" class="qq-voice-msg">
+                  <VoiceMessage :url="resolveMsgUrl(getVoiceUrl(msg.content))" :duration="getVoiceDuration(msg.content)" :is-mine="false" />
                 </div>
                 <!-- AI回复消息 -->
                 <p v-else-if="msg.messageType === 'ai_reply'" class="qq-msg-text qq-ai-text" v-html="renderMentions(msg.content, msg.mentionedUserIds)"></p>
@@ -118,11 +122,14 @@
               <span class="qq-msg-name qq-msg-name-mine">{{ currentUserName || '我' }}</span>
               <div class="qq-bubble qq-bubble-mine" :class="{ 'qq-bubble-mentioned': isMentioned(msg) }">
                 <p v-if="msg.messageType === 'text'" class="qq-msg-text" v-html="renderMentions(msg.content, msg.mentionedUserIds)"></p>
-                <div v-else-if="msg.messageType === 'image'" class="qq-img-msg" @click="previewImage(msg.content)">
-                  <img :src="msg.content" alt="图片" class="qq-msg-image" loading="lazy" />
+                <div v-else-if="msg.messageType === 'image'" class="qq-img-msg" @click="previewImage(resolveMsgUrl(msg.content))">
+                  <img :src="resolveMsgUrl(msg.content)" alt="图片" class="qq-msg-image" loading="lazy" />
                 </div>
                 <div v-else-if="msg.messageType === 'file'" class="qq-file-msg">
-                  <FileCard :content="msg.content" />
+                  <FileCard :content="msg.content" :resolve-url="resolveMsgUrl" />
+                </div>
+                <div v-else-if="msg.messageType === 'voice'" class="qq-voice-msg">
+                  <VoiceMessage :url="resolveMsgUrl(getVoiceUrl(msg.content))" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
                 </div>
                 <p v-else class="qq-msg-text">{{ msg.content }}</p>
               </div>
@@ -132,6 +139,22 @@
           </template>
         </div>
       </template>
+
+      <!-- AI助手正在思考指示器 -->
+      <div v-if="aiReplying" class="qq-msg-row" data-ai-loading>
+        <img :src="aiAvatar" class="qq-avatar" alt="AI助手" />
+        <div class="qq-msg-wrap">
+          <span class="qq-msg-name">AI助手</span>
+          <div class="qq-bubble qq-bubble-other qq-bubble-ai">
+            <div class="qq-ai-typing">
+              <span class="qq-ai-dot"></span>
+              <span class="qq-ai-dot"></span>
+              <span class="qq-ai-dot"></span>
+              <span class="qq-ai-typing-text">AI助手正在思考...</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div v-if="messages.length === 0 && !loadingMore" class="qq-empty">
         <svg class="w-12 h-12 text-[var(--zh-text-tertiary)] opacity-40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,26 +182,62 @@
         <button class="qq-tool-btn" @click="triggerFileUpload" title="发送文件">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
         </button>
+        <button class="qq-tool-btn" :class="{ active: voiceRecorder.isRecording.value }" @click="startVoiceRecord" title="语音消息">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+        </button>
         <button class="qq-tool-btn" :class="{ active: aiMode }" @click="toggleAIMode" title="AI助手">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="8" width="14" height="11" rx="3"/>
+            <circle cx="9.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+            <path d="M10 16.5h4"/>
+            <path d="M12 3v3"/>
+            <circle cx="12" cy="2.5" r="1.5" fill="currentColor" stroke="none"/>
+            <path d="M3 12.5h2M19 12.5h2"/>
+            <path d="M20 4l.5 1.5L22 6l-1.5.5L20 8l-.5-1.5L18 6l1.5-.5z" fill="currentColor" stroke="none" opacity="0.6"/>
+            <path d="M3.5 18l.4 1L5 19.4l-1.1.4L3.5 21l-.4-1.2L2 19.4l1.1-.4z" fill="currentColor" stroke="none" opacity="0.5"/>
+          </svg>
         </button>
       </div>
+      <!-- 语音上传中提示 -->
+      <div v-if="voiceUploading" class="qq-voice-uploading">
+        <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <span>语音上传中...</span>
+      </div>
+      <!-- 语音录制中 - 替换输入框 -->
+      <div v-if="voiceRecorder.isRecording.value" class="qq-voice-recording-bar">
+        <span class="qq-voice-rec-dot" />
+        <span class="qq-voice-rec-time">{{ voiceRecorder.formatTime(voiceRecorder.recordingTime.value) }}</span>
+        <button class="qq-voice-rec-stop" @click="finishVoiceRecord">发送</button>
+        <button class="qq-voice-rec-cancel" @click="cancelVoiceRecord">取消</button>
+      </div>
       <!-- 输入框 + 发送 -->
-      <div class="qq-input-row">
+      <div v-else class="qq-input-row">
         <div class="qq-input-wrap" :class="{ focused: inputFocused }">
           <!-- @提及下拉框 -->
           <div v-if="showMentionList" class="qq-mention-dropdown">
+            <!-- AI助手选项 -->
+            <div
+              v-if="isAIMentionMatch"
+              class="qq-mention-item qq-mention-ai"
+              :class="{ active: mentionIndex === 0 }"
+              @mousedown.prevent="selectAIMention()"
+            >
+              <img :src="aiAvatar" class="qq-mention-avatar" />
+              <span class="qq-mention-name">AI助手</span>
+              <span class="qq-mention-badge">AI</span>
+            </div>
             <div
               v-for="(member, mIdx) in filteredMembers"
               :key="member.userId"
               class="qq-mention-item"
-              :class="{ active: mentionIndex === mIdx }"
+              :class="{ active: mentionIndex === mIdx + (isAIMentionMatch ? 1 : 0) }"
               @mousedown.prevent="selectMention(member)"
             >
               <img :src="member.userAvatar || defaultAvatar" class="qq-mention-avatar" />
               <span class="qq-mention-name">{{ member.nickname || member.userName }}</span>
             </div>
-            <div v-if="filteredMembers.length === 0" class="qq-mention-empty">无匹配成员</div>
+            <div v-if="filteredMembers.length === 0 && !isAIMentionMatch" class="qq-mention-empty">无匹配成员</div>
           </div>
           <textarea
             ref="inputRef"
@@ -231,6 +290,12 @@ import { sanitizeText } from '@/utils/sanitize'
 import { showToast } from '@/composables/useToast'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import GroupSearchPanel from '@/components/GroupSearchPanel.vue'
+import VoiceMessage from '@/components/VoiceMessage.vue'
+import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
+import { useResourceUrl } from '@/composables/useResourceUrl'
+
+const { resolveUrl } = useResourceUrl()
+const resolveMsgUrl = (url: string) => resolveUrl(url) || url
 
 const props = defineProps<{
   group: GroupInfo | null
@@ -250,7 +315,7 @@ const emit = defineEmits<{
 }>()
 
 const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNlMmU4ZjAiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk0YTNiOCIgZm9udC1zaXplPSIxNiI+PzwvdGV4dD48L3N2Zz4='
-const aiAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiM2MzY2ZjEiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiPkFJPC90ZXh0Pjwvc3ZnPg=='
+const aiAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjODE4Y2Y4Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNjM2NmYxIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJ1cmwoI2JnKSIgcng9IjIwIi8+PHJlY3QgeD0iMTEiIHk9IjE1IiB3aWR0aD0iMTgiIGhlaWdodD0iMTQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjk1Ii8+PHJlY3QgeD0iMTUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxyZWN0IHg9IjIxLjUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxwYXRoIGQ9Ik0xNS41IDI2aDkiIHN0cm9rZT0iIzYzNjZmMSIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxyZWN0IHg9IjE5IiB5PSI4IiB3aWR0aD0iMiIgaGVpZ2h0PSI3IiByeD0iMSIgZmlsbD0id2hpdGUiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjciIHI9IjIuNSIgZmlsbD0iI2E1YjRmYyIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iNyIgcj0iMS4yIiBmaWxsPSJ3aGl0ZSIvPjxyZWN0IHg9IjcuNSIgeT0iMjAiIHdpZHRoPSIzLjUiIGhlaWdodD0iNCIgcng9IjEuNSIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC43NSIvPjxyZWN0IHg9IjI5IiB5PSIyMCIgd2lkdGg9IjMuNSIgaGVpZ2h0PSI0IiByeD0iMS41IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjc1Ii8+PHBhdGggZD0iTTMyIDEwbC44IDIuMkwzNSAxM2wtMi4yLjhMMzIgMTZsLS44LTIuMkwyOSAxM2wyLjItLjh6IiBmaWxsPSIjYzdkMmZlIiBmaWxsLW9wYWNpdHk9IjAuOCIvPjxwYXRoIGQ9Ik04IDMwbC42IDEuNUwxMCAzMmwtMS40LjVMOCAzNGwtLjYtMS41TDYgMzJsMS40LS41eiIgZmlsbD0iI2M3ZDJmZSIgZmlsbC1vcGFjaXR5PSIwLjYiLz48L3N2Zz4='
 
 const messages = ref<GroupMessage[]>([])
 const inputText = ref('')
@@ -265,9 +330,54 @@ const showMenu = ref(false)
 const showSearch = ref(false)
 const previewSrc = ref('')
 const aiMode = ref(false)
+const aiReplying = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
 let offset = 0
+
+/** 语音录制 */
+const voiceRecorder = useVoiceRecorder()
+const voiceUploading = ref(false)
+
+/** 解析语音消息内容 */
+const getVoiceUrl = (content: string): string => {
+  try { const data = JSON.parse(content); return data.url || content } catch { return content }
+}
+const getVoiceDuration = (content: string): number => {
+  try { const data = JSON.parse(content); return data.duration || 0 } catch { return 0 }
+}
+
+const startVoiceRecord = () => { voiceRecorder.startRecording() }
+
+const finishVoiceRecord = async () => {
+  const duration = voiceRecorder.recordingTime.value
+  voiceRecorder.stopRecording()
+  const finalBlob = voiceRecorder.audioBlob.value
+  if (!finalBlob) return
+  voiceUploading.value = true
+  try {
+    const voiceUrl = await fileApi.uploadSingleVoice(finalBlob)
+    if (!voiceUrl) throw new Error('语音上传失败')
+    const content = JSON.stringify({ url: voiceUrl, duration: duration || 0 })
+    if (props.group) {
+      const res = await groupApi.sendMessage(props.group.id, content, 'voice')
+      const msg = res.data.data
+      if (msg && !messages.value.some(m => m.id === msg.id)) {
+        messages.value.push(msg)
+        emit('messageSent', msg)
+      }
+      await nextTick()
+      scrollToBottom()
+    }
+  } catch (err: any) {
+    showToast(err.message || '语音发送失败', 'error', { position: 'top-center' })
+  } finally {
+    voiceUploading.value = false
+    voiceRecorder.cancelRecording()
+  }
+}
+
+const cancelVoiceRecord = () => { voiceRecorder.cancelRecording() }
 
 // @提及相关
 const showMentionList = ref(false)
@@ -277,6 +387,13 @@ const mentionedIds = ref<number[]>([])
 let mentionStartPos = 0
 
 const canSend = computed(() => inputText.value.trim().length > 0)
+
+/** 判断 @ 输入是否匹配 AI助手（空查询或输入包含 'ai'/'AI'/'助手' 等关键词时显示） */
+const isAIMentionMatch = computed(() => {
+  const q = mentionQuery.value.toLowerCase()
+  if (!q) return true // 空查询时总是显示 AI助手 选项
+  return 'ai助手'.includes(q) || 'ai'.includes(q) || '助手'.includes(q)
+})
 
 const filteredMembers = computed(() => {
   if (!props.members) return []
@@ -292,6 +409,10 @@ const filteredMembers = computed(() => {
 function addExternalMessage(msg: GroupMessage) {
   if (messages.value.some(m => m.id === msg.id)) return
   messages.value.push(msg)
+  // AI回复到达时清除加载指示器
+  if (msg.messageType === 'ai_reply' || msg.senderId === 0) {
+    aiReplying.value = false
+  }
   nextTick(scrollToBottom)
 }
 
@@ -334,7 +455,30 @@ async function sendMsg() {
   // 检测是否为@AI助手模式
   const isAIBotMention = rawText.includes('@AI助手')
   if (aiMode.value || isAIBotMention) {
-    await sendAIMessage(rawText.replace(/@AI助手\s*/g, '').trim())
+    // 构造带 @AI助手 前缀的消息内容
+    const question = rawText.replace(/@AI助手\s*/g, '').trim()
+    if (!question) return
+    const contentWithPrefix = '@AI助手 ' + question
+
+    // 1. 先发送用户消息（作为普通群消息，所有人可见）
+    const sanitizedText = sanitizeText(contentWithPrefix)
+    try {
+      const res = await groupApi.sendMessage(props.group.id, sanitizedText, 'text')
+      const msg = res.data.data
+      if (msg && !messages.value.some(m => m.id === msg.id)) {
+        messages.value.push(msg)
+        emit('messageSent', msg)
+      }
+    } catch { /* silent */ }
+
+    // 2. 显示AI思考指示器
+    aiReplying.value = true
+    resetInput()
+    await nextTick()
+    scrollToBottom()
+
+    // 3. 异步触发AI回复（不等待HTTP响应，AI回复通过WebSocket推送）
+    triggerAIReply(question)
     return
   }
 
@@ -351,21 +495,14 @@ async function sendMsg() {
   } catch { /* silent */ }
 }
 
-async function sendAIMessage(question: string) {
-  if (!question || !props.group) return
-  // 先显示用户提问
-  try {
-    const res = await groupApi.sendAIMessage(props.group.id, question)
-    const aiMsg = res.data.data
-    if (aiMsg && !messages.value.some(m => m.id === aiMsg.id)) {
-      messages.value.push(aiMsg)
-    }
-    resetInput()
-    await nextTick()
-    scrollToBottom()
-  } catch (e: any) {
-    showToast('AI回复失败，请稍后重试', 'error', { position: 'top-center' })
-  }
+/** 异步触发AI回复（fire-and-forget），AI回复通过WebSocket广播到群 */
+function triggerAIReply(question: string) {
+  if (!props.group) return
+  groupApi.sendAIMessage(props.group.id, question).catch(() => {
+    // AI触发失败时清除加载指示器并提示
+    aiReplying.value = false
+    showToast('AI回复请求失败，请稍后重试', 'error', { position: 'top-center' })
+  })
 }
 
 function resetInput() {
@@ -451,9 +588,34 @@ function selectMention(member: GroupMember) {
   })
 }
 
+/** 选择 @AI助手 从提及列表 */
+function selectAIMention() {
+  const text = inputText.value
+  const before = text.substring(0, mentionStartPos)
+  const after = text.substring(inputRef.value?.selectionStart || text.length)
+  inputText.value = before + '@AI助手 ' + after
+  showMentionList.value = false
+  aiMode.value = true
+  nextTick(() => {
+    if (inputRef.value) {
+      const pos = before.length + 7 // '@AI助手 ' 长度
+      inputRef.value.selectionStart = pos
+      inputRef.value.selectionEnd = pos
+      inputRef.value.focus()
+    }
+  })
+}
+
 function handleMentionTab() {
-  if (showMentionList.value && filteredMembers.value.length > 0) {
-    selectMention(filteredMembers.value[mentionIndex.value])
+  if (!showMentionList.value) return
+  const aiOffset = isAIMentionMatch.value ? 1 : 0
+  if (mentionIndex.value === 0 && isAIMentionMatch.value) {
+    selectAIMention()
+  } else {
+    const memberIdx = mentionIndex.value - aiOffset
+    if (memberIdx >= 0 && memberIdx < filteredMembers.value.length) {
+      selectMention(filteredMembers.value[memberIdx])
+    }
   }
 }
 
@@ -463,8 +625,13 @@ function isMentioned(msg: GroupMessage): boolean {
 
 function renderMentions(content: string, userIds?: number[]): string {
   if (!content) return ''
-  // 高亮 @用户名 文本
-  return content.replace(/@(\S+?)(?=\s|$)/g, '<span class="qq-mention-tag">@$1</span>')
+  // 高亮 @AI助手 和 @用户名 文本
+  return content
+    .replace(/@AI助手/g, '<span class="qq-mention-tag qq-mention-ai-tag">@AI助手</span>')
+    .replace(/@(\S+?)(?=\s|$)/g, (match, name) => {
+      if (name === 'AI助手') return match // 已经处理过
+      return `<span class="qq-mention-tag">@${name}</span>`
+    })
 }
 
 // ========== 工具栏 ==========
@@ -496,8 +663,14 @@ async function handleImageSelect(e: Event) {
   uploadProgress.value = 0
   try {
     const url = await fileApi.uploadSingleImage(file, (p) => { uploadProgress.value = p })
-    await groupApi.sendMessage(props.group.id, url, 'image')
-    // 消息会通过WebSocket推送回来
+    const res = await groupApi.sendMessage(props.group.id, url, 'image')
+    const msg = res.data.data
+    if (msg && !messages.value.some(m => m.id === msg.id)) {
+      messages.value.push(msg)
+      emit('messageSent', msg)
+    }
+    await nextTick()
+    scrollToBottom()
   } catch {
     showToast('图片上传失败', 'error', { position: 'top-center' })
   } finally {
@@ -518,7 +691,14 @@ async function handleFileSelect(e: Event) {
     const res = await fileApi.uploadFile(formData, (p) => { uploadProgress.value = p })
     const url = res.data.data
     const content = JSON.stringify({ url, name: file.name, size: file.size })
-    await groupApi.sendMessage(props.group.id, content, 'file')
+    const sendRes = await groupApi.sendMessage(props.group.id, content, 'file')
+    const msg = sendRes.data.data
+    if (msg && !messages.value.some(m => m.id === msg.id)) {
+      messages.value.push(msg)
+      emit('messageSent', msg)
+    }
+    await nextTick()
+    scrollToBottom()
   } catch {
     showToast('文件上传失败', 'error', { position: 'top-center' })
   } finally {
@@ -588,14 +768,18 @@ import { defineComponent, h } from 'vue'
 
 const FileCard = defineComponent({
   name: 'FileCard',
-  props: { content: { type: String, required: true } },
+  props: {
+    content: { type: String, required: true },
+    resolveUrl: { type: Function, default: (url: string) => url }
+  },
   setup(props) {
     return () => {
       try {
         const data = JSON.parse(props.content)
+        const resolvedUrl = props.resolveUrl(data.url) || data.url
         const size = data.size ? (data.size > 1048576 ? (data.size / 1048576).toFixed(1) + ' MB' : (data.size / 1024).toFixed(1) + ' KB') : ''
         return h('a', {
-          href: data.url,
+          href: resolvedUrl,
           target: '_blank',
           rel: 'noopener',
           class: 'qq-file-card'
@@ -616,7 +800,8 @@ const FileCard = defineComponent({
           ])
         ])
       } catch {
-        return h('a', { href: props.content, target: '_blank', class: 'qq-file-card' }, [
+        const fallbackUrl = props.resolveUrl(props.content) || props.content
+        return h('a', { href: fallbackUrl, target: '_blank', class: 'qq-file-card' }, [
           h('div', { class: 'qq-file-info' }, [h('p', { class: 'qq-file-name' }, '文件')])
         ])
       }
@@ -645,6 +830,8 @@ export default { components: { FileCard } }
   flex-shrink: 0;
   background: var(--zh-bg-elevated, #fff);
   z-index: 2;
+  position: sticky;
+  top: 0;
 }
 .qq-back-btn {
   display: flex;
@@ -810,6 +997,57 @@ export default { components: { FileCard } }
 /* AI文本样式 */
 .qq-ai-text {
   white-space: pre-wrap;
+}
+
+/* AI思考中的打字动画 */
+.qq-ai-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+.qq-ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--zh-primary, #6366f1);
+  opacity: 0.4;
+  animation: qq-ai-bounce 1.4s ease-in-out infinite;
+}
+.qq-ai-dot:nth-child(2) { animation-delay: 0.2s; }
+.qq-ai-dot:nth-child(3) { animation-delay: 0.4s; }
+.qq-ai-typing-text {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--zh-text-tertiary);
+}
+@keyframes qq-ai-bounce {
+  0%, 80%, 100% { opacity: 0.4; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.1); }
+}
+
+/* AI助手提及标签（特殊颜色） */
+:deep(.qq-mention-ai-tag) {
+  color: #6366f1;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* 提及列表中的AI选项 */
+.qq-mention-ai {
+  border-bottom: 1px solid var(--zh-border, #e5e7eb);
+}
+.qq-mention-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--zh-primary, #6366f1);
+  padding: 1px 6px;
+  border-radius: 8px;
+  line-height: 1.4;
 }
 
 /* 图片消息 */
@@ -997,7 +1235,7 @@ export default { components: { FileCard } }
 
 /* ===== 移动端适配 ===== */
 @media (max-width: 768px) {
-  .qq-chat-header { padding: 8px 12px; }
+  .qq-chat-header { padding: 8px 10px; }
   .qq-chat-msgs { padding: 6px 10px; }
   .qq-chat-input { padding: 6px 10px 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
   .qq-avatar { width: 28px; height: 28px; }
@@ -1005,5 +1243,81 @@ export default { components: { FileCard } }
   .qq-msg-wrap { max-width: 80%; }
   .qq-msg-image { max-width: 160px; max-height: 160px; }
   .qq-menu { top: 48px; right: 10px; }
+}
+
+/* 语音录制栏 */
+.qq-voice-recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--zh-bg-hover, #f1f5f9);
+  border-radius: 24px;
+  border: 1.5px solid var(--zh-border, #e5e7eb);
+}
+.qq-voice-rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: qq-voice-pulse 1s infinite;
+  flex-shrink: 0;
+}
+@keyframes qq-voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.qq-voice-rec-time {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--zh-text, #1e293b);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+}
+.qq-voice-rec-stop {
+  padding: 4px 16px;
+  border: none;
+  border-radius: 16px;
+  background: var(--zh-primary, #6366f1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-left: auto;
+}
+.qq-voice-rec-stop:hover { opacity: 0.85; }
+.qq-voice-rec-cancel {
+  padding: 4px 12px;
+  border: 1px solid var(--zh-border, #e5e7eb);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--zh-text-secondary, #64748b);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.qq-voice-rec-cancel:hover { background: var(--zh-bg-hover, #f1f5f9); }
+
+/* 语音上传中 */
+.qq-voice-uploading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 8px;
+}
+.dark .qq-voice-uploading {
+  background: rgba(37, 99, 235, 0.15);
+  color: #93c5fd;
+}
+
+/* 语音消息 */
+.qq-voice-msg {
+  min-width: 90px;
 }
 </style>

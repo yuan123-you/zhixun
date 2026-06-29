@@ -77,10 +77,13 @@ onUnmounted(() => {
   background: rgba(200, 200, 200, 0.45);
 }
 
-/* 移动端确保不遮挡底部导航栏 */
+/* 底部Tab导航栏始终存在，确保不遮挡 */
+.backtop-btn {
+  bottom: calc(10vh + env(safe-area-inset-bottom, 0px));
+  right: 12px;
+}
 @media (max-width: 767.98px) {
   .backtop-btn {
-    bottom: calc(10vh + env(safe-area-inset-bottom, 0px));
     right: 10px;
     width: 34px;
     height: 34px;

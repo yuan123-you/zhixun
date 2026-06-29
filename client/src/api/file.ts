@@ -42,4 +42,17 @@ export const fileApi = {
     const res = await fileApi.uploadImage(fd, onProgress)
     return res.data.data || ''
   },
+
+  /**
+   * 便捷方法：上传单个语音文件
+   * @param blob 语音 Blob
+   * @param onProgress 上传进度回调
+   * @returns 上传成功后的语音访问URL
+   */
+  uploadSingleVoice: async (blob: Blob, onProgress?: (percent: number) => void): Promise<string> => {
+    const fd = new FormData()
+    fd.append('file', blob, 'voice.webm')
+    const res = await fileApi.uploadVoice(fd, onProgress)
+    return res.data.data || ''
+  },
 }
