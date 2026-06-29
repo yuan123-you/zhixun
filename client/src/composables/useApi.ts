@@ -185,19 +185,19 @@ export const useApi = () => {
             if (!forbiddenVisible) {
               forbiddenVisible = true
               // 使用更显眼、更适配移动端、且语义明确的提示
-              const tip = friendlyMessage({ status, message: data?.message }, '您没有权限执行此操作')
+              const tip = friendlyMessage({ status, code: data?.code, message: data?.message }, '您没有权限执行此操作')
               showMobileAlert(tip)
               setTimeout(() => { forbiddenVisible = false }, 1800)
             }
-            return Promise.reject(new Error(friendlyMessage({ status, message: data?.message }, '您没有权限执行此操作')))
-          case 404: return Promise.reject(new Error(friendlyMessage({ status, message: data?.message }, '内容不存在或已被删除')))
+            return Promise.reject(new Error(friendlyMessage({ status, code: data?.code, message: data?.message }, '您没有权限执行此操作')))
+          case 404: return Promise.reject(new Error(friendlyMessage({ status, code: data?.code, message: data?.message }, '内容不存在或已被删除')))
           case 408:
-          case 504: return Promise.reject(new Error(friendlyMessage({ status, message: data?.message }, '请求超时，请稍后重试')))
-          case 429: return Promise.reject(new Error(friendlyMessage({ status, message: data?.message }, '操作太频繁，请稍后再试')))
+          case 504: return Promise.reject(new Error(friendlyMessage({ status, code: data?.code, message: data?.message }, '请求超时，请稍后重试')))
+          case 429: return Promise.reject(new Error(friendlyMessage({ status, code: data?.code, message: data?.message }, '操作太频繁，请稍后再试')))
           case 500:
           case 502:
-          case 503: return Promise.reject(new Error(friendlyMessage({ status, message: data?.message }, '服务繁忙，请稍后重试')))
-          default: return Promise.reject(new Error(friendlyMessage({ status, message: data?.message || error.message })))
+          case 503: return Promise.reject(new Error(friendlyMessage({ status, code: data?.code, message: data?.message }, '服务繁忙，请稍后重试')))
+          default: return Promise.reject(new Error(friendlyMessage({ status, code: data?.code, message: data?.message || error.message })))
         }
       }
       // 网络错误（如后端关闭、连接拒绝等）—— 不应被当作业务错误抛出

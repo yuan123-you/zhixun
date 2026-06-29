@@ -60,14 +60,18 @@ const BUSINESS_CODE_MAP: Record<string, string> = {
   '504': '服务响应超时，请稍后重试',
   // 业务
   '1001': '账号或密码错误',
-  '1002': '账号未激活，请先验证邮箱/手机',
-  '1003': '账号已被封禁',
-  '1004': '验证码错误或已过期',
-  '1005': '该手机号/邮箱已被注册',
+  '1002': '账号已被限制使用',
+  '1003': '登录信息已过期，请重新登录',
+  '1004': '登录信息已过期，请重新登录',
+  '1005': '登录信息已过期，请重新登录',
+  '1006': '手机号码未验证',
+  '1007': '验证码输入错误',
   '1010': '两次密码输入不一致',
-  '2001': '文章不存在或已删除',
-  '2002': '文章正在审核中',
-  '2003': '文章已发布，无法重复操作',
+  '2001': '用户不存在',
+  '2002': '手机号已注册',
+  '2003': '邮箱已注册',
+  '2004': '密码输入错误',
+  '2005': '原密码输入错误',
   '2010': '含有敏感词，请修改后再试',
   '2011': '内容超出最大长度限制',
   '3001': '关注失败，请稍后重试',
@@ -145,6 +149,14 @@ export function toFriendlyError(options: FriendlyErrorOptions = {}): FriendlyErr
 
   // 1) 业务码优先（最具体）
   if (code !== undefined && code !== null && BUSINESS_CODE_MAP[String(code)]) {
+    // 优先使用后端返回的用户可读消息（如 "用户名已存在"），
+    // 而非业务码对应的通用映射（如 "操作冲突，请刷新后重试"）
+    const rawText = (typeof message === 'string' && message) || raw?.message || ''
+    if (rawText && rawText !== BUSINESS_CODE_MAP[String(code)]
+        && /[\u4e00-\u9fa5]/.test(rawText) && !looksTechnical(rawText)) {
+      out.title = trimTitle(rawText)
+      return finalize(out, fallback)
+    }
     out.title = BUSINESS_CODE_MAP[String(code)]
     if (message && message !== out.title) out.detail = trimDetail(message)
     return finalize(out, fallback)
@@ -152,6 +164,13 @@ export function toFriendlyError(options: FriendlyErrorOptions = {}): FriendlyErr
 
   // 2) HTTP 状态码
   if (status !== undefined && BUSINESS_CODE_MAP[String(status)]) {
+    // 优先使用后端返回的用户可读消息（如 "用户名已存在"），
+    // 而非 HTTP 状态码对应的通用映射（如 "操作冲突，请刷新后重试"）
+    const rawText = (typeof message === 'string' && message) || raw?.message || ''
+    if (rawText && /[\u4e00-\u9fa5]/.test(rawText) && !looksTechnical(rawText)) {
+      out.title = trimTitle(rawText)
+      return finalize(out, fallback)
+    }
     out.title = BUSINESS_CODE_MAP[String(status)]
     if (message && message !== out.title) out.detail = trimDetail(message)
     return finalize(out, fallback)
