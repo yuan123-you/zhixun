@@ -36,6 +36,9 @@ WORKDIR /app
 # 从构建阶段复制 jar 包
 COPY --from=builder /app/target/*.jar app.jar
 
+# 创建本地上传目录（MinIO 降级时的 fallback 存储路径）
+RUN mkdir -p /app/uploads/images /app/uploads/files /app/uploads/voices
+
 # 修改文件所有者
 RUN chown -R appuser:appgroup /app
 

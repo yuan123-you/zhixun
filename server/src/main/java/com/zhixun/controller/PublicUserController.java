@@ -105,18 +105,72 @@ public class PublicUserController {
         return R.ok(result);
     }
 
+    /**
+     * 解析客户端真实 IP，兼容 Cloudflare / 普通反向代理 / 直连三种场景。
+     * <p>优先级：CF-Connecting-IP（Cloudflare 专属，最可靠）
+     *          → X-Forwarded-For（标准代理头，取第一个非内网 IP）
+     *          → X-Real-IP（nginx 设置）
+     *          → request.getRemoteAddr()（兜底）
+     */
     private String resolveClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
+        // 1) Cloudflare 专用头：直接给出真实客户端 IP，最可靠
+        String ip = request.getHeader("CF-Connecting-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip.trim();
         }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
+
+        // 2) X-Forwarded-For：可能包含多个 IP（client, proxy1, proxy2），
+        //    从前往后找第一个非内网 IP，跳过可能的 Cloudflare 边缘节点 IP
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isEmpty() && !"unknown".equalsIgnoreCase(xff)) {
+            for (String candidate : xff.split(",")) {
+                String trimmed = candidate.trim();
+                if (!trimmed.isEmpty() && !isPrivateOrCloudflareIp(trimmed)) {
+                    return trimmed;
+                }
+            }
+            // 全是内网/Cloudflare IP，返回第一个
+            return xff.split(",")[0].trim();
         }
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
+
+        // 3) X-Real-IP
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip.trim();
         }
-        return ip;
+
+        // 4) 兜底
+        return request.getRemoteAddr();
+    }
+
+    /**
+     * 判断 IP 是否为内网地址或 Cloudflare 边缘节点 IP。
+     * Cloudflare IP 段（简化判断）：162.158.x.x, 172.64-71.x.x, 104.16-31.x.x, 198.41.128-255.x.x
+     */
+    private boolean isPrivateOrCloudflareIp(String ip) {
+        if (ip == null || ip.isEmpty()) return true;
+        // 内网/回环
+        if (ip.startsWith("10.") || ip.startsWith("192.168.") || ip.startsWith("127.")
+                || ip.equals("::1") || ip.startsWith("169.254.")) return true;
+        if (ip.startsWith("172.")) {
+            try {
+                int second = Integer.parseInt(ip.split("\\.")[1]);
+                if (second >= 16 && second <= 31) return true;
+            } catch (Exception ignored) { }
+        }
+        // Cloudflare IP 段（简化匹配）
+        try {
+            String[] parts = ip.split("\\.");
+            if (parts.length == 4) {
+                int first = Integer.parseInt(parts[0]);
+                int second = Integer.parseInt(parts[1]);
+                if (first == 162 && second == 158) return true;       // 162.158.0.0/15
+                if (first == 172 && second >= 64 && second <= 71) return true; // 172.64.0.0/13
+                if (first == 104 && second >= 16 && second <= 31) return true; // 104.16.0.0/12
+                if (first == 198 && second == 41 && Integer.parseInt(parts[2]) >= 128) return true;
+            }
+        } catch (Exception ignored) { }
+        return false;
     }
 
     /**

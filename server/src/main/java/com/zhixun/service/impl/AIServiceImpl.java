@@ -33,49 +33,97 @@ public class AIServiceImpl implements AIService {
         return new RestTemplate(factory);
     }
 
+    /** 最大重试次数（429 限流时） */
+    private static final int MAX_RETRIES = 2;
+    /** 重试基础延迟（毫秒），实际延迟 = base * 2^attempt */
+    private static final long RETRY_BASE_DELAY_MS = 1000;
+
     @Override
     public AIResponseVO generateText(AIWriteRequest request) {
         String apiKey = aiConfig.getApiKey();
         if (apiKey == null || apiKey.isEmpty() || "your-zhipu-api-key".equals(apiKey)) {
             log.warn("ZHIPU_API_KEY not configured, refusing to mock - returning explicit error for mode={}", request.getMode());
-            // 不再静默回退到 mock 响应，避免误导用户以为 AI 功能可用
             AIResponseVO vo = new AIResponseVO();
-            vo.setContent("AI 服务未配置 API Key");
+            vo.setContent("AI 服务未配置 API Key，请联系管理员");
             vo.setUsage("error: api_key_missing");
             return vo;
         }
+
+        String url = aiConfig.getBaseUrl() + "/chat/completions";
+        String preview = request.getPrompt() != null
+            ? request.getPrompt().substring(0, Math.min(50, request.getPrompt().length()))
+            : "";
+        log.info("Calling ZhiPuAI: model={}, mode={}, prompt={}", aiConfig.getModel(), request.getMode(), preview);
+
+        Exception lastException = null;
+        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return doCallZhiPuAI(url, apiKey, request);
+            } catch (RateLimitException e) {
+                // 429 限流：指数退避重试
+                lastException = e;
+                if (attempt < MAX_RETRIES) {
+                    long delay = RETRY_BASE_DELAY_MS * (1L << attempt); // 1s, 2s
+                    log.warn("ZhiPuAI 429 限流, 第{}次重试, 等待{}ms: {}", attempt + 1, delay, e.getMessage());
+                    try { Thread.sleep(delay); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+                }
+            } catch (Exception e) {
+                lastException = e;
+                break; // 非限流异常不重试
+            }
+        }
+
+        // 所有重试耗尽或不可重试的异常
+        log.error("ZhiPuAI API call failed after {} attempts: {}", MAX_RETRIES + 1, lastException != null ? lastException.getMessage() : "unknown");
+        AIResponseVO vo = new AIResponseVO();
+        String userMsg = (lastException instanceof RateLimitException)
+            ? "AI 服务当前请求过于频繁，请稍后再试"
+            : "AI 服务暂时不可用，请稍后再试";
+        vo.setContent(userMsg);
+        vo.setUsage("error: " + (lastException != null ? lastException.getClass().getSimpleName() : "unknown"));
+        return vo;
+    }
+
+    /**
+     * 单次调用智谱 API，限流时抛出 RateLimitException 以便外层重试
+     */
+    @SuppressWarnings("unchecked")
+    private AIResponseVO doCallZhiPuAI(String url, String apiKey, AIWriteRequest request) throws Exception {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", aiConfig.getModel());
+        body.put("messages", List.of(
+            Map.of("role", "system", "content", getSystemPrompt(request.getMode())),
+            Map.of("role", "user", "content", buildUserPrompt(request))
+        ));
+        body.put("max_tokens", 2000);
+        body.put("temperature", 0.7);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
         try {
-            String url = aiConfig.getBaseUrl() + "/chat/completions";
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + apiKey);
-            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-
-            Map<String, Object> body = new LinkedHashMap<>();
-            body.put("model", aiConfig.getModel());
-            body.put("messages", List.of(
-                Map.of("role", "system", "content", getSystemPrompt(request.getMode())),
-                Map.of("role", "user", "content", buildUserPrompt(request))
-            ));
-            body.put("max_tokens", 2000);
-            body.put("temperature", 0.7);
-
-            String preview = request.getPrompt() != null
-                ? request.getPrompt().substring(0, Math.min(50, request.getPrompt().length()))
-                : "";
-            log.info("Calling ZhiPuAI: model={}, mode={}, prompt={}", aiConfig.getModel(), request.getMode(), preview);
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
-
             Map result = response.getBody();
             if (result == null) {
                 throw new RuntimeException("ZhiPuAI returned null response");
             }
 
-            // 智谱免费模型（glm-4.7-flash）会返回 reasoning_content 字段；
-            // 我们只关心最终 content 字段。
+            // 检查 API 级别的错误（部分 200 响应也带 error 字段）
+            Map<String, Object> error = (Map<String, Object>) result.get("error");
+            if (error != null) {
+                String code = String.valueOf(error.get("code"));
+                String msg = String.valueOf(error.get("message"));
+                // 1302 = 速率限制
+                if ("1302".equals(code)) {
+                    throw new RateLimitException("ZhiPuAI rate limit: " + msg);
+                }
+                throw new RuntimeException("ZhiPuAI error [" + code + "]: " + msg);
+            }
+
             List<Map<String, Object>> choices = (List<Map<String, Object>>) result.get("choices");
             if (choices == null || choices.isEmpty()) {
                 throw new RuntimeException("ZhiPuAI returned no choices");
@@ -83,7 +131,6 @@ public class AIServiceImpl implements AIService {
 
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             String content = (String) message.get("content");
-            // glm-4.7-flash 等推理模型会将输出放在 reasoning_content 字段，content 可能为空
             if (content == null || content.isEmpty()) {
                 content = (String) message.get("reasoning_content");
             }
@@ -101,14 +148,17 @@ public class AIServiceImpl implements AIService {
             log.info("ZhiPuAI response: tokens={}", usageInfo);
             return buildResponse(content, usageInfo);
 
-        } catch (Exception e) {
-            // 真实异常：记录日志但不再静默回退 mock，避免误导用户
-            log.error("ZhiPuAI API call failed: {}", e.getMessage(), e);
-            AIResponseVO vo = new AIResponseVO();
-            vo.setContent("AI 服务调用失败：" + e.getMessage() + "。请检查网络或联系管理员。");
-            vo.setUsage("error: " + e.getClass().getSimpleName());
-            return vo;
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 429) {
+                throw new RateLimitException("HTTP 429: " + e.getResponseBodyAsString());
+            }
+            throw e;
         }
+    }
+
+    /** 内部异常：标识智谱 API 的速率限制，触发重试逻辑 */
+    private static class RateLimitException extends Exception {
+        RateLimitException(String message) { super(message); }
     }
 
     @Override
