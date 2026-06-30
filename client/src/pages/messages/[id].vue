@@ -136,16 +136,16 @@
       </div>
       <!-- 语音录制中 -->
       <VoiceRecordingBar
-        v-if="voiceRecorder.isRecording.value"
-        :recording-time="voiceRecorder.recordingTime.value"
+        v-if="voiceRecorder.isRecording"
+        :recording-time="voiceRecorder.recordingTime"
         @finish="finishVoiceRecord"
         @cancel="cancelVoiceRecord"
       />
       <!-- 工具栏行 -->
       <ChatToolbar
-        v-if="!voiceRecorder.isRecording.value"
+        v-if="!voiceRecorder.isRecording"
         :ai-mode="aiMode"
-        :is-recording="voiceRecorder.isRecording.value"
+        :is-recording="voiceRecorder.isRecording"
         @emoji="onEmojiSelect"
         @image="triggerImageUpload"
         @file="triggerFileUpload"
@@ -153,7 +153,7 @@
         @ai="toggleAIMode"
       />
       <!-- 输入框行 -->
-      <div v-if="!voiceRecorder.isRecording.value" class="msg-input-row">
+      <div v-if="!voiceRecorder.isRecording" class="msg-input-row">
         <div class="input-field-msg" :class="{ focused: inputFocused }">
           <input
             ref="inputRef"
@@ -190,6 +190,9 @@
       :src="previewImageUrl ? resolveMsgUrl(previewImageUrl) : ''"
       @close="previewImageUrl = ''"
     />
+
+    <!-- 文件上传进度遮罩 -->
+    <UploadOverlay :uploading="fileUploading" :progress="0" />
   </div>
 </template>
 
@@ -207,6 +210,7 @@ import ChatBubble from '@/components/chat/ChatBubble.vue'
 import ChatToolbar from '@/components/chat/ChatToolbar.vue'
 import VoiceRecordingBar from '@/components/chat/VoiceRecordingBar.vue'
 import ImagePreviewOverlay from '@/components/chat/ImagePreviewOverlay.vue'
+import UploadOverlay from '@/components/chat/UploadOverlay.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -239,14 +243,14 @@ const previewImageUrl = ref('')
 const aiMode = ref(false)
 const aiThinking = ref(false)
 
-/** 语音录制 */
-const voiceRecorder = useVoiceRecorder()
+/** 语音录制 — reactive() 包裹使模板中 voiceRecorder.isRecording 自动解包为 boolean */
+const voiceRecorder = reactive(useVoiceRecorder())
 const voiceUploading = ref(false)
 
 const startVoiceRecord = () => { voiceRecorder.startRecording() }
 
 const finishVoiceRecord = async () => {
-  const duration = voiceRecorder.recordingTime.value
+  const duration = voiceRecorder.recordingTime
   const finalBlob = await voiceRecorder.stopRecording()
   if (!finalBlob) { cancelVoiceRecord(); return }
   voiceUploading.value = true

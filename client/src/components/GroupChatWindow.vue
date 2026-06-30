@@ -137,7 +137,7 @@
       <!-- 工具栏 -->
       <ChatToolbar
         :ai-mode="aiMode"
-        :is-recording="voiceRecorder.isRecording.value"
+        :is-recording="voiceRecorder.isRecording"
         @emoji="(emoji: string) => insertEmoji(emoji)"
         @image="triggerImageUpload"
         @file="triggerFileUpload"
@@ -151,8 +151,8 @@
       </div>
       <!-- 语音录制中 - 替换输入框 -->
       <VoiceRecordingBar
-        v-if="voiceRecorder.isRecording.value"
-        :recording-time="voiceRecorder.recordingTime.value"
+        v-if="voiceRecorder.isRecording"
+        :recording-time="voiceRecorder.recordingTime"
         @finish="finishVoiceRecord"
         @cancel="cancelVoiceRecord"
       />
@@ -276,14 +276,14 @@ const uploading = ref(false)
 const uploadProgress = ref(0)
 let offset = 0
 
-/** 语音录制 */
-const voiceRecorder = useVoiceRecorder()
+/** 语音录制 — reactive() 包裹使模板中 voiceRecorder.isRecording 自动解包为 boolean */
+const voiceRecorder = reactive(useVoiceRecorder())
 const voiceUploading = ref(false)
 
 const startVoiceRecord = () => { voiceRecorder.startRecording() }
 
 const finishVoiceRecord = async () => {
-  const duration = voiceRecorder.recordingTime.value
+  const duration = voiceRecorder.recordingTime
   const finalBlob = await voiceRecorder.stopRecording()
   if (!finalBlob) { cancelVoiceRecord(); return }
   voiceUploading.value = true
