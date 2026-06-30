@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 会话控制器
@@ -95,13 +96,13 @@ public class ConversationController {
             request.setReceiverId(userId);
             request.setContent(content.trim());
 
-            // 读取消息类型（text/image），默认 text
+            // 读取消息类型（text/image/voice/file），默认 text
             Object rawType = body != null ? body.get("type") : null;
             String msgType = "text";
             if (rawType != null) {
                 String t = String.valueOf(rawType).trim().toLowerCase();
-                if ("image".equals(t) || "1".equals(t)) {
-                    msgType = "image";
+                if (Set.of("image", "voice", "file").contains(t)) {
+                    msgType = t;
                 }
             }
             request.setType(msgType);

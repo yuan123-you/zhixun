@@ -71,8 +71,8 @@
       <!-- 消息列表 -->
       <template v-for="(msg, idx) in messages" :key="msg.id">
         <!-- 时间分隔线 -->
-        <div v-if="shouldShowTimeSeparator(idx)" class="qq-time-sep">
-          <span>{{ formatTime(msg.createdAt) }}</span>
+        <div v-if="shouldShowTimeSeparator(messages, idx)" class="qq-time-sep">
+          <span>{{ formatChatTime(msg.createdAt) }}</span>
         </div>
 
         <!-- 系统消息 -->
@@ -84,58 +84,37 @@
         <div v-else class="qq-msg-row" :class="{ mine: msg.senderId === currentUserId }" :data-msg-id="msg.id">
           <!-- 他人消息（左） -->
           <template v-if="msg.senderId !== currentUserId">
-            <img :src="msg.senderId === 0 ? aiAvatar : (msg.senderAvatar || defaultAvatar)" class="qq-avatar" :alt="msg.senderName" />
-            <div class="qq-msg-wrap">
-              <span class="qq-msg-name">{{ msg.senderId === 0 ? 'AI助手' : (msg.senderName || '未知用户') }}</span>
-              <div
-                class="qq-bubble qq-bubble-other"
-                :class="{
-                  'qq-bubble-ai': msg.messageType === 'ai_reply',
-                  'qq-bubble-mentioned': isMentioned(msg)
-                }"
-              >
-                <!-- 文本消息 -->
-                <p v-if="msg.messageType === 'text'" class="qq-msg-text" v-html="renderMentions(msg.content, msg.mentionedUserIds)"></p>
-                <!-- 图片消息 -->
-                <div v-else-if="msg.messageType === 'image'" class="qq-img-msg" @click="previewImage(resolveMsgUrl(msg.content))">
-                  <img :src="resolveMsgUrl(msg.content)" alt="图片" class="qq-msg-image" loading="lazy" />
-                </div>
-                <!-- 文件消息 -->
-                <div v-else-if="msg.messageType === 'file'" class="qq-file-msg">
-                  <FileCard :content="msg.content" :resolve-url="resolveMsgUrl" />
-                </div>
-                <!-- 语音消息 -->
-                <div v-else-if="msg.messageType === 'voice'" class="qq-voice-msg">
-                  <VoiceMessage :url="resolveMsgUrl(getVoiceUrl(msg.content))" :duration="getVoiceDuration(msg.content)" :is-mine="false" />
-                </div>
-                <!-- AI回复消息 -->
-                <p v-else-if="msg.messageType === 'ai_reply'" class="qq-msg-text qq-ai-text" v-html="renderMentions(msg.content, msg.mentionedUserIds)"></p>
-                <!-- 其他 -->
-                <p v-else class="qq-msg-text">{{ msg.content }}</p>
-              </div>
-              <span class="qq-msg-time">{{ formatMsgTime(msg.createdAt) }}</span>
-            </div>
+            <img :src="msg.senderId === 0 ? AI_AVATAR_URL : (msg.senderAvatar || DEFAULT_AVATAR_URL)" class="qq-avatar" :alt="msg.senderName" />
+            <ChatBubble
+              :content="msg.content"
+              :message-type="msg.messageType"
+              :is-mine="false"
+              :time="formatMsgTime(msg.createdAt)"
+              :show-sender="true"
+              :sender-name="msg.senderId === 0 ? 'AI助手' : (msg.senderName || '未知用户')"
+              @preview-image="previewImage"
+            >
+              <template v-if="msg.messageType === 'text'" #default>
+                <span v-html="renderMentions(msg.content, msg.mentionedUserIds)"></span>
+              </template>
+            </ChatBubble>
           </template>
           <!-- 自己消息（右） -->
           <template v-else>
-            <div class="qq-msg-wrap qq-msg-wrap-mine">
-              <span class="qq-msg-name qq-msg-name-mine">{{ currentUserName || '我' }}</span>
-              <div class="qq-bubble qq-bubble-mine" :class="{ 'qq-bubble-mentioned': isMentioned(msg) }">
-                <p v-if="msg.messageType === 'text'" class="qq-msg-text" v-html="renderMentions(msg.content, msg.mentionedUserIds)"></p>
-                <div v-else-if="msg.messageType === 'image'" class="qq-img-msg" @click="previewImage(resolveMsgUrl(msg.content))">
-                  <img :src="resolveMsgUrl(msg.content)" alt="图片" class="qq-msg-image" loading="lazy" />
-                </div>
-                <div v-else-if="msg.messageType === 'file'" class="qq-file-msg">
-                  <FileCard :content="msg.content" :resolve-url="resolveMsgUrl" />
-                </div>
-                <div v-else-if="msg.messageType === 'voice'" class="qq-voice-msg">
-                  <VoiceMessage :url="resolveMsgUrl(getVoiceUrl(msg.content))" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
-                </div>
-                <p v-else class="qq-msg-text">{{ msg.content }}</p>
-              </div>
-              <span class="qq-msg-time qq-msg-time-mine">{{ formatMsgTime(msg.createdAt) }}</span>
-            </div>
-            <img :src="currentUserAvatar || defaultAvatar" class="qq-avatar" alt="我" />
+            <ChatBubble
+              :content="msg.content"
+              :message-type="msg.messageType"
+              :is-mine="true"
+              :time="formatMsgTime(msg.createdAt)"
+              :show-sender="true"
+              :sender-name="currentUserName || '我'"
+              @preview-image="previewImage"
+            >
+              <template v-if="msg.messageType === 'text'" #default>
+                <span v-html="renderMentions(msg.content, msg.mentionedUserIds)"></span>
+              </template>
+            </ChatBubble>
+            <img :src="currentUserAvatar || DEFAULT_AVATAR_URL" class="qq-avatar" alt="我" />
           </template>
         </div>
       </template>
@@ -151,52 +130,32 @@
     </div>
 
     <!-- 图片预览 -->
-    <Teleport to="body">
-      <div v-if="previewSrc" class="qq-preview-overlay" @click="previewSrc = ''">
-        <img :src="previewSrc" class="qq-preview-img" />
-      </div>
-    </Teleport>
+    <ImagePreviewOverlay :src="previewSrc" @close="previewSrc = ''" />
 
     <!-- 输入区域 -->
     <div class="qq-chat-input">
       <!-- 工具栏 -->
-      <div class="qq-toolbar">
-        <EmojiPicker @select="(emoji: string) => insertEmoji(emoji)" />
-        <button class="qq-tool-btn" @click="triggerImageUpload" title="发送图片">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-        </button>
-        <button class="qq-tool-btn" @click="triggerFileUpload" title="发送文件">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-        </button>
-        <button class="qq-tool-btn" :class="{ active: voiceRecorder.isRecording.value }" @click="startVoiceRecord" title="语音消息">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-        </button>
-        <button class="qq-tool-btn" :class="{ active: aiMode }" @click="toggleAIMode" title="AI助手">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="8" width="14" height="11" rx="3"/>
-            <circle cx="9.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="14.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
-            <path d="M10 16.5h4"/>
-            <path d="M12 3v3"/>
-            <circle cx="12" cy="2.5" r="1.5" fill="currentColor" stroke="none"/>
-            <path d="M3 12.5h2M19 12.5h2"/>
-            <path d="M20 4l.5 1.5L22 6l-1.5.5L20 8l-.5-1.5L18 6l1.5-.5z" fill="currentColor" stroke="none" opacity="0.6"/>
-            <path d="M3.5 18l.4 1L5 19.4l-1.1.4L3.5 21l-.4-1.2L2 19.4l1.1-.4z" fill="currentColor" stroke="none" opacity="0.5"/>
-          </svg>
-        </button>
-      </div>
+      <ChatToolbar
+        :ai-mode="aiMode"
+        :is-recording="voiceRecorder.isRecording.value"
+        @emoji="(emoji: string) => insertEmoji(emoji)"
+        @image="triggerImageUpload"
+        @file="triggerFileUpload"
+        @voice="startVoiceRecord"
+        @ai="toggleAIMode"
+      />
       <!-- 语音上传中提示 -->
       <div v-if="voiceUploading" class="qq-voice-uploading">
         <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         <span>语音上传中...</span>
       </div>
       <!-- 语音录制中 - 替换输入框 -->
-      <div v-if="voiceRecorder.isRecording.value" class="qq-voice-recording-bar">
-        <span class="qq-voice-rec-dot" />
-        <span class="qq-voice-rec-time">{{ voiceRecorder.formatTime(voiceRecorder.recordingTime.value) }}</span>
-        <button class="qq-voice-rec-stop" @click="finishVoiceRecord">发送</button>
-        <button class="qq-voice-rec-cancel" @click="cancelVoiceRecord">取消</button>
-      </div>
+      <VoiceRecordingBar
+        v-if="voiceRecorder.isRecording.value"
+        :recording-time="voiceRecorder.recordingTime.value"
+        @finish="finishVoiceRecord"
+        @cancel="cancelVoiceRecord"
+      />
       <!-- 输入框 + 发送 -->
       <div v-else class="qq-input-row">
         <div class="qq-input-wrap" :class="{ focused: inputFocused }">
@@ -256,14 +215,7 @@
     <input ref="fileInput" type="file" class="hidden" @change="handleFileSelect" />
 
     <!-- 上传进度 -->
-    <Teleport to="body">
-      <div v-if="uploading" class="qq-upload-overlay">
-        <div class="qq-upload-card">
-          <div class="qq-upload-spinner"></div>
-          <p class="qq-upload-text">{{ uploadProgress > 0 ? `上传中 ${uploadProgress}%` : '上传中...' }}</p>
-        </div>
-      </div>
-    </Teleport>
+    <UploadOverlay :uploading="uploading" :progress="uploadProgress" />
   </div>
 </template>
 
@@ -274,14 +226,20 @@ import type { GroupInfo, GroupMessage, GroupMember } from '@/api/group'
 import { fileApi } from '@/api/file'
 import { sanitizeText } from '@/utils/sanitize'
 import { showToast } from '@/composables/useToast'
-import EmojiPicker from '@/components/EmojiPicker.vue'
 import GroupSearchPanel from '@/components/GroupSearchPanel.vue'
-import VoiceMessage from '@/components/VoiceMessage.vue'
 import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
 import { useResourceUrl } from '@/composables/useResourceUrl'
+import { useChatMedia } from '@/composables/chat/useChatMedia'
+import { formatMsgTime, shouldShowTimeSeparator, formatChatTime } from '@/composables/chat/useChatTimestamp'
+import { AI_AVATAR_URL, DEFAULT_AVATAR_URL } from '@/composables/chat/useChatConstants'
+import ChatBubble from '@/components/chat/ChatBubble.vue'
+import ChatToolbar from '@/components/chat/ChatToolbar.vue'
+import VoiceRecordingBar from '@/components/chat/VoiceRecordingBar.vue'
+import ImagePreviewOverlay from '@/components/chat/ImagePreviewOverlay.vue'
+import UploadOverlay from '@/components/chat/UploadOverlay.vue'
 
 const { resolveUrl } = useResourceUrl()
-const resolveMsgUrl = (url: string) => resolveUrl(url) || url
+const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
 
 const props = defineProps<{
   group: GroupInfo | null
@@ -299,9 +257,6 @@ const emit = defineEmits<{
   (e: 'messagesLoaded', msgs: GroupMessage[]): void
   (e: 'leave'): void
 }>()
-
-const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNlMmU4ZjAiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk0YTNiOCIgZm9udC1zaXplPSIxNiI+PzwvdGV4dD48L3N2Zz4='
-const aiAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjODE4Y2Y4Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNjM2NmYxIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJ1cmwoI2JnKSIgcng9IjIwIi8+PHJlY3QgeD0iMTEiIHk9IjE1IiB3aWR0aD0iMTgiIGhlaWdodD0iMTQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjk1Ii8+PHJlY3QgeD0iMTUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxyZWN0IHg9IjIxLjUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxwYXRoIGQ9Ik0xNS41IDI2aDkiIHN0cm9rZT0iIzYzNjZmMSIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxyZWN0IHg9IjE5IiB5PSI4IiB3aWR0aD0iMiIgaGVpZ2h0PSI3IiByeD0iMSIgZmlsbD0id2hpdGUiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjciIHI9IjIuNSIgZmlsbD0iI2E1YjRmYyIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iNyIgcj0iMS4yIiBmaWxsPSJ3aGl0ZSIvPjxyZWN0IHg9IjcuNSIgeT0iMjAiIHdpZHRoPSIzLjUiIGhlaWdodD0iNCIgcng9IjEuNSIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC43NSIvPjxyZWN0IHg9IjI5IiB5PSIyMCIgd2lkdGg9IjMuNSIgaGVpZ2h0PSI0IiByeD0iMS41IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjc1Ii8+PHBhdGggZD0iTTMyIDEwbC44IDIuMkwzNSAxM2wtMi4yLjhMMzIgMTZsLS44LTIuMkwyOSAxM2wyLjItLjh6IiBmaWxsPSIjYzdkMmZlIiBmaWxsLW9wYWNpdHk9IjAuOCIvPjxwYXRoIGQ9Ik04IDMwbC42IDEuNUwxMCAzMmwtMS40LjVMOCAzNGwtLjYtMS41TDYgMzJsMS40LS41eiIgZmlsbD0iI2M3ZDJmZSIgZmlsbC1vcGFjaXR5PSIwLjYiLz48L3N2Zz4='
 
 const messages = ref<GroupMessage[]>([])
 const inputText = ref('')
@@ -324,14 +279,6 @@ let offset = 0
 /** 语音录制 */
 const voiceRecorder = useVoiceRecorder()
 const voiceUploading = ref(false)
-
-/** 解析语音消息内容 */
-const getVoiceUrl = (content: string): string => {
-  try { const data = JSON.parse(content); return data.url || content } catch { return content }
-}
-const getVoiceDuration = (content: string): number => {
-  try { const data = JSON.parse(content); return data.duration || 0 } catch { return 0 }
-}
 
 const startVoiceRecord = () => { voiceRecorder.startRecording() }
 
@@ -708,34 +655,6 @@ function handleLocateMessage(msgId: number) {
   scrollToMessage(msgId)
 }
 
-// ========== 时间格式化 ==========
-
-function shouldShowTimeSeparator(idx: number): boolean {
-  if (idx === 0) return true
-  const prev = new Date(messages.value[idx - 1].createdAt).getTime()
-  const curr = new Date(messages.value[idx].createdAt).getTime()
-  return (curr - prev) > 5 * 60 * 1000
-}
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr)
-  const now = new Date()
-  const isToday = d.toDateString() === now.toDateString()
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const isYesterday = d.toDateString() === yesterday.toDateString()
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mm = String(d.getMinutes()).padStart(2, '0')
-  if (isToday) return `${hh}:${mm}`
-  if (isYesterday) return `昨天 ${hh}:${mm}`
-  return `${d.getMonth() + 1}月${d.getDate()}日 ${hh}:${mm}`
-}
-
-function formatMsgTime(dateStr: string): string {
-  const d = new Date(dateStr)
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
 // 监听group变化重新加载
 watch(() => props.group?.id, (id) => {
   if (id) {
@@ -745,55 +664,6 @@ watch(() => props.group?.id, (id) => {
     loadMessages(id)
   }
 }, { immediate: true })
-</script>
-
-<!-- FileCard 子组件 (内联) -->
-<script lang="ts">
-import { defineComponent, h } from 'vue'
-
-const FileCard = defineComponent({
-  name: 'FileCard',
-  props: {
-    content: { type: String, required: true },
-    resolveUrl: { type: Function, default: (url: string) => url }
-  },
-  setup(props) {
-    return () => {
-      try {
-        const data = JSON.parse(props.content)
-        const resolvedUrl = props.resolveUrl(data.url) || data.url
-        const size = data.size ? (data.size > 1048576 ? (data.size / 1048576).toFixed(1) + ' MB' : (data.size / 1024).toFixed(1) + ' KB') : ''
-        return h('a', {
-          href: resolvedUrl,
-          target: '_blank',
-          rel: 'noopener',
-          class: 'qq-file-card'
-        }, [
-          h('div', { class: 'qq-file-icon' }, [
-            h('svg', { class: 'w-8 h-8', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-              h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '1.5', d: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z' })
-            ])
-          ]),
-          h('div', { class: 'qq-file-info' }, [
-            h('p', { class: 'qq-file-name' }, data.name || '未知文件'),
-            h('p', { class: 'qq-file-size' }, size)
-          ]),
-          h('div', { class: 'qq-file-download' }, [
-            h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-              h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' })
-            ])
-          ])
-        ])
-      } catch {
-        const fallbackUrl = props.resolveUrl(props.content) || props.content
-        return h('a', { href: fallbackUrl, target: '_blank', class: 'qq-file-card' }, [
-          h('div', { class: 'qq-file-info' }, [h('p', { class: 'qq-file-name' }, '文件')])
-        ])
-      }
-    }
-  }
-})
-export default { components: { FileCard } }
 </script>
 
 <style scoped>
@@ -924,93 +794,10 @@ export default { components: { FileCard } }
   object-fit: cover; margin-top: 2px;
 }
 
-/* 消息包装 */
-.qq-msg-wrap {
-  max-width: 75%; display: flex; flex-direction: column; gap: 2px;
-}
-.qq-msg-wrap-mine { align-items: flex-end; }
-
-.qq-msg-name {
-  font-size: 11px; color: var(--zh-text-tertiary, #94a3b8);
-  padding-left: 2px;
-}
-.qq-msg-name-mine {
-  text-align: right; padding-right: 2px; padding-left: 0;
-}
-
-/* 气泡 - 与私信样式统一 */
-.qq-bubble {
-  padding: 8px 12px;
-  font-size: 14px; line-height: 1.55;
-  word-break: break-word;
-}
-.qq-bubble-other {
-  background: #498FE8;
-  color: #fff;
-  border-radius: 12px 12px 12px 4px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-}
-.qq-bubble-mine {
-  background: #fff;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  border-radius: 12px 12px 4px 12px;
-}
-.qq-bubble-ai {
-  border-left: 3px solid #498FE8;
-  background: rgba(73, 143, 232, 0.06);
-}
-.qq-bubble-mentioned {
-  border-left: 3px solid #498FE8;
-  box-shadow: 0 0 0 1px rgba(73, 143, 232, 0.15);
-}
-
-/* 消息时间 - 始终显示 */
-.qq-msg-time {
-  font-size: 10px; color: var(--zh-text-tertiary, #94a3b8);
-  padding-left: 2px;
-}
-.qq-msg-time-mine {
-  text-align: right; padding-right: 2px; padding-left: 0;
-}
-
 /* @提及标签 */
 :deep(.qq-mention-tag) {
   color: var(--zh-primary, #6366f1);
   font-weight: 500;
-}
-
-/* AI文本样式 */
-.qq-ai-text {
-  white-space: pre-wrap;
-}
-
-/* AI思考中的打字动画 */
-.qq-ai-typing {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 0;
-}
-.qq-ai-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--zh-primary, #6366f1);
-  opacity: 0.4;
-  animation: qq-ai-bounce 1.4s ease-in-out infinite;
-}
-.qq-ai-dot:nth-child(2) { animation-delay: 0.2s; }
-.qq-ai-dot:nth-child(3) { animation-delay: 0.4s; }
-.qq-ai-typing-text {
-  margin-left: 6px;
-  font-size: 12px;
-  color: var(--zh-text-tertiary);
-}
-@keyframes qq-ai-bounce {
-  0%, 80%, 100% { opacity: 0.4; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1.1); }
 }
 
 /* AI助手提及标签（特殊颜色） */
@@ -1037,39 +824,6 @@ export default { components: { FileCard } }
   line-height: 1.4;
 }
 
-/* 图片消息 */
-.qq-img-msg { cursor: pointer; }
-.qq-msg-image {
-  max-width: 200px; max-height: 200px;
-  border-radius: 8px; object-fit: cover;
-}
-
-/* 文件消息 */
-:deep(.qq-file-card) {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px;
-  background: var(--zh-bg-hover, #f1f5f9);
-  border-radius: 8px;
-  text-decoration: none; color: inherit;
-  min-width: 200px;
-  transition: background 0.15s;
-}
-:deep(.qq-file-card:hover) { background: var(--zh-bg, #e2e8f0); }
-:deep(.qq-file-icon) { color: var(--zh-primary, #6366f1); flex-shrink: 0; }
-:deep(.qq-file-info) { flex: 1; min-width: 0; }
-:deep(.qq-file-name) {
-  font-size: 13px; font-weight: 500;
-  color: var(--zh-text, #1e293b);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin: 0;
-}
-:deep(.qq-file-size) {
-  font-size: 11px; color: var(--zh-text-tertiary, #94a3b8); margin: 2px 0 0;
-}
-:deep(.qq-file-download) {
-  color: var(--zh-text-tertiary, #94a3b8); flex-shrink: 0;
-}
-
 /* 空状态 */
 .qq-empty {
   display: flex; flex-direction: column;
@@ -1084,27 +838,6 @@ export default { components: { FileCard } }
   border-top: 1px solid var(--zh-border, #e5e7eb);
   background: var(--zh-bg-elevated, #fff);
   flex-shrink: 0;
-}
-.qq-toolbar {
-  display: flex; align-items: center; gap: 2px;
-  padding-bottom: 6px;
-}
-.qq-tool-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px;
-  border: none; border-radius: 6px;
-  background: transparent;
-  color: var(--zh-text-tertiary, #94a3b8);
-  cursor: pointer; transition: all 0.15s;
-  min-height: 0; min-width: 0;
-}
-.qq-tool-btn:hover {
-  background: var(--zh-bg-hover, #f1f5f9);
-  color: var(--zh-text-secondary, #64748b);
-}
-.qq-tool-btn.active {
-  background: var(--zh-primary-bg, rgba(99,102,241,0.1));
-  color: var(--zh-primary, #6366f1);
 }
 
 .qq-input-row {
@@ -1175,42 +908,6 @@ export default { components: { FileCard } }
   font-size: 12px; color: var(--zh-text-tertiary, #94a3b8);
 }
 
-/* ===== 图片预览 ===== */
-.qq-preview-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,0.85);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-}
-.qq-preview-img {
-  max-width: 90vw; max-height: 90vh;
-  border-radius: 8px; object-fit: contain;
-}
-
-/* ===== 上传遮罩 ===== */
-.qq-upload-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,0.4);
-  display: flex; align-items: center; justify-content: center;
-}
-.qq-upload-card {
-  background: var(--zh-bg-elevated, #fff);
-  border-radius: 16px; padding: 24px 32px;
-  text-align: center;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-}
-.qq-upload-spinner {
-  width: 32px; height: 32px; margin: 0 auto 12px;
-  border: 3px solid var(--zh-border, #e5e7eb);
-  border-top-color: var(--zh-primary, #6366f1);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-.qq-upload-text {
-  font-size: 14px; color: var(--zh-text, #1e293b);
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* ===== 高亮闪烁 ===== */
 :deep(.qq-highlight-flash) {
   animation: highlightPulse 2s ease-out;
@@ -1220,71 +917,14 @@ export default { components: { FileCard } }
   100% { background: transparent; }
 }
 
-/* ===== 移动端适配 ===== */
+/* 移动端适配 */
 @media (max-width: 768px) {
   .qq-chat-header { padding: 8px 10px; }
   .qq-chat-msgs { padding: 6px 10px; }
   .qq-chat-input { padding: 6px 10px 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
   .qq-avatar { width: 28px; height: 28px; }
-  .qq-bubble { font-size: 13.5px; padding: 7px 10px; }
-  .qq-msg-wrap { max-width: 80%; }
-  .qq-msg-image { max-width: 160px; max-height: 160px; }
   .qq-menu { top: 48px; right: 10px; }
 }
-
-/* 语音录制栏 */
-.qq-voice-recording-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: var(--zh-bg-hover, #f1f5f9);
-  border-radius: 24px;
-  border: 1.5px solid var(--zh-border, #e5e7eb);
-}
-.qq-voice-rec-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ef4444;
-  animation: qq-voice-pulse 1s infinite;
-  flex-shrink: 0;
-}
-@keyframes qq-voice-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-.qq-voice-rec-time {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--zh-text, #1e293b);
-  font-variant-numeric: tabular-nums;
-  min-width: 40px;
-}
-.qq-voice-rec-stop {
-  padding: 4px 16px;
-  border: none;
-  border-radius: 16px;
-  background: var(--zh-primary, #6366f1);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  margin-left: auto;
-}
-.qq-voice-rec-stop:hover { opacity: 0.85; }
-.qq-voice-rec-cancel {
-  padding: 4px 12px;
-  border: 1px solid var(--zh-border, #e5e7eb);
-  border-radius: 16px;
-  background: transparent;
-  color: var(--zh-text-secondary, #64748b);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.qq-voice-rec-cancel:hover { background: var(--zh-bg-hover, #f1f5f9); }
 
 /* 语音上传中 */
 .qq-voice-uploading {
@@ -1301,10 +941,5 @@ export default { components: { FileCard } }
 .dark .qq-voice-uploading {
   background: rgba(37, 99, 235, 0.15);
   color: #93c5fd;
-}
-
-/* 语音消息 */
-.qq-voice-msg {
-  min-width: 90px;
 }
 </style>

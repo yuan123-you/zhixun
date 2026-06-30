@@ -157,7 +157,7 @@
               v-model="form.content"
               placeholder="开始写作..."
               :rows="isMobile ? 4 : 14"
-              class="editor-textarea w-full min-h-[100px] md:min-h-[300px] p-2 md:p-4 bg-[var(--zh-bg-elevated)] text-[var(--zh-text)] resize-none outline-none font-mono text-sm leading-relaxed"
+              class="editor-textarea w-full min-h-[300px] md:min-h-[900px] p-2 md:p-4 bg-[var(--zh-bg-elevated)] text-[var(--zh-text)] resize-none outline-none font-mono text-sm leading-relaxed"
             />
           </div>
         </div>

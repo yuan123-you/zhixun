@@ -41,7 +41,29 @@ const audioRef = ref<HTMLAudioElement | null>(null)
 const isPlaying = ref(false)
 const metaDuration = ref(0)
 
-const resolvedUrl = computed(() => resolveUrl(props.url) || props.url)
+/**
+ * 解析语音 URL：
+ * 1. 如果 props.url 是 JSON 字符串（历史脏数据），先尝试提取其中的 url 字段
+ * 2. 通过 resolveUrl 统一转换 MinIO / 相对路径
+ * 3. 最终校验：URL 不能包含 { } 等非法字符，否则返回空字符串避免 audio 加载畸形 URL
+ */
+const resolvedUrl = computed(() => {
+  let raw = props.url
+  if (!raw) return ''
+  // 兼容历史脏数据：props.url 本身是 JSON 字符串
+  if (raw.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw)
+      raw = parsed.url || raw
+    } catch { /* 解析失败保留原值，后续校验会拦截 */ }
+  }
+  const resolved = resolveUrl(raw) || raw
+  // 校验：合法 URL 不应包含花括号（JSON 残留）
+  if (typeof resolved !== 'string' || resolved.includes('{') || resolved.includes('}')) {
+    return ''
+  }
+  return resolved
+})
 const displayDuration = computed(() => props.duration || metaDuration.value || 0)
 
 /** 格式化秒数为 mm:ss */
@@ -62,7 +84,7 @@ function onMetaLoaded() {
 
 function togglePlay() {
   const audio = audioRef.value
-  if (!audio) return
+  if (!audio || !resolvedUrl.value) return
   if (isPlaying.value) {
     audio.pause()
     audio.currentTime = 0

@@ -45,58 +45,24 @@
         <template v-if="!isMine(message)">
           <span class="sender-avatar" @click="message.senderId === 0 ? null : navigateToUser(message.sender?.id)">
             <UserAvatar v-if="message.senderId !== 0" :src="message.sender?.avatar" alt="头像" size="sm" />
-            <img v-else :src="aiAvatarUrl" alt="AI" class="ai-avatar-img" />
+            <img v-else :src="AI_AVATAR_URL" alt="AI" class="ai-avatar-img" />
           </span>
-          <div class="message-bubble-wrap">
-            <div v-if="message.type === 'ai_reply'" class="bubble bubble-other bubble-ai">
-              <span class="ai-label">AI助手</span>
-              <p class="ai-text">{{ message.content }}</p>
-            </div>
-            <div v-else-if="message.type === 'image'" class="bubble bubble-other bubble-image">
-              <img :src="resolveMsgUrl(message.content)" alt="图片" class="msg-image" @click="previewImage(message.content)" />
-            </div>
-            <a v-else-if="message.type === 'file'" :href="getFileUrl(message.content)" target="_blank" rel="noopener" class="bubble bubble-other bubble-file">
-              <div class="file-card-icon">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-              </div>
-              <div class="file-card-info">
-                <span class="file-name">{{ getFileName(message.content) }}</span>
-                <span v-if="getFileSize(message.content)" class="file-size">{{ getFileSize(message.content) }}</span>
-              </div>
-              <div class="file-card-download">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              </div>
-            </a>
-            <div v-else-if="message.type === 'voice'" class="bubble bubble-other voice-bubble">
-              <VoiceMessage :url="getVoiceUrl(message.content)" :duration="getVoiceDuration(message.content)" :is-mine="false" />
-            </div>
-            <div v-else class="bubble bubble-other">{{ message.content }}</div>
-            <span class="bubble-time">{{ formatTime(message.createdAt) }}</span>
-          </div>
+          <ChatBubble
+            :content="message.content"
+            :message-type="message.type"
+            :is-mine="false"
+            :time="formatChatTime(message.createdAt)"
+            @preview-image="previewImage"
+          />
         </template>
         <template v-else>
-          <div class="message-bubble-wrap">
-            <div v-if="message.type === 'image'" class="bubble bubble-mine bubble-image">
-              <img :src="resolveMsgUrl(message.content)" alt="图片" class="msg-image" @click="previewImage(message.content)" />
-            </div>
-            <a v-else-if="message.type === 'file'" :href="getFileUrl(message.content)" target="_blank" rel="noopener" class="bubble bubble-mine bubble-file">
-              <div class="file-card-icon">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-              </div>
-              <div class="file-card-info">
-                <span class="file-name">{{ getFileName(message.content) }}</span>
-                <span v-if="getFileSize(message.content)" class="file-size">{{ getFileSize(message.content) }}</span>
-              </div>
-              <div class="file-card-download">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              </div>
-            </a>
-            <div v-else-if="message.type === 'voice'" class="bubble bubble-mine voice-bubble">
-              <VoiceMessage :url="getVoiceUrl(message.content)" :duration="getVoiceDuration(message.content)" :is-mine="true" />
-            </div>
-            <div v-else class="bubble bubble-mine">{{ message.content }}</div>
-            <span class="bubble-time mine-time">{{ formatTime(message.createdAt) }}</span>
-          </div>
+          <ChatBubble
+            :content="message.content"
+            :message-type="message.type"
+            :is-mine="true"
+            :time="formatChatTime(message.createdAt)"
+            @preview-image="previewImage"
+          />
           <span class="my-avatar" @click="navigateToUser(userStore.userInfo?.id)">
             <UserAvatar :src="userStore.userInfo?.avatar" alt="头像" size="sm" />
           </span>
@@ -127,31 +93,15 @@
         </div>
       </Transition>
       <!-- 工具栏 -->
-      <div class="chat-toolbar">
-        <EmojiPicker @select="onEmojiSelect" />
-        <button class="chat-tool-btn" @click="triggerImageUpload" title="发送图片">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-        </button>
-        <button class="chat-tool-btn" @click="triggerFileUpload" title="发送文件">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-        </button>
-        <button class="chat-tool-btn" :class="{ active: voiceRecorder.isRecording.value }" @click="startVoiceRecord" title="语音消息">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-        </button>
-        <button class="chat-tool-btn" :class="{ active: aiMode }" @click="toggleAIMode" title="AI助手">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="8" width="14" height="11" rx="3"/>
-            <circle cx="9.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="14.5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
-            <path d="M10 16.5h4"/>
-            <path d="M12 3v3"/>
-            <circle cx="12" cy="2.5" r="1.5" fill="currentColor" stroke="none"/>
-            <path d="M3 12.5h2M19 12.5h2"/>
-            <path d="M20 4l.5 1.5L22 6l-1.5.5L20 8l-.5-1.5L18 6l1.5-.5z" fill="currentColor" stroke="none" opacity="0.6"/>
-            <path d="M3.5 18l.4 1L5 19.4l-1.1.4L3.5 21l-.4-1.2L2 19.4l1.1-.4z" fill="currentColor" stroke="none" opacity="0.5"/>
-          </svg>
-        </button>
-      </div>
+      <ChatToolbar
+        :ai-mode="aiMode"
+        :is-recording="voiceRecorder.isRecording.value"
+        @emoji="onEmojiSelect"
+        @image="triggerImageUpload"
+        @file="triggerFileUpload"
+        @voice="startVoiceRecord"
+        @ai="toggleAIMode"
+      />
       <!-- 语音上传中提示 -->
       <Transition name="send-error-fade">
         <div v-if="voiceUploading" class="send-error-tip" style="background:#eff6ff;border-color:#bfdbfe;color:#2563eb;">
@@ -159,12 +109,12 @@
         </div>
       </Transition>
       <!-- 语音录制中 - 替换输入框 -->
-      <div v-if="voiceRecorder.isRecording.value" class="voice-recording-bar">
-        <span class="voice-rec-dot" />
-        <span class="voice-rec-time">{{ voiceRecorder.formatTime(voiceRecorder.recordingTime.value) }}</span>
-        <button class="voice-rec-stop" @click="finishVoiceRecord">发送</button>
-        <button class="voice-rec-cancel" @click="cancelVoiceRecord">取消</button>
-      </div>
+      <VoiceRecordingBar
+        v-if="voiceRecorder.isRecording.value"
+        :recording-time="voiceRecorder.recordingTime.value"
+        @finish="finishVoiceRecord"
+        @cancel="cancelVoiceRecord"
+      />
       <div v-else class="chat-input-row">
         <div class="input-field-chat" :class="{ focused: inputFocused }">
           <input
@@ -193,25 +143,17 @@
     </div>
 
     <!-- 图片预览弹层 -->
-    <Teleport to="body">
-      <div v-if="previewImageUrl" class="image-preview-overlay" @click="previewImageUrl = ''">
-        <img :src="resolveMsgUrl(previewImageUrl)" class="image-preview-img" alt="预览" @click.stop />
-      </div>
-    </Teleport>
+    <ImagePreviewOverlay
+      :src="previewImageUrl ? resolveMsgUrl(previewImageUrl) : ''"
+      @close="previewImageUrl = ''"
+    />
 
     <!-- 隐藏的file input -->
     <input ref="imageInputRef" type="file" accept="image/*" class="hidden" @change="onImageSelected" />
     <input ref="fileInputRef" type="file" class="hidden" @change="onFileSelected" />
 
     <!-- 上传进度 -->
-    <Teleport to="body">
-      <div v-if="fileUploading" class="chat-upload-overlay">
-        <div class="chat-upload-card">
-          <div class="chat-upload-spinner"></div>
-          <p class="chat-upload-text">{{ uploadProgress > 0 ? `上传中 ${uploadProgress}%` : '上传中...' }}</p>
-        </div>
-      </div>
-    </Teleport>
+    <UploadOverlay :uploading="fileUploading" :progress="uploadProgress" />
   </div>
 </template>
 
@@ -221,13 +163,21 @@ import { socialApi } from '@/api'
 import { fileApi } from '@/api/file'
 import { ArrowLeft, Loading } from '@element-plus/icons-vue'
 import { sanitizeText } from '@/utils/sanitize'
-import VoiceMessage from '@/components/VoiceMessage.vue'
 import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
+import { useChatMedia } from '@/composables/chat/useChatMedia'
+import { formatChatTime } from '@/composables/chat/useChatTimestamp'
+import { AI_AVATAR_URL } from '@/composables/chat/useChatConstants'
+import ChatBubble from '@/components/chat/ChatBubble.vue'
+import ChatToolbar from '@/components/chat/ChatToolbar.vue'
+import VoiceRecordingBar from '@/components/chat/VoiceRecordingBar.vue'
+import ImagePreviewOverlay from '@/components/chat/ImagePreviewOverlay.vue'
+import UploadOverlay from '@/components/chat/UploadOverlay.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const messageStore = useMessageStore()
 const { resolveUrl } = useResourceUrl()
+const { resolveMsgUrl, getVoiceUrl, getVoiceDuration, getFileUrl, getFileName, getFileSize } = useChatMedia()
 
 const props = withDefaults(defineProps<{
   conversation: Conversation | null
@@ -260,20 +210,6 @@ const aiThinking = ref(false)
 const voiceRecorder = useVoiceRecorder()
 const voiceUploading = ref(false)
 
-/** 解析语音消息内容 - 兼容 JSON {url, duration} 和纯 URL 字符串，解析 MinIO 地址 */
-const getVoiceUrl = (content: string): string => {
-  try {
-    const data = JSON.parse(content)
-    const url = data.url || content
-    return resolveUrl(url) || url
-  } catch {
-    return resolveUrl(content) || content
-  }
-}
-const getVoiceDuration = (content: string): number => {
-  try { const data = JSON.parse(content); return data.duration || 0 } catch { return 0 }
-}
-
 /** 开始语音录制 */
 const startVoiceRecord = () => { voiceRecorder.startRecording() }
 
@@ -305,41 +241,11 @@ const cancelVoiceRecord = () => {
   voiceRecorder.cancelRecording()
 }
 
-/** AI助手头像 - 机器人脸+渐变背景+星芒装饰 */
-const aiAvatarUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjODE4Y2Y4Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNjM2NmYxIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJ1cmwoI2JnKSIgcng9IjIwIi8+PHJlY3QgeD0iMTEiIHk9IjE1IiB3aWR0aD0iMTgiIGhlaWdodD0iMTQiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjk1Ii8+PHJlY3QgeD0iMTUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxyZWN0IHg9IjIxLjUiIHk9IjE5IiB3aWR0aD0iMy41IiBoZWlnaHQ9IjMuNSIgcng9IjEuMiIgZmlsbD0iIzYzNjZmMSIvPjxwYXRoIGQ9Ik0xNS41IDI2aDkiIHN0cm9rZT0iIzYzNjZmMSIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxyZWN0IHg9IjE5IiB5PSI4IiB3aWR0aD0iMiIgaGVpZ2h0PSI3IiByeD0iMSIgZmlsbD0id2hpdGUiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjciIHI9IjIuNSIgZmlsbD0iI2E1YjRmYyIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iNyIgcj0iMS4yIiBmaWxsPSJ3aGl0ZSIvPjxyZWN0IHg9IjcuNSIgeT0iMjAiIHdpZHRoPSIzLjUiIGhlaWdodD0iNCIgcng9IjEuNSIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC43NSIvPjxyZWN0IHg9IjI5IiB5PSIyMCIgd2lkdGg9IjMuNSIgaGVpZ2h0PSI0IiByeD0iMS41IiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjc1Ii8+PHBhdGggZD0iTTMyIDEwbC44IDIuMkwzNSAxM2wtMi4yLjhMMzIgMTZsLS44LTIuMkwyOSAxM2wyLjItLjh6IiBmaWxsPSIjYzdkMmZlIiBmaWxsLW9wYWNpdHk9IjAuOCIvPjxwYXRoIGQ9Ik04IDMwbC42IDEuNUwxMCAzMmwtMS40LjVMOCAzNGwtLjYtMS41TDYgMzJsMS40LS41eiIgZmlsbD0iI2M3ZDJmZSIgZmlsbC1vcGFjaXR5PSIwLjYiLz48L3N2Zz4='
-
 const navigateToUser = (userId?: number) => { if (userId) router.push(`/user/${userId}`) }
 const isMine = (message: Message) => message.senderId === userStore.userInfo?.id
 
-/** 解析消息中的资源 URL（用于图片消息） */
-const resolveMsgUrl = (url: string) => resolveUrl(url) || url
-
 /** 点击图片消息放大预览 */
 const previewImage = (url: string) => { previewImageUrl.value = url }
-
-/** 从文件消息JSON中提取URL */
-const getFileUrl = (content: string) => {
-  try {
-    const url = JSON.parse(content).url || content
-    return resolveUrl(url) || url
-  } catch {
-    return resolveUrl(content) || content
-  }
-}
-
-/** 从文件消息JSON中提取文件名 */
-const getFileName = (content: string) => {
-  try { return JSON.parse(content).name || '文件' } catch { return '文件' }
-}
-
-/** 从文件消息JSON中提取文件大小（格式化） */
-const getFileSize = (content: string) => {
-  try {
-    const size = JSON.parse(content).size
-    if (!size) return ''
-    return size > 1048576 ? (size / 1048576).toFixed(1) + ' MB' : (size / 1024).toFixed(1) + ' KB'
-  } catch { return '' }
-}
 
 /** 表情选择回调 */
 const onEmojiSelect = (emoji: string) => {
@@ -468,7 +374,7 @@ const sendAIMsg = async (question: string) => {
           uid: '0',
           username: raw.senderNickname || 'AI助手',
           nickname: raw.senderNickname || 'AI助手',
-          avatar: raw.senderAvatar || aiAvatarUrl,
+          avatar: raw.senderAvatar || AI_AVATAR_URL,
           bio: '', email: '', phone: '', gender: 0 as any,
           birthday: '', followCount: 0, followerCount: 0,
           articleCount: 0, likeCount: 0, isFollowing: false, createdAt: '',
@@ -534,22 +440,6 @@ const sendMessage = async () => {
   } finally {
     sending.value = false
   }
-}
-
-const formatTime = (time: string) => {
-  if (!time) return ''
-  const date = new Date(time)
-  if (isNaN(date.getTime())) return ''
-  const now = new Date()
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  const isToday = date.toDateString() === now.toDateString()
-  const yesterday = new Date(now.getTime() - 86400000)
-  const isYesterday = date.toDateString() === yesterday.toDateString()
-  const timeStr = `${pad(date.getHours())}:${pad(date.getMinutes())}`
-  if (isToday) return timeStr
-  if (isYesterday) return `昨天 ${timeStr}`
-  if (date.getFullYear() === now.getFullYear()) return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${timeStr}`
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${timeStr}`
 }
 
 const fetchOnlineStatus = async () => {
@@ -667,35 +557,6 @@ onUnmounted(() => observer?.disconnect())
 
 .message-bubble-wrap { max-width: 72%; }
 
-.bubble {
-  padding: 10px 14px;
-  border-radius: 18px;
-  font-size: 14px;
-  line-height: 1.5;
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-.bubble-other {
-  background: #498FE8;
-  color: #fff;
-  border-bottom-left-radius: 6px;
-}
-.bubble-mine {
-  background: #fff;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  border-bottom-right-radius: 6px;
-}
-
-.bubble-time {
-  display: block;
-  font-size: 10px;
-  color: var(--zh-text-placeholder);
-  margin-top: 4px;
-}
-.mine-time { text-align: right; }
-
 .sender-avatar {
   cursor: pointer;
   border-radius: 50%;
@@ -777,231 +638,11 @@ onUnmounted(() => observer?.disconnect())
   gap: 4px;
 }
 
-/* 操作按钮（表情/图片） */
-.input-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--zh-text-secondary);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  flex-shrink: 0;
-  position: relative;
-  min-height: 0;
-  min-width: 0;
-}
-.input-action-btn:hover:not(:disabled) {
-  background: var(--zh-bg-hover);
-  color: var(--zh-primary);
-}
-.input-action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.action-icon {
-  width: 20px;
-  height: 20px;
-}
-
-/* 工具栏 */
-.chat-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding-bottom: 6px;
-}
-.chat-tool-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--zh-text-tertiary, #94a3b8);
-  cursor: pointer;
-  transition: all 0.15s;
-  min-height: 0;
-  min-width: 0;
-}
-.chat-tool-btn:hover {
-  background: var(--zh-bg-hover, #f1f5f9);
-  color: var(--zh-text-secondary, #64748b);
-}
-.chat-tool-btn.active {
-  background: var(--zh-primary-bg, rgba(99,102,241,0.1));
-  color: var(--zh-primary, #6366f1);
-}
-
-/* 图片消息 */
-.bubble-image {
-  padding: 4px !important;
-  background: transparent !important;
-}
-.msg-image {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 12px;
-  object-fit: cover;
-  cursor: pointer;
-  display: block;
-  transition: transform 0.15s ease;
-}
-.msg-image:hover {
-  transform: scale(1.02);
-}
-
-/* 图片预览弹层 */
-.image-preview-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.75);
-  cursor: pointer;
-}
-.image-preview-img {
-  max-width: 90vw;
-  max-height: 90vh;
-  border-radius: 8px;
-  object-fit: contain;
-  cursor: default;
-}
-
-/* AI消息气泡 */
-.bubble-ai {
-  border-left: 3px solid var(--zh-primary, #6366f1);
-  background: rgba(99, 102, 241, 0.06) !important;
-}
-.ai-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--zh-primary, #6366f1);
-  margin-bottom: 4px;
-}
-.ai-text {
-  white-space: pre-wrap;
-  line-height: 1.6;
-  margin: 0;
-}
 .ai-avatar-img {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
-}
-
-/* AI思考中的打字动画 */
-.ai-typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 0;
-}
-.ai-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--zh-primary, #6366f1);
-  opacity: 0.4;
-  animation: ai-bounce 1.4s ease-in-out infinite;
-}
-.ai-dot:nth-child(2) { animation-delay: 0.2s; }
-.ai-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes ai-bounce {
-  0%, 80%, 100% { opacity: 0.4; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1.1); }
-}
-
-/* 文件消息 */
-.bubble-file {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: inherit;
-  min-width: 200px;
-  padding: 10px 12px !important;
-  transition: opacity 0.15s;
-}
-.bubble-file:hover {
-  opacity: 0.85;
-}
-.bubble-file .file-card-icon {
-  flex-shrink: 0;
-  color: var(--zh-primary, #6366f1);
-}
-.bubble-mine .file-card-icon {
-  color: var(--zh-primary, #6366f1);
-}
-.bubble-file .file-card-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.bubble-file .file-name {
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-.bubble-file .file-size {
-  font-size: 11px;
-  color: var(--zh-text-tertiary, #94a3b8);
-}
-.bubble-mine .file-size {
-  color: var(--zh-text-tertiary, #94a3b8);
-}
-.bubble-file .file-card-download {
-  flex-shrink: 0;
-  color: var(--zh-text-tertiary, #94a3b8);
-}
-.bubble-mine .file-card-download {
-  color: var(--zh-text-tertiary, #94a3b8);
-}
-
-/* 上传遮罩 */
-.chat-upload-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.chat-upload-card {
-  background: var(--zh-bg-elevated, #fff);
-  border-radius: 16px;
-  padding: 24px 32px;
-  text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-}
-.chat-upload-spinner {
-  width: 32px;
-  height: 32px;
-  margin: 0 auto 12px;
-  border: 3px solid var(--zh-border, #e5e7eb);
-  border-top-color: var(--zh-primary, #6366f1);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-.chat-upload-text {
-  font-size: 14px;
-  color: var(--zh-text, #1e293b);
 }
 
 /* 统一输入框样式 - 匹配登录页交互 */
@@ -1083,65 +724,5 @@ onUnmounted(() => observer?.disconnect())
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* 语音录制栏 */
-.voice-recording-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: var(--zh-bg-hover, #f1f5f9);
-  border-radius: 24px;
-  border: 1.5px solid var(--zh-border, #e5e7eb);
-}
-.voice-rec-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ef4444;
-  animation: voice-pulse 1s infinite;
-  flex-shrink: 0;
-}
-@keyframes voice-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-.voice-rec-time {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--zh-text, #1e293b);
-  font-variant-numeric: tabular-nums;
-  min-width: 40px;
-}
-.voice-rec-stop {
-  padding: 4px 16px;
-  border: none;
-  border-radius: 16px;
-  background: var(--zh-primary, #6366f1);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  margin-left: auto;
-}
-.voice-rec-stop:hover { opacity: 0.85; }
-.voice-rec-cancel {
-  padding: 4px 12px;
-  border: 1px solid var(--zh-border, #e5e7eb);
-  border-radius: 16px;
-  background: transparent;
-  color: var(--zh-text-secondary, #64748b);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.voice-rec-cancel:hover { background: var(--zh-bg-hover, #f1f5f9); }
-
-/* 语音消息气泡 - 重置 padding 让 VoiceMessage 组件控制 */
-.voice-bubble {
-  padding: 4px 6px !important;
-  min-width: 100px;
 }
 </style>
