@@ -72,6 +72,10 @@ export const groupApi = {
     const { delete: del } = useApi()
     return del(`/groups/${id}`)
   },
+  updateGroup: (id: number, data: { name?: string; avatar?: string }) => {
+    const { put } = useApi()
+    return put<void>(`/groups/${id}`, data)
+  },
   inviteMembers: (groupId: number, userIds: number[]) => {
     const { post } = useApi()
     return post<void>('/groups/invite', { groupId, userIds })

@@ -103,14 +103,19 @@
                   </div>
                 </div>
                 <!-- 我的消息（右） -->
-                <div v-else class="max-w-[80%]">
-                  <div v-if="msg.type === 'voice'" class="inline-block max-w-full bg-primary rounded-xl rounded-br-sm px-1.5 py-1">
-                    <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
+                <div v-else class="flex items-start gap-1.5 max-w-[80%]">
+                  <div class="min-w-0 flex-1 flex flex-col items-end">
+                    <div v-if="msg.type === 'voice'" class="inline-block max-w-full bg-primary rounded-xl rounded-br-sm px-1.5 py-1">
+                      <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
+                    </div>
+                    <div v-else class="inline-block max-w-full bg-primary text-white rounded-xl rounded-br-sm px-2.5 py-1.5">
+                      <p class="text-sm leading-snug whitespace-pre-wrap break-all">{{ msg.content }}</p>
+                    </div>
+                    <p class="text-2xs text-[var(--zh-text-tertiary)] mt-0.5 mr-1 text-right leading-none">{{ formatMsgTime(msg.createdAt) }}</p>
                   </div>
-                  <div v-else class="inline-block max-w-full bg-primary text-white rounded-xl rounded-br-sm px-2.5 py-1.5">
-                    <p class="text-sm leading-snug whitespace-pre-wrap break-all">{{ msg.content }}</p>
-                  </div>
-                  <p class="text-2xs text-[var(--zh-text-tertiary)] mt-0.5 mr-1 text-right leading-none">{{ formatMsgTime(msg.createdAt) }}</p>
+                  <button class="shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(userStore.userInfo?.id)">
+                    <UserAvatar :src="userStore.userInfo?.avatar" alt="" size="sm" />
+                  </button>
                 </div>
               </div>
               <div v-if="messages.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
@@ -278,16 +283,19 @@
                         <span v-if="group.myRole === 2" class="role-badge role-badge-owner">群主</span>
                         <span v-else-if="group.myRole === 1" class="role-badge role-badge-admin">管理员</span>
                       </div>
-                      <div class="flex items-center gap-3 mt-1.5">
+                      <p class="text-xs text-[var(--zh-text-secondary)] truncate mt-1.5">{{ getGroupLastMessagePreview(group.id) }}</p>
+                      <div class="flex items-center gap-3 mt-1">
                         <span v-if="group.groupNumber" class="text-xs text-[var(--zh-text-tertiary)] font-mono tracking-wide">群号: {{ group.groupNumber }}</span>
                         <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)]">
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                           {{ group.memberCount }} 人
                         </span>
-                        <span v-if="group.description" class="text-xs text-[var(--zh-text-tertiary)] truncate hidden sm:inline">{{ group.description }}</span>
                       </div>
                     </div>
-                    <svg class="group-card-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    <div class="flex flex-col items-end shrink-0 gap-1">
+                      <span class="text-[10px] text-[var(--zh-text-tertiary)]">{{ formatRelativeTime(groupLastMessages[group.id]?.time) }}</span>
+                      <svg class="group-card-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -301,7 +309,7 @@
                   <svg class="search-icon" :class="{ 'text-primary': groupSearchFocused }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  <input ref="groupSearchInputRef" v-model="groupSearchKeyword" type="text" class="search-input" placeholder="搜索群组名称或关键词..." @focus="groupSearchFocused = true" @blur="groupSearchFocused = false" @keydown.enter="handleGroupSearch" />
+                  <input ref="groupSearchInputRef" v-model="groupSearchKeyword" type="text" class="search-input" placeholder="搜索群组名称、关键词或群号..." @focus="groupSearchFocused = true" @blur="groupSearchFocused = false" @keydown.enter="handleGroupSearch" />
                   <button v-if="groupSearchKeyword" class="search-clear-btn" @click="clearGroupSearch" title="清除搜索">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
@@ -587,7 +595,7 @@ import type { Conversation, Message, Notification } from '@/types'
 import { notificationApi } from '@/api/notification'
 import { socialApi } from '@/api'
 import { groupApi } from '@/api/group'
-import type { GroupInfo } from '@/api/group'
+import type { GroupInfo, GroupMessage } from '@/api/group'
 import { avatarColor } from '@/utils/color'
 import { showToast } from '@/composables/useToast'
 import VoiceMessage from '@/components/VoiceMessage.vue'
@@ -991,6 +999,58 @@ const groupSearchPage = ref(1)
 const groupSearchHasMore = ref(false)
 const groupSearchResultTotal = ref(0)
 
+// 群组最后消息
+const groupLastMessages = reactive<Record<number, { content: string; time: string; type?: string }>>({})
+
+const fetchGroupLastMessages = async (groups: any[]) => {
+  if (!groups.length) return
+  await Promise.all(groups.map(async (g: any) => {
+    if (groupLastMessages[g.id]) return
+    try {
+      const { data } = await groupApi.getMessages(g.id, 0, 50)
+      const raw = data?.data || data
+      const msgs = Array.isArray(raw) ? raw : (raw?.list || [])
+      if (msgs.length > 0) {
+        const first = msgs[0] as any
+        const last = msgs[msgs.length - 1] as any
+        const target = new Date(first.createdAt || 0).getTime() > new Date(last.createdAt || 0).getTime() ? first : last
+        groupLastMessages[g.id] = {
+          content: target.content || '',
+          time: target.createdAt || '',
+          type: target.messageType,
+        }
+      }
+    } catch {
+      // silent
+    }
+  }))
+}
+
+const getGroupLastMessagePreview = (groupId: number) => {
+  const msg = groupLastMessages[groupId]
+  if (!msg || !msg.content) return '暂无消息'
+  if (msg.type === 'image') return '[图片]'
+  return msg.content.length > 30 ? msg.content.slice(0, 30) + '...' : msg.content
+}
+
+const formatRelativeTime = (timeStr?: string) => {
+  if (!timeStr) return ''
+  const now = Date.now()
+  const time = new Date(timeStr).getTime()
+  if (isNaN(time)) return ''
+  const diff = now - time
+  if (diff < 60 * 1000) return '刚刚'
+  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))}分钟前`
+  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}小时前`
+  const date = new Date(timeStr)
+  const nowDate = new Date()
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  if (date.getFullYear() === nowDate.getFullYear()) {
+    return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+  }
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 // 创建弹窗
 const showCreateGroupModal = ref(false)
 const groupCreating = ref(false)
@@ -1012,6 +1072,7 @@ const loadMyGroups = async () => {
   try {
     const { data } = await groupApi.getMyGroups()
     myGroups.value = data?.data?.list || data?.data || []
+    await fetchGroupLastMessages(myGroups.value)
   } catch {
     myGroups.value = []
     showToast('加载失败，请稍后重试', 'error', { position: 'top-center' })

@@ -24,6 +24,8 @@ import com.zhixun.dto.ai.AIWriteRequest;
 import com.zhixun.vo.AIResponseVO;
 import com.zhixun.vo.ConversationVO;
 import com.zhixun.vo.MessageVO;
+import com.zhixun.websocket.ChatWebSocketHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +33,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.socket.TextMessage;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -57,6 +60,7 @@ public class MessageServiceImpl implements MessageService {
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
     private final AIService aiService;
+    private final ObjectMapper objectMapper;
 
     /** 未读消息数 Redis Key 前缀 */
     private static final String UNREAD_COUNT_PREFIX = "message:unread:";
@@ -131,7 +135,7 @@ public class MessageServiceImpl implements MessageService {
         MessageVO vo = buildMessageVO(message, senderId, receiverId);
         vo.setContent(rawContent); // 返回明文给发送者
 
-        // 通过 RabbitMQ 异步推送给接收者
+        // 通过 RabbitMQ 异步推送给接收者（失败时直推回退）
         try {
             // 查询发送者信息用于 WS 推送
             User senderUser = userMapper.selectById(senderId);
@@ -157,7 +161,31 @@ public class MessageServiceImpl implements MessageService {
                     mqMessage);
             log.info("私信MQ推送成功: messageId={}, receiverId={}", message.getId(), receiverId);
         } catch (Exception e) {
-            log.warn("RabbitMQ 推送私信失败（消息已存储）: messageId={}, error={}", message.getId(), e.getMessage());
+            log.warn("RabbitMQ 推送私信失败，尝试直推: messageId={}, error={}", message.getId(), e.getMessage());
+            // 直推回退：如果 RabbitMQ 不可用，直接通过 WebSocket 推送
+            try {
+                User senderUser = userMapper.selectById(senderId);
+                String senderNickname = senderUser != null ? senderUser.getNickname() : "";
+                String senderAvatar = senderUser != null ? senderUser.getAvatar() : "";
+                Map<String, Object> wsMessage = Map.of(
+                        "type", "CHAT",
+                        "data", Map.of(
+                                "receiverId", receiverId,
+                                "id", message.getId(),
+                                "senderId", senderId,
+                                "content", rawContent,
+                                "messageType", message.getType(),
+                                "senderNickname", senderNickname,
+                                "senderAvatar", senderAvatar,
+                                "createdAt", message.getCreatedAt().toString()
+                        )
+                );
+                String json = objectMapper.writeValueAsString(wsMessage);
+                ChatWebSocketHandler.sendToUser(receiverId, new TextMessage(json));
+                log.info("私信直推成功: messageId={}, receiverId={}", message.getId(), receiverId);
+            } catch (Exception ex) {
+                log.error("私信直推也失败: messageId={}, error={}", message.getId(), ex.getMessage());
+            }
         }
 
         return vo;

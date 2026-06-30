@@ -55,6 +55,8 @@
             @toggle-members="showMembers = !showMembers"
             @message-sent="onMessageSent"
             @leave="handleLeave"
+            @dismiss="handleDismiss"
+            @group-updated="onGroupUpdated"
           />
         </div>
 
@@ -164,6 +166,7 @@ function connectWebSocket() {
         senderAvatar: '',
         content,
         messageType: 'system',
+        mentionedUserIds: [],
         createdAt: new Date().toISOString(),
       })
     }
@@ -195,8 +198,13 @@ async function onMemberChanged() {
 }
 
 function goBack() {
-  if (window.history.length > 1) router.back()
-  else router.push('/groups')
+  // 优先使用导航时携带的 from 状态，确保返回到来源页面
+  const from = (window.history.state as any)?.from
+  if (from && typeof from === 'string') {
+    router.replace(from)
+  } else {
+    router.push('/groups')
+  }
 }
 
 async function handleLeave() {
@@ -204,7 +212,7 @@ async function handleLeave() {
   try {
     await groupApi.leaveGroup(group.value.id)
     showToast('已退出群组', 'success', { position: 'top-center' })
-    goBack()
+    router.push('/groups')
   } catch {
     showToast('退出失败', 'error', { position: 'top-center' })
   }
@@ -212,14 +220,17 @@ async function handleLeave() {
 
 async function handleDismiss() {
   if (!group.value) return
-  if (!confirm('确定要解散此群组吗？此操作不可恢复。')) return
   try {
     await groupApi.dismissGroup(group.value.id)
     showToast('群组已解散', 'success', { position: 'top-center' })
-    goBack()
+    router.push('/groups')
   } catch {
     showToast('解散失败', 'error', { position: 'top-center' })
   }
+}
+
+async function onGroupUpdated() {
+  await Promise.all([loadGroup(), loadMembers()])
 }
 
 onMounted(async () => {

@@ -15,6 +15,7 @@ import com.zhixun.entity.UserFollow;
 import com.zhixun.entity.UserPreferredCategory;
 import com.zhixun.entity.UserPreferredTag;
 import com.zhixun.enums.ArticleStatusEnum;
+import com.zhixun.enums.ArticleVisibilityEnum;
 import com.zhixun.mapper.ArticleMapper;
 import com.zhixun.mapper.ArticleTagMapper;
 import com.zhixun.mapper.CategoryMapper;
@@ -114,7 +115,7 @@ public class FeedServiceImpl implements FeedService {
     public PageResult<ArticleVO> getRecommendFeed(Long userId, Integer refresh, Integer page, Integer pageSize) {
         // 未登录用户返回热门作品
         if (userId == null) {
-            return getHotFeed(page, pageSize);
+            return getHotFeed(null, page, pageSize);
         }
 
         // 检查是否需要刷新批次
@@ -161,7 +162,7 @@ public class FeedServiceImpl implements FeedService {
         }
         if (cachedIds != null) {
             // 从缓存中分页
-            return getPagedFromCache(cacheKey, page, pageSize);
+            return getPagedFromCache(cacheKey, userId, page, pageSize);
         }
 
         // 缓存未命中，生成推荐列表
@@ -181,12 +182,12 @@ public class FeedServiceImpl implements FeedService {
             }
         }
 
-        return getPagedFromCache(cacheKey, page, pageSize);
+        return getPagedFromCache(cacheKey, userId, page, pageSize);
     }
 
     @Override
     @Slave
-    public PageResult<ArticleVO> getLatestFeed(Integer page, Integer pageSize) {
+    public PageResult<ArticleVO> getLatestFeed(Long currentUserId, Integer page, Integer pageSize) {
         // 尝试从 Redis 缓存获取
         String cacheKey = LATEST_FEED_KEY_PREFIX + page + ":" + pageSize;
         String cachedIds = null;
@@ -196,7 +197,7 @@ public class FeedServiceImpl implements FeedService {
             log.warn("Redis 不可用，跳过最新动态缓存读取: {}", e.getMessage());
         }
         if (cachedIds != null) {
-            return getPagedFromCache(cacheKey, page, pageSize);
+            return getPagedFromCache(cacheKey, currentUserId, page, pageSize);
         }
 
         // 缓存未命中，查询数据库
@@ -207,7 +208,10 @@ public class FeedServiceImpl implements FeedService {
         Page<Article> articlePage = new Page<>(page, pageSize);
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
-        List<ArticleVO> voList = convertToVOList(result.getRecords());
+        // 根据可见性过滤
+        List<Article> visibleArticles = filterByVisibility(result.getRecords(), currentUserId);
+
+        List<ArticleVO> voList = convertToVOList(visibleArticles);
 
         // 缓存作品ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
         if (!CollectionUtils.isEmpty(voList)) {
@@ -237,7 +241,7 @@ public class FeedServiceImpl implements FeedService {
             log.warn("Redis 不可用，跳过关注动态缓存读取: {}", e.getMessage());
         }
         if (cachedIds != null) {
-            return getPagedFromCache(cacheKey, page, pageSize);
+            return getPagedFromCache(cacheKey, userId, page, pageSize);
         }
 
         // 缓存未命中，优先从 Redis Sorted Set 时间线获取
@@ -312,7 +316,7 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Slave
-    public PageResult<ArticleVO> getHotFeed(Integer page, Integer pageSize) {
+    public PageResult<ArticleVO> getHotFeed(Long currentUserId, Integer page, Integer pageSize) {
         // 尝试从 Redis 缓存获取
         String cacheKey = HOT_FEED_KEY_PREFIX + page + ":" + pageSize;
         String cachedIds = null;
@@ -322,7 +326,7 @@ public class FeedServiceImpl implements FeedService {
             log.warn("Redis 不可用，跳过热门动态缓存读取: {}", e.getMessage());
         }
         if (cachedIds != null) {
-            return getPagedFromCache(cacheKey, page, pageSize);
+            return getPagedFromCache(cacheKey, currentUserId, page, pageSize);
         }
 
         // 缓存未命中，查询数据库
@@ -335,7 +339,10 @@ public class FeedServiceImpl implements FeedService {
         Page<Article> articlePage = new Page<>(page, pageSize);
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
-        List<ArticleVO> voList = convertToVOList(result.getRecords());
+        // 根据可见性过滤
+        List<Article> visibleArticles = filterByVisibility(result.getRecords(), currentUserId);
+
+        List<ArticleVO> voList = convertToVOList(visibleArticles);
 
         // 缓存作品ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
         if (!CollectionUtils.isEmpty(voList)) {
@@ -357,6 +364,14 @@ public class FeedServiceImpl implements FeedService {
     @Async
     public void fanoutOnPublish(Long authorId, Long articleId, LocalDateTime publishedAt) {
         try {
+            // 仅自己可见的作品不推送到粉丝时间线
+            Article article = articleMapper.selectById(articleId);
+            if (article != null && article.getVisibility() != null
+                    && article.getVisibility() == ArticleVisibilityEnum.PRIVATE.getValue()) {
+                log.info("私密作品不推送时间线: articleId={}", articleId);
+                return;
+            }
+
             // 查询作者的所有粉丝
             List<UserFollow> followers = userFollowMapper.selectList(
                     new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowingId, authorId));
@@ -461,7 +476,10 @@ public class FeedServiceImpl implements FeedService {
         Page<Article> articlePage = new Page<>(page, pageSize);
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
-        List<ArticleVO> voList = convertToVOList(result.getRecords());
+        // 根据可见性过滤
+        List<Article> visibleArticles = filterByVisibility(result.getRecords(), userId);
+
+        List<ArticleVO> voList = convertToVOList(visibleArticles);
         return new PageResult<>(voList, result.getTotal(), page, pageSize);
     }
 
@@ -501,10 +519,11 @@ public class FeedServiceImpl implements FeedService {
 
         // 批量查询作品
         List<Article> articles = articleMapper.selectBatchIds(articleIds);
-        // 过滤已发布状态的作品
+        // 过滤已发布状态的作品 + 可见性过滤
         articles = articles.stream()
                 .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED && a.getDeletedAt() == null)
                 .collect(Collectors.toList());
+        articles = filterByVisibility(articles, userId);
 
         // 保持时间线中的顺序
         Map<Long, Article> articleMap = articles.stream()
@@ -555,6 +574,8 @@ public class FeedServiceImpl implements FeedService {
         articles = articles.stream()
                 .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED && a.getDeletedAt() == null)
                 .collect(Collectors.toList());
+        // 可见性过滤
+        articles = filterByVisibility(articles, userId);
 
         // 保持时间线中的顺序
         Map<Long, Article> articleMap = articles.stream()
@@ -1005,7 +1026,7 @@ public class FeedServiceImpl implements FeedService {
     /**
      * 从缓存分页获取推荐结果
      */
-    private PageResult<ArticleVO> getPagedFromCache(String cacheKey, Integer page, Integer pageSize) {
+    private PageResult<ArticleVO> getPagedFromCache(String cacheKey, Long currentUserId, Integer page, Integer pageSize) {
         String idsStr = null;
         try {
             idsStr = stringRedisTemplate.opsForValue().get(cacheKey);
@@ -1033,6 +1054,8 @@ public class FeedServiceImpl implements FeedService {
 
         // 批量查询作品
         List<Article> articles = articleMapper.selectBatchIds(pageIds);
+        // 可见性过滤
+        articles = filterByVisibility(articles, currentUserId);
         // 保持缓存中的顺序
         Map<Long, Article> articleMap = articles.stream()
                 .collect(Collectors.toMap(Article::getId, a -> a));
@@ -1151,6 +1174,90 @@ public class FeedServiceImpl implements FeedService {
         }
         return users.stream()
                 .collect(Collectors.toMap(User::getId, u -> u, (existing, replacement) -> existing));
+    }
+
+    /**
+     * 根据可见性过滤文章列表（仅保留当前用户有权查看的文章）
+     * <p>
+     * 可见性规则：
+     * - PUBLIC(0)：所有人可见
+     * - FOLLOWERS(1)：仅粉丝可见
+     * - MUTUAL(2)：仅互关可见
+     * - PRIVATE(3)：仅自己可见
+     */
+    private List<Article> filterByVisibility(List<Article> articles, Long currentUserId) {
+        if (CollectionUtils.isEmpty(articles)) {
+            return articles;
+        }
+        // 无需过滤的情况：所有文章都是公开的
+        boolean allPublic = articles.stream()
+                .allMatch(a -> a.getVisibility() == null
+                        || a.getVisibility() == ArticleVisibilityEnum.PUBLIC.getValue());
+        if (allPublic) {
+            return articles;
+        }
+
+        // 批量查询当前用户的关注关系，用于 FOLLOWERS/MUTUAL 判断
+        Set<Long> followingIds = Collections.emptySet();
+        if (currentUserId != null) {
+            try {
+                List<UserFollow> follows = userFollowMapper.selectList(
+                        new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowerId, currentUserId));
+                followingIds = follows.stream()
+                        .map(UserFollow::getFollowingId)
+                        .collect(Collectors.toSet());
+            } catch (Exception e) {
+                log.warn("查询关注关系失败: {}", e.getMessage());
+            }
+        }
+
+        // 批量查询关注我的人（用于 MUTUAL 互关判断）
+        Set<Long> followerOfMineIds = Collections.emptySet();
+        if (currentUserId != null) {
+            try {
+                List<UserFollow> reverseFollows = userFollowMapper.selectList(
+                        new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowingId, currentUserId));
+                followerOfMineIds = reverseFollows.stream()
+                        .map(UserFollow::getFollowerId)
+                        .collect(Collectors.toSet());
+            } catch (Exception e) {
+                log.warn("查询粉丝关系失败: {}", e.getMessage());
+            }
+        }
+
+        final Set<Long> finalFollowingIds = followingIds;
+        final Set<Long> finalFollowerOfMineIds = followerOfMineIds;
+
+        return articles.stream()
+                .filter(article -> {
+                    Integer visibility = article.getVisibility();
+                    if (visibility == null || visibility == ArticleVisibilityEnum.PUBLIC.getValue()) {
+                        return true;
+                    }
+                    Long authorId = article.getAuthorId();
+                    // 作者本人始终可见
+                    if (currentUserId != null && currentUserId.equals(authorId)) {
+                        return true;
+                    }
+                    // PRIVATE：仅作者可见
+                    if (visibility == ArticleVisibilityEnum.PRIVATE.getValue()) {
+                        return false;
+                    }
+                    // 未登录用户无法查看非公开作品
+                    if (currentUserId == null) {
+                        return false;
+                    }
+                    // FOLLOWERS：当前用户关注了作者
+                    if (visibility == ArticleVisibilityEnum.FOLLOWERS.getValue()) {
+                        return finalFollowingIds.contains(authorId);
+                    }
+                    // MUTUAL：互相关注
+                    if (visibility == ArticleVisibilityEnum.MUTUAL.getValue()) {
+                        return finalFollowingIds.contains(authorId) && finalFollowerOfMineIds.contains(authorId);
+                    }
+                    return false;
+                })
+                .collect(Collectors.toList());
     }
 
 }

@@ -96,8 +96,8 @@
           </template>
         </el-dropdown>
 
-        <RouterLink v-else to="/login">
-          <el-button type="primary" size="small" round>登录</el-button>
+        <RouterLink v-else to="/login" class="login-link">
+          <span class="login-btn-text">登录</span>
         </RouterLink>
       </div>
     </div>
@@ -266,8 +266,15 @@ const isActive = (path: string) => {
 }
 
 const goBack = () => {
-  if (window.history.length > 1) router.back()
-  else router.push('/')
+  // 优先使用导航时携带的 from 状态，确保返回到来源页面（如私信详情页、群组页等）
+  const from = (window.history.state as any)?.from
+  if (from && typeof from === 'string') {
+    router.replace(from)
+  } else if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/')
+  }
 }
 
 const handleCommand = async (command: string) => {
@@ -473,6 +480,38 @@ const handleCommand = async (command: string) => {
   transition: background var(--zh-transition-fast);
 }
 .avatar-trigger:hover { background: var(--zh-bg-hover); }
+
+/* ---- 登录按钮（替代 el-button，确保移动端 44px 触摸目标）---- */
+.login-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  min-width: 56px;
+  padding: 4px 16px;
+  border-radius: var(--zh-radius-full);
+  background: var(--zh-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  transition: opacity var(--zh-transition-fast), transform var(--zh-transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.login-link:hover { opacity: 0.9; }
+.login-link:active { transform: scale(0.96); }
+@media (pointer: coarse) {
+  .login-link {
+    min-height: 44px;
+    min-width: 64px;
+    padding: 6px 20px;
+    font-size: 14px;
+  }
+}
+.login-btn-text {
+  pointer-events: none;
+}
 
 .arrow-icon {
   font-size: 12px;

@@ -22,6 +22,7 @@ public interface GroupService {
     void inviteMembers(Long userId, GroupInviteRequest request);
     void kickMember(Long ownerId, Long groupId, Long targetUserId);
     void setAdmin(Long ownerId, Long groupId, Long targetUserId, boolean isAdmin);
+    void updateGroup(Long userId, Long groupId, String name, String avatar);
     GroupMessageVO sendMessage(Long userId, GroupMessageRequest request);
     List<GroupMessageVO> getMessages(Long groupId, Long userId, Long offset, int limit);
     List<GroupMessageVO> searchMessages(Long groupId, Long userId, String keyword, String messageType,

@@ -314,27 +314,30 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Slave
     public ArticleDetailVO getArticleDetail(Long articleId, Long currentUserId) {
-        // 尝试从 Redis 缓存获取（仅未登录用户且作品已发布时使用缓存）
+        // 尝试从 Redis 缓存获取（仅未登录用户且作品已发布且公开可见时使用缓存）
         if (currentUserId == null) {
             ArticleDetailVO cached = getArticleDetailFromCache(articleId);
             if (cached != null) {
-                // 叠加 Redis 中尚未刷回 DB 的浏览量增量
-                try {
-                    String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + articleId);
-                    if (viewCountStr != null) {
-                        long pending = Long.parseLong(viewCountStr);
-                        if (cached.getViewCount() != null) {
-                            cached.setViewCount(cached.getViewCount() + pending);
+                // 非公开作品不使用缓存，需走正常查询+权限校验流程
+                if (cached.getVisibility() == null || cached.getVisibility() == ArticleVisibilityEnum.PUBLIC.getValue()) {
+                    // 叠加 Redis 中尚未刷回 DB 的浏览量增量
+                    try {
+                        String viewCountStr = stringRedisTemplate.opsForValue().get(VIEW_COUNT_PREFIX + articleId);
+                        if (viewCountStr != null) {
+                            long pending = Long.parseLong(viewCountStr);
+                            if (cached.getViewCount() != null) {
+                                cached.setViewCount(cached.getViewCount() + pending);
+                            }
                         }
+                    } catch (Exception e) {
+                        log.warn("缓存命中时叠加Redis浏览量失败: {}", e.getMessage());
                     }
-                } catch (Exception e) {
-                    log.warn("缓存命中时叠加Redis浏览量失败: {}", e.getMessage());
+                    // 记录浏览历史（异步）
+                    recordViewHistoryAsync(articleId, currentUserId);
+                    // 增加浏览量（异步）
+                    incrementViewCountAsync(articleId);
+                    return cached;
                 }
-                // 记录浏览历史（异步）
-                recordViewHistoryAsync(articleId, currentUserId);
-                // 增加浏览量（异步）
-                incrementViewCountAsync(articleId);
-                return cached;
             }
         }
 
@@ -351,6 +354,11 @@ public class ArticleServiceImpl implements ArticleService {
                 && !article.getAuthorId().equals(currentUserId)
                 && !securityUtil.isAdmin()) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
+        }
+
+        // 可见性权限检查：非公开作品需验证访问权限
+        if (!canViewArticle(article, currentUserId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权查看此作品");
         }
 
         // 构建详情 VO
@@ -469,8 +477,15 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Slave
     public PageResult<ArticleVO> getArticleList(ArticleQueryRequest request) {
-        // 仅对公开查询（默认已发布状态）启用缓存
-        boolean useCache = request.getStatus() == null || request.getStatus() == ArticleStatusEnum.PUBLISHED.getValue();
+        // 尝试获取当前登录用户ID（未登录为 null）
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception ignored) {}
+
+        // 仅对未登录用户的公开查询启用缓存（登录用户因可见性过滤不同，不使用共享缓存）
+        boolean useCache = (request.getStatus() == null || request.getStatus() == ArticleStatusEnum.PUBLISHED.getValue())
+                && currentUserId == null;
         String cacheKey = null;
 
         if (useCache) {
@@ -524,25 +539,26 @@ public class ArticleServiceImpl implements ArticleService {
         String sort = request.getSortBy();
         if ("hot".equals(sort)) {
             // 热门：按浏览量降序
-            wrapper.orderByDesc(Article::getViewCount).orderByDesc(Article::getCreatedAt);
+            wrapper.orderByDesc(Article::getViewCount).orderByDesc(Article::getUpdatedAt).orderByDesc(Article::getCreatedAt);
         } else if ("recommend".equals(sort)) {
             // 推荐：按点赞数+浏览量降序
             wrapper.orderByDesc(Article::getIsTop).orderByDesc(Article::getLikeCount).orderByDesc(Article::getViewCount);
         } else {
-            // 最新：按创建时间降序
-            wrapper.orderByDesc(Article::getIsTop).orderByDesc(Article::getCreatedAt);
+            // 最新：按更新时间降序（编辑/发布时间最新的排最前），相同则按创建时间降序
+            wrapper.orderByDesc(Article::getIsTop).orderByDesc(Article::getUpdatedAt).orderByDesc(Article::getCreatedAt);
         }
 
         // 分页查询
         Page<Article> page = new Page<>(request.getPageNum(), request.getPageSize());
         Page<Article> result = articleMapper.selectPage(page, wrapper);
 
-        // 批量查询关联数据
-        Long currentUserId = null;
-        try {
-            currentUserId = securityUtil.getCurrentUserId();
-        } catch (Exception ignored) {}
-        List<ArticleVO> voList = convertToVOList(result.getRecords(), currentUserId);
+        // 根据可见性过滤：非公开作品需检查访问权限
+        final Long finalCurrentUserId = currentUserId;
+        List<Article> visibleArticles = result.getRecords().stream()
+                .filter(article -> canViewArticle(article, finalCurrentUserId))
+                .collect(Collectors.toList());
+
+        List<ArticleVO> voList = convertToVOList(visibleArticles, currentUserId);
 
         PageResult<ArticleVO> pageResult = new PageResult<>(voList, result.getTotal(), request.getPageNum(), request.getPageSize());
 
@@ -772,6 +788,16 @@ public class ArticleServiceImpl implements ArticleService {
 
         List<Article> candidates = articleMapper.selectList(wrapper);
 
+        // 根据可见性过滤
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception ignored) {}
+        final Long finalCurrentUserId = currentUserId;
+        candidates = candidates.stream()
+                .filter(a -> canViewArticle(a, finalCurrentUserId))
+                .collect(Collectors.toList());
+
         // 按匹配标签数降序、浏览量降序排序
         final Map<Long, Long> finalTagMatchCount = tagMatchCount;
         candidates.sort(Comparator
@@ -978,6 +1004,78 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     // ========== 内部方法 ==========
+
+    /**
+     * 判断当前用户是否有权查看指定作品（基于可见性）
+     * <p>
+     * 可见性规则：
+     * - PUBLIC(0)：所有人可见
+     * - FOLLOWERS(1)：仅粉丝可见（作者的关注者）
+     * - MUTUAL(2)：仅互关可见
+     * - PRIVATE(3)：仅自己可见
+     *
+     * @param article       作品实体
+     * @param currentUserId 当前用户ID（未登录为null）
+     * @return true=有权限查看，false=无权限
+     */
+    private boolean canViewArticle(Article article, Long currentUserId) {
+        Integer visibility = article.getVisibility();
+        if (visibility == null || visibility == ArticleVisibilityEnum.PUBLIC.getValue()) {
+            // 公开作品，所有人可见
+            return true;
+        }
+
+        Long authorId = article.getAuthorId();
+
+        // 作者本人始终可见
+        if (currentUserId != null && currentUserId.equals(authorId)) {
+            return true;
+        }
+
+        // 管理员始终可见
+        if (securityUtil.isAdmin()) {
+            return true;
+        }
+
+        // PRIVATE(3)：仅作者可见
+        if (visibility == ArticleVisibilityEnum.PRIVATE.getValue()) {
+            return false;
+        }
+
+        // 未登录用户无法查看非公开作品
+        if (currentUserId == null) {
+            return false;
+        }
+
+        // FOLLOWERS(1)：仅粉丝可见（当前用户关注了作者）
+        if (visibility == ArticleVisibilityEnum.FOLLOWERS.getValue()) {
+            return isFollowing(currentUserId, authorId);
+        }
+
+        // MUTUAL(2)：仅互关可见（双方互相关注）
+        if (visibility == ArticleVisibilityEnum.MUTUAL.getValue()) {
+            return isMutualFollow(currentUserId, authorId);
+        }
+
+        return false;
+    }
+
+    /**
+     * 判断 followerId 是否关注了 followingId
+     */
+    private boolean isFollowing(Long followerId, Long followingId) {
+        return userFollowMapper.selectCount(
+                new LambdaQueryWrapper<UserFollow>()
+                        .eq(UserFollow::getFollowerId, followerId)
+                        .eq(UserFollow::getFollowingId, followingId)) > 0;
+    }
+
+    /**
+     * 判断两个用户是否互相关注
+     */
+    private boolean isMutualFollow(Long userId1, Long userId2) {
+        return isFollowing(userId1, userId2) && isFollowing(userId2, userId1);
+    }
 
     /**
      * 清除作品相关 Redis 缓存

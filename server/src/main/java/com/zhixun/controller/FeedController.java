@@ -60,9 +60,16 @@ public class FeedController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize,
             HttpServletResponse response) {
+        // 尝试获取当前登录用户ID（未登录为 null，用于可见性过滤）
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception e) {
+            // 未登录用户
+        }
         // 设置 Cache-Control：公共缓存，最大缓存60秒
         response.setHeader("Cache-Control", "public, max-age=60");
-        return ResponseEntity.ok(R.ok(feedService.getLatestFeed(page, pageSize)));
+        return ResponseEntity.ok(R.ok(feedService.getLatestFeed(currentUserId, page, pageSize)));
     }
 
     /**
@@ -101,8 +108,15 @@ public class FeedController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize,
             HttpServletResponse response) {
+        // 尝试获取当前登录用户ID（未登录为 null，用于可见性过滤）
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception e) {
+            // 未登录用户
+        }
         // 设置 Cache-Control：公共缓存，最大缓存120秒
         response.setHeader("Cache-Control", "public, max-age=120");
-        return ResponseEntity.ok(R.ok(feedService.getHotFeed(page, pageSize)));
+        return ResponseEntity.ok(R.ok(feedService.getHotFeed(currentUserId, page, pageSize)));
     }
 }

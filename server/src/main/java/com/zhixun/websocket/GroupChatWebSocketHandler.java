@@ -157,8 +157,7 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
 
         try {
             GroupMessageVO msgVO = groupService.sendMessage(senderId, req);
-            String response = objectMapper.writeValueAsString(Map.of("type", "CHAT", "data", msgVO));
-            broadcastToGroup(groupId, response, null);
+            // 广播已由 groupService.sendMessage() 统一处理，此处不再重复广播
 
             // 发送@提及通知（异步，不阻塞消息发送）
             if (msgVO.getMentionedUserIds() != null && !msgVO.getMentionedUserIds().isEmpty()) {
@@ -233,7 +232,18 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
         });
     }
 
-    private void broadcastToGroup(Long groupId, String message, String excludeSessionId) {
+    /**
+     * 公开静态方法：向群组广播消息（不排除任何会话）
+     * 供 GroupServiceImpl HTTP 发送消息后调用
+     */
+    public static void broadcastToGroup(Long groupId, String message) {
+        broadcastToGroup(groupId, message, null);
+    }
+
+    /**
+     * 向群组广播消息（可排除指定会话）
+     */
+    private static void broadcastToGroup(Long groupId, String message, String excludeSessionId) {
         Map<String, WebSocketSession> room = GROUP_SESSIONS.get(groupId);
         if (room == null) return;
         TextMessage textMsg = new TextMessage(message);

@@ -306,10 +306,12 @@ export const useMessageStore = defineStore('message', () => {
   // ==================== 处理 WebSocket 实时消息 ====================
   const handleIncomingMessage = (wsData: any) => {
     if (!wsData) return
-    const { senderId, content, messageId, senderNickname, senderAvatar, createdAt, messageType } = wsData
+    const { senderId, content, senderNickname, senderAvatar, createdAt, messageType } = wsData
+    // 后端 WS 推送的字段名为 id，也兼容 messageId
+    const msgId = wsData.id || wsData.messageId || Date.now()
 
     const newMsg: Message = {
-      id: messageId || Date.now(),
+      id: msgId,
       conversationId: 0,
       senderId,
       sender: {
@@ -421,15 +423,21 @@ export const useMessageStore = defineStore('message', () => {
         onlineStatus.value = { ...onlineStatus.value, [detail.userId]: false }
       }
     }
+    const onNewConversation = (_e: Event) => {
+      // 互相关注后收到新会话通知，刷新会话列表
+      fetchConversations()
+    }
 
     window.addEventListener('ws:chat', onChat)
     window.addEventListener('ws:online', onOnline)
     window.addEventListener('ws:offline', onOffline)
+    window.addEventListener('ws:new-conversation', onNewConversation)
 
     wsUnsubscribers = [
       () => window.removeEventListener('ws:chat', onChat),
       () => window.removeEventListener('ws:online', onOnline),
       () => window.removeEventListener('ws:offline', onOffline),
+      () => window.removeEventListener('ws:new-conversation', onNewConversation),
     ]
   }
 

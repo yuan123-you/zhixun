@@ -154,7 +154,16 @@
                 <span class="toggle-track"></span>
               </span>
             </label>
-            
+            <label class="toggle-row">
+              <div class="toggle-label-group">
+                <span class="toggle-label">自动播放视频</span>
+                <span class="toggle-hint">关闭后视频不会自动播放，节省流量</span>
+              </div>
+              <span class="toggle-switch">
+                <input v-model="serverSettings.privacy.autoPlayVideo" :true-value="1" :false-value="0" type="checkbox" />
+                <span class="toggle-track"></span>
+              </span>
+            </label>
           </div>
         </section>
 
@@ -284,6 +293,94 @@
             </div>
           </div>
         </section>
+
+        <div class="section-divider"></div>
+
+        <!-- 数据管理 -->
+        <section class="settings-section">
+          <div class="section-header">
+            <span class="section-icon section-icon-data">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                <line x1="12" y1="22.08" x2="12" y2="12" />
+              </svg>
+            </span>
+            <h2 class="section-title">数据管理</h2>
+          </div>
+          <div class="section-body">
+            <div class="action-row" @click="clearViewHistory">
+              <div class="action-label-group">
+                <span class="action-label">清除浏览历史</span>
+                <span class="action-hint">{{ viewHistoryCount > 0 ? `${viewHistoryCount} 条记录` : '暂无记录' }}</span>
+              </div>
+              <svg class="action-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+            <div class="action-row" @click="clearSearchHistoryAction">
+              <div class="action-label-group">
+                <span class="action-label">清除搜索历史</span>
+                <span class="action-hint">{{ searchHistoryCount > 0 ? `${searchHistoryCount} 条记录` : '暂无记录' }}</span>
+              </div>
+              <svg class="action-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+            <div class="action-row" @click="clearAllCache">
+              <div class="action-label-group">
+                <span class="action-label">清除本地缓存</span>
+                <span class="action-hint">清理本地存储的临时数据</span>
+              </div>
+              <svg class="action-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- 账号安全 -->
+        <section class="settings-section">
+          <div class="section-header">
+            <span class="section-icon section-icon-security">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </span>
+            <h2 class="section-title">账号安全</h2>
+          </div>
+          <div class="section-body">
+            <RouterLink to="/user/edit" class="action-row">
+              <div class="action-label-group">
+                <span class="action-label">修改个人资料</span>
+                <span class="action-hint">昵称、简介、头像等</span>
+              </div>
+              <svg class="action-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </RouterLink>
+            <div class="action-row" @click="handleChangePassword">
+              <div class="action-label-group">
+                <span class="action-label">修改密码</span>
+                <span class="action-hint">定期修改密码保障账号安全</span>
+              </div>
+              <svg class="action-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+            <div class="action-row" @click="handleLogout">
+              <div class="action-label-group">
+                <span class="action-label danger-text">退出登录</span>
+                <span class="action-hint">退出当前账号</span>
+              </div>
+              <svg class="action-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+        </section>
       </template>
     </div>
 
@@ -305,8 +402,11 @@
 import type { UserSettingsServer, UserSettingsLocal, UserSettingsNotification, UserSettingsPrivacy, UserSettingsDisplay, UserSettingsRecommend } from '@/types'
 import { storage, STORAGE_KEYS } from '@/utils/storage'
 import { userApi } from '@/api'
+import { showToast } from '@/composables/useToast'
 
 const colorMode = useColorMode()
+const userStore = useUserStore()
+const router = useRouter()
 
 const STORAGE_KEY = STORAGE_KEYS.SETTINGS_LOCAL
 
@@ -495,10 +595,83 @@ watch(serverSettings, () => {
   debouncedServerSave()
 }, { deep: true })
 
+// ========== 数据管理 ==========
+const viewHistoryCount = ref(0)
+const searchHistoryCount = ref(0)
+
+const refreshDataCounts = () => {
+  const { getLocalHistory } = useViewHistory()
+  viewHistoryCount.value = getLocalHistory().length
+  const { getHistory: getSearchHistory } = useSearchHistory()
+  searchHistoryCount.value = getSearchHistory().length
+}
+
+const clearViewHistory = () => {
+  const { clearLocalHistory, getLocalHistory } = useViewHistory()
+  const count = getLocalHistory().length
+  if (count === 0) {
+    showToast('暂无浏览历史')
+    return
+  }
+  clearLocalHistory()
+  viewHistoryCount.value = 0
+  showToast(`已清除 ${count} 条浏览历史`)
+}
+
+const clearSearchHistoryAction = async () => {
+  const { clearHistory: clearSearchHistory, getHistory } = useSearchHistory()
+  const count = getHistory().length
+  if (count === 0) {
+    showToast('暂无搜索历史')
+    return
+  }
+  clearSearchHistory()
+  try {
+    const { searchApi } = await import('@/api/search')
+    await searchApi.clearHistory()
+  } catch { /* ignore server error */ }
+  searchHistoryCount.value = 0
+  showToast(`已清除 ${count} 条搜索历史`)
+}
+
+const clearAllCache = () => {
+  // 保留登录态和用户设置，清除其他本地缓存
+  const keepKeys = new Set<string>([
+    STORAGE_KEYS.ACCESS_TOKEN,
+    STORAGE_KEYS.TOKEN_EXPIRES_AT,
+    STORAGE_KEYS.USER_SUMMARY,
+    STORAGE_KEYS.SETTINGS_LOCAL,
+    STORAGE_KEYS.USER_PREFERENCES,
+  ])
+  const allKeys = Object.keys(localStorage)
+  let cleared = 0
+  for (const key of allKeys) {
+    if (!keepKeys.has(key) && !key.startsWith('chat_remark_') && !key.startsWith('chat_settings_')) {
+      localStorage.removeItem(key)
+      cleared++
+    }
+  }
+  // 重算计数
+  refreshDataCounts()
+  showToast(cleared > 0 ? `已清除 ${cleared} 项缓存数据` : '暂无可清除的缓存')
+}
+
+// ========== 账号安全 ==========
+const handleChangePassword = () => {
+  router.push('/user/edit')
+}
+
+const handleLogout = () => {
+  userStore.logout()
+  router.push('/login')
+  showToast('已退出登录')
+}
+
 // 页面初始化
 onMounted(async () => {
   await loadServerSettings()
   applyFontSize()
+  refreshDataCounts()
   pageLoading.value = false
   // 标记初始化完成，之后的操作才会触发自动保存
   initialized.value = true
@@ -662,6 +835,16 @@ useHead({
   color: #db2777;
 }
 
+.section-icon-data {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.section-icon-security {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
 .dark .section-icon-notify {
   background: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
@@ -690,6 +873,16 @@ useHead({
 .dark .section-icon-display {
   background: rgba(244, 114, 182, 0.15);
   color: #f472b6;
+}
+
+.dark .section-icon-data {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.dark .section-icon-security {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
 }
 
 .section-title {
@@ -813,6 +1006,56 @@ useHead({
 
 .dark .toggle-switch input:checked + .toggle-track::after {
   background: #ffffff;
+}
+
+/* ---- Action Row 操作行 ---- */
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  text-decoration: none;
+  color: inherit;
+}
+
+.action-row:hover {
+  opacity: 0.8;
+}
+
+.action-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  padding-right: 16px;
+}
+
+.action-label {
+  font-size: 14px;
+  color: var(--zh-text-secondary);
+  line-height: 1.4;
+}
+
+.action-hint {
+  font-size: 12px;
+  color: var(--zh-text-tertiary);
+  line-height: 1.4;
+}
+
+.action-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--zh-text-tertiary);
+}
+
+.danger-text {
+  color: #ef4444;
 }
 
 /* ---- Pill 按钮组 ---- */

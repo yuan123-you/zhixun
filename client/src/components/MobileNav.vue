@@ -12,23 +12,40 @@
         <span class="tab-label">发现</span>
       </RouterLink>
 
-      <RouterLink to="/editor" class="tab-item tab-publish" :class="{ active: isActive('/editor') }">
+      <!-- 发布/登录：未登录时直接跳转登录页 -->
+      <RouterLink v-if="userStore.isLoggedIn" to="/editor" class="tab-item tab-publish" :class="{ active: isActive('/editor') }">
         <div class="publish-btn">
           <el-icon :size="24"><Plus /></el-icon>
         </div>
         <span class="tab-label">发布</span>
       </RouterLink>
+      <RouterLink v-else to="/login" class="tab-item tab-publish">
+        <div class="publish-btn publish-btn--login">
+          <el-icon :size="24"><Plus /></el-icon>
+        </div>
+        <span class="tab-label">发布</span>
+      </RouterLink>
 
-      <RouterLink to="/notifications" class="tab-item" :class="{ active: isActive('/notifications') || isActive('/messages') }">
+      <!-- 消息：未登录时直接跳转登录页 -->
+      <RouterLink v-if="userStore.isLoggedIn" to="/notifications" class="tab-item" :class="{ active: isActive('/notifications') || isActive('/messages') }">
         <el-badge :value="notificationStore.unreadCount" :max="99" :hidden="notificationStore.unreadCount <= 0">
           <el-icon :size="22"><Bell /></el-icon>
         </el-badge>
         <span class="tab-label">消息</span>
       </RouterLink>
+      <RouterLink v-else to="/login" class="tab-item">
+        <el-icon :size="22"><Bell /></el-icon>
+        <span class="tab-label">消息</span>
+      </RouterLink>
 
-      <RouterLink to="/user" class="tab-item" :class="{ active: isActive('/user') }">
+      <!-- 我的/登录：未登录时显示登录入口 -->
+      <RouterLink v-if="userStore.isLoggedIn" to="/user" class="tab-item" :class="{ active: isActive('/user') }">
         <el-icon :size="22"><User /></el-icon>
         <span class="tab-label">我的</span>
+      </RouterLink>
+      <RouterLink v-else to="/login" class="tab-item tab-login">
+        <el-icon :size="22"><User /></el-icon>
+        <span class="tab-label">登录</span>
       </RouterLink>
     </div>
   </nav>
@@ -37,6 +54,7 @@
 <script setup lang="ts">
 import { HomeFilled, Compass, Plus, Bell, User } from '@element-plus/icons-vue'
 
+const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 const route = useRoute()
 
@@ -142,4 +160,15 @@ const isActive = (path: string) => {
   box-shadow: 0 2px 10px rgba(var(--zh-primary-rgb), 0.35);
 }
 .publish-btn:active { transform: scale(0.9); }
+
+/* 未登录时发布按钮样式微调（视觉提示需要登录） */
+.publish-btn--login {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 50%, #475569 100%);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.25);
+}
+
+/* 登录标签高亮 */
+.tab-login {
+  color: var(--zh-primary);
+}
 </style>

@@ -6,6 +6,7 @@ import com.zhixun.common.util.SecurityUtil;
 import com.zhixun.dto.group.GroupCreateRequest;
 import com.zhixun.dto.group.GroupInviteRequest;
 import com.zhixun.dto.group.GroupMessageRequest;
+import com.zhixun.dto.group.GroupUpdateRequest;
 import com.zhixun.service.GroupService;
 import com.zhixun.vo.GroupJoinRequestVO;
 import com.zhixun.vo.GroupMemberVO;
@@ -70,6 +71,13 @@ public class GroupController {
     @PreAuthorize("isAuthenticated()")
     public R<Void> dismiss(@PathVariable Long id) {
         groupService.dismissGroup(securityUtil.getCurrentUserId(), id);
+        return R.ok();
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public R<Void> update(@PathVariable Long id, @Valid @RequestBody GroupUpdateRequest request) {
+        groupService.updateGroup(securityUtil.getCurrentUserId(), id, request.getName(), request.getAvatar());
         return R.ok();
     }
 

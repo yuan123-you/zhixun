@@ -193,39 +193,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
         }
 
-        // 持久化消息
+        // 持久化消息（MessageServiceImpl 会通过 MQ 或直推回退转发给接收者）
         MessageSendRequest request = new MessageSendRequest();
         request.setReceiverId(receiverId);
         request.setContent(content);
         request.setType(messageType);
-        MessageVO messageVO = messageService.sendMessage(senderId, request);
-
-        // 查询发送者信息
-        User sender = userMapper.selectById(senderId);
-        String senderNickname = sender != null ? sender.getNickname() : "";
-        String senderAvatar = sender != null ? sender.getAvatar() : "";
-
-        // 转发消息给目标用户
-        WebSocketSession receiverSession = ONLINE_USERS.get(receiverId);
-        if (receiverSession != null && receiverSession.isOpen()) {
-            try {
-                Map<String, Object> message = Map.of(
-                        "type", "CHAT",
-                        "data", Map.of(
-                                "senderId", senderId,
-                                "content", content,
-                                "messageType", messageType,
-                                "senderNickname", senderNickname,
-                                "senderAvatar", senderAvatar,
-                                "createdAt", messageVO.getCreatedAt().toString()
-                        )
-                );
-                String json = objectMapper.writeValueAsString(message);
-                receiverSession.sendMessage(new TextMessage(json));
-            } catch (IOException e) {
-                log.error("转发 WebSocket 消息失败: senderId={}, receiverId={}", senderId, receiverId);
-            }
-        }
+        messageService.sendMessage(senderId, request);
     }
 
     /**

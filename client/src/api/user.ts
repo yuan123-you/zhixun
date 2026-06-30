@@ -45,9 +45,9 @@ export const userApi = {
   },
 
   /** 获取用户发布的作品（他人） - 使用作品列表接口按userId筛选 */
-  getUserArticles: (userId: number, params?: PaginationParams) => {
+  getUserArticles: (userId: number, params?: PaginationParams & { sortBy?: string }) => {
     const { get } = useApi()
-    return get<PageResult<Article>>('/articles', { ...params, userId })
+    return get<PageResult<Article>>('/articles', { ...params, userId, sortBy: params?.sortBy ?? 'latest' })
   },
 
   /** 获取我发布的作品 */

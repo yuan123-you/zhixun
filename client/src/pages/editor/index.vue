@@ -10,13 +10,23 @@
       <!-- 内容 -->
       <div class="relative flex items-center justify-between">
         <div class="flex items-center gap-2">
+          <!-- 返回按钮 -->
+          <button
+            class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-[var(--zh-bg-elevated)] border border-[var(--zh-border)] flex items-center justify-center hover:bg-[var(--zh-bg-hover)] hover:border-[var(--zh-border-focus)] transition-all duration-200 flex-shrink-0 active:scale-95"
+            @click="router.back()"
+            title="返回"
+          >
+            <svg class="w-4 h-4 md:w-5 md:h-5 text-[var(--zh-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
           <div class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
             <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </div>
           <div>
-            <h1 class="text-base md:text-lg font-bold text-[var(--zh-text)]">创作中心</h1>
+            <h1 class="text-base md:text-lg font-bold text-[var(--zh-text)]">{{ isEditing ? '编辑作品' : '创作中心' }}</h1>
             <div class="hidden sm:flex items-center gap-1 mt-0.5">
               <span class="w-1.5 h-1.5 rounded-full" :class="writingStatusDotClass"></span>
               <span class="text-[10px]" :class="writingStatusTextClass">{{ writingStatusText }}</span>
@@ -39,7 +49,14 @@
     </div>
 
     <!-- 编辑器区域 -->
-    <div class="mb-1.5">
+    <div class="mb-1.5 relative">
+      <!-- 编辑模式加载中遮罩 -->
+      <div v-if="articleLoading" class="absolute inset-0 z-50 flex items-center justify-center bg-[var(--zh-bg)]/80 backdrop-blur-sm rounded-xl">
+        <div class="flex flex-col items-center gap-2">
+          <span class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+          <span class="text-sm text-[var(--zh-text-secondary)]">加载作品中...</span>
+        </div>
+      </div>
       <div class="editor-container editor-container-glow border border-[var(--zh-border)] rounded-xl shadow-[var(--zh-shadow-sm)] transition-all duration-300 hover:shadow-[var(--zh-shadow-md)]">
         <!-- 工具栏容器 - 两行布局 -->
         <div class="flex flex-col">
@@ -296,9 +313,18 @@ import { showToast } from '@/composables/useToast'
 import { aiApi } from '@/api/ai'
 
 const router = useRouter()
+const route = useRoute()
 const { resolveUrl } = useResourceUrl()
-const { post: apiPost } = useApi()
+const { post: apiPost, put: apiPut, get: apiGet } = useApi()
 const { isMobile } = useBreakpoints()
+
+// 编辑模式：从查询参数获取文章ID
+const editingArticleId = computed(() => {
+  const id = route.query.id
+  return id ? Number(id) : null
+})
+const isEditing = computed(() => editingArticleId.value !== null)
+const articleLoading = ref(false)
 
 // 写作状态
 const lastEditTime = ref(Date.now())
@@ -351,8 +377,20 @@ const triggerAutoSave = () => {
   autoSaveTimer = setTimeout(async () => {
     autoSavePending.value = true
     try {
-      const requestData = buildArticleRequest(0)
-      await apiPost<any>('/articles', requestData)
+      if (editingArticleId.value) {
+        // 编辑模式：更新已有文章（保持当前状态不变，不会触发发布）
+        const requestData = buildArticleRequest(undefined)
+        await apiPut<any>(`/articles/${editingArticleId.value}`, requestData)
+      } else {
+        // 新建模式：保存为草稿（status=0）
+        const requestData = buildArticleRequest(0)
+        const res = await apiPost<any>('/articles', requestData)
+        // 创建成功后记录文章ID，后续自动保存变为更新
+        const newId = res.data?.data?.id || res.data?.data
+        if (newId && !editingArticleId.value) {
+          router.replace({ path: '/editor', query: { id: newId } })
+        }
+      }
       const now = new Date()
       lastAutoSaveTime.value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
     } catch {
@@ -724,9 +762,19 @@ const saveDraft = async () => {
   }
   saving.value = true
   try {
-    const requestData = buildArticleRequest(0)
-    await apiPost<any>('/articles', requestData)
-    showToast('草稿已保存，仅自己可见', 'success')
+    if (editingArticleId.value) {
+      const requestData = buildArticleRequest(0)
+      await apiPut<any>(`/articles/${editingArticleId.value}`, requestData)
+      showToast('草稿已保存，仅自己可见', 'success')
+    } else {
+      const requestData = buildArticleRequest(0)
+      const res = await apiPost<any>('/articles', requestData)
+      const newId = res.data?.data?.id || res.data?.data
+      if (newId) {
+        router.replace({ path: '/editor', query: { id: newId } })
+      }
+      showToast('草稿已保存，仅自己可见', 'success')
+    }
   } catch (error: any) {
     const raw = error.response?.data?.message
     const msg = typeof raw === 'string' && raw ? raw : ''
@@ -759,7 +807,7 @@ const getDeviceInfo = (): string | undefined => {
   return undefined
 }
 
-function buildArticleRequest(status: number): Record<string, any> {
+function buildArticleRequest(status: number | undefined): Record<string, any> {
   const data: Record<string, any> = {
     title: form.title.trim(),
     content: form.content,
@@ -768,7 +816,9 @@ function buildArticleRequest(status: number): Record<string, any> {
     tagNames: form.tags.length > 0 ? form.tags : undefined,
     images: form.images.length > 0 ? form.images : undefined,
     location: form.location || undefined,
-    status,
+  }
+  if (status !== undefined) {
+    data.status = status
   }
   Object.keys(data).forEach((key) => {
     if (data[key] === undefined) delete data[key]
@@ -785,17 +835,25 @@ const publishArticle = async () => {
     if (scheduledPublish.value && publishAt.value) {
       data.publishAt = new Date(publishAt.value).toISOString()
     }
-    const response = await apiPost<any>('/articles', data)
-    const articleId = response.data?.data?.id || response.data?.data
-    if (scheduledPublish.value && publishAt.value) {
-      showToast('已设置定时发布，到点将自动发布', 'success')
-      router.push('/user')
+    if (editingArticleId.value) {
+      // 编辑模式：更新已有文章并发布
+      await apiPut<any>(`/articles/${editingArticleId.value}`, data)
+      showToast('作品发布成功！', 'success')
+      navigateTo(`/articles/${editingArticleId.value}`)
     } else {
-      if (articleId) {
-        navigateTo(`/articles/${articleId}`)
-      } else {
-        showToast('发布成功，正在跳转...', 'success')
+      // 新建模式：创建并发布
+      const response = await apiPost<any>('/articles', data)
+      const articleId = response.data?.data?.id || response.data?.data
+      if (scheduledPublish.value && publishAt.value) {
+        showToast('已设置定时发布，到点将自动发布', 'success')
         router.push('/user')
+      } else {
+        if (articleId) {
+          navigateTo(`/articles/${articleId}`)
+        } else {
+          showToast('发布成功，正在跳转...', 'success')
+          router.push('/user')
+        }
       }
     }
   } catch (error: any) {
@@ -814,8 +872,34 @@ const publishArticle = async () => {
 }
 
 useHead({
-  title: () => '创作' + ' - 知讯',
+  title: () => (isEditing.value ? '编辑作品' : '创作') + ' - 知讯',
 })
+
+// 编辑模式：加载已有文章数据填充表单
+if (editingArticleId.value) {
+  articleLoading.value = true
+  apiGet<any>(`/articles/${editingArticleId.value}`)
+    .then((res: any) => {
+      const article = res.data?.data
+      if (article) {
+        form.title = article.title || ''
+        form.content = article.content || ''
+        form.summary = article.summary || ''
+        form.categoryName = article.categoryName || ''
+        form.location = article.location || ''
+        form.images = article.images || []
+        if (article.tags && Array.isArray(article.tags)) {
+          form.tags = article.tags.map((t: any) => t.name || t)
+        }
+      }
+    })
+    .catch(() => {
+      showToast('加载作品失败，请稍后重试', 'error')
+    })
+    .finally(() => {
+      articleLoading.value = false
+    })
+}
 </script>
 
 <style scoped>

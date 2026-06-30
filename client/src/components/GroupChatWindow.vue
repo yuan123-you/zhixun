@@ -3,7 +3,7 @@
   <div class="qq-chat">
     <!-- 头部 -->
     <div class="qq-chat-header">
-      <button class="qq-back-btn" @click="$emit('close')" aria-label="返回">
+      <button class="qq-back-btn" @click="goBack" aria-label="返回">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
@@ -17,39 +17,193 @@
       </div>
       <!-- 右上角更多菜单 -->
       <div class="qq-header-actions">
-        <button class="qq-header-btn" @click="showMenu = !showMenu" aria-label="更多">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
-          </svg>
-        </button>
         <button class="qq-header-btn" @click="$emit('toggleMembers')" aria-label="成员列表">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         </button>
+        <button class="qq-header-btn" @click="showMenu = !showMenu" aria-label="更多">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+          </svg>
+        </button>
         <!-- 下拉菜单 -->
         <Teleport to="body">
-          <div v-if="showMenu" class="qq-menu-overlay" @click="showMenu = false">
-            <div class="qq-menu" @click.stop>
-              <button class="qq-menu-item" @click="showSearch = true; showMenu = false">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span>查找聊天记录</span>
-              </button>
-              <button class="qq-menu-item qq-menu-item-danger" @click="handleLeaveGroup">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                <span>退出群组</span>
-              </button>
+          <Transition name="menu-fade">
+            <div v-if="showMenu" class="qq-menu-overlay" @click="showMenu = false">
+              <div class="qq-menu" @click.stop>
+                <!-- 群管理功能 -->
+                <div v-if="canManageGroup" class="qq-menu-section">
+                  <div class="qq-menu-section-title">群管理</div>
+                  <button class="qq-menu-item" @click="openRenameDialog">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    <span>修改群名</span>
+                  </button>
+                  <button class="qq-menu-item" @click="openAvatarDialog">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span>修改群头像</span>
+                  </button>
+                </div>
+                <!-- 群主专属 -->
+                <div v-if="isOwner" class="qq-menu-section">
+                  <div class="qq-menu-section-title">群主专属</div>
+                  <button class="qq-menu-item" @click="openAdminDialog">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    <span>管理管理员</span>
+                  </button>
+                  <button class="qq-menu-item qq-menu-item-danger" @click="handleDismissGroup">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    <span>解散群组</span>
+                  </button>
+                </div>
+                <!-- 通用功能 -->
+                <div class="qq-menu-section">
+                  <div class="qq-menu-section-title">聊天</div>
+                  <button class="qq-menu-item" @click="showSearch = true; showMenu = false">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <span>查找聊天记录</span>
+                  </button>
+                  <button v-if="!isOwner" class="qq-menu-item qq-menu-item-danger" @click="handleLeaveGroup">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <span>退出群组</span>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          </Transition>
         </Teleport>
       </div>
     </div>
+
+    <!-- 修改群名弹窗 -->
+    <Teleport to="body">
+      <Transition name="modal-fade">
+        <div v-if="showRenameDialog" class="qq-modal-overlay" @click="showRenameDialog = false">
+          <div class="qq-modal" @click.stop>
+            <div class="qq-modal-header">
+              <h3 class="qq-modal-title">修改群名</h3>
+              <button class="qq-modal-close" @click="showRenameDialog = false">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div class="qq-modal-body">
+              <div class="qq-form-group">
+                <label class="qq-form-label">群名称</label>
+                <input
+                  v-model="newGroupName"
+                  type="text"
+                  class="qq-form-input"
+                  placeholder="请输入新的群名称"
+                  maxlength="20"
+                  @keydown.enter="confirmRename"
+                />
+                <span class="qq-form-hint">{{ newGroupName.length }}/20</span>
+              </div>
+            </div>
+            <div class="qq-modal-footer">
+              <button class="qq-btn qq-btn-ghost" @click="showRenameDialog = false">取消</button>
+              <button class="qq-btn qq-btn-primary" :disabled="!newGroupName.trim() || renaming" @click="confirmRename">
+                {{ renaming ? '保存中...' : '确认修改' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- 修改群头像弹窗 -->
+    <Teleport to="body">
+      <Transition name="modal-fade">
+        <div v-if="showAvatarDialog" class="qq-modal-overlay" @click="showAvatarDialog = false">
+          <div class="qq-modal" @click.stop>
+            <div class="qq-modal-header">
+              <h3 class="qq-modal-title">修改群头像</h3>
+              <button class="qq-modal-close" @click="showAvatarDialog = false">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div class="qq-modal-body">
+              <div class="qq-avatar-upload" @click="triggerAvatarUpload">
+                <img v-if="avatarPreview" :src="avatarPreview" class="qq-avatar-preview" />
+                <div v-else class="qq-avatar-placeholder">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <span>点击上传头像</span>
+                </div>
+              </div>
+              <input ref="avatarInput" type="file" accept="image/*" style="display:none" @change="handleAvatarSelect" />
+            </div>
+            <div class="qq-modal-footer">
+              <button class="qq-btn qq-btn-ghost" @click="showAvatarDialog = false">取消</button>
+              <button class="qq-btn qq-btn-primary" :disabled="!avatarPreview || avatarUploading" @click="confirmAvatar">
+                {{ avatarUploading ? '上传中...' : '确认修改' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- 管理管理员弹窗 -->
+    <Teleport to="body">
+      <Transition name="modal-fade">
+        <div v-if="showAdminDialog" class="qq-modal-overlay" @click="showAdminDialog = false">
+          <div class="qq-modal qq-modal-wide" @click.stop>
+            <div class="qq-modal-header">
+              <h3 class="qq-modal-title">管理管理员</h3>
+              <button class="qq-modal-close" @click="showAdminDialog = false">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div class="qq-modal-body">
+              <p class="qq-admin-hint">点击按钮切换管理员状态</p>
+              <div class="qq-admin-list">
+                <!-- 管理员列表 -->
+                <div v-if="adminMembers.length > 0" class="qq-admin-section">
+                  <div class="qq-admin-section-title">当前管理员</div>
+                  <div v-for="m in adminMembers" :key="m.userId" class="qq-admin-item">
+                    <img :src="m.userAvatar || defaultAvatar" class="qq-admin-avatar" />
+                    <span class="qq-admin-name">{{ m.nickname || m.userName }}</span>
+                    <button
+                      class="qq-admin-toggle qq-admin-toggle-remove"
+                      :disabled="adminLoading === m.userId"
+                      @click="toggleAdmin(m, false)"
+                    >
+                      <svg v-if="adminLoading === m.userId" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                      <template v-else>取消管理员</template>
+                    </button>
+                  </div>
+                </div>
+                <!-- 普通成员列表 -->
+                <div v-if="regularMembers.length > 0" class="qq-admin-section">
+                  <div class="qq-admin-section-title">普通成员</div>
+                  <div v-for="m in regularMembers" :key="m.userId" class="qq-admin-item">
+                    <img :src="m.userAvatar || defaultAvatar" class="qq-admin-avatar" />
+                    <span class="qq-admin-name">{{ m.nickname || m.userName }}</span>
+                    <button
+                      class="qq-admin-toggle qq-admin-toggle-add"
+                      :disabled="adminLoading === m.userId"
+                      @click="toggleAdmin(m, true)"
+                    >
+                      <svg v-if="adminLoading === m.userId" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                      <template v-else>设为管理员</template>
+                    </button>
+                  </div>
+                </div>
+                <div v-if="adminMembers.length === 0 && regularMembers.length === 0" class="qq-admin-empty">
+                  暂无可管理的成员
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- 搜索面板 -->
     <GroupSearchPanel
       v-if="showSearch"
       :group-id="group!.id"
-      :members="members"
+      :members="members || []"
       @close="showSearch = false"
       @locate-message="handleLocateMessage"
     />
@@ -84,7 +238,7 @@
         <div v-else class="qq-msg-row" :class="{ mine: msg.senderId === currentUserId }" :data-msg-id="msg.id">
           <!-- 他人消息（左） -->
           <template v-if="msg.senderId !== currentUserId">
-            <img :src="msg.senderId === 0 ? AI_AVATAR_URL : (msg.senderAvatar || DEFAULT_AVATAR_URL)" class="qq-avatar" :alt="msg.senderName" />
+            <img :src="msg.senderId === 0 ? AI_AVATAR_URL : (msg.senderAvatar || DEFAULT_AVATAR_URL)" class="qq-avatar qq-avatar-clickable" :alt="msg.senderName" @click="msg.senderId !== 0 && navigateToUser(msg.senderId)" />
             <ChatBubble
               :content="msg.content"
               :message-type="msg.messageType"
@@ -114,12 +268,24 @@
                 <span v-html="renderMentions(msg.content, msg.mentionedUserIds)"></span>
               </template>
             </ChatBubble>
-            <img :src="currentUserAvatar || DEFAULT_AVATAR_URL" class="qq-avatar" alt="我" />
+            <img :src="currentUserAvatar || DEFAULT_AVATAR_URL" class="qq-avatar qq-avatar-clickable" alt="我" @click="navigateToUser(currentUserId)" />
           </template>
         </div>
       </template>
 
-      <!-- AI助手回复占位（不显示思考动画） -->
+      <!-- AI助手思考中动画 -->
+      <div v-if="aiReplying" class="qq-msg-row">
+        <img :src="AI_AVATAR_URL" class="qq-avatar" alt="AI助手" />
+        <div class="ai-thinking-bubble">
+          <span class="ai-thinking-label">AI助手</span>
+          <span class="ai-thinking-text">正在思考</span>
+          <span class="ai-thinking-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </span>
+        </div>
+      </div>
 
       <div v-if="messages.length === 0 && !loadingMore" class="qq-empty">
         <svg class="w-12 h-12 text-[var(--zh-text-tertiary)] opacity-40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +334,7 @@
               :class="{ active: mentionIndex === 0 }"
               @mousedown.prevent="selectAIMention()"
             >
-              <img :src="aiAvatar" class="qq-mention-avatar" />
+              <img :src="AI_AVATAR_URL" class="qq-mention-avatar" />
               <span class="qq-mention-name">AI助手</span>
               <span class="qq-mention-badge">AI</span>
             </div>
@@ -240,6 +406,13 @@ import UploadOverlay from '@/components/chat/UploadOverlay.vue'
 
 const { resolveUrl } = useResourceUrl()
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
+const router = useRouter()
+const route = useRoute()
+
+/** 点击头像跳转用户主页（携带来源页面信息，确保返回按钮能回到群组页） */
+const navigateToUser = (userId: number) => {
+  router.push({ path: `/user/${userId}`, state: { from: route.fullPath } })
+}
 
 const props = defineProps<{
   group: GroupInfo | null
@@ -256,6 +429,8 @@ const emit = defineEmits<{
   (e: 'messageSent', msg: GroupMessage): void
   (e: 'messagesLoaded', msgs: GroupMessage[]): void
   (e: 'leave'): void
+  (e: 'dismiss'): void
+  (e: 'groupUpdated'): void
 }>()
 
 const messages = ref<GroupMessage[]>([])
@@ -275,6 +450,124 @@ const aiReplying = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
 let offset = 0
+
+// 弹窗状态
+const showRenameDialog = ref(false)
+const newGroupName = ref('')
+const renaming = ref(false)
+const showAvatarDialog = ref(false)
+const avatarPreview = ref('')
+const avatarUploading = ref(false)
+const avatarInput = ref<HTMLInputElement | null>(null)
+const showAdminDialog = ref(false)
+const adminLoading = ref<number | null>(null)
+const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNlMmU4ZjAiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk0YTNiOCIgZm9udC1zaXplPSIxNiI+PzwvdGV4dD48L3N2Zz4='
+
+// 权限判断
+const isOwner = computed(() => props.group?.ownerId === props.currentUserId)
+const isAdmin = computed(() => {
+  const me = props.members?.find(m => m.userId === props.currentUserId)
+  return me && me.role >= 1
+})
+const canManageGroup = computed(() => isOwner.value || isAdmin.value)
+
+// 管理员弹窗用的成员列表
+const adminMembers = computed(() => (props.members || []).filter(m => m.role === 1 && m.userId !== props.group?.ownerId))
+const regularMembers = computed(() => (props.members || []).filter(m => m.role === 0))
+
+function goBack() {
+  router.push('/groups')
+}
+
+function openRenameDialog() {
+  showMenu.value = false
+  newGroupName.value = props.group?.name || ''
+  showRenameDialog.value = true
+}
+
+async function confirmRename() {
+  const name = newGroupName.value.trim()
+  if (!name || !props.group) return
+  renaming.value = true
+  try {
+    await groupApi.updateGroup(props.group.id, { name })
+    showToast('群名已修改', 'success', { position: 'top-center' })
+    showRenameDialog.value = false
+    emit('groupUpdated')
+  } catch (e: any) {
+    showToast(e?.response?.data?.message || '修改失败', 'error', { position: 'top-center' })
+  } finally {
+    renaming.value = false
+  }
+}
+
+function openAvatarDialog() {
+  showMenu.value = false
+  avatarPreview.value = props.group?.avatar || ''
+  showAvatarDialog.value = true
+}
+
+function triggerAvatarUpload() {
+  avatarInput.value?.click()
+}
+
+async function handleAvatarSelect(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  ;(e.target as HTMLInputElement).value = ''
+  // 预览
+  avatarPreview.value = URL.createObjectURL(file)
+  // 暂存文件用于上传
+  pendingAvatarFile.value = file
+}
+
+const pendingAvatarFile = ref<File | null>(null)
+
+async function confirmAvatar() {
+  if (!props.group) return
+  avatarUploading.value = true
+  try {
+    let avatarUrl = avatarPreview.value
+    if (pendingAvatarFile.value) {
+      avatarUrl = await fileApi.uploadSingleImage(pendingAvatarFile.value)
+    }
+    await groupApi.updateGroup(props.group.id, { avatar: avatarUrl })
+    showToast('群头像已修改', 'success', { position: 'top-center' })
+    showAvatarDialog.value = false
+    pendingAvatarFile.value = null
+    emit('groupUpdated')
+  } catch (e: any) {
+    showToast(e?.response?.data?.message || '修改失败', 'error', { position: 'top-center' })
+  } finally {
+    avatarUploading.value = false
+  }
+}
+
+function openAdminDialog() {
+  showMenu.value = false
+  showAdminDialog.value = true
+}
+
+async function toggleAdmin(member: GroupMember, setAdmin: boolean) {
+  if (!props.group) return
+  adminLoading.value = member.userId
+  try {
+    await groupApi.setAdmin(props.group.id, member.userId, setAdmin)
+    showToast(setAdmin ? '已设为管理员' : '已取消管理员', 'success', { position: 'top-center' })
+    emit('groupUpdated')
+  } catch (e: any) {
+    showToast(e?.response?.data?.message || '操作失败', 'error', { position: 'top-center' })
+  } finally {
+    adminLoading.value = null
+  }
+}
+
+function handleDismissGroup() {
+  showMenu.value = false
+  if (confirm(`确定要解散群组「${props.group?.name}」吗？此操作不可恢复。`)) {
+    emit('dismiss')
+  }
+}
 
 /** 语音录制 — reactive() 包裹使模板中 voiceRecorder.isRecording 自动解包为 boolean */
 const voiceRecorder = reactive(useVoiceRecorder())
@@ -734,19 +1027,33 @@ watch(() => props.group?.id, (id) => {
 /* ===== 下拉菜单 ===== */
 .qq-menu-overlay {
   position: fixed; inset: 0; z-index: 9998;
+  background: rgba(0, 0, 0, 0.15);
 }
 .qq-menu {
   position: absolute; top: 52px; right: 14px;
   background: var(--zh-bg-elevated, #fff);
   border: 1px solid var(--zh-border, #e5e7eb);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  padding: 6px; min-width: 160px;
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+  padding: 6px; min-width: 180px;
   z-index: 9999;
+  backdrop-filter: blur(20px);
+}
+.qq-menu-section { padding: 2px 0; }
+.qq-menu-section + .qq-menu-section {
+  border-top: 1px solid var(--zh-border, #f1f5f9);
+  margin-top: 2px; padding-top: 4px;
+}
+.qq-menu-section-title {
+  font-size: 10px; font-weight: 600;
+  color: var(--zh-text-tertiary, #94a3b8);
+  padding: 4px 12px 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .qq-menu-item {
   display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 10px 12px;
+  width: 100%; padding: 9px 12px;
   border: none; border-radius: 8px;
   background: transparent;
   color: var(--zh-text, #1e293b);
@@ -756,6 +1063,205 @@ watch(() => props.group?.id, (id) => {
 .qq-menu-item:hover { background: var(--zh-bg-hover, #f1f5f9); }
 .qq-menu-item-danger { color: #ef4444; }
 .qq-menu-item-danger:hover { background: #fef2f2; }
+
+/* 菜单动画 */
+.menu-fade-enter-active,
+.menu-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.menu-fade-enter-from,
+.menu-fade-leave-to {
+  opacity: 0;
+}
+
+/* ===== 弹窗通用 ===== */
+.qq-modal-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+.qq-modal {
+  background: var(--zh-bg-elevated, #fff);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 100%; max-width: 400px;
+  overflow: hidden;
+  animation: modalSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.qq-modal-wide { max-width: 480px; }
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.qq-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 0;
+}
+.qq-modal-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--zh-text, #1e293b);
+  margin: 0;
+}
+.qq-modal-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border: none; border-radius: 8px;
+  background: transparent;
+  color: var(--zh-text-tertiary, #94a3b8);
+  cursor: pointer; transition: all 0.15s;
+}
+.qq-modal-close:hover {
+  background: var(--zh-bg-hover, #f1f5f9);
+  color: var(--zh-text-secondary, #64748b);
+}
+.qq-modal-body { padding: 16px 20px; }
+.qq-modal-footer {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding: 12px 20px 18px;
+}
+
+/* 弹窗动画 */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+/* ===== 表单 ===== */
+.qq-form-group {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.qq-form-label {
+  font-size: 13px; font-weight: 600;
+  color: var(--zh-text-secondary, #64748b);
+}
+.qq-form-input {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid var(--zh-border, #e5e7eb);
+  border-radius: 12px;
+  font-size: 14px; color: var(--zh-text, #1e293b);
+  background: var(--zh-bg, #f8fafc);
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.qq-form-input:focus {
+  border-color: var(--zh-primary, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+.qq-form-input::placeholder {
+  color: var(--zh-text-placeholder, #cbd5e1);
+}
+.qq-form-hint {
+  font-size: 11px; color: var(--zh-text-tertiary, #94a3b8);
+  text-align: right;
+}
+
+/* ===== 按钮 ===== */
+.qq-btn {
+  padding: 8px 20px;
+  border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  min-height: 0;
+}
+.qq-btn-ghost {
+  background: transparent;
+  color: var(--zh-text-secondary, #64748b);
+}
+.qq-btn-ghost:hover { background: var(--zh-bg-hover, #f1f5f9); }
+.qq-btn-primary {
+  background: var(--zh-primary, #6366f1);
+  color: #fff;
+}
+.qq-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+.qq-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===== 头像上传 ===== */
+.qq-avatar-upload {
+  width: 120px; height: 120px;
+  margin: 0 auto;
+  border-radius: 20px;
+  border: 2px dashed var(--zh-border, #e5e7eb);
+  overflow: hidden; cursor: pointer;
+  transition: border-color 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.qq-avatar-upload:hover { border-color: var(--zh-primary, #6366f1); }
+.qq-avatar-preview {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.qq-avatar-placeholder {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  color: var(--zh-text-tertiary, #94a3b8);
+  font-size: 12px;
+}
+
+/* ===== 管理员管理 ===== */
+.qq-admin-hint {
+  font-size: 12px; color: var(--zh-text-tertiary, #94a3b8);
+  margin: 0 0 12px;
+}
+.qq-admin-list {
+  max-height: 320px; overflow-y: auto;
+}
+.qq-admin-section { margin-bottom: 12px; }
+.qq-admin-section-title {
+  font-size: 11px; font-weight: 700;
+  color: var(--zh-text-tertiary, #94a3b8);
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.qq-admin-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--zh-border, #f1f5f9);
+}
+.qq-admin-item:last-child { border-bottom: none; }
+.qq-admin-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%; object-fit: cover;
+  flex-shrink: 0;
+}
+.qq-admin-name {
+  flex: 1; font-size: 13px; font-weight: 500;
+  color: var(--zh-text, #1e293b);
+  white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qq-admin-toggle {
+  padding: 5px 12px; border: none;
+  border-radius: 8px; font-size: 11px;
+  font-weight: 600; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+  display: flex; align-items: center; gap: 4px;
+  min-height: 0;
+}
+.qq-admin-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+.qq-admin-toggle-add {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+.qq-admin-toggle-add:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+}
+.qq-admin-toggle-remove {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+.qq-admin-toggle-remove:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.2);
+}
+.qq-admin-empty {
+  text-align: center; padding: 20px;
+  font-size: 12px; color: var(--zh-text-tertiary, #94a3b8);
+}
 
 /* ===== 消息列表 ===== */
 .qq-chat-msgs {
@@ -797,6 +1303,13 @@ watch(() => props.group?.id, (id) => {
   width: 32px; height: 32px;
   border-radius: 50%; flex-shrink: 0;
   object-fit: cover; margin-top: 2px;
+}
+.qq-avatar-clickable {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.qq-avatar-clickable:hover {
+  opacity: 0.8;
 }
 
 /* @提及标签 */
@@ -946,5 +1459,45 @@ watch(() => props.group?.id, (id) => {
 .dark .qq-voice-uploading {
   background: rgba(37, 99, 235, 0.15);
   color: #93c5fd;
+}
+
+/* AI思考中动画 */
+.ai-thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  border-bottom-left-radius: 6px;
+  background: rgba(99, 102, 241, 0.06);
+  border-left: 3px solid var(--zh-primary, #6366f1);
+  max-width: 75%;
+}
+.ai-thinking-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--zh-primary, #6366f1);
+}
+.ai-thinking-text {
+  font-size: 13px;
+  color: var(--zh-text-secondary, #64748b);
+}
+.ai-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ai-thinking-dots .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--zh-primary, #6366f1);
+  animation: aiDotBounce 1.2s ease-in-out infinite;
+}
+.ai-thinking-dots .dot:nth-child(2) { animation-delay: 0.15s; }
+.ai-thinking-dots .dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes aiDotBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
 }
 </style>

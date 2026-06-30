@@ -216,6 +216,26 @@ public class GroupServiceImpl implements GroupService {
         if (gm != null) { gm.setRole(isAdmin ? 1 : 0); groupMemberMapper.updateById(gm); }
     }
 
+    @Override @Transactional
+    public void updateGroup(Long userId, Long groupId, String name, String avatar) {
+        GroupInfo g = groupMapper.selectById(groupId);
+        if (g == null) throw new BusinessException(ErrorCode.NOT_FOUND, "群组不存在");
+        // 群主和管理员可修改
+        LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
+        w.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, userId);
+        GroupMember gm = groupMemberMapper.selectOne(w);
+        if (gm == null || gm.getRole() < 1) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "仅群主和管理员可修改群信息");
+        }
+        if (name != null && !name.isEmpty()) {
+            g.setName(name);
+        }
+        if (avatar != null && !avatar.isEmpty()) {
+            g.setAvatar(avatar);
+        }
+        groupMapper.updateById(g);
+    }
+
     @Override
     public GroupMessageVO sendMessage(Long userId, GroupMessageRequest request) {
         // 校验发送者是否为群组成员
@@ -252,7 +272,17 @@ public class GroupServiceImpl implements GroupService {
             msg.setSenderName("未知用户");
         }
         groupMessageMapper.insert(msg);
-        return toMessageVO(msg);
+        GroupMessageVO msgVO = toMessageVO(msg);
+
+        // 通过 WebSocket 广播消息给群组所有成员（HTTP 发送时也需要实时推送）
+        try {
+            String json = objectMapper.writeValueAsString(Map.of("type", "CHAT", "data", msgVO));
+            GroupChatWebSocketHandler.broadcastToGroup(request.getGroupId(), json);
+        } catch (Exception e) {
+            log.warn("群消息WebSocket广播失败: groupId={}, error={}", request.getGroupId(), e.getMessage());
+        }
+
+        return msgVO;
     }
 
     @Override
@@ -317,7 +347,8 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<GroupVO> searchGroups(String keyword, Integer page, Integer pageSize) {
         LambdaQueryWrapper<GroupInfo> w = new LambdaQueryWrapper<>();
-        w.eq(GroupInfo::getStatus, 0).eq(GroupInfo::getIsPublic, 1).like(GroupInfo::getName, keyword);
+        w.eq(GroupInfo::getStatus, 0).eq(GroupInfo::getIsPublic, 1)
+            .and(w2 -> w2.like(GroupInfo::getName, keyword).or().like(GroupInfo::getGroupNumber, keyword));
         Page<GroupInfo> pg = new Page<>(page, pageSize);
         Page<GroupInfo> result = groupMapper.selectPage(pg, w);
         return result.getRecords().stream().map(g -> toGroupVO(g, null)).collect(Collectors.toList());

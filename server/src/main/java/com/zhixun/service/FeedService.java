@@ -24,11 +24,12 @@ public interface FeedService {
     /**
      * 最新发布
      *
+     * @param currentUserId 当前用户ID（未登录为null，用于可见性过滤）
      * @param page     页码
      * @param pageSize 每页大小
      * @return 最新作品分页结果
      */
-    PageResult<ArticleVO> getLatestFeed(Integer page, Integer pageSize);
+    PageResult<ArticleVO> getLatestFeed(Long currentUserId, Integer page, Integer pageSize);
 
     /**
      * 关注动态
@@ -53,11 +54,12 @@ public interface FeedService {
     /**
      * 热门推荐
      *
+     * @param currentUserId 当前用户ID（未登录为null，用于可见性过滤）
      * @param page     页码
      * @param pageSize 每页大小
      * @return 热门作品分页结果
      */
-    PageResult<ArticleVO> getHotFeed(Integer page, Integer pageSize);
+    PageResult<ArticleVO> getHotFeed(Long currentUserId, Integer page, Integer pageSize);
 
     /**
      * 作品发布后推送到粉丝的时间线（fan-out on write）

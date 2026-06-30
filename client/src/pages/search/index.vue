@@ -12,7 +12,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <div class="search-box-mobile flex-1 min-w-0 flex items-center bg-[var(--zh-bg)] dark:bg-gray-700 rounded-full px-2.5 py-1 border-1.5" :class="mobileSearchFocused ? 'search-box-mobile--focused' : 'border-[var(--zh-border)] dark:border-gray-600'">
+      <div class="search-box-mobile flex-1 min-w-0 flex items-center bg-[var(--zh-bg)] dark:bg-gray-700 rounded-full px-2.5 py-1 border-1.5" :class="[mobileSearchFocused ? 'search-box-mobile--focused' : '', 'border-[var(--zh-border)] dark:border-gray-600']">
         <svg v-if="autoSearching" class="w-4 h-4 text-primary animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -348,6 +348,7 @@
 import type { Article, User, Category } from '@/types'
 import type { SuggestionItem, SearchParams } from '@/api/search'
 import { sanitizeHtml } from '@/utils/sanitize'
+import { userApi } from '@/api/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -528,6 +529,39 @@ const handleInput = () => {
   }, 500)
 }
 
+/** 通过用户ID或UID补充搜索用户 */
+const searchUserById = async (keyword: string) => {
+  const trimmed = keyword.trim()
+  if (!trimmed) return
+
+  // 尝试通过UID查找用户
+  try {
+    const { data } = await userApi.findByUid(trimmed)
+    const user = data?.data
+    if (user && !userResults.value.some(u => u.id === user.id)) {
+      userResults.value.unshift(user as any)
+      tabCounts.value.users = (tabCounts.value.users || 0) + 1
+    }
+  } catch {
+    // UID查找失败，忽略
+  }
+
+  // 尝试通过数字ID查找用户
+  const numId = Number(trimmed)
+  if (!isNaN(numId) && numId > 0 && String(numId) === trimmed) {
+    try {
+      const { data } = await userApi.getProfile(numId)
+      const user = data?.data
+      if (user && !userResults.value.some(u => u.id === user.id)) {
+        userResults.value.unshift(user as any)
+        tabCounts.value.users = (tabCounts.value.users || 0) + 1
+      }
+    } catch {
+      // ID查找失败，忽略
+    }
+  }
+}
+
 // 自动搜索（带 AbortController 取消机制）
 const doAutoSearch = async () => {
   const trimmed = keyword.value.trim()
@@ -600,6 +634,7 @@ const doAutoSearch = async () => {
       tabCounts.value.images = result.total || imageResults.value.length
     }
 
+    await searchUserById(trimmed)
     nextTick(() => setupInfiniteScroll())
     router.replace({ query: { keyword: trimmed } })
   } catch (err: any) {
@@ -709,6 +744,7 @@ const doSearch = async (loadMore = false) => {
     }
 
     // 设置无限滚动观察器
+    await searchUserById(keyword.value.trim())
     nextTick(() => {
       setupInfiniteScroll()
     })
@@ -925,6 +961,9 @@ useHead({
 
 .search-box-mobile--focused {
   background: var(--zh-bg-elevated);
+  border-color: var(--zh-border);
+  outline: none;
+  box-shadow: none;
 }
 
 /* 清除按钮 hover 效果 */

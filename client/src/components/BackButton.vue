@@ -42,8 +42,14 @@ const show = computed(() => {
 })
 
 const goBack = () => {
-  if (window.history.length > 1) router.back()
-  else router.push('/')
+  const from = (window.history.state as any)?.from
+  if (from && typeof from === 'string') {
+    router.replace(from)
+  } else if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/')
+  }
 }
 </script>
 

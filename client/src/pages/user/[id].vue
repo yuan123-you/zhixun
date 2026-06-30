@@ -51,15 +51,23 @@
           </RouterLink>
         </div>
 
-        <!-- 关注按钮（非自己时显示） -->
-        <button
-          v-if="!isOwnProfile"
-          class="w-[200px] mx-auto text-center py-1.5 text-[13px] font-medium text-white rounded-md transition-colors"
-          :class="userInfo.isFollowing ? 'bg-[var(--zh-border)] text-[var(--zh-text-secondary)] hover:bg-slate-300' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]'"
-          @click="toggleFollow"
-        >
-          {{ userInfo.isFollowing ? '已关注' : '+ 关注' }}
-        </button>
+        <!-- 关注 & 私信按钮（非自己时显示） -->
+        <div v-if="!isOwnProfile" class="flex items-center justify-center gap-2">
+          <button
+            class="text-center py-1.5 px-6 text-[13px] font-medium text-white rounded-md transition-colors"
+            :class="userInfo.isFollowing ? 'bg-[var(--zh-border)] text-[var(--zh-text-secondary)] hover:bg-slate-300' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]'"
+            @click="toggleFollow"
+          >
+            {{ userInfo.isFollowing ? '已关注' : '+ 关注' }}
+          </button>
+          <button
+            v-if="userInfo.isMutualFollow"
+            class="text-center py-1.5 px-6 text-[13px] font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] rounded-md transition-colors"
+            @click="startChat"
+          >
+            私信
+          </button>
+        </div>
       </div>
     </div>
 
@@ -243,6 +251,15 @@ const fetchOnlineStatus = async () => {
   } catch {
     onlineStatus.value = false
   }
+}
+
+// 发起私信（互关后可用）
+const startChat = () => {
+  if (!userInfo.value || !userStore.isLoggedIn) {
+    router.push('/login')
+    return
+  }
+  navigateTo(`/messages/${userId.value}`)
 }
 
 // 关注/取关

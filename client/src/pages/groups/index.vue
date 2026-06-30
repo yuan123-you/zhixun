@@ -179,7 +179,7 @@
               v-model="searchKeyword"
               type="text"
               class="search-input"
-              placeholder="搜索群组名称或关键词..."
+              placeholder="搜索群组名称、关键词或群号..."
               @focus="groupSearchFocused = true"
               @blur="groupSearchFocused = false"
               @keydown.enter="handleSearch"

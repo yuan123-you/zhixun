@@ -17,12 +17,15 @@ import com.zhixun.mapper.UserMapper;
 import com.zhixun.service.FollowService;
 import com.zhixun.service.NotificationService;
 import com.zhixun.service.OnlineStatusService;
+import com.zhixun.websocket.ChatWebSocketHandler;
 import com.zhixun.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.socket.TextMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +45,7 @@ public class FollowServiceImpl implements FollowService {
     private final UserMapper userMapper;
     private final OnlineStatusService onlineStatusService;
     private final NotificationService notificationService;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Master
@@ -79,6 +83,9 @@ public class FollowServiceImpl implements FollowService {
 
             // 发送关注通知
             sendFollowNotification(userId, targetUser);
+
+            // 检查是否形成互关（对方是否已关注自己），如果是则通知双方可私信
+            notifyMutualFollow(userId, targetUserId);
         }
 
         // 更新 User 表中的 follow_count 和 follower_count（SQL 原子操作）
@@ -265,6 +272,54 @@ public class FollowServiceImpl implements FollowService {
             );
         } catch (Exception e) {
             log.warn("发送关注通知失败: followerId={}, targetUserId={}, error={}", followerId, targetUser.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * 检查是否形成互关，如果是则通过 WebSocket 通知双方有新的可私信会话
+     */
+    private void notifyMutualFollow(Long userId, Long targetUserId) {
+        try {
+            // 检查对方是否已关注自己
+            LambdaQueryWrapper<UserFollow> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(UserFollow::getFollowerId, targetUserId)
+                    .eq(UserFollow::getFollowingId, userId);
+            boolean isMutual = userFollowMapper.selectCount(wrapper) > 0;
+
+            if (!isMutual) return;
+
+            // 获取双方用户信息
+            User user = userMapper.selectById(userId);
+            User targetUser = userMapper.selectById(targetUserId);
+            if (user == null || targetUser == null) return;
+
+            // 通知当前用户：可以和对方私信了
+            sendNewConversationNotification(userId, targetUser);
+            // 通知对方：可以和当前用户私信了
+            sendNewConversationNotification(targetUserId, user);
+        } catch (Exception e) {
+            log.warn("互关通知失败: userId={}, targetUserId={}, error={}", userId, targetUserId, e.getMessage());
+        }
+    }
+
+    /**
+     * 通过 WebSocket 通知用户有新的可私信会话
+     */
+    private void sendNewConversationNotification(Long notifyUserId, User otherUser) {
+        if (!ChatWebSocketHandler.isUserOnline(notifyUserId)) return;
+        try {
+            Map<String, Object> wsMessage = Map.of(
+                    "type", "NEW_CONVERSATION",
+                    "data", Map.of(
+                            "userId", otherUser.getId(),
+                            "nickname", otherUser.getNickname() != null ? otherUser.getNickname() : "",
+                            "avatar", otherUser.getAvatar() != null ? otherUser.getAvatar() : ""
+                    )
+            );
+            String json = objectMapper.writeValueAsString(wsMessage);
+            ChatWebSocketHandler.sendToUser(notifyUserId, new TextMessage(json));
+        } catch (Exception e) {
+            log.warn("发送新会话WebSocket通知失败: notifyUserId={}, error={}", notifyUserId, e.getMessage());
         }
     }
 }

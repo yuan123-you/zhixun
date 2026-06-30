@@ -362,9 +362,9 @@ const onImageSelected = async (e: Event) => {
   }
 }
 
-// 点击头像跳转用户主页
+// 点击头像跳转用户主页（携带来源页面信息，确保返回按钮能回到私信详情页）
 const navigateToUser = (userId?: number) => {
-  if (userId) router.push(`/user/${userId}`)
+  if (userId) router.push({ path: `/user/${userId}`, state: { from: route.fullPath } })
 }
 
 // 从会话列表中找到目标用户信息
@@ -537,7 +537,10 @@ const scrollToBottom = () => {
 }
 
 const goBack = () => {
-  if (window.history.length > 1) {
+  const from = (window.history.state as any)?.from
+  if (from && typeof from === 'string') {
+    router.replace(from)
+  } else if (window.history.length > 1) {
     router.back()
   } else {
     router.push('/messages')

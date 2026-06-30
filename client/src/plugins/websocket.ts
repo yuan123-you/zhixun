@@ -57,6 +57,9 @@ export function initWebSocketPlugin() {
             notificationStore.addNotification(data.data)
             showBrowserNotification(data.data)
             break
+          case 'NEW_CONVERSATION':
+            window.dispatchEvent(new CustomEvent('ws:new-conversation', { detail: data.data }))
+            break
         }
       } catch {
         // 忽略无效消息

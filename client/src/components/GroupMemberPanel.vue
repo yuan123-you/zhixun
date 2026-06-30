@@ -55,8 +55,8 @@
         <!-- 群主 -->
         <div v-if="owners.length > 0" class="member-section">
           <div class="member-section-title">群主 ({{ owners.length }})</div>
-          <div v-for="m in owners" :key="m.id" class="member-item">
-            <img :src="m.userAvatar || defaultAvatar" class="member-avatar" :alt="m.userName" />
+          <div v-for="m in owners" :key="m.id" class="member-item" @click="navigateToUser(m.userId)">
+            <img :src="m.userAvatar || defaultAvatar" class="member-avatar member-avatar-clickable" :alt="m.userName" />
             <div class="member-info">
               <span class="member-name">{{ m.userName || m.nickname || '未知' }}</span>
               <span class="member-role-tag owner">群主</span>
@@ -67,8 +67,8 @@
         <!-- 管理员 -->
         <div v-if="admins.length > 0" class="member-section">
           <div class="member-section-title">管理员 ({{ admins.length }})</div>
-          <div v-for="m in admins" :key="m.id" class="member-item">
-            <img :src="m.userAvatar || defaultAvatar" class="member-avatar" :alt="m.userName" />
+          <div v-for="m in admins" :key="m.id" class="member-item" @click="navigateToUser(m.userId)">
+            <img :src="m.userAvatar || defaultAvatar" class="member-avatar member-avatar-clickable" :alt="m.userName" />
             <div class="member-info">
               <span class="member-name">{{ m.userName || m.nickname || '未知' }}</span>
               <span class="member-role-tag admin">管理员</span>
@@ -94,8 +94,8 @@
         <!-- 成员 -->
         <div v-if="regularMembers.length > 0" class="member-section">
           <div class="member-section-title">成员 ({{ regularMembers.length }})</div>
-          <div v-for="m in regularMembers" :key="m.id" class="member-item">
-            <img :src="m.userAvatar || defaultAvatar" class="member-avatar" :alt="m.userName" />
+          <div v-for="m in regularMembers" :key="m.id" class="member-item" @click="navigateToUser(m.userId)">
+            <img :src="m.userAvatar || defaultAvatar" class="member-avatar member-avatar-clickable" :alt="m.userName" />
             <div class="member-info">
               <span class="member-name">{{ m.userName || m.nickname || '未知' }}</span>
             </div>
@@ -198,6 +198,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { groupApi } from '@/api/group'
 import type { GroupInfo, GroupMember, GroupJoinRequestInfo } from '@/api/group'
 import { showToast } from '@/composables/useToast'
@@ -216,6 +217,14 @@ const emit = defineEmits<{
   (e: 'dismiss'): void
   (e: 'member-changed'): void
 }>()
+
+const router = useRouter()
+const route = useRoute()
+
+/** 点击成员头像/条目跳转用户主页（携带来源页面信息，确保返回按钮能回到群组页） */
+const navigateToUser = (userId: number) => {
+  router.push({ path: `/user/${userId}`, state: { from: route.fullPath } })
+}
 
 const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNiIgaGVpZ2h0PSIzNiIgdmlld0JveD0iMCAwIDM2IDM2Ij48cmVjdCB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIGZpbGw9IiNlMmU4ZjAiIHJ4PSIxOCIvPjx0ZXh0IHg9IjE4IiB5PSIyMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk0YTNiOCIgZm9udC1zaXplPSIxNCI+PzwvdGV4dD48L3N2Zz4='
 
@@ -452,6 +461,7 @@ watch(() => props.group?.id, () => {
   padding: 6px 8px;
   border-radius: 8px;
   transition: background 0.15s;
+  cursor: pointer;
 }
 .member-item:hover { background: var(--zh-bg-hover, #f1f5f9); }
 
@@ -461,6 +471,12 @@ watch(() => props.group?.id, () => {
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+}
+.member-avatar-clickable {
+  transition: opacity 0.15s ease;
+}
+.member-avatar-clickable:hover {
+  opacity: 0.8;
 }
 
 .member-info {
@@ -536,11 +552,19 @@ watch(() => props.group?.id, () => {
 
 .member-actions {
   padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--zh-border, #e5e7eb);
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
+}
+
+/* 移动端底部留出tabbar空间 */
+@media (max-width: 768px) {
+  .member-actions {
+    padding-bottom: 70px;
+  }
 }
 .member-action-btn {
   display: flex;

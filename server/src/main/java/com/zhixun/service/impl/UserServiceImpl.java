@@ -169,7 +169,8 @@ public class UserServiceImpl implements UserService {
             wrapper.eq(Article::getStatus, ArticleStatusEnum.fromValue(status));
         }
 
-        wrapper.orderByDesc(Article::getCreatedAt);
+        // 按更新时间倒序（编辑/发布时间最新的排最前），相同则按创建时间倒序
+        wrapper.orderByDesc(Article::getUpdatedAt).orderByDesc(Article::getCreatedAt);
 
         Page<Article> articlePage = new Page<>(page, pageSize);
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
