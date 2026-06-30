@@ -566,12 +566,13 @@ onUnmounted(() => {
 
 <style scoped>
 .chat-page {
-  margin: -3rem 0 0 0;
+  margin: 0;
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
   .chat-page {
-    margin: -4rem auto 0 auto;
+    margin: 0 auto 0 auto;
     max-width: 800px;
     border-left: 1px solid #e2e8f0;
     border-right: 1px solid #e2e8f0;

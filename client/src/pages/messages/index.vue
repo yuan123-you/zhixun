@@ -305,12 +305,12 @@ const formatRelativeTime = (timeStr: string) => {
 <style scoped>
 /* ==================== 页面容器 ==================== */
 .messages-page {
-  margin: -2.5rem 0 0 0;
+  margin: 0;
 }
 
 @media (min-width: 768px) {
   .messages-page {
-    margin: -2.5rem 0 0 0;
+    margin: 0;
   }
 }
 
