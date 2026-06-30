@@ -211,8 +211,8 @@
     </div>
 
     <!-- 隐藏的file input -->
-    <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="handleImageSelect" />
-    <input ref="fileInput" type="file" class="hidden" @change="handleFileSelect" />
+    <input ref="imageInput" type="file" accept="image/*" style="display:none" @change="handleImageSelect" />
+    <input ref="fileInput" type="file" style="display:none" @change="handleFileSelect" />
 
     <!-- 上传进度 -->
     <UploadOverlay :uploading="uploading" :progress="uploadProgress" />

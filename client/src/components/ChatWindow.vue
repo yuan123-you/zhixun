@@ -149,8 +149,8 @@
     />
 
     <!-- 隐藏的file input -->
-    <input ref="imageInputRef" type="file" accept="image/*" class="hidden" @change="onImageSelected" />
-    <input ref="fileInputRef" type="file" class="hidden" @change="onFileSelected" />
+    <input ref="imageInputRef" type="file" accept="image/*" style="display:none" @change="onImageSelected" />
+    <input ref="fileInputRef" type="file" style="display:none" @change="onFileSelected" />
 
     <!-- 上传进度 -->
     <UploadOverlay :uploading="fileUploading" :progress="uploadProgress" />
