@@ -120,23 +120,58 @@
                 <p class="text-xs text-[var(--zh-text-tertiary)]">还没有消息，发送第一条吧</p>
               </div>
             </div>
-            <!-- 输入框 -->
-            <div class="px-2 py-2 border-t border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0 safe-bottom">
-              <div class="flex items-center gap-1.5">
-                <EmojiPicker @select="(emoji: string) => inputContent += emoji" />
-                <VoiceRecorderButton @send="(data: any) => handleVoiceSend(data)" />
-                <input
-                  v-model="inputContent"
-                  type="text"
-                  class="flex-1 input text-sm py-1.5 bg-[var(--zh-bg-hover)]"
-                  placeholder="输入消息..."
-                  @keydown.enter="sendMessage"
-                />
-                <button class="btn-primary text-sm px-3 py-1.5" :disabled="!inputContent.trim() || sendingMessage" @click="sendMessage">
-                  {{ sendingMessage ? '发送中...' : '发送' }}
+            <!-- 输入区 -->
+            <div class="noti-chat-input">
+              <!-- 工具栏 -->
+              <ChatToolbar
+                :ai-mode="notiAiMode"
+                :is-recording="notiVoiceRecorder.isRecording"
+                @emoji="(emoji: string) => { inputContent += emoji }"
+                @image="notiImageInputRef?.click()"
+                @file="notiFileInputRef?.click()"
+                @voice="notiVoiceRecorder.startRecording()"
+                @ai="notiAiMode = !notiAiMode"
+              />
+              <!-- 语音上传中 -->
+              <div v-if="notiVoiceUploading" class="noti-voice-uploading">
+                <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span>语音上传中...</span>
+              </div>
+              <!-- 语音录制中 - 替换输入框 -->
+              <VoiceRecordingBar
+                v-if="notiVoiceRecorder.isRecording"
+                :recording-time="notiVoiceRecorder.recordingTime"
+                @finish="finishNotiVoiceRecord"
+                @cancel="notiVoiceRecorder.cancelRecording()"
+              />
+              <!-- 输入框 + 发送 -->
+              <div v-else class="noti-input-row">
+                <div class="noti-input-wrap" :class="{ focused: notiInputFocused }">
+                  <textarea
+                    v-model="inputContent"
+                    class="noti-textarea"
+                    :placeholder="notiAiMode ? '向AI助手提问...' : '输入消息...'"
+                    rows="1"
+                    @focus="notiInputFocused = true"
+                    @blur="notiInputFocused = false"
+                    @keydown.enter.exact.prevent="sendMessage"
+                  ></textarea>
+                </div>
+                <button
+                  class="noti-send-btn"
+                  :disabled="!inputContent.trim() || sendingMessage"
+                  @click="sendMessage"
+                  aria-label="发送"
+                >
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                  </svg>
                 </button>
               </div>
             </div>
+            <!-- 隐藏的 file inputs -->
+            <input ref="notiImageInputRef" type="file" accept="image/*" style="display:none" @change="onNotiImageSelected" />
+            <input ref="notiFileInputRef" type="file" style="display:none" @change="onNotiFileSelected" />
           </template>
           <!-- 空状态 -->
           <div v-else class="flex-1 flex items-center justify-center bg-[var(--zh-bg-hover)]">
@@ -556,6 +591,12 @@ import type { GroupInfo } from '@/api/group'
 import { avatarColor } from '@/utils/color'
 import { showToast } from '@/composables/useToast'
 import VoiceMessage from '@/components/VoiceMessage.vue'
+import ChatToolbar from '@/components/chat/ChatToolbar.vue'
+import VoiceRecordingBar from '@/components/chat/VoiceRecordingBar.vue'
+import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
+import { fileApi } from '@/api/file'
+import { sanitizeText } from '@/utils/sanitize'
+import { AI_AVATAR_URL } from '@/composables/chat/useChatConstants'
 
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
@@ -598,6 +639,12 @@ const conversationsError = ref('')
 const inputContent = ref('')
 const msgListRef = ref<HTMLElement | null>(null)
 const sendingMessage = ref(false)
+const notiImageInputRef = ref<HTMLInputElement | null>(null)
+const notiFileInputRef = ref<HTMLInputElement | null>(null)
+const notiAiMode = ref(false)
+const notiVoiceRecorder = reactive(useVoiceRecorder())
+const notiVoiceUploading = ref(false)
+const notiInputFocused = ref(false)
 
 // 点击头像跳转用户主页
 const navigateToUser = (userId?: number) => {
@@ -662,102 +709,168 @@ const selectConversation = async (conv: Conversation) => {
 
 const sendMessage = async () => {
   if (!inputContent.value.trim() || !activeConversation.value || sendingMessage.value) return
-  // 兼容扁平结构与嵌套结构
   const targetUserId = (activeConversation.value as any).user?.id ?? (activeConversation.value as any).userId
   if (!targetUserId) return
-  const content = inputContent.value.trim()
+  const rawContent = inputContent.value.trim()
   const me = userStore.userInfo
-  // 乐观更新：先在前端列表中插入一条"发送中"的消息，让用户立刻看到反馈
-  const tempId = -Date.now()
-  const tempMsg: Message = {
-    id: tempId,
-    conversationId: 0,
-    senderId: me?.id || 0,
-    sender: me || { id: 0, uid: '0', username: '', nickname: '', avatar: '', bio: '', email: '', phone: '', gender: 0 as any, birthday: '', followCount: 0, followerCount: 0, articleCount: 0, likeCount: 0, isFollowing: false, createdAt: '' },
-    content,
-    type: 0 as any,
-    isRead: true,
-    createdAt: new Date().toISOString(),
+
+  // AI助手模式
+  const isAIMention = rawContent.includes('@AI助手')
+  if (notiAiMode.value || isAIMention) {
+    const question = rawContent.replace(/@AI助手\s*/g, '').trim()
+    if (!question) return
+    sendingMessage.value = true
+    inputContent.value = ''
+    const contentWithPrefix = sanitizeText('@AI助手 ' + question)
+    const tempId = -Date.now()
+    messages.value.push({
+      id: tempId, conversationId: 0, senderId: me?.id || 0,
+      sender: me || { id: 0, uid: '0', username: '', nickname: '', avatar: '', bio: '', email: '', phone: '', gender: 0 as any, birthday: '', followCount: 0, followerCount: 0, articleCount: 0, likeCount: 0, isFollowing: false, createdAt: '' },
+      content: contentWithPrefix, type: 0 as any, isRead: true, createdAt: new Date().toISOString(),
+    })
+    nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+    try {
+      const { data } = await socialApi.sendMessage(targetUserId, { content: contentWithPrefix })
+      if (data && data.data) {
+        const idx = messages.value.findIndex(m => m.id === tempId)
+        if (idx >= 0) messages.value.splice(idx, 1, transformMsg(data.data, me))
+      }
+      const aiRes = await socialApi.sendAIMessage(targetUserId, question)
+      const raw: any = aiRes.data?.data
+      if (raw) {
+        const aiMsg: Message = {
+          id: Number(raw.id) || Date.now(), conversationId: Number(raw.conversationId) || 0, senderId: 0,
+          sender: { id: 0, uid: '0', username: raw.senderNickname || 'AI助手', nickname: raw.senderNickname || 'AI助手', avatar: raw.senderAvatar || AI_AVATAR_URL, bio: '', email: '', phone: '', gender: 0 as any, birthday: '', followCount: 0, followerCount: 0, articleCount: 0, likeCount: 0, isFollowing: false, createdAt: '' },
+          content: raw.content || '', type: 'ai_reply', isRead: false, createdAt: raw.createdAt || new Date().toISOString(),
+        }
+        if (!messages.value.some(m => m.id === aiMsg.id)) messages.value.push(aiMsg)
+      }
+      notiAiMode.value = false
+      nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+    } catch (e: any) {
+      inputContent.value = rawContent
+      showToast(e?.message || 'AI回复失败', 'error')
+    } finally { sendingMessage.value = false }
+    return
   }
-  messages.value.push(tempMsg)
+
+  // 普通文本消息
+  const content = sanitizeText(rawContent)
+  const tempId = -Date.now()
+  messages.value.push({
+    id: tempId, conversationId: 0, senderId: me?.id || 0,
+    sender: me || { id: 0, uid: '0', username: '', nickname: '', avatar: '', bio: '', email: '', phone: '', gender: 0 as any, birthday: '', followCount: 0, followerCount: 0, articleCount: 0, likeCount: 0, isFollowing: false, createdAt: '' },
+    content, type: 0 as any, isRead: true, createdAt: new Date().toISOString(),
+  })
   inputContent.value = ''
   sendingMessage.value = true
   nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
   try {
     const { data } = await socialApi.sendMessage(targetUserId, { content })
     if (data && data.data) {
-      // 用后端返回的正式消息替换乐观消息
       const idx = messages.value.findIndex(m => m.id === tempId)
-      if (idx >= 0) {
-        const real = transformMsg(data.data, me)
-        messages.value.splice(idx, 1, real)
-      }
-      // 同步更新会话列表中的最后消息预览
+      if (idx >= 0) messages.value.splice(idx, 1, transformMsg(data.data, me))
       const conv = conversations.value.find(c => c.user?.id === targetUserId)
       if (conv) (conv as any).lastMessage = content
     }
     nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
   } catch (e: any) {
-    // 发送失败：移除乐观消息，恢复输入框内容
     const idx = messages.value.findIndex(m => m.id === tempId)
     if (idx >= 0) messages.value.splice(idx, 1)
-    inputContent.value = content
+    inputContent.value = rawContent
     const errMsg = e?.response?.data?.message || e?.message || '消息发送失败'
     showToast(`${errMsg}，请检查网络后重试`, 'error')
-  } finally {
-    sendingMessage.value = false
-  }
+  } finally { sendingMessage.value = false }
 }
 
-const handleVoiceSend = async (data: { blob: Blob; duration: number }) => {
-  if (!activeConversation.value || sendingMessage.value) return
-  const { blob, duration } = data
-  // 兼容扁平结构与嵌套结构
+/** 语音录制完成 → 上传 → 发送 */
+const finishNotiVoiceRecord = async () => {
+  const duration = notiVoiceRecorder.recordingTime
+  const finalBlob = await notiVoiceRecorder.stopRecording()
+  if (!finalBlob) { notiVoiceRecorder.cancelRecording(); return }
+  if (!activeConversation.value) { notiVoiceRecorder.cancelRecording(); return }
   const targetUserId = (activeConversation.value as any).user?.id ?? (activeConversation.value as any).userId
-  if (!targetUserId) return
+  if (!targetUserId) { notiVoiceRecorder.cancelRecording(); return }
 
-  // 语音文件校验
-  if (!blob || blob.size === 0) {
-    showToast('语音录制失败，请重新录制', 'error')
-    return
-  }
-  if (blob.size > 10 * 1024 * 1024) {
-    showToast('语音文件大小超过 10MB 限制，请缩短录制时间', 'error')
-    return
-  }
-
-  sendingMessage.value = true
-  const me = userStore.userInfo
+  notiVoiceUploading.value = true
   try {
     const formData = new FormData()
-    formData.append('file', blob, 'voice.webm')
+    formData.append('file', finalBlob, 'voice.webm')
     const { upload } = useApi()
     const uploadRes = await upload<any>('/files/upload/voice', formData)
     const voiceUrl = uploadRes.data?.data
     if (voiceUrl) {
       const content = JSON.stringify({ url: voiceUrl, duration: duration || 0 })
       const { data } = await socialApi.sendMessage(targetUserId, { content, type: 'voice' })
+      const me = userStore.userInfo
       if (data && data.data) {
-        const idx = messages.value.length
-        const real = transformMsg(data.data, me)
-        messages.value.push(real)
+        messages.value.push(transformMsg(data.data, me))
         nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
-        // 同步更新会话列表预览
         const conv = conversations.value.find(c => c.user?.id === targetUserId)
         if (conv) (conv as any).lastMessage = '[语音]'
-      } else {
-        showToast('语音消息发送失败', 'error')
       }
     } else {
-      showToast('语音上传失败：服务器未返回地址', 'error')
+      showToast('语音上传失败', 'error')
     }
   } catch (e: any) {
-    if (e?.code === 'ERR_CANCELED' || e?.name === 'CanceledError') return
-    const errMsg = e?.response?.data?.message || e?.message || '语音消息发送失败'
-    showToast(`${errMsg}，请检查网络后重试`, 'error')
+    showToast(e?.message || '语音发送失败', 'error')
   } finally {
-    sendingMessage.value = false
+    notiVoiceUploading.value = false
+    notiVoiceRecorder.cancelRecording()
   }
+}
+
+/** 图片选择 → 上传 → 发送 */
+const onNotiImageSelected = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !activeConversation.value) return
+  input.value = ''
+  if (!file.type.startsWith('image/')) { showToast('请选择图片文件', 'error'); return }
+  if (file.size > 10 * 1024 * 1024) { showToast('图片不能超过10MB', 'error'); return }
+  const targetUserId = (activeConversation.value as any).user?.id ?? (activeConversation.value as any).userId
+  if (!targetUserId) return
+  sendingMessage.value = true
+  try {
+    const imageUrl = await fileApi.uploadSingleImage(file)
+    if (!imageUrl) throw new Error('上传失败')
+    const { data } = await socialApi.sendMessage(targetUserId, { content: imageUrl, type: 'image' })
+    const me = userStore.userInfo
+    if (data && data.data) {
+      messages.value.push(transformMsg(data.data, me))
+      nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+      const conv = conversations.value.find(c => c.user?.id === targetUserId)
+      if (conv) (conv as any).lastMessage = '[图片]'
+    }
+  } catch (err: any) { showToast(err.message || '图片发送失败', 'error') }
+  finally { sendingMessage.value = false }
+}
+
+/** 文件选择 → 上传 → 发送 */
+const onNotiFileSelected = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !activeConversation.value) return
+  input.value = ''
+  const targetUserId = (activeConversation.value as any).user?.id ?? (activeConversation.value as any).userId
+  if (!targetUserId) return
+  sendingMessage.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fileApi.uploadFile(formData)
+    const url = res.data.data
+    const content = JSON.stringify({ url, name: file.name, size: file.size })
+    const { data } = await socialApi.sendMessage(targetUserId, { content, type: 'file' })
+    const me = userStore.userInfo
+    if (data && data.data) {
+      messages.value.push(transformMsg(data.data, me))
+      nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+      const conv = conversations.value.find(c => c.user?.id === targetUserId)
+      if (conv) (conv as any).lastMessage = '[文件]'
+    }
+  } catch (err: any) { showToast(err.message || '文件发送失败', 'error') }
+  finally { sendingMessage.value = false }
 }
 
 const isMyMsg = (msg: Message) => msg.senderId === userStore.userInfo?.id
@@ -1379,5 +1492,93 @@ useHead({ title: () => '消息' + ' - 知讯' })
   .join-btn {
     @apply px-3 py-1 text-[11px];
   }
+}
+
+/* ==================== 私信输入区（复用群组样式） ==================== */
+.noti-chat-input {
+  padding: 6px 14px 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--zh-border, #e5e7eb);
+  background: var(--zh-bg-elevated, #fff);
+  flex-shrink: 0;
+}
+.noti-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.noti-input-wrap {
+  flex: 1;
+  min-height: 38px;
+  max-height: 120px;
+  border: 1.5px solid var(--zh-border, #e5e7eb);
+  border-radius: 20px;
+  background: var(--zh-bg, #f8fafc);
+  overflow: visible;
+  position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.noti-input-wrap.focused {
+  border-color: var(--zh-primary, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+.noti-textarea {
+  width: 100%;
+  min-height: 38px;
+  max-height: 120px;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--zh-text, #1e293b);
+  font-family: inherit;
+  resize: none;
+  line-height: 1.5;
+}
+.noti-textarea::placeholder {
+  color: var(--zh-text-placeholder, #94a3b8);
+}
+.noti-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: var(--zh-primary, #6366f1);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  min-height: 0 !important;
+  min-width: 0 !important;
+}
+.noti-send-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+.noti-send-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.noti-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.noti-voice-uploading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 8px;
+}
+.dark .noti-voice-uploading {
+  background: rgba(37, 99, 235, 0.15);
+  color: #93c5fd;
 }
 </style>
