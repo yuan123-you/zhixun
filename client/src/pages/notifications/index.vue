@@ -129,7 +129,7 @@
                 @emoji="(emoji: string) => { inputContent += emoji }"
                 @image="notiImageInputRef?.click()"
                 @file="notiFileInputRef?.click()"
-                @voice="notiVoiceRecorder.startRecording()"
+                @voice="startNotiVoiceRecord"
                 @ai="notiAiMode = !notiAiMode"
               />
               <!-- 语音上传中 -->
@@ -644,6 +644,13 @@ const notiFileInputRef = ref<HTMLInputElement | null>(null)
 const notiAiMode = ref(false)
 const notiVoiceRecorder = reactive(useVoiceRecorder())
 const notiVoiceUploading = ref(false)
+
+const startNotiVoiceRecord = async () => {
+  await notiVoiceRecorder.startRecording()
+  if (notiVoiceRecorder.recordError) {
+    showToast(notiVoiceRecorder.recordError, 'error')
+  }
+}
 const notiInputFocused = ref(false)
 
 // 点击头像跳转用户主页

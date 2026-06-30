@@ -247,7 +247,12 @@ const aiThinking = ref(false)
 const voiceRecorder = reactive(useVoiceRecorder())
 const voiceUploading = ref(false)
 
-const startVoiceRecord = () => { voiceRecorder.startRecording() }
+const startVoiceRecord = async () => {
+  await voiceRecorder.startRecording()
+  if (voiceRecorder.recordError) {
+    showAlert(voiceRecorder.recordError)
+  }
+}
 
 const finishVoiceRecord = async () => {
   const duration = voiceRecorder.recordingTime

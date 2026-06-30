@@ -392,7 +392,19 @@ public class MessageServiceImpl implements MessageService {
         AIWriteRequest aiReq = new AIWriteRequest();
         aiReq.setPrompt(question);
         aiReq.setMode("chat");
-        AIResponseVO aiResp = aiService.generateText(aiReq);
+
+        AIResponseVO aiResp;
+        try {
+            aiResp = aiService.generateText(aiReq);
+        } catch (Exception e) {
+            log.error("AI服务调用异常: senderId={}, targetUserId={}, question={}", senderId, targetUserId, question, e);
+            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂时不可用，请稍后再试");
+        }
+
+        if (aiResp == null) {
+            log.error("AI服务返回null响应: senderId={}, targetUserId={}", senderId, targetUserId);
+            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂时不可用，请稍后再试");
+        }
 
         // 2.5 检查AI服务是否返回错误（避免将错误信息存入数据库）
         if (aiResp.getUsage() != null && aiResp.getUsage().startsWith("error:")) {
@@ -400,12 +412,19 @@ public class MessageServiceImpl implements MessageService {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂时不可用，请稍后再试");
         }
 
+        // 2.6 防御性空内容检查：AI可能返回空内容（API 200但choices内容为空）
+        String aiContent = aiResp.getContent();
+        if (aiContent == null || aiContent.trim().isEmpty()) {
+            log.warn("AI服务返回空内容: senderId={}, targetUserId={}, usage={}", senderId, targetUserId, aiResp.getUsage());
+            aiContent = "抱歉，AI 暂时无法生成回复，请稍后再试。";
+        }
+
         // 3. 保存AI回复消息（senderId=0 代表AI助手）
         UserMessage message = new UserMessage();
         message.setSenderId(0L);
         message.setReceiverId(senderId); // AI回复给提问者
         message.setType("ai_reply");
-        message.setContent(aesUtil.encrypt(aiResp.getContent()));
+        message.setContent(aesUtil.encrypt(aiContent));
         message.setIsRead(0);
         userMessageMapper.insert(message);
 
@@ -413,7 +432,7 @@ public class MessageServiceImpl implements MessageService {
         MessageVO vo = buildMessageVO(message, 0L, senderId);
         vo.setSenderNickname("AI助手");
         vo.setSenderAvatar("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiM2MzY2ZjEiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiPkFJPC90ZXh0Pjwvc3ZnPg==");
-        vo.setContent(aiResp.getContent()); // 返回明文
+        vo.setContent(aiContent); // 返回明文
 
         return vo;
     }

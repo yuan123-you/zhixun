@@ -211,7 +211,12 @@ const voiceRecorder = reactive(useVoiceRecorder())
 const voiceUploading = ref(false)
 
 /** 开始语音录制 */
-const startVoiceRecord = () => { voiceRecorder.startRecording() }
+const startVoiceRecord = async () => {
+  await voiceRecorder.startRecording()
+  if (voiceRecorder.recordError) {
+    sendError.value = voiceRecorder.recordError
+  }
+}
 
 /** 结束录制并上传发送 */
 const finishVoiceRecord = async () => {

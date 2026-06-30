@@ -5,13 +5,20 @@ export function useVoiceRecorder() {
   const recordingTime = ref(0)
   const audioBlob = ref<Blob | null>(null)
   const audioUrl = ref<string | null>(null)
+  const recordError = ref('')
   let mediaRecorder: MediaRecorder | null = null
   let timer: ReturnType<typeof setInterval> | null = null
   let chunks: Blob[] = []
   let stopResolve: ((blob: Blob | null) => void) | null = null
 
   async function startRecording() {
+    recordError.value = ''
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        recordError.value = '当前浏览器不支持语音录制，请使用 Chrome 或 Edge 浏览器'
+        console.error('[VoiceRecorder] MediaDevices API 不可用')
+        return
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
       chunks = []
@@ -30,8 +37,17 @@ export function useVoiceRecorder() {
       isRecording.value = true
       recordingTime.value = 0
       timer = setInterval(() => { recordingTime.value++ }, 1000)
-    } catch (e) {
-      console.error('麦克风权限未开启，请在浏览器设置中允许访问麦克风')
+    } catch (e: any) {
+      if (e?.name === 'NotAllowedError' || e?.name === 'PermissionDeniedError') {
+        recordError.value = '麦克风权限被拒绝，请在浏览器设置中允许访问麦克风'
+      } else if (e?.name === 'NotFoundError') {
+        recordError.value = '未检测到麦克风设备'
+      } else if (e?.name === 'NotReadableError') {
+        recordError.value = '麦克风被其他程序占用，请关闭后重试'
+      } else {
+        recordError.value = '语音录制启动失败，请稍后重试'
+      }
+      console.error('[VoiceRecorder] 启动录制失败:', e?.name || e)
     }
   }
 
@@ -68,7 +84,7 @@ export function useVoiceRecorder() {
   }
 
   return {
-    isRecording, recordingTime, audioBlob, audioUrl,
+    isRecording, recordingTime, audioBlob, audioUrl, recordError,
     startRecording, stopRecording, cancelRecording, formatTime,
   }
 }

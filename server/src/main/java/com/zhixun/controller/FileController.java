@@ -43,7 +43,9 @@ public class FileController {
      */
     @PostMapping("/upload/image")
     @PreAuthorize("isAuthenticated()")
-    @SentinelResource(value = "file-upload", blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class)
+    @SentinelResource(value = "file-upload",
+            blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
+            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class)
     public R<String> uploadImage(@RequestParam("file") MultipartFile file) {
         return R.ok(fileService.uploadImage(file));
     }
@@ -53,7 +55,9 @@ public class FileController {
      */
     @PostMapping("/upload/file")
     @PreAuthorize("isAuthenticated()")
-    @SentinelResource(value = "file-upload", blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class)
+    @SentinelResource(value = "file-upload",
+            blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
+            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class)
     public R<String> uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
         return R.ok(fileService.uploadFile(file));
     }
@@ -63,7 +67,9 @@ public class FileController {
      */
     @PostMapping("/upload/voice")
     @PreAuthorize("isAuthenticated()")
-    @SentinelResource(value = "file-upload", blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class)
+    @SentinelResource(value = "file-upload",
+            blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
+            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class)
     public R<String> uploadVoice(@RequestParam("file") MultipartFile file) throws Exception {
         return R.ok(fileService.uploadVoice(file));
     }
@@ -239,8 +245,19 @@ public class FileController {
      * Sentinel 限流降级处理
      */
     public static class BlockHandlers {
+        private static final org.slf4j.Logger blockLog = org.slf4j.LoggerFactory.getLogger("FileController.BlockHandlers");
+
+        /** 限流/熔断拦截处理 */
         public static R<String> uploadBlockHandler(MultipartFile file, BlockException e) {
             return R.fail(429, "上传请求过于频繁，请稍后重试");
+        }
+
+        /** 业务异常兜底降级（非限流类异常，如 AOP 代理异常、参数解析异常等） */
+        public static R<String> uploadFallback(MultipartFile file, Throwable e) {
+            blockLog.error("文件上传降级处理: fileName={}, error={}",
+                    file != null ? file.getOriginalFilename() : "null",
+                    e != null ? e.getMessage() : "unknown", e);
+            return R.fail(ErrorCode.FILE_UPLOAD_FAILED, "文件上传服务暂时不可用，请稍后重试");
         }
     }
 }

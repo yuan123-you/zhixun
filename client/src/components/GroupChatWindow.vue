@@ -280,7 +280,12 @@ let offset = 0
 const voiceRecorder = reactive(useVoiceRecorder())
 const voiceUploading = ref(false)
 
-const startVoiceRecord = () => { voiceRecorder.startRecording() }
+const startVoiceRecord = async () => {
+  await voiceRecorder.startRecording()
+  if (voiceRecorder.recordError) {
+    showToast(voiceRecorder.recordError, 'error', { position: 'top-center' })
+  }
+}
 
 const finishVoiceRecord = async () => {
   const duration = voiceRecorder.recordingTime

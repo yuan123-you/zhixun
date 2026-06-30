@@ -55,7 +55,8 @@ export const socialApi = {
   /** 发送AI助手消息（私信场景，userId为会话目标用户ID） */
   sendAIMessage: (userId: number, question: string) => {
     const { post } = useApi()
-    return post<Message>(`/conversations/${userId}/ai`, { question })
+    // AI 回复需要调用外部大模型服务，后端超时为 120s + 重试，客户端须留足余量
+    return post<Message>(`/conversations/${userId}/ai`, { question }, { timeout: 130_000 })
   },
 
   /** 获取会话列表 */

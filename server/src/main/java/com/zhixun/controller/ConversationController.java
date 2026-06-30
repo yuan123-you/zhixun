@@ -140,11 +140,15 @@ public class ConversationController {
             MessageVO result = messageService.sendAIMessage(senderId, userId, question.trim());
             return R.ok(result);
         } catch (BusinessException e) {
-            log.warn("AI私信业务异常: senderId={}, targetUserId={}, error={}", senderId, userId, e.getMessage());
+            log.warn("AI私信业务异常: senderId={}, targetUserId={}, code={}, error={}", senderId, userId, e.getCode(), e.getMessage());
             return R.fail(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("AI私信系统异常: senderId={}, targetUserId={}", senderId, userId, e);
-            return R.fail(ErrorCode.BUSINESS_ERROR, "AI回复失败，请稍后重试");
+            log.error("AI私信系统异常: senderId={}, targetUserId={}, exception={}", senderId, userId, e.getClass().getSimpleName(), e);
+            // 将实际异常信息包含在响应中，便于前端展示和调试（脱敏处理）
+            String errorMsg = e.getMessage() != null && !e.getMessage().isEmpty()
+                    ? "AI回复失败: " + e.getMessage()
+                    : "AI回复失败，请稍后重试";
+            return R.fail(ErrorCode.BUSINESS_ERROR, errorMsg);
         }
     }
 

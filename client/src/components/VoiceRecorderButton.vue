@@ -1,7 +1,7 @@
 <template>
   <!-- 语音录制按钮 -->
   <div class="voice-btn-wrap">
-    <el-button v-if="!recorder.isRecording.value && !recorder.audioBlob.value" text title="语音消息" @click="recorder.startRecording()">
+    <el-button v-if="!recorder.isRecording.value && !recorder.audioBlob.value" text title="语音消息" @click="handleStartRecording">
       <el-icon :size="20"><Microphone /></el-icon>
     </el-button>
     <div v-else-if="recorder.isRecording.value" class="voice-recording">
@@ -20,10 +20,18 @@
 
 <script setup lang="ts">
 import { Microphone } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
 
 const emit = defineEmits(['send'])
 const recorder = useVoiceRecorder()
+
+async function handleStartRecording() {
+  await recorder.startRecording()
+  if (recorder.recordError.value) {
+    ElMessage.error(recorder.recordError.value)
+  }
+}
 
 function sendVoice() {
   if (recorder.audioBlob.value) {
