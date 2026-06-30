@@ -1,6 +1,6 @@
 <template>
   <!-- 私信首页：会话列表 + 桌面端聊天面板 -->
-  <div class="messages-page h-[calc(100dvh-3.75rem-3.125rem)] md:h-[calc(100dvh-4rem-3.125rem)] flex bg-[var(--zh-bg-elevated)] dark:bg-gray-900" style="padding-bottom:env(safe-area-inset-bottom,0px)">
+  <div class="messages-page h-[calc(100dvh-50px)] md:h-[calc(100dvh-54px)] flex bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
     <!-- ==================== 左侧会话列表 ==================== -->
     <div
       class="conversation-panel flex-shrink-0 w-full md:w-[380px] lg:w-[400px] flex flex-col relative"

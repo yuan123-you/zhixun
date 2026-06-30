@@ -140,21 +140,7 @@
         </div>
       </template>
 
-      <!-- AI助手正在思考指示器 -->
-      <div v-if="aiReplying" class="qq-msg-row" data-ai-loading>
-        <img :src="aiAvatar" class="qq-avatar" alt="AI助手" />
-        <div class="qq-msg-wrap">
-          <span class="qq-msg-name">AI助手</span>
-          <div class="qq-bubble qq-bubble-other qq-bubble-ai">
-            <div class="qq-ai-typing">
-              <span class="qq-ai-dot"></span>
-              <span class="qq-ai-dot"></span>
-              <span class="qq-ai-dot"></span>
-              <span class="qq-ai-typing-text">AI助手正在思考...</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- AI助手回复占位（不显示思考动画） -->
 
       <div v-if="messages.length === 0 && !loadingMore" class="qq-empty">
         <svg class="w-12 h-12 text-[var(--zh-text-tertiary)] opacity-40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -972,12 +958,12 @@ export default { components: { FileCard } }
   border-radius: 12px 12px 4px 12px;
 }
 .qq-bubble-ai {
-  border-left: 3px solid var(--zh-primary, #6366f1);
-  background: rgba(99, 102, 241, 0.06);
+  border-left: 3px solid #498FE8;
+  background: rgba(73, 143, 232, 0.06);
 }
 .qq-bubble-mentioned {
-  border-left: 3px solid var(--zh-primary, #6366f1);
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.15);
+  border-left: 3px solid #498FE8;
+  box-shadow: 0 0 0 1px rgba(73, 143, 232, 0.15);
 }
 
 /* 消息时间 - 始终显示 */

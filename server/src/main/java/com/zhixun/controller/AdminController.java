@@ -448,6 +448,7 @@ public class AdminController {
      * 登录日志列表
      */
     @GetMapping("/login-logs")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<PageResult<LoginLog>> loginLogs(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer status,
@@ -464,6 +465,7 @@ public class AdminController {
      * 通知列表（管理员）
      */
     @GetMapping("/notifications")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<PageResult<NotificationVO>> notificationList(
             @RequestParam(required = false) Integer type,
             @RequestParam(defaultValue = "1") Integer page,
@@ -475,6 +477,7 @@ public class AdminController {
      * 发送系统通知
      */
     @PostMapping("/notifications/send")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Void> sendNotification(@RequestBody Map<String, Object> body) {
         Long adminId = securityUtil.getCurrentUserId();
         Integer type = (Integer) body.get("type");
@@ -594,6 +597,7 @@ public class AdminController {
      * AI 使用统计
      */
     @GetMapping("/ai/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Map<String, Object>> aiUsageStats(
             @RequestParam(required = false, defaultValue = "daily") String period) {
         return R.ok(adminService.getAIUsageStats(period));

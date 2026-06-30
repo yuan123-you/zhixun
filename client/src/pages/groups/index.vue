@@ -127,39 +127,39 @@
                   >{{ group.name.charAt(0) }}</div>
                 </div>
 
+                <!-- 左侧内容区 -->
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2 min-w-0">
-                      <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
-                      <span
-                        v-if="group.myRole === 2"
-                        class="role-badge role-badge-owner"
-                      >群主</span>
-                      <span
-                        v-else-if="group.myRole === 1"
-                        class="role-badge role-badge-admin"
-                      >管理员</span>
-                      <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)] flex-shrink-0">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        {{ group.memberCount }} 人
-                      </span>
-                    </div>
-                    <span class="text-[10px] text-[var(--zh-text-tertiary)] flex-shrink-0 ml-2">
-                      {{ formatRelativeTime(groupLastMessages[group.id]?.time) }}
+                  <div class="flex items-center gap-2 min-w-0">
+                    <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
+                    <span
+                      v-if="group.myRole === 2"
+                      class="role-badge role-badge-owner"
+                    >群主</span>
+                    <span
+                      v-else-if="group.myRole === 1"
+                      class="role-badge role-badge-admin"
+                    >管理员</span>
+                    <span class="flex items-center gap-1 text-xs text-[var(--zh-text-tertiary)] flex-shrink-0">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      {{ group.memberCount }} 人
                     </span>
                   </div>
-                  <div class="flex items-center mt-1.5">
-                    <p class="text-xs text-[var(--zh-text-secondary)] truncate">
-                      {{ getGroupLastMessagePreview(group.id) }}
-                    </p>
-                  </div>
+                  <p class="text-xs text-[var(--zh-text-secondary)] truncate mt-1.5">
+                    {{ getGroupLastMessagePreview(group.id) }}
+                  </p>
                 </div>
 
-                <svg class="group-card-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
+                <!-- 右侧：时间 + 箭头 -->
+                <div class="flex flex-col items-end shrink-0 gap-1">
+                  <span class="text-[10px] text-[var(--zh-text-tertiary)]">
+                    {{ formatRelativeTime(groupLastMessages[group.id]?.time) }}
+                  </span>
+                  <svg class="group-card-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>

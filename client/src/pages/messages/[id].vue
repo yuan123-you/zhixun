@@ -1,6 +1,6 @@
 <template>
   <!-- 私信聊天页面（移动端全屏 / 桌面端备选入口） -->
-  <div class="chat-page h-[calc(100dvh-3.75rem-3.125rem)] md:h-[calc(100dvh-4rem-3.125rem)] flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900" style="padding-bottom:env(safe-area-inset-bottom,0px)">
+  <div class="chat-page h-[calc(100dvh-50px)] md:h-[calc(100dvh-54px)] flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
     <!-- 聊天头部 -->
     <div class="flex items-center gap-3 px-4 py-3 border-b border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 flex-shrink-0 sticky top-0 z-10">
       <!-- 返回按钮 -->
@@ -159,22 +159,7 @@
         </div>
       </template>
 
-      <!-- AI助手正在思考 -->
-      <div v-if="aiThinking" class="flex items-start gap-2 max-w-[75%]">
-        <button class="flex-shrink-0 rounded-full hover:opacity-80 transition-opacity">
-          <img :src="aiAvatarUrl" alt="AI" class="w-8 h-8 rounded-full object-cover" />
-        </button>
-        <div>
-          <div class="bg-slate-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
-            <span class="block text-[11px] font-semibold text-indigo-500 mb-1">AI助手</span>
-            <div class="flex items-center gap-1 py-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0s"></span>
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0.2s"></span>
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0.4s"></span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- AI回复占位（不显示思考动画） -->
 
       <!-- 底部哨兵：用于自动滚到底 -->
       <div ref="bottomSentinelRef" class="h-0"></div>

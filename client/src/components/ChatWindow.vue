@@ -103,22 +103,7 @@
         </template>
       </div>
 
-      <!-- AI助手正在思考 -->
-      <div v-if="aiThinking" class="message-row message-other">
-        <span class="sender-avatar">
-          <img :src="aiAvatarUrl" alt="AI" class="ai-avatar-img" />
-        </span>
-        <div class="message-bubble-wrap">
-          <div class="bubble bubble-other bubble-ai">
-            <span class="ai-label">AI助手</span>
-            <div class="ai-typing-indicator">
-              <span class="ai-dot"></span>
-              <span class="ai-dot"></span>
-              <span class="ai-dot"></span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- AI回复占位（不显示思考动画） -->
 
       <div v-if="!loadingMore && messages.length === 0" class="empty-messages">
         <p>暂无消息，发送第一条吧</p>

@@ -259,13 +259,13 @@ useHead({
 
 <style scoped>
 .group-page {
-  height: calc(100dvh - 3.75rem - 3.125rem - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - 50px);
   overflow: hidden;
 }
 
 @media (min-width: 769px) {
   .group-page {
-    height: calc(100dvh - 4rem - 3.125rem - env(safe-area-inset-bottom, 0px));
+    height: calc(100dvh - 54px);
   }
 }
 
