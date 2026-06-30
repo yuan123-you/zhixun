@@ -8,7 +8,7 @@
       <!-- 头部 -->
       <div class="member-header">
         <div class="member-group-info">
-          <img v-if="group?.avatar" :src="group.avatar" class="member-group-avatar" :alt="group.name" />
+          <img v-if="resolveUrl(group?.avatar)" :src="resolveUrl(group?.avatar) as string" class="member-group-avatar" :alt="group?.name" />
           <div v-else class="member-group-avatar-placeholder">{{ group?.name?.charAt(0) }}</div>
           <div class="member-group-text">
             <h4 class="member-group-name">{{ group?.name }}</h4>
@@ -202,6 +202,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { groupApi } from '@/api/group'
 import type { GroupInfo, GroupMember, GroupJoinRequestInfo } from '@/api/group'
 import { showToast } from '@/composables/useToast'
+import { useResourceUrl } from '@/composables/useResourceUrl'
+
+const { resolveUrl } = useResourceUrl()
 
 const props = defineProps<{
   group: GroupInfo | null

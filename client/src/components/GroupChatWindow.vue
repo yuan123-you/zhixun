@@ -114,11 +114,11 @@
     <!-- 修改群头像弹窗 -->
     <Teleport to="body">
       <Transition name="modal-fade">
-        <div v-if="showAvatarDialog" class="qq-modal-overlay" @click="showAvatarDialog = false">
+        <div v-if="showAvatarDialog" class="qq-modal-overlay" @click="closeAvatarDialog">
           <div class="qq-modal" @click.stop>
             <div class="qq-modal-header">
               <h3 class="qq-modal-title">修改群头像</h3>
-              <button class="qq-modal-close" @click="showAvatarDialog = false">
+              <button class="qq-modal-close" @click="closeAvatarDialog">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
@@ -133,8 +133,8 @@
               <input ref="avatarInput" type="file" accept="image/*" style="display:none" @change="handleAvatarSelect" />
             </div>
             <div class="qq-modal-footer">
-              <button class="qq-btn qq-btn-ghost" @click="showAvatarDialog = false">取消</button>
-              <button class="qq-btn qq-btn-primary" :disabled="!avatarPreview || avatarUploading" @click="confirmAvatar">
+              <button class="qq-btn qq-btn-ghost" @click="closeAvatarDialog">取消</button>
+              <button class="qq-btn qq-btn-primary" :disabled="!pendingAvatarFile || avatarUploading" @click="confirmAvatar">
                 {{ avatarUploading ? '上传中...' : '确认修改' }}
               </button>
             </div>
@@ -495,7 +495,7 @@ async function confirmRename() {
     showRenameDialog.value = false
     emit('groupUpdated')
   } catch (e: any) {
-    showToast(e?.response?.data?.message || '修改失败', 'error', { position: 'top-center' })
+    showToast(e?.message || e?.response?.data?.message || '修改失败', 'error', { position: 'top-center' })
   } finally {
     renaming.value = false
   }
@@ -503,8 +503,20 @@ async function confirmRename() {
 
 function openAvatarDialog() {
   showMenu.value = false
-  avatarPreview.value = props.group?.avatar || ''
+  // 用 resolveUrl 确保旧头像 URL 能正确预览（兼容旧 MinIO 直链等格式）
+  avatarPreview.value = resolveUrl(props.group?.avatar) || ''
+  pendingAvatarFile.value = null  // 每次打开弹窗重置，避免上次取消后残留
   showAvatarDialog.value = true
+}
+
+function closeAvatarDialog() {
+  showAvatarDialog.value = false
+  // 释放 blob URL 避免内存泄漏
+  if (avatarPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(avatarPreview.value)
+  }
+  avatarPreview.value = ''
+  pendingAvatarFile.value = null
 }
 
 function triggerAvatarUpload() {
@@ -515,6 +527,10 @@ async function handleAvatarSelect(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
   ;(e.target as HTMLInputElement).value = ''
+  // 释放旧的 blob URL
+  if (avatarPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(avatarPreview.value)
+  }
   // 预览
   avatarPreview.value = URL.createObjectURL(file)
   // 暂存文件用于上传
@@ -525,19 +541,24 @@ const pendingAvatarFile = ref<File | null>(null)
 
 async function confirmAvatar() {
   if (!props.group) return
+  // 没有选择新文件，不需要更新
+  if (!pendingAvatarFile.value) {
+    closeAvatarDialog()
+    return
+  }
   avatarUploading.value = true
   try {
-    let avatarUrl = avatarPreview.value
-    if (pendingAvatarFile.value) {
-      avatarUrl = await fileApi.uploadSingleImage(pendingAvatarFile.value)
+    const avatarUrl = await fileApi.uploadSingleImage(pendingAvatarFile.value)
+    if (!avatarUrl) {
+      showToast('图片上传失败，服务器未返回地址', 'error', { position: 'top-center' })
+      return
     }
     await groupApi.updateGroup(props.group.id, { avatar: avatarUrl })
     showToast('群头像已修改', 'success', { position: 'top-center' })
-    showAvatarDialog.value = false
-    pendingAvatarFile.value = null
+    closeAvatarDialog()
     emit('groupUpdated')
   } catch (e: any) {
-    showToast(e?.response?.data?.message || '修改失败', 'error', { position: 'top-center' })
+    showToast(e?.message || e?.response?.data?.message || '修改失败', 'error', { position: 'top-center' })
   } finally {
     avatarUploading.value = false
   }
@@ -556,7 +577,7 @@ async function toggleAdmin(member: GroupMember, setAdmin: boolean) {
     showToast(setAdmin ? '已设为管理员' : '已取消管理员', 'success', { position: 'top-center' })
     emit('groupUpdated')
   } catch (e: any) {
-    showToast(e?.response?.data?.message || '操作失败', 'error', { position: 'top-center' })
+    showToast(e?.message || e?.response?.data?.message || '操作失败', 'error', { position: 'top-center' })
   } finally {
     adminLoading.value = null
   }
@@ -889,6 +910,15 @@ async function handleImageSelect(e: Event) {
   if (!file || !props.group) return
   // 重置input
   (e.target as HTMLInputElement).value = ''
+  // 校验文件类型和大小
+  if (!file.type.startsWith('image/')) {
+    showToast('请选择图片文件', 'error', { position: 'top-center' })
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('图片大小不能超过5MB', 'error', { position: 'top-center' })
+    return
+  }
   uploading.value = true
   uploadProgress.value = 0
   try {

@@ -45,7 +45,8 @@ public class FileController {
     @PreAuthorize("isAuthenticated()")
     @SentinelResource(value = "file-upload",
             blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
-            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class)
+            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class,
+            exceptionsToIgnore = { BusinessException.class })
     public R<String> uploadImage(@RequestParam("file") MultipartFile file) {
         return R.ok(fileService.uploadImage(file));
     }
@@ -57,7 +58,8 @@ public class FileController {
     @PreAuthorize("isAuthenticated()")
     @SentinelResource(value = "file-upload",
             blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
-            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class)
+            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class,
+            exceptionsToIgnore = { BusinessException.class })
     public R<String> uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
         return R.ok(fileService.uploadFile(file));
     }
@@ -69,7 +71,8 @@ public class FileController {
     @PreAuthorize("isAuthenticated()")
     @SentinelResource(value = "file-upload",
             blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
-            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class)
+            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class,
+            exceptionsToIgnore = { BusinessException.class })
     public R<String> uploadVoice(@RequestParam("file") MultipartFile file) throws Exception {
         return R.ok(fileService.uploadVoice(file));
     }

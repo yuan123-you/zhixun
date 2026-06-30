@@ -74,13 +74,13 @@
         <div class="flex-1 flex flex-col min-w-0" :class="{ 'hidden md:flex': !activeConversation }">
           <template v-if="activeConversation">
             <!-- 聊天头部 -->
-            <div class="flex items-center gap-2 px-3 py-2 border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0 sticky top-0 z-10">
+            <div class="flex items-center gap-1.5 px-2 py-1 border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0 sticky top-0 z-10">
               <button class="shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(activeConversation.user?.id)">
                 <UserAvatar :src="activeConversation.user?.avatar" alt="" size="sm" />
               </button>
               <div class="min-w-0">
-                <p class="font-medium text-[var(--zh-text)] text-sm leading-tight truncate">{{ activeConversation.user?.nickname }}</p>
-                <p class="text-2xs leading-tight" :class="activeConversation.user?.isOnline ? 'text-green-500' : 'text-[var(--zh-text-tertiary)]'">{{ activeConversation.user?.isOnline ? '在线' : '离线' }}</p>
+                <p class="font-medium text-[var(--zh-text)] text-xs leading-tight truncate">{{ activeConversation.user?.nickname }}</p>
+                <p class="text-[10px] leading-tight" :class="activeConversation.user?.isOnline ? 'text-green-500' : 'text-[var(--zh-text-tertiary)]'">{{ activeConversation.user?.isOnline ? '在线' : '离线' }}</p>
               </div>
             </div>
             <!-- 消息列表 -->
@@ -842,7 +842,7 @@ const onNotiImageSelected = async (e: Event) => {
   if (!file || !activeConversation.value) return
   input.value = ''
   if (!file.type.startsWith('image/')) { showToast('请选择图片文件', 'error'); return }
-  if (file.size > 10 * 1024 * 1024) { showToast('图片不能超过10MB', 'error'); return }
+  if (file.size > 5 * 1024 * 1024) { showToast('图片不能超过5MB', 'error'); return }
   const targetUserId = (activeConversation.value as any).user?.id ?? (activeConversation.value as any).userId
   if (!targetUserId) return
   sendingMessage.value = true
@@ -1564,8 +1564,7 @@ useHead({ title: () => '消息' + ' - 知讯' })
 
 /* ==================== 私信输入区（复用群组样式） ==================== */
 .noti-chat-input {
-  padding: 6px 14px 10px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 14px 0;
   border-top: 1px solid var(--zh-border, #e5e7eb);
   background: var(--zh-bg-elevated, #fff);
   flex-shrink: 0;

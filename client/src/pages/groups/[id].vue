@@ -18,7 +18,7 @@
     <!-- 非成员：显示群组信息 + 申请加入按钮 -->
     <div v-else-if="!isMember" class="group-page-non-member">
       <div class="group-info-card">
-        <img v-if="group.avatar" :src="group.avatar" class="group-info-avatar" alt="群头像" />
+        <img v-if="resolveUrl(group.avatar)" :src="resolveUrl(group.avatar) as string" class="group-info-avatar" alt="群头像" />
         <div v-else class="group-info-avatar group-info-avatar-placeholder">
           {{ group.name?.charAt(0) || '?' }}
         </div>
@@ -87,6 +87,9 @@ import GroupChatWindow from '@/components/GroupChatWindow.vue'
 import GroupMemberPanel from '@/components/GroupMemberPanel.vue'
 import { useGroupWebSocket } from '@/composables/useGroupWebSocket'
 import { showToast } from '@/composables/useToast'
+import { useResourceUrl } from '@/composables/useResourceUrl'
+
+const { resolveUrl } = useResourceUrl()
 
 const route = useRoute()
 const router = useRouter()

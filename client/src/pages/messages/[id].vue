@@ -352,8 +352,8 @@ const onImageSelected = async (e: Event) => {
     showAlert('请选择图片文件')
     return
   }
-  if (file.size > 10 * 1024 * 1024) {
-    showAlert('图片大小不能超过10MB')
+  if (file.size > 5 * 1024 * 1024) {
+    showAlert('图片大小不能超过5MB')
     return
   }
 

@@ -2,9 +2,20 @@
   <div class="max-w-[840px] mx-auto px-3 py-3 md:px-5 md:py-4">
     <!-- ==================== 顶部区域：标题 + 创建按钮 ==================== -->
     <div class="flex items-center justify-between mb-3">
-      <div>
-        <h1 class="text-lg md:text-xl font-bold text-[var(--zh-text)] tracking-tight leading-tight">群组广场</h1>
-        <p class="text-xs text-[var(--zh-text-tertiary)] mt-0.5">发现感兴趣的群组，与志同道合的人交流</p>
+      <div class="flex items-center gap-3">
+        <button
+          class="flex items-center justify-center w-8 h-8 rounded-lg text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-secondary)] transition-colors"
+          @click="router.back()"
+          title="返回"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold text-[var(--zh-text)] tracking-tight leading-tight">群组广场</h1>
+          <p class="text-xs text-[var(--zh-text-tertiary)] mt-0.5">发现感兴趣的群组，与志同道合的人交流</p>
+        </div>
       </div>
       <button
         v-if="userStore.isLoggedIn"
@@ -116,14 +127,14 @@
                 <!-- 头像 -->
                 <div class="relative shrink-0">
                   <img
-                    v-if="group.avatar"
-                    :src="group.avatar"
+                    v-if="resolveUrl(group.avatar)"
+                    :src="resolveUrl(group.avatar) as string"
                     :alt="group.name"
                     class="group-card-avatar"
                     @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }"
                   />
                   <div
-                    :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
+                    :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
                   >{{ group.name.charAt(0) }}</div>
                 </div>
 
@@ -295,14 +306,14 @@
                 <div class="group-card-inner">
                   <div class="relative shrink-0">
                     <img
-                      v-if="group.avatar"
-                      :src="group.avatar"
+                      v-if="resolveUrl(group.avatar)"
+                      :src="resolveUrl(group.avatar) as string"
                       :alt="group.name"
                       class="group-card-avatar"
                       @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }"
                     />
                     <div
-                      :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
+                      :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
                     >{{ group.name.charAt(0) }}</div>
                   </div>
                   <div class="flex-1 min-w-0">
@@ -368,14 +379,14 @@
             <div class="group-card-inner">
               <div class="relative shrink-0">
                 <img
-                  v-if="group.avatar"
-                  :src="group.avatar"
+                  v-if="resolveUrl(group.avatar)"
+                  :src="resolveUrl(group.avatar) as string"
                   :alt="group.name"
                   class="group-card-avatar"
                   @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }"
                 />
                 <div
-                  :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
+                  :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
                 >{{ group.name.charAt(0) }}</div>
               </div>
               <div class="flex-1 min-w-0">
@@ -544,6 +555,9 @@ import { groupApi } from '@/api/group'
 import type { GroupInfo, GroupMessage } from '@/api/group'
 import { showToast } from '@/composables/useToast'
 import { avatarColor } from '@/utils/color'
+import { useResourceUrl } from '@/composables/useResourceUrl'
+
+const { resolveUrl } = useResourceUrl()
 
 const { setTitle } = usePageHeaderTitle()
 setTitle('群组广场')
@@ -585,12 +599,14 @@ const groupLastMessages = reactive<Record<number, { content: string; time: strin
 // 批量获取群组最新消息
 const fetchGroupLastMessages = async (groups: GroupInfo[]) => {
   if (!groups.length) return
-  await Promise.all(groups.map(async (g) => {
+  // 仅获取用户已加入的群组的最新消息，避免非成员调用getMessages返回403
+  const joinedGroups = groups.filter(g => g.myRole != null && g.myRole !== undefined)
+  await Promise.all(joinedGroups.map(async (g) => {
     if (groupLastMessages[g.id]) return // 已缓存
     try {
       const { data } = await groupApi.getMessages(g.id, 0, 50)
       const raw = data?.data || data
-      const msgs = Array.isArray(raw) ? raw : (raw?.list || [])
+      const msgs: GroupMessage[] = Array.isArray(raw) ? raw : []
       if (msgs.length > 0) {
         // 取最后一条作为最新消息（无论正序/倒序，取首或尾中时间最新的那条）
         const first = msgs[0] as GroupMessage
@@ -610,7 +626,7 @@ const fetchGroupLastMessages = async (groups: GroupInfo[]) => {
 
 const getGroupLastMessagePreview = (groupId: number) => {
   const msg = groupLastMessages[groupId]
-  if (!msg || !msg.content) return '暂无消息'
+  if (!msg || !msg.content) return ''
   if (msg.type === 'image') return '[图片]'
   return msg.content.length > 30 ? msg.content.slice(0, 30) + '...' : msg.content
 }

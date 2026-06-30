@@ -200,6 +200,7 @@
  * 3. 流畅的 spring 动画和视觉反馈
  */
 import type { Comment } from '@/types'
+import { fileApi } from '@/api/file'
 import { sanitizeText } from '@/utils/sanitize'
 
 interface ImageItem {
@@ -359,35 +360,20 @@ async function onFileChange(e: Event) {
         item.url = remoteUrl
         item.uploading = false
       } else {
-        // 调用 fileApi.uploadImage 实际上传到服务器
+        // 使用 fileApi.uploadSingleImage 上传到服务器
         try {
-          const apiModule = await import('~/api').catch(() => null)
-          const fileApi = (apiModule as any)?.fileApi
-          if (fileApi?.uploadImage) {
-            const fd = new FormData()
-            fd.append('file', file)
-            const res = await fileApi.uploadImage(fd)
-            const remoteUrl = res?.data?.data || res?.data?.url || res?.data
-            if (typeof remoteUrl === 'string' && remoteUrl) {
-              item.url = remoteUrl
-              item.uploading = false
-            } else {
-              // 服务端未返回有效 URL，移除该图片（本地 blob URL 无法跨页面持久化）
-              const idx = images.value.indexOf(item)
-              if (idx > -1) {
-                URL.revokeObjectURL(localUrl)
-                images.value.splice(idx, 1)
-              }
-              ElMessage?.error?.('图片上传失败：未返回有效URL')
-            }
+          const remoteUrl = await fileApi.uploadSingleImage(file)
+          if (remoteUrl) {
+            item.url = remoteUrl
+            item.uploading = false
           } else {
-            // 后端暂未提供 fileApi.uploadImage，移除该图片
+            // 服务端未返回有效 URL，移除该图片（本地 blob URL 无法跨页面持久化）
             const idx = images.value.indexOf(item)
             if (idx > -1) {
               URL.revokeObjectURL(localUrl)
               images.value.splice(idx, 1)
             }
-            ElMessage?.error?.('图片上传功能暂不可用')
+            ElMessage?.error?.('图片上传失败：未返回有效URL')
           }
         } catch (err) {
           console.error('图片上传失败:', err)

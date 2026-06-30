@@ -165,18 +165,56 @@ public class GroupServiceImpl implements GroupService {
 
     @Override @Transactional
     public void leaveGroup(Long userId, Long groupId) {
+        GroupInfo g = groupMapper.selectById(groupId);
+        if (g == null) throw new BusinessException(ErrorCode.NOT_FOUND, "群组不存在");
+
+        // 群主退出时直接解散群组
+        if (g.getOwnerId().equals(userId)) {
+            doDismissGroup(g);
+            return;
+        }
+
         LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
         w.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, userId);
         groupMemberMapper.delete(w);
-        GroupInfo g = groupMapper.selectById(groupId);
-        if (g != null) { g.setMemberCount(Math.max(0, g.getMemberCount() - 1)); groupMapper.updateById(g); }
+        g.setMemberCount(Math.max(0, g.getMemberCount() - 1));
+        groupMapper.updateById(g);
+
+        // 最后一个成员退出后自动解散群组
+        LambdaQueryWrapper<GroupMember> countW = new LambdaQueryWrapper<>();
+        countW.eq(GroupMember::getGroupId, groupId);
+        if (groupMemberMapper.selectCount(countW) == 0) {
+            doDismissGroup(g);
+        }
     }
 
     @Override @Transactional
     public void dismissGroup(Long userId, Long groupId) {
         GroupInfo g = groupMapper.selectById(groupId);
         if (g == null || !g.getOwnerId().equals(userId)) throw new BusinessException(ErrorCode.FORBIDDEN, "无权解散群组");
-        g.setStatus(1); groupMapper.updateById(g);
+        doDismissGroup(g);
+    }
+
+    /**
+     * 实际解散群组：删除消息、成员、申请，然后删除群组记录
+     */
+    private void doDismissGroup(GroupInfo g) {
+        Long groupId = g.getId();
+        // 删除群组消息
+        LambdaQueryWrapper<GroupMessage> msgW = new LambdaQueryWrapper<>();
+        msgW.eq(GroupMessage::getGroupId, groupId);
+        groupMessageMapper.delete(msgW);
+        // 删除群组成员
+        LambdaQueryWrapper<GroupMember> memberW = new LambdaQueryWrapper<>();
+        memberW.eq(GroupMember::getGroupId, groupId);
+        groupMemberMapper.delete(memberW);
+        // 删除入群申请
+        LambdaQueryWrapper<GroupJoinRequest> reqW = new LambdaQueryWrapper<>();
+        reqW.eq(GroupJoinRequest::getGroupId, groupId);
+        groupJoinRequestMapper.delete(reqW);
+        // 删除群组记录
+        groupMapper.deleteById(groupId);
+        log.info("群组已解散并清除数据: groupId={}, name={}", groupId, g.getName());
     }
 
     @Override @Transactional
@@ -359,7 +397,7 @@ public class GroupServiceImpl implements GroupService {
         vo.setGroupNumber(g.getGroupNumber());
         vo.setAvatar(g.getAvatar()); vo.setDescription(g.getDescription());
         vo.setOwnerId(g.getOwnerId()); vo.setMemberCount(g.getMemberCount());
-        vo.setMaxMembers(g.getMaxMembers()); vo.setIsPublic(g.getIsPublic());
+        vo.setMaxMembers(g.getMaxMembers()); vo.setIsPublic(g.getIsPublic()); vo.setStatus(g.getStatus());
         if (userId != null) {
             LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
             w.eq(GroupMember::getGroupId, g.getId()).eq(GroupMember::getUserId, userId);
