@@ -21,6 +21,9 @@ public class SecurityUtil {
     /** 管理员角色 */
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
+    /** 超级管理员角色 */
+    private static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
+
     /**
      * 获取当前认证信息
      *
@@ -79,6 +82,20 @@ public class SecurityUtil {
         }
         return authentication.getAuthorities().stream()
                 .anyMatch(auth -> ROLE_ADMIN.equals(auth.getAuthority()));
+    }
+
+    /**
+     * 判断当前用户是否为超级管理员
+     *
+     * @return true-是超级管理员
+     */
+    public boolean isSuperAdmin() {
+        Authentication authentication = getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(auth -> ROLE_SUPER_ADMIN.equals(auth.getAuthority()));
     }
 
     /**

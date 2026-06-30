@@ -140,6 +140,7 @@ public class AdminController {
      * 敏感词列表
      */
     @GetMapping("/sensitive-words")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<PageResult<SensitiveWord>> sensitiveWords(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize) {
@@ -150,6 +151,7 @@ public class AdminController {
      * 添加敏感词
      */
     @PostMapping("/sensitive-words")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Void> addSensitiveWord(@Valid @RequestBody SensitiveWordRequest request) {
         Long adminId = securityUtil.getCurrentUserId();
         adminService.addSensitiveWord(adminId, request);
@@ -160,6 +162,7 @@ public class AdminController {
      * 删除敏感词
      */
     @DeleteMapping("/sensitive-words/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Void> deleteSensitiveWord(@PathVariable Long id) {
         Long adminId = securityUtil.getCurrentUserId();
         adminService.deleteSensitiveWord(adminId, id);
@@ -170,6 +173,7 @@ public class AdminController {
      * 操作日志
      */
     @GetMapping("/operation-logs")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<PageResult<OperationLog>> operationLogs(
             @RequestParam(required = false) Long operatorId,
             @RequestParam(required = false) String module,
@@ -236,6 +240,7 @@ public class AdminController {
      * 敏感词白名单列表
      */
     @GetMapping("/sensitive-whitelist")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<PageResult<SensitiveWhitelist>> sensitiveWhitelist(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize) {
@@ -246,6 +251,7 @@ public class AdminController {
      * 添加敏感词白名单
      */
     @PostMapping("/sensitive-whitelist")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Void> addSensitiveWhitelist(@Valid @RequestBody SensitiveWhitelistRequest request) {
         Long adminId = securityUtil.getCurrentUserId();
         adminService.addSensitiveWhitelist(adminId, request);
@@ -256,6 +262,7 @@ public class AdminController {
      * 删除敏感词白名单
      */
     @DeleteMapping("/sensitive-whitelist/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Void> deleteSensitiveWhitelist(@PathVariable Long id) {
         Long adminId = securityUtil.getCurrentUserId();
         adminService.deleteSensitiveWhitelist(adminId, id);
@@ -263,12 +270,14 @@ public class AdminController {
     }
 
     @GetMapping("/synonyms")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<List<String>> getSynonyms() {
         if (synonymService == null) return R.ok(List.of());
         return R.ok(synonymService.getAllSynonyms());
     }
 
     @PostMapping("/synonyms")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Void> addSynonym(@RequestBody Map<String, String> body) {
         if (synonymService == null) return R.fail(503, "同义词服务不可用");
         synonymService.addSynonym(body.get("rule"));
@@ -276,6 +285,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/synonyms")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Void> removeSynonym(@RequestBody Map<String, String> body) {
         if (synonymService == null) return R.fail(503, "同义词服务不可用");
         synonymService.removeSynonym(body.get("rule"));
@@ -283,6 +293,7 @@ public class AdminController {
     }
 
     @PostMapping("/synonyms/reload")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Map<String, Object>> reloadSynonyms() {
         if (synonymService == null) return R.fail(503, "同义词服务不可用");
         boolean success = synonymService.reloadSearchAnalyzers();
@@ -297,6 +308,7 @@ public class AdminController {
      * 安全审计日志查询
      */
     @GetMapping("/security-audit-logs")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<PageResult<SecurityAuditLog>> securityAuditLogs(
             @RequestParam(required = false) String eventType,
             @RequestParam(required = false) Long userId,
@@ -312,6 +324,7 @@ public class AdminController {
      * 安全审计日志统计
      */
     @GetMapping("/security-audit-logs/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Map<String, Object>> securityAuditStats(
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
@@ -322,6 +335,7 @@ public class AdminController {
      * 导出操作日志为CSV
      */
     @GetMapping("/operation-logs/export")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<byte[]> exportLogs(
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
@@ -346,6 +360,7 @@ public class AdminController {
      * 操作日志统计
      */
     @GetMapping("/operation-logs/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Map<String, Object>> logStats(
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
@@ -492,6 +507,7 @@ public class AdminController {
      * 对比 Redis 缓存中的数据与数据库中的最新数据，返回不一致的条目
      */
     @GetMapping("/cache/consistency")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Map<String, Object>> checkCacheConsistency() {
         Map<String, Object> result = new HashMap<>();
         try {
@@ -511,6 +527,7 @@ public class AdminController {
      * 用于解决缓存与数据库不一致时无需重启服务的应急操作
      */
     @PostMapping("/cache/clear")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public R<Map<String, Object>> clearAllCaches() {
         Map<String, Object> result = new HashMap<>();
         try {
@@ -614,5 +631,42 @@ public class AdminController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize) {
         return R.ok(adminService.getTagList(keyword, sortBy, page, pageSize));
+    }
+
+    // ========== 角色管理（超级管理员专属） ==========
+
+    /**
+     * 管理员列表
+     */
+    @GetMapping("/admins")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public R<PageResult<UserVO>> adminList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return R.ok(adminService.getAdminList(keyword, status, page, pageSize));
+    }
+
+    /**
+     * 修改管理员角色
+     */
+    @PutMapping("/admins/{id}/role")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public R<Void> updateAdminRole(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        Long operatorId = securityUtil.getCurrentUserId();
+        adminService.updateAdminRole(operatorId, id, body.get("role"));
+        return R.ok();
+    }
+
+    /**
+     * 启用/禁用管理员
+     */
+    @PutMapping("/admins/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public R<Void> updateAdminStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+        Long operatorId = securityUtil.getCurrentUserId();
+        adminService.updateAdminStatus(operatorId, id, body.get("status"));
+        return R.ok();
     }
 }

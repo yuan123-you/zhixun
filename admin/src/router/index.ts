@@ -130,6 +130,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '缓存管理', icon: 'Coin' },
       },
       {
+        path: 'role-management',
+        name: 'RoleManagement',
+        component: () => import('@/views/role-management/index.vue'),
+        meta: { title: '角色管理', icon: 'UserFilled', requiresSuperAdmin: true },
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/settings/index.vue'),

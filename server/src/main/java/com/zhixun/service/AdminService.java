@@ -255,4 +255,27 @@ public interface AdminService {
      * @return 标签分页结果
      */
     PageResult<com.zhixun.entity.Tag> getTagList(String keyword, String sortBy, Integer page, Integer pageSize);
+
+    /**
+     * 管理员列表（仅返回 ADMIN 和 SUPER_ADMIN 角色的用户）
+     */
+    PageResult<UserVO> getAdminList(String keyword, Integer status, Integer page, Integer pageSize);
+
+    /**
+     * 修改管理员角色（仅限超级管理员操作）
+     *
+     * @param operatorId 操作者ID
+     * @param targetId   目标用户ID
+     * @param newRole    新角色（ADMIN 或 SUPER_ADMIN）
+     */
+    void updateAdminRole(Long operatorId, Long targetId, String newRole);
+
+    /**
+     * 启用/禁用管理员账号（仅限超级管理员操作）
+     *
+     * @param operatorId 操作者ID
+     * @param targetId   目标用户ID
+     * @param status     新状态（0-禁用，1-正常）
+     */
+    void updateAdminStatus(Long operatorId, Long targetId, Integer status);
 }

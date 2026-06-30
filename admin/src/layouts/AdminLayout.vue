@@ -49,14 +49,28 @@
           <template #title>用户管理</template>
         </el-menu-item>
 
-        <el-sub-menu index="system">
+        <el-menu-item index="/groups">
+          <el-icon><ChatLineSquare /></el-icon>
+          <template #title>群组管理</template>
+        </el-menu-item>
+
+        <el-menu-item v-if="!isSuperAdmin" index="/notifications">
+          <el-icon><Bell /></el-icon>
+          <template #title>通知管理</template>
+        </el-menu-item>
+
+        <el-sub-menu v-if="isSuperAdmin" index="system">
           <template #title>
             <el-icon><Setting /></el-icon>
             <span>系统管理</span>
           </template>
           <el-menu-item index="/sensitive-words">敏感词管理</el-menu-item>
           <el-menu-item index="/operation-logs">操作日志</el-menu-item>
+          <el-menu-item index="/login-logs">登录日志</el-menu-item>
+          <el-menu-item index="/security-audit">安全审计</el-menu-item>
+          <el-menu-item index="/cache">缓存管理</el-menu-item>
           <el-menu-item index="/notifications">通知管理</el-menu-item>
+          <el-menu-item index="/role-management">角色管理</el-menu-item>
           <el-menu-item index="/settings">系统设置</el-menu-item>
         </el-sub-menu>
       </el-menu>
@@ -165,6 +179,9 @@ const activeMenu = computed(() => route.path)
 
 /** 当前路由信息 */
 const currentRoute = computed(() => route)
+
+/** 是否为超级管理员 */
+const isSuperAdmin = computed(() => userStore.userInfo?.role === 'SUPER_ADMIN')
 
 /** 侧边栏折叠状态 */
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)

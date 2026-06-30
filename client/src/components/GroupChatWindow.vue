@@ -959,14 +959,16 @@ export default { components: { FileCard } }
   word-break: break-word;
 }
 .qq-bubble-other {
-  background: var(--zh-bg-elevated, #fff);
-  color: var(--zh-text, #1e293b);
+  background: #498FE8;
+  color: #fff;
   border-radius: 12px 12px 12px 4px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 .qq-bubble-mine {
-  background: var(--zh-primary, #6366f1);
-  color: #fff;
+  background: #fff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
   border-radius: 12px 12px 4px 12px;
 }
 .qq-bubble-ai {

@@ -111,6 +111,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if ("ADMIN".equals(role) || "SUPER_ADMIN".equals(role)) {
                         authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                     }
+                    if ("SUPER_ADMIN".equals(role)) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+                    }
 
                     // 构建认证信息
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

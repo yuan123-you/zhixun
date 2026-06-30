@@ -24,6 +24,14 @@ export function setupGuards(router: Router) {
         // 已登录用户访问登录页，重定向到首页
         next({ path: '/' })
       } else {
+        // 检查是否需要超级管理员权限
+        if (to.meta.requiresSuperAdmin) {
+          const userInfo = storage.get<any>(STORAGE_KEYS.USER_INFO)
+          if (userInfo?.role !== 'SUPER_ADMIN') {
+            next('/dashboard')
+            return
+          }
+        }
         next()
       }
     } else {

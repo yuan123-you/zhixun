@@ -1624,4 +1624,104 @@ public class AdminServiceImpl implements AdminService {
 
         return new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize);
     }
+
+    // ========== 管理员管理（超级管理员专属） ==========
+
+    @Override
+    public PageResult<UserVO> getAdminList(String keyword, Integer status, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(User::getRole, RoleEnum.ADMIN, RoleEnum.SUPER_ADMIN);
+
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w.like(User::getUsername, keyword)
+                    .or().like(User::getNickname, keyword));
+        }
+        if (status != null) {
+            wrapper.eq(User::getStatus, status);
+        }
+        wrapper.orderByAsc(User::getCreatedAt);
+
+        Page<User> userPage = userMapper.selectPage(new Page<>(page, pageSize), wrapper);
+        List<UserVO> voList = userPage.getRecords().stream()
+                .map(this::convertToUserVO)
+                .toList();
+        return new PageResult<>(voList, userPage.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Transactional
+    public void updateAdminRole(Long operatorId, Long targetId, String newRole) {
+        // 不能修改自己的角色
+        if (operatorId.equals(targetId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不能修改自己的角色");
+        }
+
+        User target = userMapper.selectById(targetId);
+        if (target == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+
+        // 只能修改 ADMIN 或 SUPER_ADMIN 的角色
+        if (target.getRole() != RoleEnum.ADMIN && target.getRole() != RoleEnum.SUPER_ADMIN) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "只能修改管理员的角色");
+        }
+
+        RoleEnum roleEnum;
+        if ("ADMIN".equals(newRole)) {
+            roleEnum = RoleEnum.ADMIN;
+        } else if ("SUPER_ADMIN".equals(newRole)) {
+            roleEnum = RoleEnum.SUPER_ADMIN;
+        } else {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "无效的角色: " + newRole);
+        }
+
+        LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(User::getId, targetId).set(User::getRole, roleEnum);
+        userMapper.update(null, updateWrapper);
+
+        operationLogService.log(operatorId, "角色管理", "修改角色",
+                "user", targetId, "newRole=" + newRole, getClientIp());
+    }
+
+    @Override
+    @Transactional
+    public void updateAdminStatus(Long operatorId, Long targetId, Integer status) {
+        // 不能禁用自己的账号
+        if (operatorId.equals(targetId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不能操作自己的账号");
+        }
+
+        User target = userMapper.selectById(targetId);
+        if (target == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+
+        // 只能操作 ADMIN 或 SUPER_ADMIN 的状态
+        if (target.getRole() != RoleEnum.ADMIN && target.getRole() != RoleEnum.SUPER_ADMIN) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "只能操作管理员账号");
+        }
+
+        LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(User::getId, targetId).set(User::getStatus, status);
+        userMapper.update(null, updateWrapper);
+
+        operationLogService.log(operatorId, "管理员管理", status == 1 ? "启用管理员" : "禁用管理员",
+                "user", targetId, "status=" + status, getClientIp());
+    }
+
+    private UserVO convertToUserVO(User user) {
+        UserVO vo = new UserVO();
+        vo.setId(user.getId());
+        vo.setUid(user.getUid());
+        vo.setUsername(user.getUsername());
+        vo.setNickname(user.getNickname());
+        vo.setAvatar(user.getAvatar());
+        vo.setRole(user.getRole() != null ? user.getRole().getValue() : "USER");
+        vo.setStatus(user.getStatus());
+        vo.setCreatedAt(user.getCreatedAt());
+        vo.setArticleCount(user.getArticleCount() != null ? user.getArticleCount() : 0);
+        vo.setFollowCount(user.getFollowCount() != null ? user.getFollowCount() : 0);
+        vo.setFollowerCount(user.getFollowerCount() != null ? user.getFollowerCount() : 0);
+        return vo;
+    }
 }

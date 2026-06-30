@@ -453,6 +453,9 @@ public class AuthServiceImpl implements AuthService {
         if (RoleEnum.ADMIN.equals(user.getRole()) || RoleEnum.SUPER_ADMIN.equals(user.getRole())) {
             permissions.add("ROLE_ADMIN");
         }
+        if (RoleEnum.SUPER_ADMIN.equals(user.getRole())) {
+            permissions.add("ROLE_SUPER_ADMIN");
+        }
         userInfo.setPermissions(permissions);
 
         // 构建 Token 响应

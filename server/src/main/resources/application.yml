@@ -194,6 +194,7 @@ minio:
 # 端口规划（与 docs/PORTS.md 一致）：HTTP REST 统一使用 9201，让出 8080 给 Spring Boot
 # 历史原因：OpenSearch 2.11 的 performance analyzer 默认监听 8080，会与后端冲突。
 opensearch:
+  enabled: ${OPENSEARCH_ENABLED:false}
   hosts: ${OPENSEARCH_HOSTS:http://localhost:9201}
   username: ${OPENSEARCH_USERNAME:}
   password: ${OPENSEARCH_PASSWORD:}

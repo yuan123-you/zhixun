@@ -231,7 +231,14 @@ onMounted(async () => {
 })
 
 // ==================== 打开会话 ====================
+const router = useRouter()
 const openConversation = async (conv: Conversation) => {
+  // 移动端：导航到全屏聊天页
+  if (!isDesktop.value) {
+    router.push(`/messages/${conv.user.id}`)
+    return
+  }
+  // 桌面端：内联聊天面板
   activeConversation.value = conv
   messageStore.currentChatUserId = conv.user.id
   await messageStore.fetchMessages(conv.user.id)

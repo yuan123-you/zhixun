@@ -47,6 +47,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         if (RoleEnum.ADMIN.equals(user.getRole()) || RoleEnum.SUPER_ADMIN.equals(user.getRole())) {
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
+        if (RoleEnum.SUPER_ADMIN.equals(user.getRole())) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+        }
 
         // 返回 Spring Security 的 UserDetails
         return org.springframework.security.core.userdetails.User.builder()
