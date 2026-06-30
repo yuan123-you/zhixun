@@ -117,6 +117,10 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.GET, "/v1/users/recommend").permitAll()
                         // 匿名 IP 属地查询（公开）
                         .requestMatchers(HttpMethod.GET, "/v1/users/ip-location").permitAll()
+                        // 匿名 IP 属地详情查询（公开，供前端自动定位使用）
+                        .requestMatchers(HttpMethod.GET, "/v1/users/ip-location-detail").permitAll()
+                        // 匿名逆地理编码（公开，供前端 GPS 定位后解析地址使用）
+                        .requestMatchers(HttpMethod.GET, "/v1/users/reverse-geocode").permitAll()
                         // 用户关注/在线状态（需认证，需在 /v1/users/** ADMIN规则之前）
                         .requestMatchers(HttpMethod.POST, "/v1/users/{id}/follow").authenticated()
                         .requestMatchers(HttpMethod.GET, "/v1/users/{id}/following", "/v1/users/{id}/followers").permitAll()

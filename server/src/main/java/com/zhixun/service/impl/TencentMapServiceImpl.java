@@ -43,8 +43,8 @@ public class TencentMapServiceImpl implements TencentMapService {
     /** Redis Key 前缀：负缓存（IP 已知无法解析时短路） */
     private static final String REDIS_IP_NEG_KEY_PREFIX = "map:ip:null:";
 
-    /** 成功缓存 TTL：24h（带抖动） */
-    private static final long IP_CACHE_TTL_HOURS = 24L;
+    /** 成功缓存 TTL：2h（带抖动）。IP 定位精度有限，缩短 TTL 以适应用户位置变化） */
+    private static final long IP_CACHE_TTL_HOURS = 2L;
     /** 负缓存 TTL：30min（内网 IP、解析失败等） */
     private static final long IP_NEG_CACHE_TTL_MINUTES = 30L;
     /** 逆地理编码缓存 TTL：7 天（坐标基本不变） */

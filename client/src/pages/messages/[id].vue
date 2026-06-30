@@ -116,7 +116,19 @@
         </div>
       </template>
 
-      <!-- AI回复占位（不显示思考动画） -->
+      <!-- AI助手思考中动画 -->
+      <div v-if="aiThinking" class="flex items-start gap-2 max-w-[75%]">
+        <img :src="AI_AVATAR_URL" alt="AI" class="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+        <div class="ai-thinking-bubble">
+          <span class="ai-thinking-label">AI助手</span>
+          <span class="ai-thinking-text">正在思考</span>
+          <span class="ai-thinking-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </span>
+        </div>
+      </div>
 
       <!-- 底部哨兵：用于自动滚到底 -->
       <div ref="bottomSentinelRef" class="h-0"></div>
@@ -690,4 +702,44 @@ onUnmounted(() => {
   transition: opacity 0.15s;
 }
 .my-msg-avatar-btn:hover { opacity: 0.8; }
+
+/* AI思考中动画 */
+.ai-thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  border-bottom-left-radius: 6px;
+  background: rgba(99, 102, 241, 0.06);
+  border-left: 3px solid var(--zh-primary, #6366f1);
+  max-width: 75%;
+}
+.ai-thinking-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--zh-primary, #6366f1);
+}
+.ai-thinking-text {
+  font-size: 13px;
+  color: var(--zh-text-secondary, #64748b);
+}
+.ai-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ai-thinking-dots .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--zh-primary, #6366f1);
+  animation: aiDotBounce 1.2s ease-in-out infinite;
+}
+.ai-thinking-dots .dot:nth-child(2) { animation-delay: 0.15s; }
+.ai-thinking-dots .dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes aiDotBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
 </style>

@@ -8,10 +8,16 @@ interface WsMessage {
 
 /**
  * 群组聊天 WebSocket composable
- * 连接 /ws/group-chat?token=xxx&groupId=xxx
+ * 连接 /ws/group-chat?groupId=xxx
+ * 鉴权通过 httpOnly Cookie（accessToken）自动携带，URL token 参数作为兼容降级
  * 自动重连（指数退避，最多5次）
  */
-export function useGroupWebSocket(groupId: number, onMessage: (msg: GroupMessage) => void, onSystem?: (content: string) => void) {
+export function useGroupWebSocket(
+  groupId: number,
+  onMessage: (msg: GroupMessage) => void,
+  onSystem?: (content: string) => void,
+  token?: string,
+) {
   const connected = ref(false)
   const error = ref<string | null>(null)
 
@@ -20,25 +26,17 @@ export function useGroupWebSocket(groupId: number, onMessage: (msg: GroupMessage
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
   let disposed = false
 
-  function getToken(): string {
-    if (typeof window === 'undefined') return ''
-    try {
-      const raw = localStorage.getItem('zhixun_accessToken')
-      return raw ? JSON.parse(raw).value || '' : ''
-    } catch { return '' }
-  }
-
   function connect() {
     if (disposed || !groupId) return
-    const token = getToken()
-    if (!token) {
-      error.value = '未登录'
-      return
-    }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    const url = `${protocol}//${host}/ws/group-chat?token=${encodeURIComponent(token)}&groupId=${groupId}`
+    // 主要鉴权依赖 WebSocket 自动携带的 httpOnly Cookie（accessToken）
+    // URL token 参数作为兼容降级（Cookie 中无 token 时使用）
+    let url = `${protocol}//${host}/ws/group-chat?groupId=${groupId}`
+    if (token) {
+      url += `&token=${encodeURIComponent(token)}`
+    }
 
     try {
       ws = new WebSocket(url)

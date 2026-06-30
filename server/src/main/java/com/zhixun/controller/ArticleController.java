@@ -206,22 +206,55 @@ public class ArticleController {
     }
 
     /**
-     * 获取客户端真实IP，优先取 X-Forwarded-For / X-Real-IP
+     * 解析客户端真实 IP，兼容 Cloudflare / 普通反向代理 / 直连三种场景。
+     * 优先级：CF-Connecting-IP → X-Forwarded-For（取第一个非内网/非 CF IP）→ X-Real-IP → remoteAddr
      */
     private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
+        // 1) Cloudflare 专用头
+        String ip = request.getHeader("CF-Connecting-IP");
         if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
-            // X-Forwarded-For 可能包含多个IP，取第一个
-            int idx = ip.indexOf(',');
-            if (idx > 0) {
-                ip = ip.substring(0, idx);
-            }
             return ip.trim();
         }
+        // 2) X-Forwarded-For
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isEmpty() && !"unknown".equalsIgnoreCase(xff)) {
+            for (String candidate : xff.split(",")) {
+                String trimmed = candidate.trim();
+                if (!trimmed.isEmpty() && !isPrivateOrCloudflareIp(trimmed)) {
+                    return trimmed;
+                }
+            }
+            return xff.split(",")[0].trim();
+        }
+        // 3) X-Real-IP
         ip = request.getHeader("X-Real-IP");
         if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
             return ip.trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private boolean isPrivateOrCloudflareIp(String ip) {
+        if (ip == null || ip.isEmpty()) return true;
+        if (ip.startsWith("10.") || ip.startsWith("192.168.") || ip.startsWith("127.")
+                || ip.equals("::1") || ip.startsWith("169.254.")) return true;
+        if (ip.startsWith("172.")) {
+            try {
+                int second = Integer.parseInt(ip.split("\\.")[1]);
+                if (second >= 16 && second <= 31) return true;
+            } catch (Exception ignored) { }
+        }
+        try {
+            String[] parts = ip.split("\\.");
+            if (parts.length == 4) {
+                int first = Integer.parseInt(parts[0]);
+                int second = Integer.parseInt(parts[1]);
+                if (first == 162 && second == 158) return true;
+                if (first == 172 && second >= 64 && second <= 71) return true;
+                if (first == 104 && second >= 16 && second <= 31) return true;
+                if (first == 198 && second == 41 && Integer.parseInt(parts[2]) >= 128) return true;
+            }
+        } catch (Exception ignored) { }
+        return false;
     }
 }

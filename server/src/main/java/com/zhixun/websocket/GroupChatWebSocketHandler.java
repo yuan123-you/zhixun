@@ -19,6 +19,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -259,6 +260,13 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private Long extractUserId(WebSocketSession session) {
+        // 优先从握手拦截器设置的 attributes 中获取 userId（Cookie 鉴权场景）
+        Object userIdAttr = session.getAttributes().get("userId");
+        if (userIdAttr instanceof Long userId) {
+            return userId;
+        }
+
+        // 降级：从 token 解析（URL 参数鉴权场景）
         String token = extractToken(session);
         if (token == null) return null;
         if (!jwtUtil.validateAccessToken(token)) return null;
@@ -278,6 +286,17 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private String extractToken(WebSocketSession session) {
+        // 方式1: 从握手拦截器保存的 Cookie 中读取 accessToken
+        Object cookiesObj = session.getAttributes().get("handshakeCookies");
+        if (cookiesObj instanceof Cookie[] cookies) {
+            for (Cookie cookie : cookies) {
+                if ("accessToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        // 方式2: 从 URL 参数读取（兼容旧版本）
         URI uri = session.getUri();
         if (uri == null || uri.getQuery() == null) return null;
         for (String param : uri.getQuery().split("&")) {

@@ -169,7 +169,8 @@ function connectWebSocket() {
         mentionedUserIds: [],
         createdAt: new Date().toISOString(),
       })
-    }
+    },
+    userStore.token || undefined,
   )
   wsCleanup = disconnect
 }
