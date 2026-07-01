@@ -1,4 +1,4 @@
-<!-- ChatBubble 2026-07-01-v4: 修复私信/群组 voice/file 显示 --><template>
+<!-- ChatBubble 2026-07-02-v6: 修复设备缓存旧 chunk 导致 voice/file 不渲染问题 --><template>
   <div class="chat-bubble-wrap">
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
@@ -69,6 +69,11 @@ const props = defineProps<{
 defineEmits<{
   'preview-image': [url: string]
 }>()
+
+// 调试标识：v6 — 用于确认浏览器加载了最新 chunk（修复 voice/file 显示）
+if (typeof window !== 'undefined') {
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v6'
+}
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
 
