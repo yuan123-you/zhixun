@@ -1,4 +1,4 @@
-<!-- ChatBubble 2026-07-02-v7: voice 独立浅色背景 + 群组页布局修复 --><template>
+<!-- ChatBubble 2026-07-02-v8: 强制 chunk hash 变，刷新用户浏览器缓存 --><template>
   <div class="chat-bubble-wrap">
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
@@ -70,9 +70,9 @@ defineEmits<{
   'preview-image': [url: string]
 }>()
 
-// 调试标识：v7 — voice 独立浅色背景，修复自己发的语音在白底看不见
+// 调试标识：v8 — 强制 chunk hash 变以刷新用户浏览器缓存
 if (typeof window !== 'undefined') {
-  ;(window as any).__CHATBUBBLE_VERSION__ = 'v7'
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v8'
 }
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()

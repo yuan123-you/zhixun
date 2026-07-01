@@ -316,6 +316,7 @@ useHead({
 .group-page-chat {
   flex: 1;
   min-width: 0;
+  min-height: 0; /* 2026-07-02 v8: 修复 flex 子项默认 min-height: auto 导致内容溢出时容器被撑高 */
   overflow: hidden;
 }
 

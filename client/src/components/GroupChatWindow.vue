@@ -1310,9 +1310,14 @@ watch(() => props.group?.id, (id) => {
 
 /* ===== 消息列表 ===== */
 .qq-chat-msgs {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
+  flex: 1;
+  min-height: 0; /* 2026-07-02 v8: 修复内容超出时撑高容器导致 input 错位 */
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px 14px;
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   -webkit-overflow-scrolling: touch;
 }
 .qq-load-more, .qq-no-more {
