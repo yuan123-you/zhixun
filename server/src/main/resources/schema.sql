@@ -268,8 +268,9 @@ CREATE TABLE IF NOT EXISTS user_message (
   type VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型: text/image/voice/file/system',
   is_read TINYINT DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (sender_id) REFERENCES sys_user(id) ON DELETE CASCADE,
-  FOREIGN KEY (receiver_id) REFERENCES sys_user(id) ON DELETE CASCADE
+  -- 不使用外键约束：允许 AI 助手（sender_id=0）发送私信，避免级联删除丢失消息
+  -- FOREIGN KEY (sender_id) REFERENCES sys_user(id) ON DELETE CASCADE,
+  -- FOREIGN KEY (receiver_id) REFERENCES sys_user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='私信表';
 CREATE INDEX idx_user_message_sender ON user_message(sender_id);
 CREATE INDEX idx_user_message_receiver ON user_message(receiver_id);
