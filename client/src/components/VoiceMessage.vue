@@ -2,22 +2,39 @@
   <div
     class="voice-msg"
     :class="{ 'voice-msg-mine': isMine, 'voice-msg-playing': isPlaying }"
+    :style="{ width: barWidth }"
     @click="togglePlay"
   >
-    <!-- 喇叭/播放图标 -->
-    <div class="voice-icon">
-      <svg v-if="isPlaying" class="voice-wave" viewBox="0 0 24 24" fill="currentColor">
-        <rect class="wave-bar wave-bar-1" x="3" y="8" width="2.5" height="8" rx="1.25" />
-        <rect class="wave-bar wave-bar-2" x="7.5" y="5" width="2.5" height="14" rx="1.25" />
-        <rect class="wave-bar wave-bar-3" x="12" y="7" width="2.5" height="10" rx="1.25" />
-        <rect class="wave-bar wave-bar-4" x="16.5" y="9" width="2.5" height="6" rx="1.25" />
-      </svg>
-      <svg v-else class="voice-play-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
-    </div>
-    <!-- 语音时长 -->
-    <span class="voice-duration">{{ formatDuration(displayDuration) }}</span>
+    <!-- 自己发的语音：时长在左，图标在右（QQ风格） -->
+    <template v-if="isMine">
+      <span class="voice-duration">{{ formatDuration(displayDuration) }}</span>
+      <div class="voice-icon">
+        <svg v-if="isPlaying" class="voice-wave" viewBox="0 0 24 24" fill="currentColor">
+          <rect class="wave-bar wave-bar-1" x="3" y="8" width="2.5" height="8" rx="1.25" />
+          <rect class="wave-bar wave-bar-2" x="7.5" y="5" width="2.5" height="14" rx="1.25" />
+          <rect class="wave-bar wave-bar-3" x="12" y="7" width="2.5" height="10" rx="1.25" />
+          <rect class="wave-bar wave-bar-4" x="16.5" y="9" width="2.5" height="6" rx="1.25" />
+        </svg>
+        <svg v-else class="voice-play-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      </div>
+    </template>
+    <!-- 对方语音：图标在左，时长在右 -->
+    <template v-else>
+      <div class="voice-icon">
+        <svg v-if="isPlaying" class="voice-wave" viewBox="0 0 24 24" fill="currentColor">
+          <rect class="wave-bar wave-bar-1" x="3" y="8" width="2.5" height="8" rx="1.25" />
+          <rect class="wave-bar wave-bar-2" x="7.5" y="5" width="2.5" height="14" rx="1.25" />
+          <rect class="wave-bar wave-bar-3" x="12" y="7" width="2.5" height="10" rx="1.25" />
+          <rect class="wave-bar wave-bar-4" x="16.5" y="9" width="2.5" height="6" rx="1.25" />
+        </svg>
+        <svg v-else class="voice-play-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      </div>
+      <span class="voice-duration">{{ formatDuration(displayDuration) }}</span>
+    </template>
     <!-- 隐藏的 audio 元素 -->
     <audio ref="audioRef" :src="resolvedUrl" preload="metadata" @ended="onEnded" @loadedmetadata="onMetaLoaded" />
   </div>
@@ -65,6 +82,17 @@ const resolvedUrl = computed(() => {
   return resolved
 })
 const displayDuration = computed(() => props.duration || metaDuration.value || 0)
+
+/** 根据语音时长计算语音条宽度（类似QQ：短语音窄，长语音宽） */
+const barWidth = computed(() => {
+  const dur = displayDuration.value
+  if (!dur || dur <= 0) return '90px'
+  // 1秒≈80px, 最短90px, 最长220px
+  const minW = 90
+  const maxW = 220
+  const w = Math.min(maxW, Math.max(minW, minW + (dur - 1) * 12))
+  return w + 'px'
+})
 
 /** 格式化秒数为 mm:ss */
 function formatDuration(seconds: number): string {
@@ -127,8 +155,6 @@ watch(() => props.url, () => {
   padding: 8px 16px 8px 12px;
   border-radius: 18px;
   cursor: pointer;
-  min-width: 90px;
-  max-width: 220px;
   transition: background 0.15s, opacity 0.15s;
   user-select: none;
   -webkit-user-select: none;

@@ -133,6 +133,15 @@ public class FileController {
             response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=86400");
             // 启用跨域（图片通常由 img 标签加载，跨域读不需要 CORS，但加 CORS 头便于 fetch/canvas）
             response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+            // 可在线预览的文件类型设置 Content-Disposition: inline，允许浏览器直接展示
+            // 其他类型设置 attachment 触发下载
+            if (contentType.startsWith("image/") || contentType.equals("application/pdf")
+                    || contentType.startsWith("text/") || contentType.startsWith("audio/")) {
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline");
+            } else {
+                String fileName = objectKey.contains("/") ? objectKey.substring(objectKey.lastIndexOf('/') + 1) : objectKey;
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+            }
             try (OutputStream out = response.getOutputStream()) {
                 byte[] buffer = new byte[8192];
                 int len;
@@ -241,6 +250,18 @@ public class FileController {
         if (lower.endsWith(".m4a")) return "audio/mp4";
         if (lower.endsWith(".webm")) return "audio/webm";
         if (lower.endsWith(".pdf")) return "application/pdf";
+        if (lower.endsWith(".doc")) return "application/msword";
+        if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if (lower.endsWith(".xls")) return "application/vnd.ms-excel";
+        if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (lower.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+        if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if (lower.endsWith(".txt")) return "text/plain; charset=utf-8";
+        if (lower.endsWith(".zip")) return "application/zip";
+        if (lower.endsWith(".rar")) return "application/vnd.rar";
+        if (lower.endsWith(".7z")) return "application/x-7z-compressed";
+        if (lower.endsWith(".tar")) return "application/x-tar";
+        if (lower.endsWith(".gz")) return "application/gzip";
         return MediaType.APPLICATION_OCTET_STREAM_VALUE;
     }
 

@@ -378,7 +378,7 @@
 
     <!-- 隐藏的file input -->
     <input ref="imageInput" type="file" accept="image/*" style="display:none" @change="handleImageSelect" />
-    <input ref="fileInput" type="file" style="display:none" @change="handleFileSelect" />
+    <input ref="fileInput" type="file" accept=".doc,.docx,.pdf,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.tar,.gz" style="display:none" @change="handleFileSelect" />
 
     <!-- 上传进度 -->
     <UploadOverlay :uploading="uploading" :progress="uploadProgress" />
@@ -943,6 +943,21 @@ async function handleFileSelect(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file || !props.group) return
   (e.target as HTMLInputElement).value = ''
+
+  // 校验文件大小（20MB）
+  if (file.size > 20 * 1024 * 1024) {
+    showToast('文件大小不能超过20MB', 'error', { position: 'top-center' })
+    return
+  }
+
+  // 校验文件扩展名
+  const allowedExts = ['doc', 'docx', 'pdf', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', '7z', 'tar', 'gz']
+  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+  if (!allowedExts.includes(ext)) {
+    showToast('不支持该文件格式，仅支持 Word/PDF/TXT/Excel/PPT/压缩包', 'error', { position: 'top-center' })
+    return
+  }
+
   uploading.value = true
   uploadProgress.value = 0
   try {

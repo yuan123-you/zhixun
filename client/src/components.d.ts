@@ -36,6 +36,7 @@ declare module 'vue' {
     EmptyState: typeof import('./components/EmptyState.vue')['default']
     ErrorRetry: typeof import('./components/ErrorRetry.vue')['default']
     FileCard: typeof import('./components/chat/FileCard.vue')['default']
+    FilePreviewDialog: typeof import('./components/chat/FilePreviewDialog.vue')['default']
     GroupChatWindow: typeof import('./components/GroupChatWindow.vue')['default']
     GroupMemberPanel: typeof import('./components/GroupMemberPanel.vue')['default']
     GroupSearchPanel: typeof import('./components/GroupSearchPanel.vue')['default']

@@ -18,7 +18,7 @@
 
     <!-- 文件消息 -->
     <div v-else-if="messageType === 'file'" class="chat-bubble chat-bubble-file" :class="isMine ? 'chat-bubble-mine' : 'chat-bubble-other'">
-      <FileCard :content="content" />
+      <FileCard :content="content" @preview="onFilePreview" />
     </div>
 
     <!-- 语音消息 -->
@@ -33,6 +33,15 @@
 
     <!-- 时间戳 -->
     <span v-if="time" class="bubble-time" :class="{ 'bubble-time-mine': isMine }">{{ time }}</span>
+
+    <!-- 文件预览弹窗 -->
+    <FilePreviewDialog
+      :visible="filePreviewVisible"
+      :file-url="filePreviewUrl"
+      :file-name="filePreviewName"
+      :file-ext="filePreviewExt"
+      @close="filePreviewVisible = false"
+    />
   </div>
 </template>
 
@@ -41,9 +50,10 @@
  * ChatBubble - 消息气泡组件（私信/群聊共用）
  * 统一 QQ 蓝 #498FE8 气泡样式、文件/图片/语音/AI 渲染
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import FileCard from './FileCard.vue'
 import VoiceMessage from '@/components/VoiceMessage.vue'
+import FilePreviewDialog from './FilePreviewDialog.vue'
 import { useChatMedia } from '@/composables/chat/useChatMedia'
 
 const props = defineProps<{
@@ -69,6 +79,19 @@ const resolvedUrl = computed(() => {
 
 const voiceUrl = computed(() => getVoiceUrl(props.content))
 const voiceDuration = computed(() => getVoiceDuration(props.content))
+
+// 文件预览状态
+const filePreviewVisible = ref(false)
+const filePreviewUrl = ref('')
+const filePreviewName = ref('')
+const filePreviewExt = ref('')
+
+const onFilePreview = (url: string, name: string, ext: string) => {
+  filePreviewUrl.value = url
+  filePreviewName.value = name
+  filePreviewExt.value = ext
+  filePreviewVisible.value = true
+}
 </script>
 
 <style scoped>
