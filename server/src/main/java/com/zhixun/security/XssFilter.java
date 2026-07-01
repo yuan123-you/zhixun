@@ -163,7 +163,7 @@ public class XssFilter extends OncePerRequestFilter {
 
         try {
             Object json = OBJECT_MAPPER.readValue(body, Object.class);
-            Object filtered = filterJsonValue(json);
+            Object filtered = filterJsonValue(json, null);
             return OBJECT_MAPPER.writeValueAsBytes(filtered);
         } catch (Exception e) {
             log.warn("XSS JSON 过滤异常，使用原始请求体: {}", e.getMessage());
@@ -173,24 +173,31 @@ public class XssFilter extends OncePerRequestFilter {
 
     /**
      * 递归过滤 JSON 值
+     * <p>
+     * 注意：content 字段（富文本/JSON结构）不在此处过滤，由业务层单独处理
+     * 防止破坏 JSON 内部的双引号（&quot; 会导致 JSON.parse 失败）
      */
     @SuppressWarnings("unchecked")
-    private static Object filterJsonValue(Object value) {
+    private static Object filterJsonValue(Object value, String parentKey) {
         if (value == null) return null;
         if (value instanceof String str) {
+            // content 字段（富文本/JSON结构）跳过 XSS 转义，避免破坏内部双引号
+            if ("content".equalsIgnoreCase(parentKey)) {
+                return str;
+            }
             return HtmlWhitelistFilter.escapePlainText(str);
         }
         if (value instanceof Map) {
             Map<String, Object> map = new HashMap<>();
             for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
-                map.put(entry.getKey(), filterJsonValue(entry.getValue()));
+                map.put(entry.getKey(), filterJsonValue(entry.getValue(), entry.getKey()));
             }
             return map;
         }
         if (value instanceof java.util.List) {
             java.util.List<Object> list = new java.util.ArrayList<>();
             for (Object item : (java.util.List<?>) value) {
-                list.add(filterJsonValue(item));
+                list.add(filterJsonValue(item, parentKey));
             }
             return list;
         }
@@ -203,7 +210,7 @@ public class XssFilter extends OncePerRequestFilter {
      */
     private static String sanitizeParam(String name, String value) {
         if (value == null || value.isEmpty()) return value;
-        // content 字段是富文本，不做转义，由业务层 HtmlWhitelistFilter.filterRichText() 处理
+        // content 字段是富文本/JSON结构，不做转义，由业务层 HtmlWhitelistFilter.filterRichText() 处理
         if ("content".equalsIgnoreCase(name)) {
             return value;
         }
