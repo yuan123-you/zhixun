@@ -1,4 +1,4 @@
-<!-- ChatBubble 2026-07-02-v6: 修复设备缓存旧 chunk 导致 voice/file 不渲染问题 --><template>
+<!-- ChatBubble 2026-07-02-v7: voice 独立浅色背景 + 群组页布局修复 --><template>
   <div class="chat-bubble-wrap">
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
@@ -70,9 +70,9 @@ defineEmits<{
   'preview-image': [url: string]
 }>()
 
-// 调试标识：v6 — 用于确认浏览器加载了最新 chunk（修复 voice/file 显示）
+// 调试标识：v7 — voice 独立浅色背景，修复自己发的语音在白底看不见
 if (typeof window !== 'undefined') {
-  ;(window as any).__CHATBUBBLE_VERSION__ = 'v6'
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v7'
 }
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
@@ -203,10 +203,19 @@ const onFilePreview = (url: string, name: string, ext: string) => {
   box-shadow: none !important;
 }
 
-/* 语音消息 */
+/* 语音消息 - 2026-07-02 v7: 独立背景，修复自己发的语音在白底上看不见 */
 .chat-bubble-voice {
   padding: 4px 6px !important;
   min-width: 100px;
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+}
+.chat-bubble-voice.chat-bubble-other {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
 }
 
 /* 移动端适配 */

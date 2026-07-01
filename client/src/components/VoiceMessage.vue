@@ -206,24 +206,14 @@ watch(() => props.url, () => {
   line-height: 1;
 }
 
-/* 自己发的语音 - 白色文字 */
-.voice-msg-mine .voice-duration {
-  color: rgba(255, 255, 255, 0.9);
+/* 语音条文字色：统一深色（适配 .chat-bubble-voice 浅灰背景） - 2026-07-02 v7 */
+.voice-msg .voice-duration {
+  color: #1e293b;
 }
-.voice-msg-mine .voice-play-icon,
-.voice-msg-mine .wave-bar {
-  color: rgba(255, 255, 255, 0.95);
-  fill: rgba(255, 255, 255, 0.95);
-}
-
-/* 别人的语音 - 深色文字 */
-.voice-msg:not(.voice-msg-mine) .voice-duration {
-  color: var(--zh-text, #1e293b);
-}
-.voice-msg:not(.voice-msg-mine) .voice-play-icon,
-.voice-msg:not(.voice-msg-mine) .wave-bar {
-  color: var(--zh-text-secondary, #64748b);
-  fill: var(--zh-text-secondary, #64748b);
+.voice-msg .voice-play-icon,
+.voice-msg .wave-bar {
+  color: #64748b;
+  fill: #64748b;
 }
 
 /* 播放中 */
