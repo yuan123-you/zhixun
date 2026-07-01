@@ -37,7 +37,7 @@
         <el-card shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-info">
-              <p class="stat-label">日活用户</p>
+              <p class="stat-label">{{ periodLabel }}活跃</p>
               <p class="stat-value">{{ formatNumber(dashboardData.todayDau) }}</p>
             </div>
             <el-icon class="stat-icon" style="color: #e6a23c"><TrendCharts /></el-icon>
@@ -48,7 +48,7 @@
         <el-card shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-info">
-              <p class="stat-label">今日浏览</p>
+              <p class="stat-label">{{ periodLabel }}浏览</p>
               <p class="stat-value">{{ formatNumber(dashboardData.todayView) }}</p>
             </div>
             <el-icon class="stat-icon" style="color: #f56c6c"><View /></el-icon>
@@ -59,7 +59,7 @@
         <el-card shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-info">
-              <p class="stat-label">今日点赞</p>
+              <p class="stat-label">{{ periodLabel }}点赞</p>
               <p class="stat-value">{{ formatNumber(dashboardData.todayLike) }}</p>
             </div>
             <el-icon class="stat-icon" style="color: #e040fb"><StarFilled /></el-icon>
@@ -70,7 +70,7 @@
         <el-card shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-info">
-              <p class="stat-label">今日评论</p>
+              <p class="stat-label">{{ periodLabel }}评论</p>
               <p class="stat-value">{{ formatNumber(dashboardData.todayComment) }}</p>
             </div>
             <el-icon class="stat-icon" style="color: #00bcd4"><ChatDotRound /></el-icon>
@@ -225,8 +225,7 @@ import {
   LegendComponent,
   GridComponent,
 } from 'echarts/components'
-import type { EnhancedDashboardData, Article } from '@/types'
-import { getEnhancedDashboardData } from '@/api/dashboard'
+import type { EnhancedDashboardData, RetentionRate, ActivityDistribution, CategoryDistribution, GrowthTrend } from '@/types'
 import { formatNumber } from '@/utils/format'
 import { useRequestCache } from '@/composables/useRequestCache'
 
@@ -246,6 +245,12 @@ const router = useRouter()
 
 /** 时间维度 */
 const period = ref<'daily' | 'weekly' | 'monthly'>('daily')
+
+/** 时间维度标签 */
+const periodLabel = computed(() => {
+  const labels: Record<string, string> = { daily: '今日', weekly: '本周', monthly: '本月' }
+  return labels[period.value] || '今日'
+})
 
 /** 仪表盘缓存实例 */
 const dashboardCache = useRequestCache<EnhancedDashboardData>({
@@ -328,7 +333,7 @@ const retentionChartOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: dashboardData.value.retentionRates.map((item) => `第${item.day}天`),
+    data: dashboardData.value.retentionRates.map((item: RetentionRate) => `第${item.day}天`),
   },
   yAxis: {
     type: 'value',
@@ -342,7 +347,7 @@ const retentionChartOption = computed(() => ({
       name: '留存率',
       type: 'line',
       smooth: true,
-      data: dashboardData.value.retentionRates.map((item) => item.rate),
+      data: dashboardData.value.retentionRates.map((item: RetentionRate) => item.rate),
       itemStyle: { color: '#67c23a' },
       areaStyle: {
         color: {
@@ -387,7 +392,7 @@ const activityPieChartOption = computed(() => ({
         show: true,
         formatter: '{b}\n{d}%',
       },
-      data: dashboardData.value.activityDistributions.map((item) => ({
+      data: dashboardData.value.activityDistributions.map((item: ActivityDistribution) => ({
         name: item.level,
         value: item.count,
       })),
@@ -410,7 +415,7 @@ const categoryBarChartOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: dashboardData.value.categoryDistributions.map((item) => item.categoryName),
+    data: dashboardData.value.categoryDistributions.map((item: CategoryDistribution) => item.categoryName),
     axisLabel: {
       rotate: 30,
     },
@@ -423,7 +428,7 @@ const categoryBarChartOption = computed(() => ({
     {
       name: '作品数',
       type: 'bar',
-      data: dashboardData.value.categoryDistributions.map((item) => item.articleCount),
+      data: dashboardData.value.categoryDistributions.map((item: CategoryDistribution) => item.articleCount),
       itemStyle: {
         color: {
           type: 'linear',
@@ -459,7 +464,7 @@ const growthTrendChartOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: dashboardData.value.growthTrends.map((item) => item.periodLabel),
+    data: dashboardData.value.growthTrends.map((item: GrowthTrend) => item.periodLabel),
   },
   yAxis: {
     type: 'value',
@@ -468,26 +473,26 @@ const growthTrendChartOption = computed(() => ({
     {
       name: '新增用户',
       type: 'bar',
-      data: dashboardData.value.growthTrends.map((item) => item.newUserCount),
+      data: dashboardData.value.growthTrends.map((item: GrowthTrend) => item.newUserCount),
       itemStyle: { color: '#409eff' },
     },
     {
       name: '新增作品',
       type: 'bar',
-      data: dashboardData.value.growthTrends.map((item) => item.newArticleCount),
+      data: dashboardData.value.growthTrends.map((item: GrowthTrend) => item.newArticleCount),
       itemStyle: { color: '#67c23a' },
     },
     {
       name: '浏览量',
       type: 'bar',
-      data: dashboardData.value.growthTrends.map((item) => item.viewCount),
+      data: dashboardData.value.growthTrends.map((item: GrowthTrend) => item.viewCount),
       itemStyle: { color: '#e6a23c' },
     },
   ],
 }))
 
 /** 跳转审核 */
-function handleAudit(_article: Article) {
+function handleAudit(_article: any) {
   router.push('/articles/pending')
 }
 

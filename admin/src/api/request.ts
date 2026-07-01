@@ -194,7 +194,7 @@ service.interceptors.response.use(
       if (config.__retryCount < MAX_RETRIES) {
         config.__retryCount++
         // 指数退避：第1次等1s，第2次等2s
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * config.__retryCount))
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * (config.__retryCount || 0)))
         return service(config)
       }
     }

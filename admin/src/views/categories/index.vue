@@ -71,7 +71,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Category } from '@/types'
-import { getCategoryTree, createCategory, updateCategory, deleteCategory } from '@/api/category'
+import { createCategory, updateCategory, deleteCategory } from '@/api/category'
 import { useRequestCache } from '@/composables/useRequestCache'
 
 /** 分类缓存实例 */
@@ -118,7 +118,7 @@ function flattenCategories(categories: Category[]): Category[] {
 }
 
 /** 新增分类 */
-function handleAdd(parent?: Category) {
+function handleAdd(parent?: any) {
   editingCategory.value = null
   categoryForm.name = ''
   categoryForm.description = ''
@@ -128,7 +128,7 @@ function handleAdd(parent?: Category) {
 }
 
 /** 编辑分类 */
-function handleEdit(category: Category) {
+function handleEdit(category: any) {
   editingCategory.value = category
   categoryForm.name = category.name
   categoryForm.description = category.description
@@ -162,7 +162,7 @@ async function handleSubmit() {
 }
 
 /** 删除分类 */
-async function handleDelete(category: Category) {
+async function handleDelete(category: any) {
   try {
     await ElMessageBox.confirm('确定要删除该分类吗？', '提示', {
       confirmButtonText: '确定',

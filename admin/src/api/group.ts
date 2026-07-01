@@ -1,5 +1,5 @@
 import { get, del, put } from './request'
-import type { GroupInfo, GroupMember, GroupMessage, GroupQuery, PageResult, ApiResponse } from '@/types'
+import type { GroupInfo, GroupMember, GroupMessage, GroupQuery, PageResult } from '@/types'
 
 /** 获取群组列表 */
 export function getGroupList(params: GroupQuery) {

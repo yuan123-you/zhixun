@@ -1,41 +1,68 @@
 // 共享类型（来自 @zhixun/shared-types 统一类型包）
-export {
-  ErrorCode,
-  ErrorMessage,
-  type ApiResponse,
-  type PageResult,
-  type ArticleVO,
-  type CategoryVO,
-  type TagVO,
-  type UserBrief,
-  type ArticleCreateParams,
-  type ArticleQueryParams,
-  // 群组相关
-  type GroupInfo,
-  type GroupMember,
-  type GroupMessage,
-  type GroupQuery,
-  // 私信相关
-  type ConversationInfo,
-  type MessageInfo,
-  type MessageQuery,
-  // 通知相关
-  NotificationType,
-  type NotificationBroadcast,
-  type NotificationQuery,
-  // 登录日志
-  type LoginLog,
-  type LoginLogQuery,
-  // 仪表盘
-  type DashboardData,
-  type TrendData,
-  type RetentionRate,
-  type ActivityDistribution,
-  type GrowthTrend,
-  type CategoryDistribution,
-  type HotArticleRank,
-  type CreatorRank,
+// import type 先将类型引入本地作用域，再 export type 重新导出
+import type {
+  ApiResponse,
+  PageResult,
+  ArticleVO,
+  CategoryVO,
+  TagVO,
+  UserBrief,
+  ArticleCreateParams,
+  ArticleQueryParams,
+  GroupInfo,
+  GroupMember,
+  GroupMessage,
+  GroupQuery,
+  ConversationInfo,
+  MessageInfo,
+  MessageQuery,
+  NotificationBroadcast,
+  NotificationQuery,
+  LoginLog,
+  LoginLogQuery,
+  DashboardData,
+  TrendData,
+  RetentionRate,
+  ActivityDistribution,
+  GrowthTrend,
+  CategoryDistribution,
+  HotArticleRank,
+  CreatorRank,
 } from '@zhixun/shared-types'
+
+// 值导出（枚举）
+export { ErrorCode, ErrorMessage, NotificationType } from '@zhixun/shared-types'
+
+// 类型重新导出
+export type {
+  ApiResponse,
+  PageResult,
+  ArticleVO,
+  CategoryVO,
+  TagVO,
+  UserBrief,
+  ArticleCreateParams,
+  ArticleQueryParams,
+  GroupInfo,
+  GroupMember,
+  GroupMessage,
+  GroupQuery,
+  ConversationInfo,
+  MessageInfo,
+  MessageQuery,
+  NotificationBroadcast,
+  NotificationQuery,
+  LoginLog,
+  LoginLogQuery,
+  DashboardData,
+  TrendData,
+  RetentionRate,
+  ActivityDistribution,
+  GrowthTrend,
+  CategoryDistribution,
+  HotArticleRank,
+  CreatorRank,
+}
 
 /** 通用分页请求参数 */
 export interface PageParams {
@@ -298,7 +325,9 @@ export interface UploadResult {
 export interface AuditParams {
   id: number
   /** 状态值：2=通过(发布)，3=驳回 */
-  status: number
+  status?: number
+  /** 审核动作：approve=通过，reject=驳回 */
+  action?: 'approve' | 'reject'
   reason?: string
 }
 

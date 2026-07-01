@@ -15,7 +15,7 @@ const props = defineProps<{
 }>()
 
 /** 状态配置映射（字符串 + 数字键） */
-const statusConfig: Record<string, { label: string; type: string }> = {
+const statusConfig: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' }> = {
   // 字符串状态（前端枚举值）
   draft: { label: '草稿', type: 'info' },
   pending: { label: '待审核', type: 'warning' },
@@ -37,7 +37,7 @@ const statusConfig: Record<string, { label: string; type: string }> = {
 const statusKey = computed(() => String(props.status))
 
 /** 标签类型 */
-const tagType = computed(() => statusConfig[statusKey.value]?.type || 'info')
+const tagType = computed<'success' | 'warning' | 'danger' | 'info'>(() => statusConfig[statusKey.value]?.type || 'info')
 
 /** 标签文本 */
 const label = computed(() => statusConfig[statusKey.value]?.label || statusKey.value)

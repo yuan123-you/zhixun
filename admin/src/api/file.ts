@@ -1,4 +1,3 @@
-import { post } from './request'
 import type { UploadResult } from '@/types'
 import service from './request'
 

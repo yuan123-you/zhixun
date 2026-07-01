@@ -120,7 +120,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Announcement } from '@/types'
-import { getAnnouncementList, createAnnouncement, updateAnnouncement, deleteAnnouncement } from '@/api/announcement'
+import { createAnnouncement, updateAnnouncement, deleteAnnouncement } from '@/api/announcement'
 import { useRequestCache } from '@/composables/useRequestCache'
 
 /** 公告缓存实例 */
@@ -169,7 +169,7 @@ function handleAdd() {
 }
 
 /** 编辑公告 */
-function handleEdit(announcement: Announcement) {
+function handleEdit(announcement: any) {
   editingAnnouncement.value = announcement
   announcementForm.title = announcement.title
   announcementForm.content = announcement.content
@@ -206,7 +206,7 @@ async function handleSubmit() {
 }
 
 /** 删除公告 */
-async function handleDelete(announcement: Announcement) {
+async function handleDelete(announcement: any) {
   try {
     await ElMessageBox.confirm('确定要删除该公告吗？', '提示', {
       confirmButtonText: '确定',

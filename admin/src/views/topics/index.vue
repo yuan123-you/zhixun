@@ -31,8 +31,8 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status === 0" type="warning" size="small" @click="toggleStatus(row as TopicVO)">隐藏</el-button>
-            <el-button v-else type="success" size="small" @click="toggleStatus(row as TopicVO)">恢复</el-button>
+            <el-button v-if="row.status === 0" type="warning" size="small" @click="toggleStatus(row)">隐藏</el-button>
+            <el-button v-else type="success" size="small" @click="toggleStatus(row)">恢复</el-button>
             <el-button type="danger" size="small" @click="doDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
@@ -103,7 +103,7 @@ async function doCreate() {
   } catch (e) { /* ignore */ }
 }
 
-async function toggleStatus(topic: TopicVO) {
+async function toggleStatus(topic: any) {
   const newStatus = topic.status === 0 ? 1 : 0
   try {
     await toggleTopicStatus(topic.id, newStatus)

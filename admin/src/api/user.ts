@@ -1,4 +1,4 @@
-import { get, put, post, del } from './request'
+import { get, put, del } from './request'
 import type { UserInfo, UserDetail, UserQuery, PageResult, UserStatus } from '@/types'
 
 /** 获取用户列表 */

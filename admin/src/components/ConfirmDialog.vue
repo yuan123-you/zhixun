@@ -33,7 +33,7 @@ const props = withDefaults(
     /** 取消按钮文本 */
     cancelText?: string
     /** 确认按钮类型 */
-    confirmType?: string
+    confirmType?: 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'default'
     /** 对话框宽度 */
     width?: string
     /** 加载状态 */

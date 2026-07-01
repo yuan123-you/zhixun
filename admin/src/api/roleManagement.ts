@@ -1,5 +1,5 @@
 import { get, put } from './request'
-import type { PageResult, ApiResponse } from '@/types'
+import type { PageResult } from '@/types'
 
 /** 管理员信息 */
 export interface AdminUser {

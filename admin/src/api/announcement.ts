@@ -1,5 +1,5 @@
 import { get, post, put, del } from './request'
-import type { Announcement, PageResult, PageParams } from '@/types'
+import type { Announcement, PageParams } from '@/types'
 
 /** 获取公告列表（管理端） */
 export function getAnnouncementList(params?: PageParams & { keyword?: string }) {

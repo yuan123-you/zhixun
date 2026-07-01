@@ -34,7 +34,7 @@
         <el-table-column prop="word" label="敏感词" min-width="200" />
         <el-table-column label="级别" width="120">
           <template #default="{ row }">
-            <el-tag :type="levelTypeMap[row.level] as '' | 'success' | 'warning' | 'info' | 'danger' | 'primary'">
+            <el-tag :type="levelTypeMap[row.level] as 'success' | 'warning' | 'info' | 'danger' | 'primary' | undefined">
               {{ levelNameMap[row.level] }}
             </el-tag>
           </template>
@@ -135,9 +135,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { SensitiveWord, SensitiveWordLevel } from '@/types'
+import type { SensitiveWord } from '@/types'
+import { SensitiveWordLevel } from '@/types'
 import {
-  getSensitiveWordList,
   createSensitiveWord,
   batchCreateSensitiveWords,
   deleteSensitiveWord,
@@ -180,7 +180,7 @@ const queryParams = reactive({
 const addDialogVisible = ref(false)
 const addLoading = ref(false)
 const addFormRef = ref<FormInstance>()
-const addForm = reactive({ word: '', level: 'review' as SensitiveWordLevel })
+const addForm = reactive({ word: '', level: SensitiveWordLevel.Review })
 const addRules: FormRules = {
   word: [{ required: true, message: '请输入敏感词', trigger: 'blur' }],
   level: [{ required: true, message: '请选择级别', trigger: 'change' }],
@@ -189,23 +189,23 @@ const addRules: FormRules = {
 /** 批量添加相关 */
 const batchDialogVisible = ref(false)
 const batchLoading = ref(false)
-const batchForm = reactive({ words: '', level: 'review' as SensitiveWordLevel })
+const batchForm = reactive({ words: '', level: SensitiveWordLevel.Review })
 
 /** 修改级别相关 */
 const levelDialogVisible = ref(false)
 const levelLoading = ref(false)
 const currentWord = ref<SensitiveWord | null>(null)
-const editLevel = ref<SensitiveWordLevel>('review')
+const editLevel = ref<SensitiveWordLevel>(SensitiveWordLevel.Review)
 
 function handleAdd() {
   addForm.word = ''
-  addForm.level = 'review'
+  addForm.level = SensitiveWordLevel.Review
   addDialogVisible.value = true
 }
 
 function handleBatchAdd() {
   batchForm.words = ''
-  batchForm.level = 'review'
+  batchForm.level = SensitiveWordLevel.Review
   batchDialogVisible.value = true
 }
 
@@ -299,7 +299,7 @@ async function handleDelete(word: any) {
 async function loadWords(force = false) {
   loading.value = true
   try {
-    const result = await sensitiveWordCache.request('/admin/sensitive-words', queryParams as unknown as Record<string, unknown>, { force })
+    const result = await sensitiveWordCache.request('/admin/sensitive-words', queryParams as unknown as Record<string, unknown>, { force }) as any
     wordList.value = result.list
     total.value = result.total
   } catch {

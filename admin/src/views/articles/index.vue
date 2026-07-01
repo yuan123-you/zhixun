@@ -119,8 +119,8 @@
           :total="total"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadArticles"
-          @current-change="loadArticles"
+          @size-change="() => loadArticles()"
+          @current-change="() => loadArticles()"
         />
       </div>
     </el-card>
@@ -139,9 +139,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCloseFilled } from '@element-plus/icons-vue'
-import type { Article, ArticleQuery, ArticleStatus, Category, PageResult } from '@/types'
+import type { Article, ArticleQuery, Category, PageResult } from '@/types'
 import { deleteArticle, offlineArticle } from '@/api/article'
-import { getCategoryTree } from '@/api/category'
 import { useRequestCache } from '@/composables/useRequestCache'
 import StatusTag from '@/components/StatusTag.vue'
 import AuditDialog from '@/components/AuditDialog.vue'
@@ -209,12 +208,12 @@ function handleReset() {
 }
 
 /** 查看作品 */
-function handleView(article: Article) {
+function handleView(article: any) {
   router.push(`/articles/${article.id}`)
 }
 
 /** 审核作品 */
-function handleAudit(article: Article) {
+function handleAudit(article: any) {
   currentArticle.value = article
   auditDialogVisible.value = true
 }
@@ -226,7 +225,7 @@ function handleAuditSuccess() {
 }
 
 /** 下架作品 */
-async function handleOffline(article: Article) {
+async function handleOffline(article: any) {
   try {
     await ElMessageBox.confirm('确定要下架该作品吗？', '提示', {
       confirmButtonText: '确定',
@@ -243,7 +242,7 @@ async function handleOffline(article: Article) {
 }
 
 /** 删除作品 */
-async function handleDelete(article: Article) {
+async function handleDelete(article: any) {
   try {
     await ElMessageBox.confirm('确定要删除该作品吗？此操作不可恢复', '警告', {
       confirmButtonText: '确定',

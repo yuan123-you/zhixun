@@ -157,7 +157,7 @@ import { CircleCloseFilled } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { NotificationBroadcast, NotificationQuery, PageResult } from '@/types'
 import { NotificationType } from '@/types'
-import { getNotificationList, sendNotification } from '@/api/notificationAdmin'
+import { sendNotification } from '@/api/notificationAdmin'
 import PageHeader from '@/components/PageHeader.vue'
 import { useRequestCache } from '@/composables/useRequestCache'
 

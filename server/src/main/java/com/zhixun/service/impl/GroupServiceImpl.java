@@ -241,7 +241,14 @@ public class GroupServiceImpl implements GroupService {
         LambdaQueryWrapper<GroupMember> w = new LambdaQueryWrapper<>();
         w.eq(GroupMember::getGroupId, groupId).eq(GroupMember::getUserId, targetUserId);
         groupMemberMapper.delete(w);
-        g.setMemberCount(Math.max(0, g.getMemberCount() - 1)); groupMapper.updateById(g);
+        g.setMemberCount(Math.max(0, g.getMemberCount() - 1));
+
+        // 最后一个成员被踢出后自动解散群组
+        if (g.getMemberCount() <= 0) {
+            doDismissGroup(g);
+        } else {
+            groupMapper.updateById(g);
+        }
     }
 
     @Override @Transactional

@@ -143,13 +143,13 @@ function handleReset() {
 }
 
 /** 预览作品 */
-function handlePreview(article: Article) {
+function handlePreview(article: any) {
   previewArticle.value = article
   previewVisible.value = true
 }
 
 /** 通过审核 */
-async function handleApprove(article: Article) {
+async function handleApprove(article: any) {
   try {
     await auditArticle({ id: article.id, status: 2 })
     ElMessage.success('审核通过')
@@ -160,7 +160,7 @@ async function handleApprove(article: Article) {
 }
 
 /** 驳回作品 */
-function handleReject(article: Article) {
+function handleReject(article: any) {
   currentRejectId.value = article.id
   rejectForm.reason = ''
   rejectDialogVisible.value = true

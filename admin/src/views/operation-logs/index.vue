@@ -51,7 +51,7 @@
         <el-table-column prop="createdAt" label="操作时间" width="170" />
         <el-table-column label="操作" width="80" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleDetail(row as OperationLog)">详情</el-button>
+            <el-button type="primary" link size="small" @click="handleDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -90,7 +90,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import type { OperationLog, OperationLogQuery } from '@/types'
-import { getOperationLogList } from '@/api/operationLog'
 import { useRequestCache } from '@/composables/useRequestCache'
 
 /** 操作日志缓存实例 */
@@ -155,7 +154,7 @@ function handleDateChange(val: string[] | null) {
 }
 
 /** 查看详情 */
-function handleDetail(log: OperationLog) {
+function handleDetail(log: any) {
   currentLog.value = log
   detailVisible.value = true
 }
@@ -164,7 +163,7 @@ function handleDetail(log: OperationLog) {
 async function loadLogs(force = false) {
   loading.value = true
   try {
-    const result = await logCache.request('/admin/operation-logs', queryParams as unknown as Record<string, unknown>, { force })
+    const result = await logCache.request('/admin/operation-logs', queryParams as unknown as Record<string, unknown>, { force }) as any
     logList.value = result.list
     total.value = result.total
   } catch {

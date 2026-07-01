@@ -17,16 +17,19 @@ public class DashboardVO {
     /** 作品总数 */
     private Long articleTotal;
 
-    /** 今日日活用户数 */
+    /** 当前时间维度标签（今日/本周/本月） */
+    private String periodLabel;
+
+    /** 日活用户数（根据 period 维度） */
     private Long todayDau;
 
-    /** 今日浏览量 */
+    /** 浏览量（根据 period 维度） */
     private Long todayView;
 
-    /** 今日点赞数 */
+    /** 点赞数（根据 period 维度） */
     private Long todayLike;
 
-    /** 今日评论数 */
+    /** 评论数（根据 period 维度） */
     private Long todayComment;
 
     /** 近7天趋势数据 */

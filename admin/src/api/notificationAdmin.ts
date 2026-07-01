@@ -1,5 +1,5 @@
 import { get, post } from './request'
-import type { NotificationBroadcast, NotificationQuery, PageResult, ApiResponse } from '@/types'
+import type { NotificationBroadcast, NotificationQuery, PageResult } from '@/types'
 
 /** 获取通知列表 */
 export function getNotificationList(params: NotificationQuery) {

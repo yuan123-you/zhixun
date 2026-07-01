@@ -120,7 +120,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Banner } from '@/types'
-import { getBannerList, createBanner, updateBanner, deleteBanner } from '@/api/banner'
+import { createBanner, updateBanner, deleteBanner } from '@/api/banner'
 import { useRequestCache } from '@/composables/useRequestCache'
 
 /** 轮播图缓存实例 */
@@ -171,7 +171,7 @@ function handleAdd() {
 }
 
 /** 编辑轮播图 */
-function handleEdit(banner: Banner) {
+function handleEdit(banner: any) {
   editingBanner.value = banner
   bannerForm.title = banner.title
   bannerForm.imageUrl = banner.imageUrl
@@ -209,7 +209,7 @@ async function handleSubmit() {
 }
 
 /** 删除轮播图 */
-async function handleDelete(banner: Banner) {
+async function handleDelete(banner: any) {
   try {
     await ElMessageBox.confirm('确定要删除该轮播图吗？', '提示', {
       confirmButtonText: '确定',

@@ -64,8 +64,8 @@
         <el-table-column prop="createdAt" label="创建时间" width="170" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleEdit(row as Tag)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row as Tag)">删除</el-button>
+            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -158,7 +158,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Tag, PageParams } from '@/types'
-import { getTagList, createTag, updateTag, deleteTag, mergeTag, syncArticleCount, searchTags } from '@/api/tag'
+import { createTag, updateTag, deleteTag, mergeTag, syncArticleCount, searchTags } from '@/api/tag'
 import { useRequestCache } from '@/composables/useRequestCache'
 
 /** 标签缓存实例 */
@@ -188,9 +188,9 @@ const queryParams = reactive<PageParams & { keyword?: string; sortBy?: string }>
 })
 
 const defaultSort = computed(() => {
-  if (queryParams.sortBy === 'articleCountDesc') return { prop: 'articleCount', order: 'descending' }
-  if (queryParams.sortBy === 'articleCountAsc') return { prop: 'articleCount', order: 'ascending' }
-  return {}
+  if (queryParams.sortBy === 'articleCountDesc') return { prop: 'articleCount', order: 'descending' as const }
+  if (queryParams.sortBy === 'articleCountAsc') return { prop: 'articleCount', order: 'ascending' as const }
+  return undefined
 })
 
 const tagForm = reactive({
@@ -222,7 +222,7 @@ function handleAdd() {
   dialogVisible.value = true
 }
 
-function handleEdit(tag: Tag) {
+function handleEdit(tag: any) {
   editingTag.value = tag
   tagForm.name = tag.name
   tagForm.color = tag.color
@@ -252,7 +252,7 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(tag: Tag) {
+async function handleDelete(tag: any) {
   try {
     await ElMessageBox.confirm('确定要删除该标签吗？', '提示', {
       confirmButtonText: '确定',
@@ -356,7 +356,7 @@ async function handleMerge() {
   }
 }
 
-function handleSortChange({ prop, order }: { prop: string; order: string | null | undefined }) {
+function handleSortChange({ prop, order }: any) {
   if (prop === 'articleCount') {
     queryParams.sortBy = order === 'descending' ? 'articleCountDesc' : 'articleCountAsc'
   } else {

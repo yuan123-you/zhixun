@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { UserInfo, LoginUserInfo, LoginParams } from '@/types'
+import { UserStatus } from '@/types'
 import { loginApi, getUserInfoApi } from '@/api/auth'
 import { storage, STORAGE_KEYS } from '@/utils/storage'
 import router from '@/router'
@@ -79,9 +80,10 @@ export const useUserStore = defineStore('user', () => {
       permissions.value = loginUserInfo.permissions
 
       // 将登录用户信息转为 UserInfo 存储
-      const userStatus = (loginUserInfo as any).status === 'active' ? 'active' : 'active'
+      const userStatus = UserStatus.Active
       userInfo.value = {
         id: loginUserInfo.id,
+        uid: '',
         username: loginUserInfo.username,
         nickname: loginUserInfo.nickname,
         avatar: loginUserInfo.avatar ?? '',

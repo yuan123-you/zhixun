@@ -1,5 +1,5 @@
 import { get, post, put, del } from './request'
-import type { Banner, PageResult, PageParams } from '@/types'
+import type { Banner, PageParams } from '@/types'
 
 /** 获取轮播图列表（管理端） */
 export function getBannerList(params?: PageParams & { keyword?: string }) {

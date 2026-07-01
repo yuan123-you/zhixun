@@ -198,7 +198,7 @@
         <el-table-column prop="content" label="消息内容" min-width="260" show-overflow-tooltip />
         <el-table-column label="消息类型" width="100">
           <template #default="{ row }">
-            <el-tag size="small" :type="getMessageTypeTag(row.messageType) as '' | 'success' | 'warning' | 'info' | 'danger' | 'primary'">
+            <el-tag size="small" :type="getMessageTypeTag(row.messageType) as 'success' | 'warning' | 'info' | 'danger' | 'primary' | undefined">
               {{ getMessageTypeLabel(row.messageType) }}
             </el-tag>
           </template>
@@ -232,7 +232,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCloseFilled } from '@element-plus/icons-vue'
 import type { GroupInfo, GroupMember, GroupMessage, GroupQuery, PageResult } from '@/types'
-import { getGroupList, getGroupMembers, getGroupMessages, disbandGroup, toggleGroupStatus } from '@/api/group'
+import { getGroupMembers, getGroupMessages, disbandGroup, toggleGroupStatus } from '@/api/group'
 import { useRequestCache } from '@/composables/useRequestCache'
 import { formatDate } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
@@ -347,7 +347,7 @@ const messagePage = ref(1)
 const messagePageSize = ref(20)
 
 /** 查看聊天记录 */
-function handleViewMessages(group: GroupInfo) {
+function handleViewMessages(group: any) {
   currentGroup.value = group
   messagePage.value = 1
   messagePageSize.value = 20

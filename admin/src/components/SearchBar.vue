@@ -72,7 +72,7 @@ const emit = defineEmits<{
 }>()
 
 /** 搜索表单数据 */
-const searchForm = reactive<Record<string, unknown>>({ ...props.modelValue })
+const searchForm = reactive<Record<string, any>>({ ...props.modelValue })
 
 /** 同步外部数据 */
 watch(

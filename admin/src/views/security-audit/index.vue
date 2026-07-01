@@ -253,7 +253,7 @@ async function loadStats() {
 async function loadLogs(force = false) {
   loading.value = true
   try {
-    const result = await logCache.request('/admin/security-audit-logs', buildQueryParams(), { force })
+    const result = await logCache.request('/admin/security-audit-logs', buildQueryParams(), { force }) as any
     logList.value = result.list
     total.value = result.total
   } catch {

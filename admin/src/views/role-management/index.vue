@@ -51,7 +51,7 @@
                 :model-value="row.role"
                 size="small"
                 style="width: 140px"
-                @change="(val: string) => handleRoleChange(row, val)"
+                @change="(val: any) => handleRoleChange(row, val)"
               >
                 <el-option label="运营管理员" value="ADMIN" />
                 <el-option label="超级管理员" value="SUPER_ADMIN" />
@@ -67,7 +67,7 @@
                 active-text="正常"
                 inactive-text="禁用"
                 inline-prompt
-                @change="(val: boolean) => handleStatusChange(row, val)"
+                @change="(val: any) => handleStatusChange(row, val)"
               />
               <el-tag v-else type="success">正常</el-tag>
             </template>
@@ -170,7 +170,7 @@ function getRoleLabel(role: string) {
   return map[role] || role
 }
 
-async function handleRoleChange(row: AdminUser, newRole: string) {
+async function handleRoleChange(row: any, newRole: string) {
   const oldLabel = getRoleLabel(row.role)
   const newLabel = getRoleLabel(newRole)
   try {
@@ -187,7 +187,7 @@ async function handleRoleChange(row: AdminUser, newRole: string) {
   }
 }
 
-async function handleStatusChange(row: AdminUser, newVal: boolean) {
+async function handleStatusChange(row: any, newVal: boolean) {
   const newStatus = newVal ? 1 : 0
   const action = newVal ? '启用' : '禁用'
   try {

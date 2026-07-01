@@ -104,7 +104,7 @@ async function doCreate() {
   } catch (e) { /* ignore */ }
 }
 
-function previewTemplate(tpl: TemplateVO) {
+function previewTemplate(tpl: any) {
   previewContent.value = tpl.content.replace(/\n/g, '<br/>')
   previewVisible.value = true
 }

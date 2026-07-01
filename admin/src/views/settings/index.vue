@@ -219,7 +219,7 @@ function handleAddBanner() {
   bannerDialogVisible.value = true
 }
 
-function handleEditBanner(banner: Banner) {
+function handleEditBanner(banner: any) {
   editingBanner.value = banner
   bannerForm.imageUrl = banner.imageUrl
   bannerForm.title = banner.title
@@ -257,7 +257,7 @@ async function handleSaveBanner() {
   }
 }
 
-async function handleDeleteBanner(banner: Banner) {
+async function handleDeleteBanner(banner: any) {
   try {
     await ElMessageBox.confirm('确定要删除该轮播图吗？', '提示', {
       confirmButtonText: '确定',
@@ -321,7 +321,7 @@ function handleAddAnnouncement() {
   announcementDialogVisible.value = true
 }
 
-function handleEditAnnouncement(announcement: Announcement) {
+function handleEditAnnouncement(announcement: any) {
   editingAnnouncement.value = announcement
   announcementForm.title = announcement.title
   announcementForm.content = announcement.content
@@ -370,7 +370,7 @@ async function handleSaveAnnouncement() {
   }
 }
 
-async function handleDeleteAnnouncement(announcement: Announcement) {
+async function handleDeleteAnnouncement(announcement: any) {
   try {
     await ElMessageBox.confirm('确定要删除该公告吗？', '提示', {
       confirmButtonText: '确定',
