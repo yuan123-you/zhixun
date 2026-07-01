@@ -31,6 +31,7 @@ RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # 复制 SPA 路由回退配置（SPA History 模式需要 try_files）
+# 2026-07-02 v9: 修复 index.html 缓存导致用户停留在旧 chunk 版本的问题
 COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
     listen 80;
@@ -43,10 +44,18 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # 静态资源缓存
+    # ==================== 2026-07-02 v9: index.html 永不缓存 ====================
+    # 修复用户浏览器缓存 index.html 引用旧 chunk 的问题
+    # 让浏览器每次都拉取最新 index.html，从而引用新 chunk URL
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+    }
+    # 静态资源：长缓存 + immutable
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 30d;
-        add_header Cache-Control "public";
+        expires 1y;
+        add_header Cache-Control "public, immutable";
         access_log off;
     }
 
