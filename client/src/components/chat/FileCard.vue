@@ -68,9 +68,12 @@
 /**
  * FileCard - 聊天文件卡片组件（私信/群聊共用）
  * 支持文件类型图标、扩展名标签、点击预览/下载
+ * 2026-07-01-v5: 增强可交互性（cursor、键盘事件、错误处理）
  */
 import { computed } from 'vue'
 import { useChatMedia } from '@/composables/chat/useChatMedia'
+
+console.debug('[FileCard] 组件已加载 - v5')
 
 const props = defineProps<{
   content: string
