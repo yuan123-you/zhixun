@@ -76,9 +76,6 @@ public class UserVO {
     /** 是否在个人主页展示性别 */
     private Boolean showGenderOnProfile;
 
-    /** 个人简介 */
-    private String bio;
-
     /** 最后登录时间 */
     private java.time.LocalDateTime lastLoginAt;
 

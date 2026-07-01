@@ -199,6 +199,15 @@ public class AdminServiceImpl implements AdminService {
      */
     public DashboardVO getDashboardOverview(String period) {
         DashboardVO vo = new DashboardVO();
+        String dimension = (period != null) ? period : "daily";
+
+        // 设置时间维度标签
+        switch (dimension) {
+            case "weekly" -> vo.setPeriodLabel("本周");
+            case "monthly" -> vo.setPeriodLabel("本月");
+            default -> vo.setPeriodLabel("今日");
+        }
+
         // 预置默认值，防止 try 块异常时 trend 为 null 导致前端崩溃
         DashboardVO.TrendData defaultTrend = new DashboardVO.TrendData();
         defaultTrend.setDates(Collections.emptyList());
@@ -206,7 +215,13 @@ public class AdminServiceImpl implements AdminService {
         defaultTrend.setUsers(Collections.emptyList());
         vo.setTrend(defaultTrend);
         try {
-            LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+            // 根据维度计算时间范围
+            LocalDateTime periodStart;
+            switch (dimension) {
+                case "weekly" -> periodStart = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1).atStartOfDay();
+                case "monthly" -> periodStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+                default -> periodStart = LocalDate.now().atStartOfDay();
+            }
 
             // 用户总量
             vo.setUserTotal(userMapper.selectCount(
@@ -216,47 +231,73 @@ public class AdminServiceImpl implements AdminService {
             vo.setArticleTotal(articleMapper.selectCount(
                     new LambdaQueryWrapper<Article>().eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)));
 
-            // 今日日活用户数
+            // 活跃用户数（根据 period 维度）
             vo.setTodayDau(userMapper.selectCount(
                     new LambdaQueryWrapper<User>()
-                            .ge(User::getLastLoginAt, todayStart)));
+                            .ge(User::getLastLoginAt, periodStart)));
 
-            // 今日浏览量
+            // 浏览量（根据 period 维度）
             vo.setTodayView(articleViewHistoryMapper.selectCount(
                     new LambdaQueryWrapper<ArticleViewHistory>()
-                            .ge(ArticleViewHistory::getCreateTime, todayStart)));
+                            .ge(ArticleViewHistory::getCreateTime, periodStart)));
 
-            // 今日点赞数
+            // 点赞数（根据 period 维度）
             vo.setTodayLike(articleLikeMapper.selectCount(
                     new LambdaQueryWrapper<ArticleLike>()
                             .eq(ArticleLike::getTargetType, LikeTargetTypeEnum.ARTICLE)
-                            .ge(ArticleLike::getCreatedAt, todayStart)));
+                            .ge(ArticleLike::getCreatedAt, periodStart)));
 
-            // 今日评论数
+            // 评论数（根据 period 维度）
             vo.setTodayComment(commentMapper.selectCount(
                     new LambdaQueryWrapper<Comment>()
-                            .ge(Comment::getCreatedAt, todayStart)));
+                            .ge(Comment::getCreatedAt, periodStart)));
 
-            // 近7天趋势数据
+            // 趋势数据（根据 period 维度调整时间范围）
             DashboardVO.TrendData trendData = new DashboardVO.TrendData();
             List<String> dates = new ArrayList<>();
             List<Long> views = new ArrayList<>();
             List<Long> users = new ArrayList<>();
 
-            for (int i = 6; i >= 0; i--) {
-                LocalDate date = LocalDate.now().minusDays(i);
-                LocalDateTime dayStart = date.atStartOfDay();
-                LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+            int trendPeriods;
+            switch (dimension) {
+                case "weekly" -> trendPeriods = 8;
+                case "monthly" -> trendPeriods = 6;
+                default -> trendPeriods = 7;
+            }
 
-                dates.add(date.format(DateTimeFormatter.ofPattern("MM-dd")));
+            for (int i = trendPeriods - 1; i >= 0; i--) {
+                LocalDateTime segStart;
+                LocalDateTime segEnd;
+                String label;
+
+                switch (dimension) {
+                    case "weekly" -> {
+                        segStart = LocalDate.now().minusWeeks(i).atStartOfDay();
+                        segEnd = LocalDate.now().minusWeeks(i - 1).atStartOfDay();
+                        label = segStart.format(DateTimeFormatter.ofPattern("MM-dd")) + "~"
+                                + segEnd.minusDays(1).format(DateTimeFormatter.ofPattern("MM-dd"));
+                    }
+                    case "monthly" -> {
+                        segStart = LocalDate.now().minusMonths(i).atStartOfDay();
+                        segEnd = LocalDate.now().minusMonths(i - 1).atStartOfDay();
+                        label = segStart.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+                    }
+                    default -> {
+                        segStart = LocalDate.now().minusDays(i).atStartOfDay();
+                        segEnd = LocalDate.now().minusDays(i - 1).atStartOfDay();
+                        label = segStart.format(DateTimeFormatter.ofPattern("MM-dd"));
+                    }
+                }
+
+                dates.add(label);
                 views.add(articleViewHistoryMapper.selectCount(
                         new LambdaQueryWrapper<ArticleViewHistory>()
-                                .ge(ArticleViewHistory::getCreateTime, dayStart)
-                                .lt(ArticleViewHistory::getCreateTime, dayEnd)));
+                                .ge(ArticleViewHistory::getCreateTime, segStart)
+                                .lt(ArticleViewHistory::getCreateTime, segEnd)));
                 users.add(userMapper.selectCount(
                         new LambdaQueryWrapper<User>()
-                                .ge(User::getCreatedAt, dayStart)
-                                .lt(User::getCreatedAt, dayEnd)));
+                                .ge(User::getCreatedAt, segStart)
+                                .lt(User::getCreatedAt, segEnd)));
             }
 
             trendData.setDates(dates);
@@ -1566,7 +1607,7 @@ public class AdminServiceImpl implements AdminService {
 
         // 获赞总数
         LambdaQueryWrapper<ArticleLike> likeWrapper = new LambdaQueryWrapper<>();
-        likeWrapper.inSql(ArticleLike::getArticleId,
+        likeWrapper.inSql(ArticleLike::getTargetId,
                 "SELECT id FROM cms_article WHERE author_id = " + userId);
         Long totalLikeCount = articleLikeMapper.selectCount(likeWrapper);
         vo.setTotalLikeCount(totalLikeCount != null ? totalLikeCount : 0L);
