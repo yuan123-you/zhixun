@@ -20,7 +20,7 @@ NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-enabled/glint.novo.ccwu.cc.
 NGINX_INCLUDE_DIR="${NGINX_INCLUDE_DIR:-/etc/nginx/conf.d}"
 
 # 需要检测的服务端口（宿主机监听端口）
-PORTS_TO_CHECK=(80 443 3000 3001 8080 9000)
+PORTS_TO_CHECK=(80 443 3500 3001 8080 9000)
 
 # 期望运行的 Docker 容器名（至少包含这些关键词）
 REQUIRED_CONTAINERS=("mysql" "redis" "minio" "server" "client" "admin")
@@ -258,7 +258,7 @@ port_firewall_check() {
     fi
 
     # 检查关键端口是否有显式放行
-    for port in 80 443 3000 3001 8080; do
+    for port in 80 443 3500 3001 8080; do
       if iptables -L INPUT -n 2>/dev/null | grep -q "dpt:$port"; then
         ok "iptables 已放行端口 $port"
       else

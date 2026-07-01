@@ -33,7 +33,7 @@ export default defineConfig({
   },
   // 端口与代理目标来源：docs/PORTS.md
   // - 本机：CLIENT_PORT 默认 3500；Backend 默认 localhost:8080
-  // - Docker：CLIENT_PORT=3000（容器内），由 Nginx 代理
+  // - Docker：CLIENT_PORT=3500（容器映射端口），由 Nginx 代理
   server: {
     port: Number(process.env.CLIENT_PORT) || 3500,
     cors: true,

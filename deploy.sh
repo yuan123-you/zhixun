@@ -714,7 +714,7 @@ do_fix() {
     done
 
     # 3. 检查端口占用
-    local ports=("3000" "3001" "8080" "3306" "6379")
+    local ports=("3500" "3001" "8080" "3306" "6379")
     local port_names=("client" "admin" "server" "mysql" "redis")
     for i in "${!ports[@]}"; do
         local port="${ports[$i]}"
@@ -888,7 +888,7 @@ do_status() {
             opensearch)   port="9200" ;;
             server)       port="8080" ;;
             server-2)     port="8081" ;;
-            client)       port="3000" ;;
+            client)       port="3500" ;;
             admin)        port="3001" ;;
         esac
 
@@ -991,7 +991,7 @@ do_init() {
         log_info "配置防火墙规则..."
         sudo ufw allow 80/tcp
         sudo ufw allow 443/tcp
-        sudo ufw allow 3000/tcp
+        sudo ufw allow 3500/tcp
         sudo ufw allow 3001/tcp
     fi
 
