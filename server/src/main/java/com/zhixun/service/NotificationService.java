@@ -34,6 +34,20 @@ public interface NotificationService {
     void createNotification(Long userId, Integer type, String title, String content, Long relatedId, String groupKey);
 
     /**
+     * 创建通知（带发送者和群发标记，用于管理员发送）
+     *
+     * @param userId    接收用户ID
+     * @param type      通知类型
+     * @param title     通知标题
+     * @param content   通知内容
+     * @param relatedId 关联业务ID
+     * @param groupKey  分组键
+     * @param senderId  发送者ID
+     * @param targetAll 是否群发
+     */
+    void createNotification(Long userId, Integer type, String title, String content, Long relatedId, String groupKey, Long senderId, boolean targetAll);
+
+    /**
      * 获取通知列表
      *
      * @param userId   用户ID

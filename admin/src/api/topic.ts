@@ -9,7 +9,8 @@ export interface TopicVO {
   articleCount: number
   followCount: number
   hotScore: number
-  isOfficial: boolean
+  isOfficial: number
+  status: number
   isFollowed: boolean
 }
 
@@ -21,7 +22,7 @@ export interface PageResult<T> {
 }
 
 export function getTopics(page = 1, pageSize = 20): Promise<ApiResponse<PageResult<TopicVO>>> {
-  return get('/topics', { page, pageSize, orderBy: 'hot' } as any)
+  return get('/topics/admin/list', { page, pageSize, orderBy: 'hot' } as any)
 }
 
 export function createOfficialTopic(name: string, description?: string): Promise<ApiResponse<number>> {

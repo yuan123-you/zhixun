@@ -51,7 +51,7 @@
         <el-table-column prop="createdAt" label="操作时间" width="170" />
         <el-table-column label="操作" width="80" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button type="primary" link size="small" @click="handleDetail(row as OperationLog)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -64,8 +64,8 @@
           :total="total"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadLogs"
-          @current-change="loadLogs"
+          @size-change="() => loadLogs()"
+          @current-change="() => loadLogs()"
         />
       </div>
     </el-card>

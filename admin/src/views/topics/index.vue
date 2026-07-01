@@ -12,7 +12,6 @@
         <el-table-column prop="name" label="话题名称" min-width="150">
           <template #default="{ row }">
             <span class="font-semibold">#{{ row.name }}#</span>
-            <el-tag v-if="row.isOfficial" type="warning" size="small" class="ml-2">官方</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
@@ -24,10 +23,16 @@
             <el-tag :type="row.status === 0 ? 'success' : 'info'" size="small">{{ row.status === 0 ? '正常' : '已隐藏' }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="类型" width="80">
+          <template #default="{ row }">
+            <el-tag v-if="row.isOfficial === 1" type="warning" size="small">官方</el-tag>
+            <el-tag v-else type="info" size="small">普通</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status === 0" type="warning" size="small" @click="toggleStatus(row)">隐藏</el-button>
-            <el-button v-else type="success" size="small" @click="toggleStatus(row)">恢复</el-button>
+            <el-button v-if="row.status === 0" type="warning" size="small" @click="toggleStatus(row as TopicVO)">隐藏</el-button>
+            <el-button v-else type="success" size="small" @click="toggleStatus(row as TopicVO)">恢复</el-button>
             <el-button type="danger" size="small" @click="doDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>

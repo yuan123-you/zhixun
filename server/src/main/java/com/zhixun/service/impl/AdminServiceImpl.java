@@ -18,6 +18,7 @@ import com.zhixun.entity.ArticleViewHistory;
 import com.zhixun.entity.Category;
 import com.zhixun.entity.Comment;
 import com.zhixun.entity.GroupInfo;
+import com.zhixun.entity.GroupJoinRequest;
 import com.zhixun.entity.GroupMember;
 import com.zhixun.entity.GroupMessage;
 import com.zhixun.entity.LoginLog;
@@ -43,6 +44,7 @@ import com.zhixun.mapper.ArticleCollaboratorMapper;
 import com.zhixun.mapper.CategoryMapper;
 import com.zhixun.mapper.CommentMapper;
 import com.zhixun.mapper.GroupMapper;
+import com.zhixun.mapper.GroupJoinRequestMapper;
 import com.zhixun.mapper.GroupMemberMapper;
 import com.zhixun.mapper.GroupMessageMapper;
 import com.zhixun.mapper.LoginLogMapper;
@@ -91,6 +93,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -118,6 +121,7 @@ public class AdminServiceImpl implements AdminService {
     private final LoginLogMapper loginLogMapper;
     private final ViewHistoryMapper viewHistoryMapper;
     private final GroupMapper groupMapper;
+    private final GroupJoinRequestMapper groupJoinRequestMapper;
     private final GroupMemberMapper groupMemberMapper;
     private final GroupMessageMapper groupMessageMapper;
     private final ArticleCollaboratorMapper articleCollaboratorMapper;
@@ -351,6 +355,9 @@ public class AdminServiceImpl implements AdminService {
             vo.setFollowCount(user.getFollowCount());
             vo.setFollowerCount(user.getFollowerCount());
             vo.setArticleCount(user.getArticleCount());
+            vo.setProvince(user.getProvince());
+            vo.setIpLocation(user.getIpLocation());
+            vo.setLastLoginAt(user.getLastLoginAt());
             return vo;
         }).collect(Collectors.toList());
 
@@ -434,6 +441,29 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class
+    )
+    public void updateSensitiveWordLevel(Long adminId, Long wordId, Integer level) {
+        SensitiveWord word = sensitiveWordMapper.selectById(wordId);
+        if (word == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "敏感词不存在");
+        }
+
+        SensitiveLevelEnum newLevel = SensitiveLevelEnum.values()[level - 1];
+        word.setLevel(newLevel);
+        sensitiveWordMapper.updateById(word);
+
+        // 清除敏感词本地缓存并重建 DFA
+        sensitiveWordUtil.evictCache();
+        sensitiveWordUtil.buildDFA();
+
+        // 记录操作日志
+        String ip = getClientIp();
+        operationLogService.log(adminId, "敏感词管理", "update", "sensitive_word", wordId,
+                "更新敏感词级别：" + word.getWord() + " -> " + newLevel.getDescription(), ip);
+    }
+
+    @Override
     public PageResult<CommentVO> getCommentList(Long articleId, Integer status, Integer page, Integer pageSize) {
         LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
 
@@ -467,10 +497,20 @@ public class AdminServiceImpl implements AdminService {
                 : userMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // 批量查询文章标题
+        Set<Long> articleIds = result.getRecords().stream()
+                .map(Comment::getArticleId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, String> articleTitleMap = articleIds.isEmpty() ? Collections.emptyMap()
+                : articleMapper.selectBatchIds(articleIds).stream()
+                .collect(Collectors.toMap(Article::getId, Article::getTitle, (a, b) -> a));
+
         List<CommentVO> voList = result.getRecords().stream().map(comment -> {
             CommentVO vo = new CommentVO();
             vo.setId(comment.getId());
             vo.setArticleId(comment.getArticleId());
+            vo.setArticleTitle(articleTitleMap.getOrDefault(comment.getArticleId(), ""));
             vo.setContent(comment.getContent());
             vo.setStatus(comment.getStatus() != null ? comment.getStatus().getValue() : null);
             vo.setLikeCount(comment.getLikeCount());
@@ -1159,6 +1199,9 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public PageResult<GroupVO> getGroupList(String keyword, Integer status, Integer page, Integer pageSize) {
+        // 清理成员数为0的空群组
+        cleanupEmptyGroups();
+
         LambdaQueryWrapper<GroupInfo> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(GroupInfo::getName, keyword)
@@ -1211,10 +1254,37 @@ public class AdminServiceImpl implements AdminService {
         group.setStatus(status);
         groupMapper.updateById(group);
 
-        String action = status == 0 ? "disable" : "enable";
+        String action = status == GroupInfo.STATUS_NORMAL ? "enable" : "disable";
         String ip = getClientIp();
         operationLogService.log(adminId, "群组管理", action, "group", groupId,
-                (status == 0 ? "禁用" : "启用") + "群组：" + group.getName(), ip);
+                (status == GroupInfo.STATUS_NORMAL ? "启用" : "禁用") + "群组：" + group.getName(), ip);
+    }
+
+    /**
+     * 清理成员数为0的空群组：删除群组消息、成员记录、入群申请，再删除群组本身
+     */
+    private void cleanupEmptyGroups() {
+        LambdaQueryWrapper<GroupInfo> w = new LambdaQueryWrapper<>();
+        w.eq(GroupInfo::getMemberCount, 0);
+        List<GroupInfo> emptyGroups = groupMapper.selectList(w);
+        for (GroupInfo g : emptyGroups) {
+            Long groupId = g.getId();
+            // 删除群组消息
+            LambdaQueryWrapper<GroupMessage> msgW = new LambdaQueryWrapper<>();
+            msgW.eq(GroupMessage::getGroupId, groupId);
+            groupMessageMapper.delete(msgW);
+            // 删除群组成员
+            LambdaQueryWrapper<GroupMember> memberW = new LambdaQueryWrapper<>();
+            memberW.eq(GroupMember::getGroupId, groupId);
+            groupMemberMapper.delete(memberW);
+            // 删除入群申请
+            LambdaQueryWrapper<GroupJoinRequest> reqW = new LambdaQueryWrapper<>();
+            reqW.eq(GroupJoinRequest::getGroupId, groupId);
+            groupJoinRequestMapper.delete(reqW);
+            // 删除群组记录
+            groupMapper.deleteById(groupId);
+            log.info("清理空群组: groupId={}, name={}", groupId, g.getName());
+        }
     }
 
     // ========== 私信监控 ==========
@@ -1384,6 +1454,15 @@ public class AdminServiceImpl implements AdminService {
         Page<Notification> notifPage = new Page<>(page, pageSize);
         Page<Notification> result = notificationMapper.selectPage(notifPage, wrapper);
 
+        // 批量查询发送者信息
+        Set<Long> senderIds = result.getRecords().stream()
+                .map(Notification::getSenderId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, User> senderMap = senderIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectBatchIds(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
         List<NotificationVO> voList = result.getRecords().stream().map(n -> {
             NotificationVO vo = new NotificationVO();
             vo.setId(n.getId());
@@ -1391,6 +1470,15 @@ public class AdminServiceImpl implements AdminService {
             vo.setTitle(n.getTitle());
             vo.setContent(n.getContent());
             vo.setCreatedAt(n.getCreatedAt());
+            // 发送者名称
+            if (n.getSenderId() != null) {
+                User sender = senderMap.get(n.getSenderId());
+                vo.setSenderName(sender != null ? sender.getNickname() : "未知用户");
+            } else {
+                vo.setSenderName("系统");
+            }
+            // 是否群发
+            vo.setTargetAll(n.getTargetAll() != null && n.getTargetAll() == 1);
             return vo;
         }).collect(Collectors.toList());
 
@@ -1401,12 +1489,13 @@ public class AdminServiceImpl implements AdminService {
     @Transactional(rollbackFor = Exception.class)
     public void sendNotification(Long adminId, Integer type, String title, String content,
                                   Boolean targetAll, List<Long> targetUserIds) {
-        if (Boolean.TRUE.equals(targetAll)) {
+        boolean isTargetAll = Boolean.TRUE.equals(targetAll);
+        if (isTargetAll) {
             // 发送给所有用户
             List<User> allUsers = userMapper.selectList(new LambdaQueryWrapper<>());
             for (User user : allUsers) {
                 try {
-                    notificationService.createNotification(user.getId(), type, title, content, null);
+                    notificationService.createNotification(user.getId(), type, title, content, null, null, adminId, true);
                 } catch (Exception e) {
                     log.error("发送通知给用户 {} 失败: {}", user.getId(), e.getMessage());
                 }
@@ -1414,7 +1503,7 @@ public class AdminServiceImpl implements AdminService {
         } else if (targetUserIds != null && !targetUserIds.isEmpty()) {
             for (Long userId : targetUserIds) {
                 try {
-                    notificationService.createNotification(userId, type, title, content, null);
+                    notificationService.createNotification(userId, type, title, content, null, null, adminId, false);
                 } catch (Exception e) {
                     log.error("发送通知给用户 {} 失败: {}", userId, e.getMessage());
                 }
@@ -1424,6 +1513,65 @@ public class AdminServiceImpl implements AdminService {
         String ip = getClientIp();
         operationLogService.log(adminId, "通知管理", "send", "notification", null,
                 "发送通知：" + title + "，目标：" + (Boolean.TRUE.equals(targetAll) ? "全部用户" : targetUserIds), ip);
+    }
+
+    // ========== 用户详情 ==========
+
+    @Override
+    public UserVO getUserDetail(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        UserVO vo = new UserVO();
+        vo.setId(user.getId());
+        vo.setUid(user.getUid());
+        vo.setUsername(user.getUsername());
+        vo.setNickname(user.getNickname());
+        vo.setAvatar(user.getAvatar());
+        vo.setEmail(user.getEmail());
+        vo.setPhone(user.getPhone());
+        vo.setBio(user.getBio());
+        vo.setGender(user.getGender());
+        vo.setProvince(user.getProvince());
+        vo.setIpLocation(user.getIpLocation());
+        vo.setRole(user.getRole() != null ? user.getRole().getValue() : "USER");
+        vo.setStatus(user.getStatus());
+        vo.setCreatedAt(user.getCreatedAt());
+        vo.setFollowCount(user.getFollowCount() != null ? user.getFollowCount() : 0);
+        vo.setFollowerCount(user.getFollowerCount() != null ? user.getFollowerCount() : 0);
+        vo.setArticleCount(user.getArticleCount() != null ? user.getArticleCount() : 0);
+        vo.setShowGenderOnProfile(user.getShowGenderOnProfile() != null && user.getShowGenderOnProfile() == 1);
+        vo.setLastLoginAt(user.getLastLoginAt());
+        vo.setLastActiveAt(user.getLastActiveAt());
+
+        // 从登录日志聚合 lastLoginIp 和 loginCount
+        // 最近一次成功登录的IP
+        LambdaQueryWrapper<LoginLog> lastLoginWrapper = new LambdaQueryWrapper<>();
+        lastLoginWrapper.eq(LoginLog::getUserId, userId)
+                .eq(LoginLog::getStatus, 1)
+                .orderByDesc(LoginLog::getCreatedAt)
+                .last("LIMIT 1");
+        LoginLog lastLogin = loginLogMapper.selectOne(lastLoginWrapper);
+        if (lastLogin != null) {
+            vo.setLastLoginIp(lastLogin.getIp());
+        }
+
+        // 成功登录次数
+        LambdaQueryWrapper<LoginLog> countWrapper = new LambdaQueryWrapper<>();
+        countWrapper.eq(LoginLog::getUserId, userId).eq(LoginLog::getStatus, 1);
+        Long loginCount = loginLogMapper.selectCount(countWrapper);
+        vo.setLoginCount(loginCount != null ? loginCount.intValue() : 0);
+
+        // 获赞总数
+        LambdaQueryWrapper<ArticleLike> likeWrapper = new LambdaQueryWrapper<>();
+        likeWrapper.inSql(ArticleLike::getArticleId,
+                "SELECT id FROM cms_article WHERE author_id = " + userId);
+        Long totalLikeCount = articleLikeMapper.selectCount(likeWrapper);
+        vo.setTotalLikeCount(totalLikeCount != null ? totalLikeCount : 0L);
+
+        return vo;
     }
 
     // ========== 用户登录历史 ==========

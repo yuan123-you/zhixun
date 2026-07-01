@@ -58,6 +58,12 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void createNotification(Long userId, Integer type, String title, String content, Long relatedId, String groupKey) {
+        createNotification(userId, type, title, content, relatedId, groupKey, null, false);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void createNotification(Long userId, Integer type, String title, String content, Long relatedId, String groupKey, Long senderId, boolean targetAll) {
         // 参数校验：type 必须在有效范围内
         if (type == null || type < 1 || type > NotificationTypeEnum.values().length) {
             log.warn("无效的通知类型参数: type={}, userId={}", type, userId);
@@ -106,6 +112,8 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setIsRead(0);
         notification.setRelatedId(relatedId);
         notification.setGroupKey(groupKey);
+        notification.setSenderId(senderId);
+        notification.setTargetAll(targetAll ? 1 : 0);
 
         notificationMapper.insert(notification);
 

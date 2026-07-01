@@ -137,6 +137,14 @@ public class AdminController {
     }
 
     /**
+     * 用户详情（管理员，含登录统计）
+     */
+    @GetMapping("/users/{id}")
+    public R<UserVO> userDetail(@PathVariable Long id) {
+        return R.ok(adminService.getUserDetail(id));
+    }
+
+    /**
      * 敏感词列表
      */
     @GetMapping("/sensitive-words")
@@ -166,6 +174,17 @@ public class AdminController {
     public R<Void> deleteSensitiveWord(@PathVariable Long id) {
         Long adminId = securityUtil.getCurrentUserId();
         adminService.deleteSensitiveWord(adminId, id);
+        return R.ok();
+    }
+
+    /**
+     * 更新敏感词级别
+     */
+    @PostMapping("/sensitive-words/{id}/level")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public R<Void> updateSensitiveWordLevel(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+        Long adminId = securityUtil.getCurrentUserId();
+        adminService.updateSensitiveWordLevel(adminId, id, body.get("level"));
         return R.ok();
     }
 

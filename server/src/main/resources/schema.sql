@@ -230,16 +230,21 @@ CREATE INDEX idx_sys_login_log_created ON sys_login_log(created_at);
 CREATE TABLE IF NOT EXISTS sys_notification (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   user_id BIGINT NOT NULL,
+  sender_id BIGINT DEFAULT NULL COMMENT '发送者ID（管理员发送时为管理员ID，系统触发时为null）',
   type TINYINT NOT NULL,
   title VARCHAR(200) NOT NULL,
   content VARCHAR(1000),
   is_read TINYINT DEFAULT 0,
   related_id BIGINT,
+  group_key VARCHAR(100),
+  target_all TINYINT DEFAULT 0 COMMENT '是否群发通知：0-否，1-是',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知消息表';
 CREATE INDEX idx_sys_notification_user ON sys_notification(user_id);
 CREATE INDEX idx_sys_notification_read ON sys_notification(is_read);
+CREATE INDEX idx_sys_notification_group_key ON sys_notification(user_id, group_key);
+CREATE INDEX idx_sys_notification_sender ON sys_notification(sender_id);
 
 -- 15. user_follow 关注表
 CREATE TABLE IF NOT EXISTS user_follow (

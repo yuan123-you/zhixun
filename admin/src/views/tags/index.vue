@@ -15,17 +15,17 @@
       <!-- 搜索 -->
       <el-form :model="queryParams" inline class="search-form">
         <el-form-item label="关键词">
-          <el-input v-model="queryParams.keyword" placeholder="搜索标签名" clearable @keyup.enter="loadTags" />
+          <el-input v-model="queryParams.keyword" placeholder="搜索标签名" clearable @keyup.enter="() => loadTags()" />
         </el-form-item>
         <el-form-item label="排序">
-          <el-select v-model="queryParams.sortBy" placeholder="排序方式" clearable style="width: 140px" @change="loadTags">
+          <el-select v-model="queryParams.sortBy" placeholder="排序方式" clearable style="width: 140px" @change="() => loadTags()">
             <el-option label="创建时间" value="createdAt" />
             <el-option label="作品数降序" value="articleCountDesc" />
             <el-option label="作品数升序" value="articleCountAsc" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadTags">搜索</el-button>
+          <el-button type="primary" @click="() => loadTags()">搜索</el-button>
         </el-form-item>
       </el-form>
 
@@ -64,8 +64,8 @@
         <el-table-column prop="createdAt" label="创建时间" width="170" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="primary" link size="small" @click="handleEdit(row as Tag)">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(row as Tag)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -78,8 +78,8 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadTags"
-          @current-change="loadTags"
+          @size-change="() => loadTags()"
+          @current-change="() => loadTags()"
         />
       </div>
     </el-card>
@@ -356,7 +356,7 @@ async function handleMerge() {
   }
 }
 
-function handleSortChange({ prop, order }: { prop: string; order: string | null }) {
+function handleSortChange({ prop, order }: { prop: string; order: string | null | undefined }) {
   if (prop === 'articleCount') {
     queryParams.sortBy = order === 'descending' ? 'articleCountDesc' : 'articleCountAsc'
   } else {

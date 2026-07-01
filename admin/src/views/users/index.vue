@@ -59,14 +59,14 @@
           </el-table-column>
           <el-table-column label="状态" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.status === 'active' ? 'success' : 'danger'">
-                {{ row.status === 'active' ? '正常' : '封禁' }}
+              <el-tag :type="row.status === UserStatus.Active ? 'success' : 'danger'">
+                {{ row.status === UserStatus.Active ? '正常' : '封禁' }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column label="IP属地" width="120">
             <template #default="{ row }">
-              {{ (row as any).province || '-' }}
+              {{ (row as any).ipLocation || (row as any).province || '-' }}
             </template>
           </el-table-column>
           <el-table-column label="关注/粉丝" width="100">
@@ -88,7 +88,7 @@
           <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
               <el-button
-                v-if="row.status === 'active'"
+                v-if="row.status === UserStatus.Active"
                 type="danger"
                 link
                 size="small"
@@ -97,7 +97,7 @@
                 封禁
               </el-button>
               <el-button
-                v-if="row.status === 'banned'"
+                v-if="row.status === UserStatus.Banned"
                 type="success"
                 link
                 size="small"
@@ -135,8 +135,8 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadUsers"
-          @current-change="loadUsers"
+          @size-change="() => loadUsers()"
+          @current-change="() => loadUsers()"
         />
       </div>
     </el-card>
@@ -148,7 +148,7 @@
           <span>{{ currentUser?.nickname }}</span>
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="assignRole">
+          <el-select v-model="selectedRole">
             <el-option label="管理员" value="admin" />
             <el-option label="编辑" value="editor" />
             <el-option label="普通用户" value="user" />
@@ -187,8 +187,8 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="userDetail.status === 'active' ? 'success' : 'danger'" size="small">
-              {{ userDetail.status === 'active' ? '正常' : '封禁' }}
+            <el-tag :type="userDetail.status === UserStatus.Active ? 'success' : 'danger'" size="small">
+              {{ userDetail.status === UserStatus.Active ? '正常' : '封禁' }}
             </el-tag>
           </el-descriptions-item>
         </el-descriptions>
@@ -257,9 +257,9 @@
           :total="loginHistoryTotal"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
-          small
-          @size-change="loadLoginHistory"
-          @current-change="loadLoginHistory"
+          size="small"
+          @size-change="() => loadLoginHistory()"
+          @current-change="() => loadLoginHistory()"
         />
       </div>
     </el-dialog>
@@ -271,7 +271,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCloseFilled } from '@element-plus/icons-vue'
 import type { UserInfo, UserDetail, UserQuery, PageResult } from '@/types'
-import { banUser, unbanUser, assignRole, getUserDetail, getUserLoginHistory } from '@/api/user'
+import { UserStatus } from '@/types'
+import { banUser, unbanUser, assignRole as assignRoleApi, getUserDetail, getUserLoginHistory } from '@/api/user'
 import { useRequestCache } from '@/composables/useRequestCache'
 
 /** 请求缓存实例 */
@@ -311,7 +312,7 @@ const queryParams = reactive<UserQuery>({
 const roleDialogVisible = ref(false)
 const roleLoading = ref(false)
 const currentUser = ref<UserInfo | null>(null)
-const assignRole = ref('user')
+const selectedRole = ref('user')
 
 /** 用户详情相关 */
 const detailDialogVisible = ref(false)
@@ -341,7 +342,7 @@ function handleReset() {
 }
 
 /** 封禁用户 */
-async function handleBan(user: UserInfo) {
+async function handleBan(user: any) {
   try {
     await ElMessageBox.confirm(`确定要封禁用户 "${user.nickname}" 吗？`, '提示', {
       confirmButtonText: '确定',
@@ -358,7 +359,7 @@ async function handleBan(user: UserInfo) {
 }
 
 /** 解封用户 */
-async function handleUnban(user: UserInfo) {
+async function handleUnban(user: any) {
   try {
     await unbanUser(user.id)
     ElMessage.success('解封成功')
@@ -370,9 +371,9 @@ async function handleUnban(user: UserInfo) {
 }
 
 /** 角色分配 */
-function handleAssignRole(user: UserInfo) {
+function handleAssignRole(user: any) {
   currentUser.value = user
-  assignRole.value = user.role
+  selectedRole.value = user.role
   roleDialogVisible.value = true
 }
 
@@ -381,7 +382,7 @@ async function confirmAssignRole() {
   if (!currentUser.value) return
   roleLoading.value = true
   try {
-    await assignRole(currentUser.value.id, assignRole.value)
+    await assignRoleApi(currentUser.value.id, selectedRole.value)
     ElMessage.success('角色分配成功')
     roleDialogVisible.value = false
     userCache.invalidate('/admin/users', queryParams as unknown as Record<string, unknown>)
@@ -394,13 +395,13 @@ async function confirmAssignRole() {
 }
 
 /** 行点击 - 打开用户详情 */
-async function handleRowClick(row: UserInfo) {
+async function handleRowClick(row: any) {
   detailDialogVisible.value = true
   detailLoading.value = true
   userDetail.value = null
   try {
     const result = await getUserDetail(row.id)
-    userDetail.value = result
+    userDetail.value = result.data
   } catch {
     ElMessage.error('用户详情加载失败')
   } finally {
@@ -427,8 +428,8 @@ async function loadLoginHistory() {
       loginHistoryPage.value,
       loginHistoryPageSize.value
     )
-    loginHistoryList.value = result.list
-    loginHistoryTotal.value = result.total
+    loginHistoryList.value = result.data.list
+    loginHistoryTotal.value = result.data.total
   } catch {
     ElMessage.error('登录历史加载失败')
   } finally {

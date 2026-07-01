@@ -79,7 +79,7 @@
       </el-col>
     </el-row>
 
-    <!-- 趋势图和热门作品 -->
+    <!-- 趋势图 + 热门作品 + 活跃度分布 -->
     <el-row :gutter="20" class="chart-section">
       <el-col :xs="24" :lg="16">
         <el-card shadow="hover">
@@ -90,30 +90,38 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="8">
-        <el-card shadow="hover">
-          <template #header>
-            <span>热门作品排行</span>
-          </template>
-          <div class="hot-articles">
-            <div
-              v-for="article in dashboardData.hotArticleRanks"
-              :key="article.articleId"
-              class="hot-article-item"
-            >
-              <span class="rank" :class="{ 'top3': article.rank <= 3 }">{{ article.rank }}</span>
-              <div class="article-info">
-                <span class="title">{{ article.title }}</span>
-                <span class="author">{{ article.authorName }}</span>
+        <div class="right-stack">
+          <el-card shadow="hover">
+            <template #header>
+              <span>热门作品排行</span>
+            </template>
+            <div class="hot-articles">
+              <div
+                v-for="article in dashboardData.hotArticleRanks"
+                :key="article.articleId"
+                class="hot-article-item"
+              >
+                <span class="rank" :class="{ 'top3': article.rank <= 3 }">{{ article.rank }}</span>
+                <div class="article-info">
+                  <span class="title">{{ article.title }}</span>
+                  <span class="author">{{ article.authorName }}</span>
+                </div>
+                <span class="views">{{ formatNumber(article.viewCount) }}</span>
               </div>
-              <span class="views">{{ formatNumber(article.viewCount) }}</span>
+              <el-empty v-if="!dashboardData.hotArticleRanks?.length" description="暂无数据" />
             </div>
-            <el-empty v-if="!dashboardData.hotArticleRanks?.length" description="暂无数据" />
-          </div>
-        </el-card>
+          </el-card>
+          <el-card shadow="hover">
+            <template #header>
+              <span>活跃度分布</span>
+            </template>
+            <v-chart :option="activityPieChartOption" autoresize style="height: 220px" />
+          </el-card>
+        </div>
       </el-col>
     </el-row>
 
-    <!-- 留存率图表和活跃度分布 -->
+    <!-- 留存率和分类分布 -->
     <el-row :gutter="20" class="chart-section">
       <el-col :xs="24" :lg="12">
         <el-card shadow="hover">
@@ -124,18 +132,6 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="12">
-        <el-card shadow="hover">
-          <template #header>
-            <span>活跃度分布</span>
-          </template>
-          <v-chart :option="activityPieChartOption" autoresize style="height: 300px" />
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 分类分布 -->
-    <el-row :gutter="20" class="chart-section">
-      <el-col :span="24">
         <el-card shadow="hover">
           <template #header>
             <span>分类分布</span>
@@ -491,7 +487,7 @@ const growthTrendChartOption = computed(() => ({
 }))
 
 /** 跳转审核 */
-function handleAudit(article: Article) {
+function handleAudit(_article: Article) {
   router.push('/articles/pending')
 }
 
@@ -564,6 +560,13 @@ onMounted(() => {
 
   .chart-section {
     margin-bottom: 20px;
+  }
+
+  .right-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
   }
 
   .hot-articles {

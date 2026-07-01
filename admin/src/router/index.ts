@@ -28,6 +28,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '作品管理', icon: 'Document' },
       },
       {
+        path: 'articles/:id',
+        name: 'ArticleDetail',
+        component: () => import('@/views/articles/detail.vue'),
+        meta: { title: '作品详情', icon: 'Document' },
+      },
+      {
         path: 'articles/pending',
         name: 'PendingArticles',
         component: () => import('@/views/articles/pending.vue'),

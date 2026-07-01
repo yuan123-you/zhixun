@@ -10,10 +10,10 @@
           <el-form :model="queryParams" inline>
             <el-form-item label="通知类型">
               <el-select v-model="queryParams.type" placeholder="全部类型" clearable>
-                <el-option :value="1" label="系统通知" />
-                <el-option :value="2" label="审核通知" />
-                <el-option :value="3" label="互动通知" />
-                <el-option :value="4" label="关注通知" />
+                <el-option :value="NotificationType.System" label="系统通知" />
+                <el-option :value="NotificationType.Audit" label="审核通知" />
+                <el-option :value="NotificationType.Interact" label="互动通知" />
+                <el-option :value="NotificationType.Follow" label="关注通知" />
               </el-select>
             </el-form-item>
             <el-form-item>
@@ -35,7 +35,7 @@
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column label="类型" width="100">
                 <template #default="{ row }">
-                  <el-tag :type="typeTagMap[row.type]" size="small">
+                  <el-tag :type="typeTagMap[row.type] as 'success' | 'warning' | 'info' | 'danger' | 'primary'" size="small">
                     {{ typeLabelMap[row.type] || '未知' }}
                   </el-tag>
                 </template>
@@ -80,8 +80,8 @@
               :total="total"
               :page-sizes="[10, 20, 50]"
               layout="total, sizes, prev, pager, next, jumper"
-              @size-change="loadNotifications"
-              @current-change="loadNotifications"
+              @size-change="() => loadNotifications()"
+              @current-change="() => loadNotifications()"
             />
           </div>
         </el-card>
@@ -99,10 +99,10 @@
           >
             <el-form-item label="通知类型" prop="type">
               <el-select v-model="sendForm.type" placeholder="请选择通知类型">
-                <el-option :value="1" label="系统通知" />
-                <el-option :value="2" label="审核通知" />
-                <el-option :value="3" label="互动通知" />
-                <el-option :value="4" label="关注通知" />
+                <el-option :value="NotificationType.System" label="系统通知" />
+                <el-option :value="NotificationType.Audit" label="审核通知" />
+                <el-option :value="NotificationType.Interact" label="互动通知" />
+                <el-option :value="NotificationType.Follow" label="关注通知" />
               </el-select>
             </el-form-item>
 
@@ -156,6 +156,7 @@ import { ElMessage } from 'element-plus'
 import { CircleCloseFilled } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { NotificationBroadcast, NotificationQuery, PageResult } from '@/types'
+import { NotificationType } from '@/types'
 import { getNotificationList, sendNotification } from '@/api/notificationAdmin'
 import PageHeader from '@/components/PageHeader.vue'
 import { useRequestCache } from '@/composables/useRequestCache'
@@ -242,7 +243,7 @@ const sendLoading = ref(false)
 const targetMode = ref<'all' | 'specific'>('all')
 
 const sendForm = reactive({
-  type: 1,
+  type: NotificationType.System as NotificationType,
   title: '',
   content: '',
   targetUserIdsInput: '',
@@ -281,7 +282,7 @@ async function handleSend() {
     }
 
     const res = await sendNotification(data)
-    if (res.code === 0) {
+    if (res.code === 0 || res.code === 200) {
       ElMessage.success('通知发送成功')
       handleResetForm()
       // 切换到列表页并刷新
@@ -300,7 +301,7 @@ async function handleSend() {
 
 /** 重置发送表单 */
 function handleResetForm() {
-  sendForm.type = 1
+  sendForm.type = NotificationType.System
   sendForm.title = ''
   sendForm.content = ''
   sendForm.targetUserIdsInput = ''

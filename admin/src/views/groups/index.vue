@@ -16,8 +16,8 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="全部状态" clearable>
-            <el-option label="正常" :value="1" />
-            <el-option label="已禁用" :value="0" />
+            <el-option label="正常" :value="0" />
+            <el-option label="已禁用" :value="1" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -54,8 +54,8 @@
           </el-table-column>
           <el-table-column label="状态" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-                {{ row.status === 1 ? '正常' : '已禁用' }}
+              <el-tag :type="row.status === 0 ? 'success' : 'danger'">
+                {{ row.status === 0 ? '正常' : '已禁用' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -73,7 +73,7 @@
                 聊天记录
               </el-button>
               <el-button
-                v-if="row.status === 1"
+                v-if="row.status === 0"
                 type="warning"
                 link
                 size="small"
@@ -120,8 +120,8 @@
           :total="total"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadGroups"
-          @current-change="loadGroups"
+          @size-change="() => loadGroups()"
+          @current-change="() => loadGroups()"
         />
       </div>
     </el-card>
@@ -170,9 +170,9 @@
           :total="memberTotal"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
-          small
-          @size-change="loadMembers"
-          @current-change="loadMembers"
+          size="small"
+          @size-change="() => loadMembers()"
+          @current-change="() => loadMembers()"
         />
       </div>
     </el-dialog>
@@ -198,7 +198,7 @@
         <el-table-column prop="content" label="消息内容" min-width="260" show-overflow-tooltip />
         <el-table-column label="消息类型" width="100">
           <template #default="{ row }">
-            <el-tag size="small" :type="getMessageTypeTag(row.messageType)">
+            <el-tag size="small" :type="getMessageTypeTag(row.messageType) as '' | 'success' | 'warning' | 'info' | 'danger' | 'primary'">
               {{ getMessageTypeLabel(row.messageType) }}
             </el-tag>
           </template>
@@ -218,9 +218,9 @@
           :total="messageTotal"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
-          small
-          @size-change="loadMessages"
-          @current-change="loadMessages"
+          size="small"
+          @size-change="() => loadMessages()"
+          @current-change="() => loadMessages()"
         />
       </div>
     </el-dialog>
@@ -314,7 +314,7 @@ const memberPageSize = ref(20)
 const currentGroup = ref<GroupInfo | null>(null)
 
 /** 查看群成员 */
-function handleViewMembers(group: GroupInfo) {
+function handleViewMembers(group: any) {
   currentGroup.value = group
   memberPage.value = 1
   memberPageSize.value = 20
@@ -397,9 +397,9 @@ function getMessageTypeLabel(type: string) {
 // ========== 操作相关 ==========
 
 /** 启用/禁用群组 */
-async function handleToggleStatus(group: GroupInfo) {
-  const newStatus = group.status === 1 ? 0 : 1
-  const actionLabel = newStatus === 0 ? '禁用' : '启用'
+async function handleToggleStatus(group: any) {
+  const newStatus = group.status === 0 ? 1 : 0
+  const actionLabel = newStatus === 1 ? '禁用' : '启用'
   try {
     await ElMessageBox.confirm(`确定要${actionLabel}群组 "${group.name}" 吗？`, '提示', {
       confirmButtonText: '确定',
@@ -416,7 +416,7 @@ async function handleToggleStatus(group: GroupInfo) {
 }
 
 /** 删除群组 */
-async function handleDelete(group: GroupInfo) {
+async function handleDelete(group: any) {
   try {
     await ElMessageBox.confirm(
       `确定要删除群组 "${group.name}" 吗？此操作将解散该群组且不可恢复。`,

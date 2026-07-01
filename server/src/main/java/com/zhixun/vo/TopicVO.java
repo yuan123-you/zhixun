@@ -14,5 +14,6 @@ public class TopicVO {
     private Long followCount;
     private BigDecimal hotScore;
     private Integer isOfficial;
+    private Integer status;
     private Boolean isFollowed;
 }

@@ -24,6 +24,9 @@ public class Notification {
     /** 接收用户ID，对应 user_id */
     private Long userId;
 
+    /** 发送者ID（管理员发送时为管理员ID，系统触发时为null） */
+    private Long senderId;
+
     /** 通知类型 */
     private NotificationTypeEnum type;
 
@@ -41,6 +44,9 @@ public class Notification {
 
     /** 分组键，用于合并同类通知，对应 group_key */
     private String groupKey;
+
+    /** 是否群发通知（管理员发送时标记）：0-否，1-是 */
+    private Integer targetAll;
 
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)

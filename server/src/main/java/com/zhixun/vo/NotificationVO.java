@@ -34,6 +34,12 @@ public class NotificationVO {
     /** 分组内通知数量 */
     private Integer groupedCount;
 
+    /** 发送者名称 */
+    private String senderName;
+
+    /** 是否群发通知 */
+    private Boolean targetAll;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 }

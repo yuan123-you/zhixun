@@ -24,7 +24,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadWords">搜索</el-button>
+          <el-button type="primary" @click="() => loadWords()">搜索</el-button>
         </el-form-item>
       </el-form>
 
@@ -34,7 +34,7 @@
         <el-table-column prop="word" label="敏感词" min-width="200" />
         <el-table-column label="级别" width="120">
           <template #default="{ row }">
-            <el-tag :type="levelTypeMap[row.level]">
+            <el-tag :type="levelTypeMap[row.level] as '' | 'success' | 'warning' | 'info' | 'danger' | 'primary'">
               {{ levelNameMap[row.level] }}
             </el-tag>
           </template>
@@ -58,8 +58,8 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadWords"
-          @current-change="loadWords"
+          @size-change="() => loadWords()"
+          @current-change="() => loadWords()"
         />
       </div>
     </el-card>
@@ -255,7 +255,7 @@ async function confirmBatchAdd() {
 }
 
 /** 修改级别 */
-function handleEditLevel(word: SensitiveWord) {
+function handleEditLevel(word: any) {
   currentWord.value = word
   editLevel.value = word.level
   levelDialogVisible.value = true
@@ -279,7 +279,7 @@ async function confirmEditLevel() {
 }
 
 /** 删除敏感词 */
-async function handleDelete(word: SensitiveWord) {
+async function handleDelete(word: any) {
   try {
     await ElMessageBox.confirm('确定要删除该敏感词吗？', '提示', {
       confirmButtonText: '确定',

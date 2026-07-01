@@ -105,6 +105,15 @@ public interface AdminService {
     void deleteSensitiveWord(Long adminId, Long wordId);
 
     /**
+     * 更新敏感词级别
+     *
+     * @param adminId 管理员ID
+     * @param wordId  敏感词ID
+     * @param level   新级别
+     */
+    void updateSensitiveWordLevel(Long adminId, Long wordId, Integer level);
+
+    /**
      * 评论列表（管理员）
      *
      * @param articleId 作品ID（可选）
@@ -214,6 +223,14 @@ public interface AdminService {
      */
     void sendNotification(Long adminId, Integer type, String title, String content,
                           Boolean targetAll, List<Long> targetUserIds);
+
+    /**
+     * 用户详情（管理员查看，含登录统计）
+     *
+     * @param userId 用户ID
+     * @return 用户详情
+     */
+    UserVO getUserDetail(Long userId);
 
     /**
      * 用户登录历史

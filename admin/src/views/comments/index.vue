@@ -8,9 +8,9 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="全部状态" clearable>
-            <el-option label="正常" value="active" />
-            <el-option label="待审核" value="pending" />
-            <el-option label="已删除" value="deleted" />
+            <el-option label="正常" :value="1" />
+            <el-option label="待审核" :value="0" />
+            <el-option label="已删除" :value="2" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -28,32 +28,36 @@
       </template>
 
       <template v-else>
-        <el-table v-loading="loading" :data="commentList" stripe>
+        <el-table v-loading="loading" :data="commentList" stripe row-key="id">
           <el-table-column prop="id" label="ID" width="80" />
           <el-table-column prop="content" label="评论内容" min-width="250" show-overflow-tooltip />
           <el-table-column prop="articleTitle" label="所属作品" min-width="180" show-overflow-tooltip />
-          <el-table-column prop="username" label="评论者" width="120" />
+          <el-table-column label="评论者" width="120">
+            <template #default="{ row }">
+              {{ row.user?.nickname || row.user?.username || '-' }}
+            </template>
+          </el-table-column>
           <el-table-column label="状态" width="100">
             <template #default="{ row }">
-              <el-tag v-if="row.status === 'active'" type="success">正常</el-tag>
-              <el-tag v-else-if="row.status === 'pending'" type="warning">待审核</el-tag>
-              <el-tag v-else-if="row.status === 'deleted'" type="danger">已删除</el-tag>
+              <el-tag v-if="row.status === 1" type="success">正常</el-tag>
+              <el-tag v-else-if="row.status === 0" type="warning">待审核</el-tag>
+              <el-tag v-else-if="row.status === 2" type="danger">已删除</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="likeCount" label="点赞" width="80" />
           <el-table-column prop="createdAt" label="评论时间" width="170" />
-          <el-table-column label="操作" width="180" fixed="right">
+          <el-table-column label="操作" width="100" fixed="right" align="center">
             <template #default="{ row }">
               <el-button
-                v-if="row.status === 'pending'"
+                v-if="row.status === 0"
                 type="success"
                 link
                 size="small"
-                @click="handleApprove(row)"
+                @click="handleApprove(row as Comment)"
               >
                 通过
               </el-button>
-              <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+              <el-button type="danger" link size="small" @click="handleDelete(row as Comment)">删除</el-button>
             </template>
           </el-table-column>
 
@@ -81,8 +85,8 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="loadComments"
-          @current-change="loadComments"
+          @size-change="() => loadComments()"
+          @current-change="() => loadComments()"
         />
       </div>
     </el-card>

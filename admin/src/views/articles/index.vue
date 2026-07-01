@@ -13,11 +13,11 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="全部状态" clearable>
-            <el-option label="草稿" value="draft" />
-            <el-option label="待审核" value="pending" />
-            <el-option label="已发布" value="published" />
-            <el-option label="已下架" value="offline" />
-            <el-option label="已驳回" value="rejected" />
+            <el-option label="草稿" :value="0" />
+            <el-option label="待审核" :value="1" />
+            <el-option label="已发布" :value="2" />
+            <el-option label="已下架" :value="4" />
+            <el-option label="已驳回" :value="3" />
           </el-select>
         </el-form-item>
         <el-form-item label="分类">
@@ -74,7 +74,7 @@
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
               <el-button
-                v-if="row.status === 'pending'"
+                v-if="row.status === 1"
                 type="success"
                 link
                 size="small"
@@ -83,7 +83,7 @@
                 审核
               </el-button>
               <el-button
-                v-if="row.status === 'published'"
+                v-if="row.status === 2"
                 type="warning"
                 link
                 size="small"
@@ -136,6 +136,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCloseFilled } from '@element-plus/icons-vue'
 import type { Article, ArticleQuery, ArticleStatus, Category, PageResult } from '@/types'
@@ -144,6 +145,8 @@ import { getCategoryTree } from '@/api/category'
 import { useRequestCache } from '@/composables/useRequestCache'
 import StatusTag from '@/components/StatusTag.vue'
 import AuditDialog from '@/components/AuditDialog.vue'
+
+const router = useRouter()
 
 /** 请求缓存实例 */
 const articleCache = useRequestCache<PageResult<Article>>({
@@ -207,7 +210,7 @@ function handleReset() {
 
 /** 查看作品 */
 function handleView(article: Article) {
-  ElMessage.info(`查看作品: ${article.title}`)
+  router.push(`/articles/${article.id}`)
 }
 
 /** 审核作品 */

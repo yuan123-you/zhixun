@@ -17,6 +17,9 @@ public class CommentVO {
     /** 作品ID */
     private Long articleId;
 
+    /** 作品标题（管理端列表使用） */
+    private String articleTitle;
+
     /** 评论内容 */
     private String content;
 

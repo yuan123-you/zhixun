@@ -95,15 +95,15 @@ export enum UserStatus {
 /** 作品状态枚举 */
 export enum ArticleStatus {
   /** 草稿 */
-  Draft = 'draft',
+  Draft = 0,
   /** 待审核 */
-  Pending = 'pending',
+  Pending = 1,
   /** 已发布 */
-  Published = 'published',
-  /** 已下架 */
-  Offline = 'offline',
+  Published = 2,
   /** 已驳回 */
-  Rejected = 'rejected',
+  Rejected = 3,
+  /** 已下架 */
+  Offline = 4,
 }
 
 /** 作品信息 */
@@ -166,15 +166,8 @@ export interface Tag {
   updatedAt: string
 }
 
-/** 评论状态枚举 */
-export enum CommentStatus {
-  /** 正常 */
-  Active = 'active',
-  /** 已删除 */
-  Deleted = 'deleted',
-  /** 待审核 */
-  Pending = 'pending',
-}
+/** 评论状态（与后端 CommentStatusEnum 对应：0=待审核, 1=正常, 2=已删除） */
+export type CommentStatus = 0 | 1 | 2
 
 /** 评论信息 */
 export interface Comment {
@@ -183,8 +176,12 @@ export interface Comment {
   articleId: number
   articleTitle: string
   userId: number
-  username: string
-  userAvatar: string
+  user?: {
+    id: number
+    username: string
+    nickname: string
+    avatar: string
+  }
   parentId: number
   replyCount: number
   likeCount: number
@@ -305,10 +302,23 @@ export interface AuditParams {
   reason?: string
 }
 
-// ========== 增强的仪表盘数据（继承共享 DashboardData，增加 pendingArticles） ==========
+// ========== 增强的仪表盘数据（内联定义，避免 @zhixun/shared-types 模块解析问题） ==========
 
 /** 增强的仪表盘统计数据 */
-export interface EnhancedDashboardData extends DashboardData {
+export interface EnhancedDashboardData {
+  userTotal: number
+  articleTotal: number
+  todayDau: number
+  todayView: number
+  todayLike: number
+  todayComment: number
+  trend: TrendData
+  retentionRates: RetentionRate[]
+  activityDistributions: ActivityDistribution[]
+  growthTrends: GrowthTrend[]
+  categoryDistributions: CategoryDistribution[]
+  hotArticleRanks: HotArticleRank[]
+  creatorRanks: CreatorRank[]
   pendingArticles?: Article[]
 }
 
