@@ -1,4 +1,4 @@
-<template>
+<!-- ChatBubble 2026-07-01-v4: 修复私信/群组 voice/file 显示 --><template>
   <div class="chat-bubble-wrap">
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
