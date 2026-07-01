@@ -20,7 +20,7 @@ NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-enabled/glint.novo.ccwu.cc.
 NGINX_INCLUDE_DIR="${NGINX_INCLUDE_DIR:-/etc/nginx/conf.d}"
 
 # 需要检测的服务端口（宿主机监听端口）
-PORTS_TO_CHECK=(80 443 3000 3001 8082 9000)
+PORTS_TO_CHECK=(80 443 3000 3001 8080 9000)
 
 # 期望运行的 Docker 容器名（至少包含这些关键词）
 REQUIRED_CONTAINERS=("mysql" "redis" "minio" "server" "client" "admin")
@@ -258,7 +258,7 @@ port_firewall_check() {
     fi
 
     # 检查关键端口是否有显式放行
-    for port in 80 443 3000 3001 8082; do
+    for port in 80 443 3000 3001 8080; do
       if iptables -L INPUT -n 2>/dev/null | grep -q "dpt:$port"; then
         ok "iptables 已放行端口 $port"
       else
@@ -350,7 +350,7 @@ nginx_check() {
     warn "未找到预期站点配置: $NGINX_SITE_CONF，搜索其他配置..."
     # 尝试在 nginx 目录中搜索
     local found_conf
-    found_conf=$(grep -rl "glint\|/api\|proxy_pass.*8082\|/admin" /etc/nginx/ 2>/dev/null | head -3 || true)
+    found_conf=$(grep -rl "glint\|/api\|proxy_pass.*8080\|/admin" /etc/nginx/ 2>/dev/null | head -3 || true)
     if [ -n "$found_conf" ]; then
       info "找到相关 Nginx 配置: $found_conf"
       NGINX_SITE_CONF=$(echo "$found_conf" | head -1)
@@ -385,7 +385,7 @@ nginx_check() {
   else
     fail "Nginx 配置中未找到 /api 代理规则"
     record fail "API 反向代理配置" "缺少 /api 的 proxy_pass 规则" \
-      "在 Nginx 配置中添加: location /api { proxy_pass http://127.0.0.1:8082; ... }"
+      "在 Nginx 配置中添加: location /api { proxy_pass http://127.0.0.1:8080; ... }"
   fi
 
   # 检查 /admin 代理
@@ -597,7 +597,7 @@ cors_check() {
 
     # 尝试直接访问后端（绕过 Nginx）
     info "尝试直接访问后端容器端口验证 CORS..."
-    local direct_cors; direct_cors=$(try_curl_body "http://127.0.0.1:8082/api/v1/actuator/health" \
+    local direct_cors; direct_cors=$(try_curl_body "http://127.0.0.1:8080/api/v1/actuator/health" \
       "-X OPTIONS -H 'Origin: https://glint.novo.ccwu.cc' -H 'Access-Control-Request-Method: GET' -I -s" 2>/dev/null || true)
     if echo "$direct_cors" | grep -qi "access-control-allow-origin"; then
       local direct_origin; direct_origin=$(echo "$direct_cors" | grep -i "access-control-allow-origin" | awk -F': ' '{print $2}' | tr -d '\r')
@@ -933,7 +933,7 @@ print_summary() {
     echo ""
     echo "5. API 请求路径不匹配"
     echo "   → 确认 server.servlet.context-path=/api (application.yml)"
-    echo "   → 确认 Nginx 中 proxy_pass 指向正确的后端端口 (当前: 8082)"
+    echo "   → 确认 Nginx 中 proxy_pass 指向正确的后端端口 (当前: 8080)"
     echo "   → 确认 Nginx location /api 后不应再拼接 /api 前缀"
     echo ""
     echo "6. 云安全组未放行端口"
