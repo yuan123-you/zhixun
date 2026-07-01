@@ -222,7 +222,7 @@ async function loadArticle() {
   loading.value = true
   try {
     const res = await getArticleDetail(articleId.value)
-    article.value = res
+    article.value = res.data
   } catch {
     article.value = null
     ElMessage.error('作品加载失败')

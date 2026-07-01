@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ApiResponse } from '@/types'
-import { storage, STORAGE_KEYS } from '@/utils/storage'
+import { sessionStore, STORAGE_KEYS } from '@/utils/storage'
 import { friendlyMessage, toFriendlyError } from '@/utils/friendlyError'
 import router from '@/router'
 
@@ -24,6 +24,7 @@ const service = axios.create({
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
+    'X-Client-Type': 'admin', // 区分客户端/管理员端，后端据此设置不同的 Cookie 名称
   },
 })
 
@@ -41,7 +42,7 @@ const pendingRequests: Array<(token: string) => void> = []
  * 使用 storage 直接读取，避免引入 Pinia store 造成循环依赖
  */
 function isTokenExpiringSoon(): boolean {
-  const expiresAt = storage.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT)
+  const expiresAt = sessionStore.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT)
   if (!expiresAt) return false
   return Date.now() >= expiresAt - TOKEN_REFRESH_THRESHOLD
 }
@@ -50,7 +51,7 @@ function isTokenExpiringSoon(): boolean {
  * 判断 Token 是否已过期
  */
 function isTokenExpired(): boolean {
-  const expiresAt = storage.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT)
+  const expiresAt = sessionStore.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT)
   if (!expiresAt) return false
   return Date.now() >= expiresAt
 }
@@ -60,7 +61,7 @@ function isTokenExpired(): boolean {
  * 使用全局刷新锁防止并发刷新
  */
 async function refreshAccessToken(): Promise<string> {
-  const currentRefreshToken = storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
+  const currentRefreshToken = sessionStore.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
   if (!currentRefreshToken) {
     throw new Error('登录信息已过期，请重新登录')
   }
@@ -75,15 +76,17 @@ async function refreshAccessToken(): Promise<string> {
     try {
       const response = await axios.post('/api/v1/auth/refresh', {
         refreshToken: currentRefreshToken,
+      }, {
+        headers: { 'X-Client-Type': 'admin' },
       })
       const { accessToken, refreshToken: newRefreshToken, expiresIn } = response.data.data
 
       // 持久化新 Token
-      storage.set(STORAGE_KEYS.TOKEN, accessToken)
-      storage.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
+      sessionStore.set(STORAGE_KEYS.TOKEN, accessToken)
+      sessionStore.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
       if (expiresIn !== undefined) {
         const expiresAt = Date.now() + expiresIn * 1000
-        storage.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
+        sessionStore.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
       }
 
       // 重试所有挂起的请求
@@ -93,10 +96,10 @@ async function refreshAccessToken(): Promise<string> {
       return accessToken
     } catch {
       // 刷新失败，清除所有认证数据并跳转登录页
-      storage.remove(STORAGE_KEYS.TOKEN)
-      storage.remove(STORAGE_KEYS.REFRESH_TOKEN)
-      storage.remove(STORAGE_KEYS.TOKEN_EXPIRES_AT)
-      storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
+      sessionStore.remove(STORAGE_KEYS.TOKEN)
+      sessionStore.remove(STORAGE_KEYS.REFRESH_TOKEN)
+      sessionStore.remove(STORAGE_KEYS.TOKEN_EXPIRES_AT)
+      sessionStore.remove(STORAGE_KEYS.USER_PERMISSIONS)
       router.push('/login')
       throw new Error('登录已过期，请重新登录')
     } finally {
@@ -116,7 +119,7 @@ async function refreshAccessToken(): Promise<string> {
  */
 service.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    const token = storage.get<string>(STORAGE_KEYS.TOKEN)
+    const token = sessionStore.get<string>(STORAGE_KEYS.TOKEN)
 
     // 如果有 Token 且即将过期（但未完全过期），先刷新再发送
     if (token && isTokenExpiringSoon() && !isTokenExpired()) {
@@ -174,13 +177,13 @@ service.interceptors.response.use(
 
     // 401 — 尝试刷新 Token 并重试
     if (status === 401) {
-      const hasRefreshToken = !!storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
+      const hasRefreshToken = !!sessionStore.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
       if (hasRefreshToken) {
         return handleTokenRefresh(error.response.config)
       }
       // 无 refreshToken，直接跳转登录
-      storage.remove(STORAGE_KEYS.TOKEN)
-      storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
+      sessionStore.remove(STORAGE_KEYS.TOKEN)
+      sessionStore.remove(STORAGE_KEYS.USER_PERMISSIONS)
       router.push('/login')
       return Promise.reject(error)
     }
@@ -244,10 +247,10 @@ function showFriendlyError(opts: { code?: number | string; status?: number; mess
  * 使用全局刷新锁，多个并发 401 只触发一次刷新
  */
 async function handleTokenRefresh(requestConfig: AxiosRequestConfig) {
-  const currentRefreshToken = storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
+  const currentRefreshToken = sessionStore.get<string>(STORAGE_KEYS.REFRESH_TOKEN)
   if (!currentRefreshToken) {
-    storage.remove(STORAGE_KEYS.TOKEN)
-    storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
+    sessionStore.remove(STORAGE_KEYS.TOKEN)
+    sessionStore.remove(STORAGE_KEYS.USER_PERMISSIONS)
     router.push('/login')
     return Promise.reject(new Error('登录已过期，请重新登录'))
   }

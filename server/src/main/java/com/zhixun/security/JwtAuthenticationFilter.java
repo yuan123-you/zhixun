@@ -142,11 +142,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(tokenPrefix + " ")) {
             return bearerToken.substring((tokenPrefix + " ").length());
         }
-        // 回退：从 httpOnly Cookie 读取（登录时 AuthController 同时写入 accessToken Cookie，
-        // 供 navigator.sendBeacon 等无法自定义 Header 的场景使用）
+        // 回退：从 httpOnly Cookie 读取（客户端和管理员端使用不同 Cookie 名称，需逐一检查）
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("accessToken".equals(cookie.getName())) {
+                String name = cookie.getName();
+                if ("client_accessToken".equals(name) || "admin_accessToken".equals(name) || "accessToken".equals(name)) {
                     String v = cookie.getValue();
                     if (StringUtils.hasText(v)) return v;
                 }

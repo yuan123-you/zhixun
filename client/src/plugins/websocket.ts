@@ -21,13 +21,14 @@ export function initWebSocketPlugin() {
 
     const wsBase = import.meta.env.VITE_WS_BASE as string || ''
     let wsUrl: string
-    // WebSocket 握手时浏览器会自动携带同域 Cookie（httpOnly Cookie 中的 accessToken）
-    // 因此无需在 URL 中传递 token 参数
+    // 使用 URL token 参数鉴权（而非 Cookie），支持多账号同时登录
+    // 每个 tab 的 token 存储在 sessionStorage 中，互不干扰
+    const tokenParam = `token=${encodeURIComponent(userStore.token)}`
     if (/^wss?:\/\//.test(wsBase)) {
-      wsUrl = `${wsBase}/chat`
+      wsUrl = `${wsBase}/chat?${tokenParam}`
     } else {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      wsUrl = `${protocol}//${window.location.host}${wsBase}/chat`
+      wsUrl = `${protocol}//${window.location.host}${wsBase}/chat?${tokenParam}`
     }
     ws = new WebSocket(wsUrl)
 

@@ -1,5 +1,5 @@
 import type { Router } from 'vue-router'
-import { storage, STORAGE_KEYS } from '@/utils/storage'
+import { sessionStore, STORAGE_KEYS } from '@/utils/storage'
 
 // 白名单路由，无需登录即可访问
 const whiteList = ['/login']
@@ -16,7 +16,7 @@ export function setupGuards(router: Router) {
       document.title = `${to.meta.title} - 知讯管理后台`
     }
 
-    const token = storage.get<string>(STORAGE_KEYS.TOKEN)
+    const token = sessionStore.get<string>(STORAGE_KEYS.TOKEN)
 
     if (token) {
       // 已登录状态
@@ -26,7 +26,7 @@ export function setupGuards(router: Router) {
       } else {
         // 检查是否需要超级管理员权限
         if (to.meta.requiresSuperAdmin) {
-          const userInfo = storage.get<any>(STORAGE_KEYS.USER_INFO)
+          const userInfo = sessionStore.get<any>(STORAGE_KEYS.USER_INFO)
           if (userInfo?.role !== 'SUPER_ADMIN') {
             next('/dashboard')
             return

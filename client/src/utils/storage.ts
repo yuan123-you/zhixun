@@ -31,6 +31,13 @@ function isClient(): boolean {
 }
 
 /**
+ * 判断是否在客户端环境（sessionStorage 版）
+ */
+function isClientSession(): boolean {
+  return typeof window !== 'undefined' && !!window.sessionStorage
+}
+
+/**
  * 生成完整的存储键
  */
 function fullKey(key: string): string {
@@ -285,3 +292,61 @@ export const STORAGE_KEYS = {
   /** 聊天设置前缀（key = chat_settings_{myUserId}_{targetUserId}） */
   CHAT_SETTINGS_PREFIX: 'chat_settings_',
 } as const
+
+/**
+ * sessionStorage 存储实例
+ * 用于会话级数据（token、用户信息等），每个浏览器标签页独立存储
+ * 支持同一浏览器同时登录多个不同账号
+ */
+export const sessionStore = {
+  get<T>(key: string): T | null {
+    if (!isClientSession()) return null
+    try {
+      const raw = sessionStorage.getItem(fullKey(key))
+      if (!raw) return null
+      const item: StorageItem<T> = JSON.parse(raw)
+      if (item.version !== STORAGE_VERSION) {
+        this.remove(key)
+        return null
+      }
+      if (item.expireAt !== null && Date.now() > item.expireAt) {
+        this.remove(key)
+        return null
+      }
+      return item.value
+    } catch {
+      return null
+    }
+  },
+
+  set<T>(key: string, value: T, ttlMs?: number): void {
+    if (!isClientSession()) return
+    try {
+      const item: StorageItem<T> = {
+        value,
+        expireAt: ttlMs ? Date.now() + ttlMs : null,
+        version: STORAGE_VERSION,
+      }
+      sessionStorage.setItem(fullKey(key), JSON.stringify(item))
+    } catch {
+      // sessionStorage 写入失败静默忽略
+    }
+  },
+
+  remove(key: string): void {
+    if (!isClientSession()) return
+    sessionStorage.removeItem(fullKey(key))
+  },
+
+  clearAll(): void {
+    if (!isClientSession()) return
+    const keysToRemove: string[] = []
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i)
+      if (k && k.startsWith(KEY_PREFIX)) {
+        keysToRemove.push(k)
+      }
+    }
+    keysToRemove.forEach((k) => sessionStorage.removeItem(k))
+  },
+}

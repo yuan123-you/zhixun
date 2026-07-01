@@ -11,7 +11,7 @@ import { createPinia } from 'pinia'
 // 全局样式
 import './styles/index.scss'
 
-import { storage, STORAGE_KEYS } from '@/utils/storage'
+import { sessionStore, STORAGE_KEYS } from '@/utils/storage'
 
 const app = createApp(App)
 
@@ -35,7 +35,7 @@ app.directive('permission', {
   mounted(el: HTMLElement, binding) {
     const { value } = binding
     // 从用户状态中获取权限列表
-    const permissions = storage.get<string[]>(STORAGE_KEYS.USER_PERMISSIONS) || []
+    const permissions = sessionStore.get<string[]>(STORAGE_KEYS.USER_PERMISSIONS) || []
     if (value && value.length > 0) {
       const hasPermission = value.some((perm: string) => permissions.includes(perm))
       if (!hasPermission) {

@@ -86,12 +86,12 @@
           <template #header>
             <span>数据趋势</span>
           </template>
-          <v-chart :option="trendChartOption" autoresize style="height: 350px" />
+          <v-chart :option="trendChartOption" autoresize style="height: 320px" />
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="8">
         <div class="right-stack">
-          <el-card shadow="hover">
+          <el-card shadow="hover" class="flex-1">
             <template #header>
               <span>热门作品排行</span>
             </template>
@@ -115,100 +115,100 @@
             <template #header>
               <span>活跃度分布</span>
             </template>
-            <v-chart :option="activityPieChartOption" autoresize style="height: 220px" />
+            <v-chart :option="activityPieChartOption" autoresize style="height: 200px" />
           </el-card>
         </div>
       </el-col>
     </el-row>
 
-    <!-- 留存率和分类分布 -->
+    <!-- 留存率 + 分类分布 + 增长趋势 -->
     <el-row :gutter="20" class="chart-section">
-      <el-col :xs="24" :lg="12">
+      <el-col :xs="24" :lg="8">
         <el-card shadow="hover">
           <template #header>
             <span>用户留存率</span>
           </template>
-          <v-chart :option="retentionChartOption" autoresize style="height: 300px" />
+          <v-chart :option="retentionChartOption" autoresize style="height: 260px" />
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :lg="8">
+        <el-card shadow="hover">
+          <template #header>
+            <span>分类分布</span>
+          </template>
+          <v-chart :option="categoryBarChartOption" autoresize style="height: 260px" />
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :lg="8">
+        <el-card shadow="hover">
+          <template #header>
+            <span>增长趋势</span>
+          </template>
+          <v-chart :option="growthTrendChartOption" autoresize style="height: 260px" />
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 创作者排行 + 最新待审核 -->
+    <el-row :gutter="20" class="chart-section">
+      <el-col :xs="24" :lg="12">
+        <el-card shadow="hover">
+          <template #header>
+            <span>创作者排行</span>
+          </template>
+          <el-table :data="dashboardData.creatorRanks" stripe size="small">
+            <el-table-column prop="rank" label="排名" width="60" align="center" />
+            <el-table-column label="创作者" min-width="140">
+              <template #default="{ row }">
+                <div class="creator-cell">
+                  <el-avatar :src="row.avatar" :size="28" />
+                  <span class="creator-name">{{ row.nickname }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="articleCount" label="作品数" width="80" align="center" />
+            <el-table-column label="总浏览" width="90" align="center">
+              <template #default="{ row }">
+                {{ formatNumber(row.totalViews) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="总点赞" width="80" align="center">
+              <template #default="{ row }">
+                {{ formatNumber(row.totalLikes) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="followerCount" label="粉丝" width="80" align="center" />
+          </el-table>
+          <el-empty v-if="!dashboardData.creatorRanks?.length" description="暂无数据" />
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="12">
         <el-card shadow="hover">
           <template #header>
-            <span>分类分布</span>
-          </template>
-          <v-chart :option="categoryBarChartOption" autoresize style="height: 300px" />
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 增长趋势 -->
-    <el-row :gutter="20" class="chart-section">
-      <el-col :span="24">
-        <el-card shadow="hover">
-          <template #header>
-            <span>增长趋势</span>
-          </template>
-          <v-chart :option="growthTrendChartOption" autoresize style="height: 300px" />
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 创作者排行 -->
-    <el-card shadow="hover" class="table-section">
-      <template #header>
-        <span>创作者排行</span>
-      </template>
-      <el-table :data="dashboardData.creatorRanks" stripe style="width: 100%">
-        <el-table-column prop="rank" label="排名" width="70" align="center" />
-        <el-table-column label="创作者" min-width="180">
-          <template #default="{ row }">
-            <div class="creator-cell">
-              <el-avatar :src="row.avatar" :size="32" />
-              <span class="creator-name">{{ row.nickname }}</span>
+            <div class="card-header">
+              <span>最新待审核作品</span>
+              <el-button type="primary" link size="small" @click="$router.push('/articles/pending')">
+                查看全部
+              </el-button>
             </div>
           </template>
-        </el-table-column>
-        <el-table-column prop="articleCount" label="作品数" width="100" align="center" />
-        <el-table-column label="总浏览量" width="120" align="center">
-          <template #default="{ row }">
-            {{ formatNumber(row.totalViews) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="总点赞" width="100" align="center">
-          <template #default="{ row }">
-            {{ formatNumber(row.totalLikes) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="followerCount" label="粉丝数" width="100" align="center" />
-      </el-table>
-      <el-empty v-if="!dashboardData.creatorRanks?.length" description="暂无数据" />
-    </el-card>
-
-    <!-- 最新待审核 -->
-    <el-card shadow="hover" class="pending-section">
-      <template #header>
-        <div class="card-header">
-          <span>最新待审核作品</span>
-          <el-button type="primary" link @click="$router.push('/articles/pending')">
-            查看全部
-          </el-button>
-        </div>
-      </template>
-      <el-table :data="dashboardData.pendingArticles" stripe style="width: 100%">
-        <el-table-column prop="title" label="作品标题" min-width="200" />
-        <el-table-column prop="authorName" label="作者" width="120" />
-        <el-table-column prop="categoryName" label="分类" width="120" />
-        <el-table-column prop="createdAt" label="提交时间" width="180" />
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleAudit(row)">
-              审核
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-empty v-if="!dashboardData.pendingArticles?.length" description="暂无待审核作品" />
-    </el-card>
+          <el-table :data="dashboardData.pendingArticles" stripe size="small">
+            <el-table-column prop="title" label="作品标题" min-width="160" />
+            <el-table-column prop="authorName" label="作者" width="100" />
+            <el-table-column prop="categoryName" label="分类" width="100" />
+            <el-table-column prop="createdAt" label="提交时间" width="160" />
+            <el-table-column label="操作" width="80" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link size="small" @click="handleAudit(row)">
+                  审核
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty v-if="!dashboardData.pendingArticles?.length" description="暂无待审核作品" />
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
@@ -572,6 +572,11 @@ onMounted(() => {
     flex-direction: column;
     gap: 20px;
     height: 100%;
+
+    .flex-1 {
+      flex: 1;
+      min-height: 0;
+    }
   }
 
   .hot-articles {
@@ -634,26 +639,20 @@ onMounted(() => {
     }
   }
 
-  .table-section {
-    margin-bottom: 20px;
-
-    .creator-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .creator-name {
-        font-size: 14px;
-        color: #333;
-      }
-    }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .pending-section {
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+  .creator-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .creator-name {
+      font-size: 14px;
+      color: #333;
     }
   }
 }

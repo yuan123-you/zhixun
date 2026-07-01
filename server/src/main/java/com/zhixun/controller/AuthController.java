@@ -56,9 +56,9 @@ public class AuthController {
     @PostMapping("/register")
     @SentinelResource(value = "auth-register", blockHandler = "registerBlockHandler", blockHandlerClass = AuthController.BlockHandlers.class)
     @OperationLog(module = "认证", action = "注册")
-    public R<TokenResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
+    public R<TokenResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
         TokenResponse tokenResponse = authService.register(request);
-        setTokenCookies(response, tokenResponse);
+        setTokenCookies(httpRequest, response, tokenResponse);
         return R.ok(tokenResponse);
     }
 
@@ -70,7 +70,7 @@ public class AuthController {
     @OperationLog(module = "认证", action = "登录")
     public R<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
         TokenResponse tokenResponse = authService.login(request, httpRequest);
-        setTokenCookies(response, tokenResponse);
+        setTokenCookies(httpRequest, response, tokenResponse);
         return R.ok(tokenResponse);
     }
 
@@ -80,7 +80,7 @@ public class AuthController {
     @PostMapping("/logout")
     public R<Void> logout(HttpServletRequest httpRequest, HttpServletResponse response) {
         authService.logout(httpRequest);
-        clearTokenCookies(response);
+        clearTokenCookies(httpRequest, response);
         return R.ok();
     }
 
@@ -92,13 +92,26 @@ public class AuthController {
     public R<TokenResponse> refresh(HttpServletRequest httpRequest, @RequestBody(required = false) Map<String, String> body, HttpServletResponse response) {
         String refreshToken = null;
 
-        // 优先从 Cookie 读取 refreshToken
+        // 根据 X-Client-Type 确定要读取的 Cookie 名称
+        String clientType = resolveClientType(httpRequest);
+        String refreshTokenCookieName = getRefreshTokenCookieName(clientType);
+
+        // 优先从 Cookie 读取 refreshToken（优先尝试对应客户端类型的 Cookie）
         Cookie[] cookies = httpRequest.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if ("refreshToken".equals(cookie.getName())) {
+                if (refreshTokenCookieName.equals(cookie.getName())) {
                     refreshToken = cookie.getValue();
                     break;
+                }
+            }
+            // 兜底：尝试旧版 Cookie 名称（兼容未更新前端的情况）
+            if (refreshToken == null || refreshToken.isBlank()) {
+                for (Cookie cookie : cookies) {
+                    if ("refreshToken".equals(cookie.getName())) {
+                        refreshToken = cookie.getValue();
+                        break;
+                    }
                 }
             }
         }
@@ -115,7 +128,7 @@ public class AuthController {
         }
 
         TokenResponse tokenResponse = authService.refreshToken(refreshToken);
-        setTokenCookies(response, tokenResponse);
+        setTokenCookies(httpRequest, response, tokenResponse);
         return R.ok(tokenResponse);
     }
 
@@ -173,9 +186,9 @@ public class AuthController {
      * 第三方登录
      */
     @PostMapping("/oauth/login")
-    public R<TokenResponse> oauthLogin(@Valid @RequestBody OAuthLoginRequest request, HttpServletResponse response) {
+    public R<TokenResponse> oauthLogin(@Valid @RequestBody OAuthLoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
         TokenResponse tokenResponse = oAuthService.oauthLogin(request.getProvider(), request.getCode());
-        setTokenCookies(response, tokenResponse);
+        setTokenCookies(httpRequest, response, tokenResponse);
         return R.ok(tokenResponse);
     }
 
@@ -203,14 +216,52 @@ public class AuthController {
 
     // ========== Cookie 工具方法 ==========
 
+    /** 客户端类型请求头名 */
+    private static final String CLIENT_TYPE_HEADER = "X-Client-Type";
+    /** 客户端类型：客户端 */
+    private static final String CLIENT_TYPE_CLIENT = "client";
+    /** 客户端类型：管理员端 */
+    private static final String CLIENT_TYPE_ADMIN = "admin";
+
+    /**
+     * 从请求头获取客户端类型
+     * @return "client" 或 "admin"，默认为 "client"
+     */
+    private String resolveClientType(HttpServletRequest request) {
+        String clientType = request.getHeader(CLIENT_TYPE_HEADER);
+        if (CLIENT_TYPE_ADMIN.equalsIgnoreCase(clientType)) {
+            return CLIENT_TYPE_ADMIN;
+        }
+        return CLIENT_TYPE_CLIENT;
+    }
+
+    /**
+     * 获取 accessToken Cookie 名称
+     */
+    private String getAccessTokenCookieName(String clientType) {
+        return CLIENT_TYPE_ADMIN.equals(clientType) ? "admin_accessToken" : "client_accessToken";
+    }
+
+    /**
+     * 获取 refreshToken Cookie 名称
+     */
+    private String getRefreshTokenCookieName(String clientType) {
+        return CLIENT_TYPE_ADMIN.equals(clientType) ? "admin_refreshToken" : "client_refreshToken";
+    }
+
     /**
      * 设置 Token Cookie
      * accessToken: httpOnly Cookie（用于 WebSocket 连接，短期有效）
      * refreshToken: httpOnly Cookie（长期有效，安全存储）
+     * 根据 X-Client-Type 请求头区分客户端和管理员端，使用不同的 Cookie 名称避免互相覆盖
      */
-    private void setTokenCookies(HttpServletResponse response, TokenResponse tokenResponse) {
+    private void setTokenCookies(HttpServletRequest httpRequest, HttpServletResponse response, TokenResponse tokenResponse) {
+        String clientType = resolveClientType(httpRequest);
+        String accessTokenName = getAccessTokenCookieName(clientType);
+        String refreshTokenName = getRefreshTokenCookieName(clientType);
+
         // 设置 accessToken Cookie（短期有效，用于 WebSocket）
-        Cookie accessTokenCookie = new Cookie("accessToken", tokenResponse.getAccessToken());
+        Cookie accessTokenCookie = new Cookie(accessTokenName, tokenResponse.getAccessToken());
         accessTokenCookie.setHttpOnly(true);
         accessTokenCookie.setSecure(true); // 生产环境强制 HTTPS
         accessTokenCookie.setPath("/");
@@ -219,7 +270,7 @@ public class AuthController {
         response.addCookie(accessTokenCookie);
 
         // 设置 refreshToken Cookie（长期有效，httpOnly 安全存储）
-        Cookie refreshTokenCookie = new Cookie("refreshToken", tokenResponse.getRefreshToken());
+        Cookie refreshTokenCookie = new Cookie(refreshTokenName, tokenResponse.getRefreshToken());
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(true);
         refreshTokenCookie.setPath("/");
@@ -230,16 +281,21 @@ public class AuthController {
 
     /**
      * 清除 Token Cookie
+     * 根据 X-Client-Type 请求头清除对应客户端的 Cookie
      */
-    private void clearTokenCookies(HttpServletResponse response) {
-        Cookie accessTokenCookie = new Cookie("accessToken", "");
+    private void clearTokenCookies(HttpServletRequest httpRequest, HttpServletResponse response) {
+        String clientType = resolveClientType(httpRequest);
+        String accessTokenName = getAccessTokenCookieName(clientType);
+        String refreshTokenName = getRefreshTokenCookieName(clientType);
+
+        Cookie accessTokenCookie = new Cookie(accessTokenName, "");
         accessTokenCookie.setHttpOnly(true);
         accessTokenCookie.setSecure(true);
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0); // 立即过期
         response.addCookie(accessTokenCookie);
 
-        Cookie refreshTokenCookie = new Cookie("refreshToken", "");
+        Cookie refreshTokenCookie = new Cookie(refreshTokenName, "");
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(true);
         refreshTokenCookie.setPath("/");

@@ -286,11 +286,12 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private String extractToken(WebSocketSession session) {
-        // 方式1: 从握手拦截器保存的 Cookie 中读取 accessToken
+        // 方式1: 从握手拦截器保存的 Cookie 中读取 accessToken（支持客户端和管理员端不同 Cookie 名称）
         Object cookiesObj = session.getAttributes().get("handshakeCookies");
         if (cookiesObj instanceof Cookie[] cookies) {
             for (Cookie cookie : cookies) {
-                if ("accessToken".equals(cookie.getName())) {
+                String name = cookie.getName();
+                if ("client_accessToken".equals(name) || "admin_accessToken".equals(name) || "accessToken".equals(name)) {
                     return cookie.getValue();
                 }
             }

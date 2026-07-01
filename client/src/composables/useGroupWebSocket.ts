@@ -9,7 +9,7 @@ interface WsMessage {
 /**
  * 群组聊天 WebSocket composable
  * 连接 /ws/group-chat?groupId=xxx
- * 鉴权通过 httpOnly Cookie（accessToken）自动携带，URL token 参数作为兼容降级
+ * 鉴权通过 URL token 参数，每个标签页独立 token，支持多账号同时登录
  * 自动重连（指数退避，最多5次）
  */
 export function useGroupWebSocket(
@@ -31,11 +31,12 @@ export function useGroupWebSocket(
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    // 主要鉴权依赖 WebSocket 自动携带的 httpOnly Cookie（accessToken）
-    // URL token 参数作为兼容降级（Cookie 中无 token 时使用）
+    // 使用 URL token 参数鉴权（而非 Cookie），支持多账号同时登录
+    const userStore = useUserStore()
+    const wsToken = token || userStore.token
     let url = `${protocol}//${host}/ws/group-chat?groupId=${groupId}`
-    if (token) {
-      url += `&token=${encodeURIComponent(token)}`
+    if (wsToken) {
+      url += `&token=${encodeURIComponent(wsToken)}`
     }
 
     try {

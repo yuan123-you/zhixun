@@ -20,11 +20,10 @@ export const authApi = {
     return post('/auth/logout')
   },
 
-  /** 刷新Token - refreshToken 存储在 httpOnly Cookie 中，无需传递参数 */
+  /** 刷新Token - refreshToken 存储在 sessionStorage 中，通过请求体传递 */
   refreshToken: (refreshToken?: string) => {
     const { post } = useApi()
-    // refreshToken 存储在 httpOnly Cookie 中，后端会自动从 Cookie 读取
-    // 不再传递 refreshToken 参数（或传递空对象）
+    // 通过请求体传递 refreshToken，支持多账号同时登录
     return post<AuthResponse>('/auth/refresh', refreshToken ? { refreshToken } : {})
   },
 }

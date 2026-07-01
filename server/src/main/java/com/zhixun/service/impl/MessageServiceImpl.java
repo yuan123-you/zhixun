@@ -98,13 +98,19 @@ public class MessageServiceImpl implements MessageService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "消息内容包含敏感词，请修改后重新发送");
         }
 
-        // AES-256-GCM 加密消息内容
+        // AES-256-GCM 加密消息内容（仅文本类型加密，图片/语音/文件等URL无需加密）
         String encryptedContent;
-        try {
-            encryptedContent = aesUtil.encrypt(rawContent);
-        } catch (Exception e) {
-            log.error("私信发送失败: AES加密异常, senderId={}, receiverId={}", senderId, receiverId, e);
-            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
+        String msgType = request.getType() != null ? request.getType() : "text";
+        if ("text".equals(msgType)) {
+            try {
+                encryptedContent = aesUtil.encrypt(rawContent);
+            } catch (Exception e) {
+                log.error("私信发送失败: AES加密异常, senderId={}, receiverId={}", senderId, receiverId, e);
+                throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
+            }
+        } else {
+            // 非文本类型（image/voice/file/ai_reply等）直接存储明文URL，无需加密
+            encryptedContent = rawContent;
         }
 
         // 创建消息记录
@@ -258,11 +264,16 @@ public class MessageServiceImpl implements MessageService {
                 vo.setAvatar(otherUser.getAvatar());
             }
 
-            // 解密消息内容（兼容加密前的明文数据）
-            try {
-                vo.setLastMessage(aesUtil.decrypt(latestMsg.getContent()));
-            } catch (Exception e) {
-                // 解密失败时使用原始内容（可能是加密功能上线前的明文消息，或密钥变更后的旧密文）
+            // 解密消息内容（仅文本类型需要解密，非文本类型直接使用原始内容）
+            String lastMsgType = latestMsg.getType() != null ? latestMsg.getType() : "text";
+            if ("text".equals(lastMsgType)) {
+                try {
+                    vo.setLastMessage(aesUtil.decrypt(latestMsg.getContent()));
+                } catch (Exception e) {
+                    // 解密失败时使用原始内容（可能是加密功能上线前的明文消息，或密钥变更后的旧密文）
+                    vo.setLastMessage(latestMsg.getContent());
+                }
+            } else {
                 vo.setLastMessage(latestMsg.getContent());
             }
 
@@ -452,7 +463,7 @@ public class MessageServiceImpl implements MessageService {
         message.setSenderId(0L);
         message.setReceiverId(senderId); // AI回复给提问者
         message.setType("ai_reply");
-        message.setContent(aesUtil.encrypt(aiContent));
+        message.setContent(aiContent); // AI回复不加密，直接存储明文
         message.setIsRead(0);
         userMessageMapper.insert(message);
 
@@ -477,11 +488,17 @@ public class MessageServiceImpl implements MessageService {
         vo.setIsRead(message.getIsRead());
         vo.setCreatedAt(message.getCreatedAt());
 
-        // 解密消息内容（兼容加密前的明文数据）
-        try {
-            vo.setContent(aesUtil.decrypt(message.getContent()));
-        } catch (Exception e) {
-            // 解密失败时使用原始内容（可能是加密功能上线前的明文消息，或密钥变更后的旧密文）
+        // 解密消息内容（仅文本类型需要解密，非文本类型直接使用原始内容）
+        String msgType = message.getType() != null ? message.getType() : "text";
+        if ("text".equals(msgType)) {
+            try {
+                vo.setContent(aesUtil.decrypt(message.getContent()));
+            } catch (Exception e) {
+                // 解密失败时使用原始内容（可能是加密功能上线前的明文消息，或密钥变更后的旧密文）
+                vo.setContent(message.getContent());
+            }
+        } else {
+            // 非文本类型（image/voice/file/ai_reply等）存储时未加密，直接使用原始内容
             vo.setContent(message.getContent());
         }
 

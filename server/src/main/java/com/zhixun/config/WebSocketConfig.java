@@ -85,13 +85,14 @@ public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBro
             if (request instanceof ServletServerHttpRequest servletRequest) {
                 String token = null;
 
-                // 优先从 Cookie 读取 accessToken
+                // 优先从 Cookie 读取 accessToken（支持客户端和管理员端不同 Cookie 名称）
                 Cookie[] cookies = servletRequest.getServletRequest().getCookies();
                 if (cookies != null) {
                     // 保存 Cookie 到 attributes，供后续 Handler 使用
                     attributes.put("handshakeCookies", cookies);
                     for (Cookie cookie : cookies) {
-                        if ("accessToken".equals(cookie.getName())) {
+                        String name = cookie.getName();
+                        if ("client_accessToken".equals(name) || "admin_accessToken".equals(name) || "accessToken".equals(name)) {
                             token = cookie.getValue();
                             break;
                         }

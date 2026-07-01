@@ -195,3 +195,57 @@ export const STORAGE_KEYS = {
   /** 分页大小偏好前缀 */
   PAGE_SIZE_PREFIX: 'page_size_',
 } as const
+
+/**
+ * sessionStorage 存储实例
+ * 用于会话级数据（token、refreshToken等），每个浏览器标签页独立存储
+ * 支持同一浏览器同时登录多个管理员账号
+ */
+export const sessionStore = {
+  get<T>(key: string): T | null {
+    try {
+      const raw = sessionStorage.getItem(fullKey(key))
+      if (!raw) return null
+      const item: StorageItem<T> = JSON.parse(raw)
+      if (item.version !== STORAGE_VERSION) {
+        this.remove(key)
+        return null
+      }
+      if (item.expireAt !== null && Date.now() > item.expireAt) {
+        this.remove(key)
+        return null
+      }
+      return item.value
+    } catch {
+      return null
+    }
+  },
+
+  set<T>(key: string, value: T, ttlMs?: number): void {
+    try {
+      const item: StorageItem<T> = {
+        value,
+        expireAt: ttlMs ? Date.now() + ttlMs : null,
+        version: STORAGE_VERSION,
+      }
+      sessionStorage.setItem(fullKey(key), JSON.stringify(item))
+    } catch {
+      // sessionStorage 写入失败静默忽略
+    }
+  },
+
+  remove(key: string): void {
+    sessionStorage.removeItem(fullKey(key))
+  },
+
+  clearAll(): void {
+    const keysToRemove: string[] = []
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i)
+      if (k && k.startsWith(KEY_PREFIX)) {
+        keysToRemove.push(k)
+      }
+    }
+    keysToRemove.forEach((k) => sessionStorage.removeItem(k))
+  },
+}

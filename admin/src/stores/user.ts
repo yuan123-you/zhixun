@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { UserInfo, LoginUserInfo, LoginParams } from '@/types'
 import { UserStatus } from '@/types'
 import { loginApi, getUserInfoApi } from '@/api/auth'
-import { storage, STORAGE_KEYS } from '@/utils/storage'
+import { sessionStore, STORAGE_KEYS } from '@/utils/storage'
 import router from '@/router'
 
 /** Token 即将过期的提前量（5分钟，单位毫秒） */
@@ -14,20 +14,20 @@ const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000
  * 管理用户认证信息、用户资料和权限
  */
 export const useUserStore = defineStore('user', () => {
-  /** 认证令牌 */
-  const token = ref<string>(storage.get<string>(STORAGE_KEYS.TOKEN) || '')
+  /** 认证令牌 - 使用 sessionStorage 支持多账号同时登录 */
+  const token = ref<string>(sessionStore.get<string>(STORAGE_KEYS.TOKEN) || '')
 
   /** 刷新令牌，用于 accessToken 过期时自动续期 */
-  const refreshToken = ref<string>(storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN) || '')
+  const refreshToken = ref<string>(sessionStore.get<string>(STORAGE_KEYS.REFRESH_TOKEN) || '')
 
   /** Token 过期时间戳（毫秒），用于判断是否需要提前刷新 */
-  const tokenExpiresAt = ref<number>(storage.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT) || 0)
+  const tokenExpiresAt = ref<number>(sessionStore.get<number>(STORAGE_KEYS.TOKEN_EXPIRES_AT) || 0)
 
-  /** 用户信息（初始从 localStorage 恢复，刷新后无需重新请求） */
-  const userInfo = ref<UserInfo | null>(storage.get<UserInfo>(STORAGE_KEYS.USER_INFO) || null)
+  /** 用户信息（初始从 sessionStorage 恢复，刷新后无需重新请求） */
+  const userInfo = ref<UserInfo | null>(sessionStore.get<UserInfo>(STORAGE_KEYS.USER_INFO) || null)
 
   /** 用户权限列表 */
-  const permissions = ref<string[]>(storage.get<string[]>(STORAGE_KEYS.USER_PERMISSIONS) || [])
+  const permissions = ref<string[]>(sessionStore.get<string[]>(STORAGE_KEYS.USER_PERMISSIONS) || [])
 
   /** 是否已登录 */
   const isLoggedIn = ref(!!token.value)
@@ -41,12 +41,12 @@ export const useUserStore = defineStore('user', () => {
   function setToken(newToken: string, newRefreshToken: string, expiresIn?: number) {
     token.value = newToken
     refreshToken.value = newRefreshToken
-    storage.set(STORAGE_KEYS.TOKEN, newToken)
-    storage.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
+    sessionStore.set(STORAGE_KEYS.TOKEN, newToken)
+    sessionStore.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
     if (expiresIn !== undefined) {
       const expiresAt = Date.now() + expiresIn * 1000
       tokenExpiresAt.value = expiresAt
-      storage.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
+      sessionStore.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
     }
   }
 
@@ -73,7 +73,7 @@ export const useUserStore = defineStore('user', () => {
       if (res.data.expiresIn) {
         const expiresAt = Date.now() + res.data.expiresIn * 1000
         tokenExpiresAt.value = expiresAt
-        storage.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
+        sessionStore.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
       }
 
       const loginUserInfo: LoginUserInfo = res.data.userInfo
@@ -96,11 +96,11 @@ export const useUserStore = defineStore('user', () => {
         updatedAt: '',
       }
 
-      // 持久化存储
-      storage.set(STORAGE_KEYS.TOKEN, res.data.accessToken)
-      storage.set(STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
-      storage.set(STORAGE_KEYS.USER_PERMISSIONS, loginUserInfo.permissions)
-      storage.set(STORAGE_KEYS.USER_INFO, userInfo.value)
+      // 持久化存储到 sessionStorage（每个标签页独立，支持多账号）
+      sessionStore.set(STORAGE_KEYS.TOKEN, res.data.accessToken)
+      sessionStore.set(STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
+      sessionStore.set(STORAGE_KEYS.USER_PERMISSIONS, loginUserInfo.permissions)
+      sessionStore.set(STORAGE_KEYS.USER_INFO, userInfo.value)
 
       // 跳转到首页或来源页（安全校验：仅允许站内路径，防止开放重定向漏洞）
       const redirect = validateRedirect((router.currentRoute.value.query.redirect as string) || '/')
@@ -138,12 +138,12 @@ export const useUserStore = defineStore('user', () => {
     permissions.value = []
     isLoggedIn.value = false
 
-    // 清除持久化存储
-    storage.remove(STORAGE_KEYS.TOKEN)
-    storage.remove(STORAGE_KEYS.REFRESH_TOKEN)
-    storage.remove(STORAGE_KEYS.TOKEN_EXPIRES_AT)
-    storage.remove(STORAGE_KEYS.USER_PERMISSIONS)
-    storage.remove(STORAGE_KEYS.USER_INFO)
+    // 清除 sessionStorage
+    sessionStore.remove(STORAGE_KEYS.TOKEN)
+    sessionStore.remove(STORAGE_KEYS.REFRESH_TOKEN)
+    sessionStore.remove(STORAGE_KEYS.TOKEN_EXPIRES_AT)
+    sessionStore.remove(STORAGE_KEYS.USER_PERMISSIONS)
+    sessionStore.remove(STORAGE_KEYS.USER_INFO)
 
     router.push('/login')
   }
@@ -156,8 +156,8 @@ export const useUserStore = defineStore('user', () => {
       const res = await getUserInfoApi()
       userInfo.value = res.data
       permissions.value = res.data.permissions
-      storage.set(STORAGE_KEYS.USER_PERMISSIONS, res.data.permissions)
-      storage.set(STORAGE_KEYS.USER_INFO, userInfo.value)
+      sessionStore.set(STORAGE_KEYS.USER_PERMISSIONS, res.data.permissions)
+      sessionStore.set(STORAGE_KEYS.USER_INFO, userInfo.value)
     } catch {
       // 获取用户信息失败，不清除现有状态（可能是网络问题）
       // 如果 token 已过期，后续 API 调用将触发 401 处理

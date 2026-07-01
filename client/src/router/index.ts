@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { storage, STORAGE_KEYS } from '@/utils/storage'
+import { sessionStore, STORAGE_KEYS } from '@/utils/storage'
 
 // 布局组件（懒加载）
 const DefaultLayout = () => import('@/layouts/default.vue')
@@ -341,9 +341,9 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const userStore = useUserStore()
 
-  // 确保 store 从 localStorage 恢复（首次路由导航时可能尚未调用 init）
+  // 确保 store 从 sessionStorage 恢复（首次路由导航时可能尚未调用 init）
   if (!userStore.token) {
-    const savedAccessToken = storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN)
+    const savedAccessToken = sessionStore.get<string>(STORAGE_KEYS.ACCESS_TOKEN)
     if (savedAccessToken) {
       userStore.init()
     }

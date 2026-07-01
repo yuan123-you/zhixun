@@ -133,7 +133,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 Object cookiesObj = session.getAttributes().get("handshakeCookies");
                 if (cookiesObj instanceof jakarta.servlet.http.Cookie[] cookies) {
                     for (jakarta.servlet.http.Cookie cookie : cookies) {
-                        if ("accessToken".equals(cookie.getName())) {
+                        String name = cookie.getName();
+                        if ("client_accessToken".equals(name) || "admin_accessToken".equals(name) || "accessToken".equals(name)) {
                             token = cookie.getValue();
                             break;
                         }
