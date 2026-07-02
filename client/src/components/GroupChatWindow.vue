@@ -1020,22 +1020,26 @@ watch(() => props.group?.id, (id) => {
 }
 
 /* ===== 头部 ===== */
+/* 2026-07-02 v12: 缩小 header 让出消息区域
+   - 桌面：padding 10→6、按钮 36→32、标题 15→14 → header 高 ~44px（原 56px，省 12px）
+   - 移动：padding 8→4、按钮 36→32 → header 高 ~40px（原 52px，省 12px） */
 .qq-chat-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 8px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--zh-border, #e5e7eb);
   flex-shrink: 0;
   background: var(--zh-bg-elevated, #fff);
   z-index: 2;
+  min-height: 0;
 }
 .qq-back-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px; height: 36px;
-  border: none; border-radius: 10px;
+  width: 32px; height: 32px;
+  border: none; border-radius: 8px;
   background: transparent;
   color: var(--zh-text-secondary, #64748b);
   cursor: pointer; transition: background 0.2s;
@@ -1044,20 +1048,22 @@ watch(() => props.group?.id, (id) => {
 .qq-back-btn:hover { background: var(--zh-bg-hover, #f1f5f9); }
 .qq-header-info { flex: 1; min-width: 0; }
 .qq-chat-title {
-  font-weight: 700; font-size: 15px;
+  font-weight: 700; font-size: 14px;
   color: var(--zh-text, #1e293b);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3;
 }
 .qq-chat-subtitle {
-  font-size: 11px; color: var(--zh-text-tertiary, #94a3b8);
-  display: flex; gap: 6px; margin-top: 1px;
+  font-size: 10px; color: var(--zh-text-tertiary, #94a3b8);
+  display: flex; gap: 6px; margin-top: 0;
+  line-height: 1.2;
 }
 .qq-group-num { font-family: 'JetBrains Mono', monospace; }
-.qq-header-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.qq-header-actions { display: flex; gap: 2px; flex-shrink: 0; }
 .qq-header-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  border: none; border-radius: 10px;
+  width: 32px; height: 32px;
+  border: none; border-radius: 8px;
   background: transparent;
   color: var(--zh-text-tertiary, #94a3b8);
   cursor: pointer; transition: all 0.2s;
@@ -1074,7 +1080,7 @@ watch(() => props.group?.id, (id) => {
   background: rgba(0, 0, 0, 0.15);
 }
 .qq-menu {
-  position: absolute; top: 52px; right: 14px;
+  position: absolute; top: 44px; right: 12px;
   background: var(--zh-bg-elevated, #fff);
   border: 1px solid var(--zh-border, #e5e7eb);
   border-radius: 14px;
@@ -1485,12 +1491,16 @@ watch(() => props.group?.id, (id) => {
 }
 
 /* 移动端适配 */
+/* 2026-07-02 v12: 进一步压缩 header 让出移动端消息区域 */
 @media (max-width: 768px) {
-  .qq-chat-header { padding: 8px 10px; }
+  .qq-chat-header { padding: 4px 10px; gap: 6px; }
+  .qq-chat-title { font-size: 13px; }
+  .qq-chat-subtitle { font-size: 10px; }
+  .qq-back-btn, .qq-header-btn { width: 30px; height: 30px; border-radius: 8px; }
   .qq-chat-msgs { padding: 6px 10px; }
   .qq-chat-input { padding: 6px 10px 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
   .qq-avatar { width: 28px; height: 28px; }
-  .qq-menu { top: 48px; right: 10px; }
+  .qq-menu { top: 40px; right: 10px; }
 }
 
 /* 语音上传中 */

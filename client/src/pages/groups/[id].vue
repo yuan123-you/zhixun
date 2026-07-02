@@ -273,22 +273,20 @@ useHead({
 </script>
 
 <style scoped>
-/* ==================== 2026-07-02 v10: 修复外页滚动问题 ====================
+/* ==================== 2026-07-02 v12: qq-chat-header 顶到视口顶部 + header 缩小 ====================
    根因：
-   1. layout <main> 有 pt-[52px] md:pt-16 (移动52/桌面64px) padding-top
-   2. .group-page 用 calc(100dvh - 50px)，实际 AppHeader 高度是 52/64px
-   3. 桌面端 main 64px + .group-page 100dvh-50px = 总高超过 100dvh 14px
-   4. 撑大 body，外页出现滚动条；.group-page 内部 flex 链断裂
+   1. AppHeader 在 /groups/[id] 是隐藏的（useHeaderVisibility 只在 / 和 /user 显示）
+   2. 旧 .group-page 仍按 AppHeader 在显示的假设设 top: 52px/64px，导致视口顶部留白
+   3. qq-chat-header 自身 padding 10px + 36px 按钮 = 56px，占用过多移动端空间
 
-   修复：position: fixed 脱离 main 布局
-   - top 直接 = AppHeader 实际高度（移动 52 / 桌面 64）
-   - bottom: 0 让它填满剩余空间
-   - 高度由 top+bottom 决定，不再依赖 calc，避免双重减计算
+   修复：
+   - .group-page top: 0（AppHeader 已隐藏，无需偏移）
+   - qq-chat-header 缩小（见 GroupChatWindow.vue v12）
 */
 .group-page {
   position: fixed;
-  top: 52px;       /* 移动端 AppHeader 高度 */
-  bottom: 56px;    /* 预留 MobileNav 高度 (移动 50/平板 54/桌面 56)，防遮挡 qq-chat-input */
+  top: 0;           /* AppHeader 在群组页隐藏，qq-chat-header 直接顶到视口顶部 */
+  bottom: 56px;     /* 预留 MobileNav 高度 (移动 50/平板 54/桌面 56)，防遮挡 qq-chat-input */
   left: 0;
   right: 0;
   overflow: hidden;
@@ -296,12 +294,6 @@ useHead({
   flex-direction: column;
   background: var(--zh-bg, #fff);
   z-index: 1;
-}
-
-@media (min-width: 768px) {
-  .group-page {
-    top: 64px;     /* 桌面端 AppHeader 高度 */
-  }
 }
 
 .group-page-loading {

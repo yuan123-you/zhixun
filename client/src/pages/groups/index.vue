@@ -5,7 +5,7 @@
       <div class="flex items-center gap-3">
         <button
           class="flex items-center justify-center w-8 h-8 rounded-lg text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-secondary)] transition-colors"
-          @click="router.back()"
+          @click="navigateTo('/notifications')"
           title="返回"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

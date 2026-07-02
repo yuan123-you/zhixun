@@ -21,7 +21,8 @@
 
     <!-- ===== 私信Tab ===== -->
     <template v-if="activeMainTab === 'messages'">
-      <div class="flex-1 flex overflow-hidden">
+      <!-- v16: min-h-0 防止 flex 子项被内容撑开，确保底部输入区固定 -->
+      <div class="flex-1 flex overflow-hidden min-h-0">
         <!-- 左侧会话列表 -->
         <div class="w-full md:w-80 border-r border-[var(--zh-border)] flex flex-col shrink-0" :class="{ 'hidden md:flex': activeConversation }">
           <div class="p-3 border-b border-[var(--zh-border)]">
@@ -70,8 +71,8 @@
           </div>
         </div>
 
-        <!-- 右侧聊天区域 -->
-        <div class="flex-1 flex flex-col min-w-0" :class="{ 'hidden md:flex': !activeConversation }">
+        <!-- 右侧聊天区域 - v16: h-full + min-h-0 约束高度，固定底部输入区 -->
+        <div class="flex-1 flex flex-col min-w-0 h-full min-h-0" :class="{ 'hidden md:flex': !activeConversation }">
           <template v-if="activeConversation">
             <!-- 聊天头部 -->
             <div class="flex items-center gap-1.5 px-2 py-1 border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0 sticky top-0 z-10">
