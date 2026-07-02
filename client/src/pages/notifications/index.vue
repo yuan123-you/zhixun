@@ -1,8 +1,9 @@
 <template>
   <!-- 消息与通知页面 - QQ风格 -->
-  <!-- v18: /notifications 页面 AppHeader 隐藏（useHeaderVisibility），main 无 padding-top -->
-  <!-- 只减去底部 MobileNav 高度（约 56px），让 noti-chat-input 紧贴 tabbar 顶部 0px 间距 -->
-  <div class="h-[calc(100dvh-3.5rem)] flex flex-col">
+  <!-- v18: /notifications 页面 AppHeader 隐藏，main 无 padding-top -->
+  <!-- noti-chat-input 用 position: fixed 紧贴 tabbar 上方 0px 间距 -->
+  <!-- chatArea 高度 = 100dvh - MobileNav 高度（移动50/平板54/桌面56）-->
+  <div class="h-[calc(100dvh-50px)] md:h-[calc(100dvh-54px)] lg:h-[calc(100dvh-56px)] flex flex-col">
     <!-- 顶部Tab栏 -->
     <div class="flex items-center border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0">
       <button v-if="activeMainTab === 'messages' && activeConversation" class="md:hidden p-1.5 text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-hover)] rounded-lg mr-1 shrink-0" @click="activeConversation = null">
@@ -86,8 +87,8 @@
                 <p class="text-[10px] leading-tight" :class="activeConversation.user?.isOnline ? 'text-green-500' : 'text-[var(--zh-text-tertiary)]'">{{ activeConversation.user?.isOnline ? '在线' : '离线' }}</p>
               </div>
             </div>
-            <!-- 消息列表 -->
-            <div ref="msgListRef" class="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-[var(--zh-bg-hover)]">
+            <!-- 消息列表 - v18: pb-[100px] 预留 noti-chat-input 高度（94px）+ 6px 缓冲 -->
+            <div ref="msgListRef" class="flex-1 overflow-y-auto px-3 py-3 pb-[100px] space-y-2 bg-[var(--zh-bg-hover)]">
               <div class="text-center text-2xs text-[var(--zh-text-tertiary)] mb-2" v-if="messages.length > 0">以下为私信内容</div>
               <div v-for="msg in messages" :key="msg.id" class="flex" :class="isMyMsg(msg) ? 'justify-end' : 'justify-start'">
                 <!-- 对方消息（左） - 2026-07-02 v11: 改用 ChatBubble 统一处理 voice/file/image/text -->
@@ -1610,11 +1611,23 @@ useHead({ title: () => '消息' + ' - 知讯' })
 }
 
 /* ==================== 私信输入区（复用群组样式） ==================== */
+/* v18: fixed 定位紧贴 tabbar 上方 0px 间距 */
 .noti-chat-input {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 50px; /* MobileNav 移动端高度 */
   padding: 6px 14px 0;
   border-top: 1px solid var(--zh-border, #e5e7eb);
   background: var(--zh-bg-elevated, #fff);
-  flex-shrink: 0;
+  z-index: 50;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.04);
+}
+@media (min-width: 768px) {
+  .noti-chat-input { bottom: 54px; } /* 平板 nav 高度 */
+}
+@media (min-width: 1024px) {
+  .noti-chat-input { bottom: 56px; } /* 桌面 nav 高度 */
 }
 .noti-input-row {
   display: flex;
