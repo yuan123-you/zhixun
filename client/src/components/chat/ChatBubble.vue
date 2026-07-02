@@ -1,5 +1,8 @@
 <!-- ChatBubble 2026-07-02-v9: 强制 chunk hash 变，刷新用户浏览器缓存 --><template>
   <div class="chat-bubble-wrap">
+    <!-- 调试标识：直接在页面上显示版本号，方便用户确认是否加载到最新代码 -->
+    <div data-chatbubble-version="v10" style="font-size:9px;color:#ef4444;font-weight:700;padding:1px 4px;background:#fef2f2;border-radius:3px;align-self:flex-start;margin-bottom:2px">ChatBubble v10 ✓</div>
+
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
       {{ senderName }}
