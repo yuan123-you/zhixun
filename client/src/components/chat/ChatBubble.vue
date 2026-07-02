@@ -1,7 +1,8 @@
-<!-- ChatBubble 2026-07-02-v9: 强制 chunk hash 变，刷新用户浏览器缓存 --><template>
+<!-- ChatBubble 2026-07-02-v12: 修复 template 标签前的注释与模板挤在一起导致编译问题 -->
+<template>
   <div class="chat-bubble-wrap">
     <!-- 调试标识：直接在页面上显示版本号，方便用户确认是否加载到最新代码 -->
-    <div data-chatbubble-version="v10" style="font-size:9px;color:#ef4444;font-weight:700;padding:1px 4px;background:#fef2f2;border-radius:3px;align-self:flex-start;margin-bottom:2px">ChatBubble v10 ✓</div>
+    <div data-chatbubble-version="v12" style="font-size:9px;color:#ef4444;font-weight:700;padding:1px 4px;background:#fef2f2;border-radius:3px;align-self:flex-start;margin-bottom:2px">ChatBubble v12 ✓</div>
 
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
@@ -73,9 +74,9 @@ defineEmits<{
   'preview-image': [url: string]
 }>()
 
-// 调试标识：v9 — 强制 chunk hash 变以刷新用户浏览器缓存
+// 调试标识：v12 — 修复 template 标签前注释挤在一起的问题
 if (typeof window !== 'undefined') {
-  ;(window as any).__CHATBUBBLE_VERSION__ = 'v9'
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v12'
 }
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
