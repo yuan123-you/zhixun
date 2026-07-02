@@ -754,7 +754,7 @@ const sendMessage = async () => {
       const raw: any = aiRes.data?.data
       if (raw) {
         const aiMsg: Message = {
-          id: Number(raw.id) || Date.now(), conversationId: Number(raw.conversationId) || 0, senderId: 0,
+          id: Number(raw.id) || Date.now(), conversationId: Number(raw.conversationId) || 0, senderId: Number(raw.senderId) || targetUserId,
           sender: { id: 0, uid: '0', username: raw.senderNickname || 'AI助手', nickname: raw.senderNickname || 'AI助手', avatar: raw.senderAvatar || AI_AVATAR_URL, bio: '', email: '', phone: '', gender: 0 as any, birthday: '', followCount: 0, followerCount: 0, articleCount: 0, likeCount: 0, isFollowing: false, createdAt: '' },
           content: raw.content || '', type: 'ai_reply', isRead: false, createdAt: raw.createdAt || new Date().toISOString(),
         }

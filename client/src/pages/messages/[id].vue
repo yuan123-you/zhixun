@@ -464,10 +464,12 @@ const onSend = async () => {
       aiThinking.value = false
       const raw: any = res.data?.data
       if (raw) {
+        // AI消息归属到当前对话（后端已把 senderId 设为 targetUserId）
+        // 前端通过 type='ai_reply' 识别AI身份
         const aiMsg: Message = {
           id: Number(raw.id) || Date.now(),
           conversationId: Number(raw.conversationId) || 0,
-          senderId: 0,
+          senderId: Number(raw.senderId) || targetUserId.value,
           sender: {
             id: 0, uid: '0',
             username: raw.senderNickname || 'AI助手',

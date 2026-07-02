@@ -43,8 +43,8 @@
         :class="isMine(message) ? 'message-mine' : 'message-other'"
       >
         <template v-if="!isMine(message)">
-          <span class="sender-avatar" @click="message.senderId === 0 ? null : navigateToUser(message.sender?.id)">
-            <UserAvatar v-if="message.senderId !== 0" :src="message.sender?.avatar" alt="头像" size="sm" />
+          <span class="sender-avatar" @click="message.type === 'ai_reply' ? null : navigateToUser(message.sender?.id)">
+            <UserAvatar v-if="message.type !== 'ai_reply'" :src="message.sender?.avatar" alt="头像" size="sm" />
             <img v-else :src="AI_AVATAR_URL" alt="AI" class="ai-avatar-img" />
           </span>
           <ChatBubble

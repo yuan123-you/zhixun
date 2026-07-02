@@ -96,6 +96,9 @@
       </div>
     </div>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <!-- data-cfasync="false" 阻止 Cloudflare Rocket Loader 改写此脚本，
+         否则 Rocket Loader 会把 ES module 改写成 Cloudflare 异步包装器，
+         导致 Vue Router / Pinia 在移动端浏览器执行失败，触发"操作失败"提示。 -->
+    <script type="module" src="/src/main.ts" data-cfasync="false"></script>
   </body>
 </html>

@@ -1013,7 +1013,8 @@ watch(() => props.group?.id, (id) => {
 .qq-chat {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background: var(--zh-bg-elevated, #fff);
   overflow: hidden;
 }
@@ -1028,8 +1029,6 @@ watch(() => props.group?.id, (id) => {
   flex-shrink: 0;
   background: var(--zh-bg-elevated, #fff);
   z-index: 2;
-  position: sticky;
-  top: 0;
 }
 .qq-back-btn {
   display: flex;

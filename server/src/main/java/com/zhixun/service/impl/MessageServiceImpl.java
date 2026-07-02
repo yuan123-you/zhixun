@@ -66,6 +66,8 @@ public class MessageServiceImpl implements MessageService {
     private static final String UNREAD_COUNT_PREFIX = "message:unread:";
     /** 会话摘要 Redis Key 前缀 */
     private static final String CONVERSATION_PREFIX = "message:conversation:";
+    /** AI助手头像（data URI） */
+    private static final String AI_ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiM2MzY2ZjEiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiPkFJPC90ZXh0Pjwvc3ZnPg==";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -458,9 +460,9 @@ public class MessageServiceImpl implements MessageService {
             aiContent = "抱歉，AI 暂时无法生成回复，请稍后再试。";
         }
 
-        // 3. 保存AI回复消息（senderId=0 代表AI助手）
+        // 3. 保存AI回复消息（senderId=targetUserId 让其归属到当前对话，避免在会话列表中产生独立条目）
         UserMessage message = new UserMessage();
-        message.setSenderId(0L);
+        message.setSenderId(targetUserId); // 归属到目标用户的会话（前端通过 type=ai_reply 识别AI身份）
         message.setReceiverId(senderId); // AI回复给提问者
         message.setType("ai_reply");
         message.setContent(aiContent); // AI回复不加密，直接存储明文
@@ -468,9 +470,9 @@ public class MessageServiceImpl implements MessageService {
         userMessageMapper.insert(message);
 
         // 4. 构建VO，覆盖AI助手头像和昵称
-        MessageVO vo = buildMessageVO(message, 0L, senderId);
+        MessageVO vo = buildMessageVO(message, senderId, targetUserId);
         vo.setSenderNickname("AI助手");
-        vo.setSenderAvatar("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiM2MzY2ZjEiIHJ4PSIyMCIvPjx0ZXh0IHg9IjIwIiB5PSIyNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiPkFJPC90ZXh0Pjwvc3ZnPg==");
+        vo.setSenderAvatar(AI_ASSISTANT_AVATAR);
         vo.setContent(aiContent); // 返回明文
 
         return vo;
@@ -502,11 +504,16 @@ public class MessageServiceImpl implements MessageService {
             vo.setContent(message.getContent());
         }
 
-        // 查询发送者和接收者信息
-        User sender = userMapper.selectById(message.getSenderId());
-        if (sender != null) {
-            vo.setSenderNickname(sender.getNickname());
-            vo.setSenderAvatar(sender.getAvatar());
+        // 查询发送者信息（AI回复消息固定使用AI助手头像和昵称，不受 senderId 影响）
+        if ("ai_reply".equals(msgType)) {
+            vo.setSenderNickname("AI助手");
+            vo.setSenderAvatar(AI_ASSISTANT_AVATAR);
+        } else {
+            User sender = userMapper.selectById(message.getSenderId());
+            if (sender != null) {
+                vo.setSenderNickname(sender.getNickname());
+                vo.setSenderAvatar(sender.getAvatar());
+            }
         }
 
         User receiver = userMapper.selectById(message.getReceiverId());

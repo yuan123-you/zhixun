@@ -338,8 +338,10 @@ useHead({
 .group-page-chat {
   flex: 1;
   min-width: 0;
-  min-height: 0; /* 2026-07-02 v8: 修复 flex 子项默认 min-height: auto 导致内容溢出时容器被撑高 */
+  min-height: 0;
   overflow: hidden;
+  display: flex;        /* 2026-07-02 v11: 让 .qq-chat 能通过 flex 正确填满高度 */
+  flex-direction: column;
 }
 
 .group-page-members {
