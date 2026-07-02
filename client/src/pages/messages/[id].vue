@@ -1,6 +1,6 @@
 <template>
-  <!-- 私信聊天页面（移动端全屏 / 桌面端备选入口） -->
-  <div class="chat-page h-[calc(100dvh-50px)] md:h-[calc(100dvh-54px)] flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
+  <!-- 私信聊天页面（移动端全屏 / 桌面端备选入口） 2026-07-02-v9: 强制 chunk hash 变 -->
+<div class="chat-page h-[calc(100dvh-50px)] md:h-[calc(100dvh-54px)] flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
     <!-- 聊天头部 -->
     <div class="flex items-center gap-3 px-4 py-3 border-b border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 flex-shrink-0 sticky top-0 z-10">
       <!-- 返回按钮 -->
@@ -166,8 +166,19 @@
       />
       <!-- 输入框行 -->
       <div v-if="!voiceRecorder.isRecording" class="msg-input-row">
-        <div class="input-field-msg" :class="{ focused: inputFocused }">
+        <div class="input-field-msg" :class="{ focused: inputFocused, 'ai-thinking-input': aiThinking }">
+          <!-- AI思考中：在输入框内显示思考状态 -->
+          <div v-if="aiThinking" class="ai-thinking-input-content">
+            <img :src="AI_AVATAR_URL" class="ai-thinking-input-avatar" alt="AI" />
+            <span class="ai-thinking-input-label">AI助手正在思考</span>
+            <span class="ai-thinking-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </span>
+          </div>
           <input
+            v-else
             ref="inputRef"
             v-model="inputContent"
             type="text"
@@ -181,11 +192,11 @@
         </div>
         <button
           class="send-btn-msg"
-          :disabled="!inputContent.trim() || sending"
+          :disabled="!inputContent.trim() || sending || aiThinking"
           @click="onSend"
           aria-label="发送"
         >
-          <svg v-if="!sending" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-if="!sending && !aiThinking" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
           <div v-else class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -631,6 +642,46 @@ onUnmounted(() => {
 .input-field-msg.focused {
   border-color: var(--zh-primary);
   box-shadow: 0 0 0 3px rgba(var(--zh-primary-rgb), 0.08);
+}
+
+/* AI思考中 - 输入框边框脉冲动画 */
+.input-field-msg.ai-thinking-input {
+  border-color: var(--zh-primary);
+  box-shadow: 0 0 0 3px rgba(var(--zh-primary-rgb), 0.12);
+  background: linear-gradient(135deg, rgba(var(--zh-primary-rgb), 0.04), rgba(var(--zh-primary-rgb), 0.01));
+  animation: aiInputPulse 1.6s ease-in-out infinite;
+}
+@keyframes aiInputPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(var(--zh-primary-rgb), 0.12);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(var(--zh-primary-rgb), 0.20);
+  }
+}
+
+/* AI思考中 - 输入框内嵌内容 */
+.ai-thinking-input-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  height: 100%;
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--zh-text-secondary);
+  user-select: none;
+}
+.ai-thinking-input-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.ai-thinking-input-label {
+  font-weight: 500;
+  color: var(--zh-primary);
 }
 
 .input-control-msg {

@@ -1,4 +1,4 @@
-<!-- ChatBubble 2026-07-02-v8: 强制 chunk hash 变，刷新用户浏览器缓存 --><template>
+<!-- ChatBubble 2026-07-02-v9: 强制 chunk hash 变，刷新用户浏览器缓存 --><template>
   <div class="chat-bubble-wrap">
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
