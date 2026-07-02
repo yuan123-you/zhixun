@@ -1,4 +1,4 @@
-<!-- ChatBubble 2026-07-02-v14: 彻底移除调试标签 -->
+<!-- ChatBubble 2026-07-02-v17: 升级版本号强制新 chunk hash，绕过浏览器缓存 -->
 <template>
   <div class="chat-bubble-wrap">
     <!-- 群聊发送者名称（可选） -->
@@ -71,9 +71,9 @@ defineEmits<{
   'preview-image': [url: string]
 }>()
 
-// v14 — 清理调试标签，UI 干净
+// v17 — 强制 chunk hash 变化，绕过浏览器旧缓存
 if (typeof window !== 'undefined') {
-  ;(window as any).__CHATBUBBLE_VERSION__ = 'v14'
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v17'
 }
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()

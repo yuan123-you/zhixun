@@ -1,6 +1,7 @@
 <template>
   <!-- 消息与通知页面 - QQ风格 -->
-  <div class="h-[calc(100dvh-3.75rem)] flex flex-col">
+  <!-- v17: 减去底部 MobileNav 高度（约 56px），避免被底部 Tab 栏遮挡 -->
+  <div class="h-[calc(100dvh-3.75rem-3.5rem)] flex flex-col">
     <!-- 顶部Tab栏 -->
     <div class="flex items-center border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0">
       <button v-if="activeMainTab === 'messages' && activeConversation" class="md:hidden p-1.5 text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-hover)] rounded-lg mr-1 shrink-0" @click="activeConversation = null">
