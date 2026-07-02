@@ -70,9 +70,9 @@ defineEmits<{
   'preview-image': [url: string]
 }>()
 
-// 调试标识：v8 — 强制 chunk hash 变以刷新用户浏览器缓存
+// 调试标识：v9 — 强制 chunk hash 变以刷新用户浏览器缓存
 if (typeof window !== 'undefined') {
-  ;(window as any).__CHATBUBBLE_VERSION__ = 'v8'
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v9'
 }
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
