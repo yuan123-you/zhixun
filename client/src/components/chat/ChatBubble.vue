@@ -1,9 +1,6 @@
-<!-- ChatBubble 2026-07-02-v12: 修复 template 标签前的注释与模板挤在一起导致编译问题 -->
+<!-- ChatBubble 2026-07-02-v14: 彻底移除调试标签 -->
 <template>
   <div class="chat-bubble-wrap">
-    <!-- 调试标识：直接在页面上显示版本号，方便用户确认是否加载到最新代码 -->
-    <div data-chatbubble-version="v12" style="font-size:9px;color:#ef4444;font-weight:700;padding:1px 4px;background:#fef2f2;border-radius:3px;align-self:flex-start;margin-bottom:2px">ChatBubble v12 ✓</div>
-
     <!-- 群聊发送者名称（可选） -->
     <span v-if="showSender && senderName" class="bubble-sender-name" :class="{ 'bubble-sender-name-mine': isMine }">
       {{ senderName }}
@@ -74,9 +71,9 @@ defineEmits<{
   'preview-image': [url: string]
 }>()
 
-// 调试标识：v13 — 移除调试标签，UI 恢复干净
+// v14 — 清理调试标签，UI 干净
 if (typeof window !== 'undefined') {
-  ;(window as any).__CHATBUBBLE_VERSION__ = 'v13'
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v14'
 }
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
