@@ -124,6 +124,21 @@
                 </svg>
                 <p class="text-xs text-[var(--zh-text-tertiary)]">还没有消息，发送第一条吧</p>
               </div>
+              <!-- v15：AI 助手思考中动画（与群组页 GroupChatWindow 一致） -->
+              <div v-if="notiAiReplying" class="flex justify-start">
+                <div class="flex items-start gap-1.5 max-w-[80%]">
+                  <img :src="AI_AVATAR_URL" class="w-7 h-7 rounded-full shrink-0" alt="AI助手" />
+                  <div class="ai-thinking-bubble">
+                    <span class="ai-thinking-label">AI助手</span>
+                    <span class="ai-thinking-text">正在思考</span>
+                    <span class="ai-thinking-dots">
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
             <!-- 输入区 -->
             <div class="noti-chat-input">
@@ -658,6 +673,8 @@ const sendingMessage = ref(false)
 const notiImageInputRef = ref<HTMLInputElement | null>(null)
 const notiFileInputRef = ref<HTMLInputElement | null>(null)
 const notiAiMode = ref(false)
+// v15：AI 助手思考中状态（与群组页 GroupChatWindow 一致）
+const notiAiReplying = ref(false)
 const notiVoiceRecorder = reactive(useVoiceRecorder())
 const notiVoiceUploading = ref(false)
 
@@ -752,6 +769,8 @@ const sendMessage = async () => {
       content: contentWithPrefix, type: 0 as any, isRead: true, createdAt: new Date().toISOString(),
     })
     nextTick(() => { if (msgListRef.value) msgListRef.value.scrollTop = msgListRef.value.scrollHeight })
+    // v15：先显示"AI 思考中"指示器
+    notiAiReplying.value = true
     try {
       const { data } = await socialApi.sendMessage(targetUserId, { content: contentWithPrefix })
       if (data && data.data) {
@@ -773,7 +792,10 @@ const sendMessage = async () => {
     } catch (e: any) {
       inputContent.value = rawContent
       showToast(e?.message || 'AI回复失败', 'error')
-    } finally { sendingMessage.value = false }
+    } finally {
+      sendingMessage.value = false
+      notiAiReplying.value = false
+    }
     return
   }
 
@@ -1669,5 +1691,46 @@ useHead({ title: () => '消息' + ' - 知讯' })
 .dark .noti-voice-uploading {
   background: rgba(37, 99, 235, 0.15);
   color: #93c5fd;
+}
+
+/* v15：AI 助手思考中动画（与群组页 GroupChatWindow 一致） */
+.ai-thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  border-bottom-left-radius: 6px;
+  background: rgba(99, 102, 241, 0.06);
+  border-left: 3px solid var(--zh-primary, #6366f1);
+  max-width: 75%;
+}
+.ai-thinking-label {
+  font-size: 11px;
+  color: var(--zh-primary, #6366f1);
+  font-weight: 600;
+}
+.ai-thinking-text {
+  font-size: 13px;
+  color: var(--zh-text-secondary, #64748b);
+}
+.ai-thinking-dots {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.ai-thinking-dots .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--zh-primary, #6366f1);
+  border-radius: 50%;
+  display: inline-block;
+  animation: aiThinkingBounce 1.2s infinite ease-in-out both;
+}
+.ai-thinking-dots .dot:nth-child(2) { animation-delay: 0.15s; }
+.ai-thinking-dots .dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes aiThinkingBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-4px); opacity: 1; }
 }
 </style>
