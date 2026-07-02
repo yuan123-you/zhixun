@@ -67,6 +67,7 @@ export const useApi = () => {
   const instance: AxiosInstance = axios.create({
     baseURL: BASE_URL,
     timeout: 15000,
+    withCredentials: true, // 必须开启：让浏览器在跨域请求中携带 Cookie（refreshToken 等 httpOnly Cookie）
     headers: {
       'X-Client-Type': 'client', // 区分客户端/管理员端，后端据此设置不同的 Cookie 名称
     },
@@ -92,6 +93,7 @@ export const useApi = () => {
         const response = await axios.post(`${BASE_URL}/auth/refresh`, {
           refreshToken: currentRefreshToken || undefined,
         }, {
+          withCredentials: true, // 必须开启：让浏览器携带 httpOnly Cookie 中的 refreshToken
           headers: { 'X-Client-Type': 'client' },
         })
         const { accessToken, refreshToken: newRt, expiresIn } = response.data.data

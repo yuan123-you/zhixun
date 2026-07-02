@@ -176,6 +176,7 @@ public class CsrfFilter extends OncePerRequestFilter {
             cookie.setHttpOnly(false); // 前端 JS 需要读取此 Cookie 值
             cookie.setSecure(request.isSecure()); // HTTPS 环境下设为 Secure
             cookie.setMaxAge(-1); // 会话级 Cookie
+            cookie.setAttribute("SameSite", "Lax"); // 移动端兼容：允许顶级导航携带
             response.addCookie(cookie);
         }
     }
