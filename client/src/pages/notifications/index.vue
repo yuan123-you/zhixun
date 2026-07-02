@@ -1,7 +1,8 @@
 <template>
   <!-- 消息与通知页面 - QQ风格 -->
-  <!-- v17: 减去底部 MobileNav 高度（约 56px），避免被底部 Tab 栏遮挡 -->
-  <div class="h-[calc(100dvh-3.75rem-3.5rem)] flex flex-col">
+  <!-- v18: /notifications 页面 AppHeader 隐藏（useHeaderVisibility），main 无 padding-top -->
+  <!-- 只减去底部 MobileNav 高度（约 56px），让 noti-chat-input 紧贴 tabbar 顶部 0px 间距 -->
+  <div class="h-[calc(100dvh-3.5rem)] flex flex-col">
     <!-- 顶部Tab栏 -->
     <div class="flex items-center border-b border-[var(--zh-border)] bg-[var(--zh-bg-elevated)] shrink-0">
       <button v-if="activeMainTab === 'messages' && activeConversation" class="md:hidden p-1.5 text-[var(--zh-text-secondary)] hover:bg-[var(--zh-bg-hover)] rounded-lg mr-1 shrink-0" @click="activeConversation = null">
