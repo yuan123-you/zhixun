@@ -87,31 +87,31 @@
             <div ref="msgListRef" class="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-[var(--zh-bg-hover)]">
               <div class="text-center text-2xs text-[var(--zh-text-tertiary)] mb-2" v-if="messages.length > 0">以下为私信内容</div>
               <div v-for="msg in messages" :key="msg.id" class="flex" :class="isMyMsg(msg) ? 'justify-end' : 'justify-start'">
-                <!-- 对方消息（左） -->
+                <!-- 对方消息（左） - 2026-07-02 v11: 改用 ChatBubble 统一处理 voice/file/image/text -->
                 <div v-if="!isMyMsg(msg)" class="flex items-start gap-1.5 max-w-[80%]">
                   <button class="shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(msg.sender?.id || msg.senderId)">
                     <UserAvatar :src="msg.sender?.avatar" alt="" size="sm" />
                   </button>
                   <div class="min-w-0 flex-1">
-                    <div v-if="msg.type === 'voice'" class="inline-block max-w-full bg-[var(--zh-bg-elevated)] rounded-xl rounded-bl-sm px-1.5 py-1 shadow-sm">
-                      <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="false" />
-                    </div>
-                    <div v-else class="inline-block max-w-full bg-[var(--zh-bg-elevated)] rounded-xl rounded-bl-sm px-2.5 py-1.5 shadow-sm">
-                      <p class="text-sm text-[var(--zh-text)] leading-snug whitespace-pre-wrap break-all">{{ msg.content }}</p>
-                    </div>
-                    <p class="text-2xs text-[var(--zh-text-tertiary)] mt-0.5 ml-1 leading-none">{{ formatMsgTime(msg.createdAt) }}</p>
+                    <ChatBubble
+                      :content="msg.content"
+                      :message-type="msg.type"
+                      :is-mine="false"
+                      :time="formatMsgTime(msg.createdAt)"
+                      @preview-image="onNotiImagePreview"
+                    />
                   </div>
                 </div>
                 <!-- 我的消息（右） -->
                 <div v-else class="flex items-start gap-1.5 max-w-[80%]">
                   <div class="min-w-0 flex-1 flex flex-col items-end">
-                    <div v-if="msg.type === 'voice'" class="inline-block max-w-full bg-primary rounded-xl rounded-br-sm px-1.5 py-1">
-                      <VoiceMessage :url="getVoiceUrl(msg.content)" :duration="getVoiceDuration(msg.content)" :is-mine="true" />
-                    </div>
-                    <div v-else class="inline-block max-w-full bg-primary text-white rounded-xl rounded-br-sm px-2.5 py-1.5">
-                      <p class="text-sm leading-snug whitespace-pre-wrap break-all">{{ msg.content }}</p>
-                    </div>
-                    <p class="text-2xs text-[var(--zh-text-tertiary)] mt-0.5 mr-1 text-right leading-none">{{ formatMsgTime(msg.createdAt) }}</p>
+                    <ChatBubble
+                      :content="msg.content"
+                      :message-type="msg.type"
+                      :is-mine="true"
+                      :time="formatMsgTime(msg.createdAt)"
+                      @preview-image="onNotiImagePreview"
+                    />
                   </div>
                   <button class="shrink-0 rounded-full hover:opacity-80 transition-opacity" @click="navigateToUser(userStore.userInfo?.id)">
                     <UserAvatar :src="userStore.userInfo?.avatar" alt="" size="sm" />
@@ -177,6 +177,13 @@
             <!-- 隐藏的 file inputs -->
             <input ref="notiImageInputRef" type="file" accept="image/*" style="display:none" @change="onNotiImageSelected" />
             <input ref="notiFileInputRef" type="file" style="display:none" @change="onNotiFileSelected" />
+            <!-- v11 新增：图片预览弹窗 -->
+            <Teleport to="body">
+              <div v-if="notiPreviewImage" class="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4" @click="closeNotiImagePreview">
+                <img :src="notiPreviewImage" alt="预览" class="max-w-full max-h-full object-contain" @click.stop />
+                <button class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-xl flex items-center justify-center" @click="closeNotiImagePreview" aria-label="关闭">×</button>
+              </div>
+            </Teleport>
           </template>
           <!-- 空状态 -->
           <div v-else class="flex-1 flex items-center justify-center bg-[var(--zh-bg-hover)]">
@@ -601,6 +608,7 @@ import { showToast } from '@/composables/useToast'
 import VoiceMessage from '@/components/VoiceMessage.vue'
 import ChatToolbar from '@/components/chat/ChatToolbar.vue'
 import VoiceRecordingBar from '@/components/chat/VoiceRecordingBar.vue'
+import ChatBubble from '@/components/chat/ChatBubble.vue'
 import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
 import { fileApi } from '@/api/file'
 import { sanitizeText } from '@/utils/sanitize'
