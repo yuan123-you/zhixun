@@ -52,10 +52,12 @@ server {
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
     }
-    # 静态资源：长缓存 + immutable
+    # 静态资源：不缓存，强制每次访问拉取最新版本
+    # 2026-07-02 v11: 修复浏览器 disk cache 命中旧 chunk 导致功能失效的问题
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
         access_log off;
     }
 
