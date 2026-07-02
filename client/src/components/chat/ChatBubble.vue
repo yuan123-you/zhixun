@@ -74,9 +74,9 @@ defineEmits<{
   'preview-image': [url: string]
 }>()
 
-// 调试标识：v12 — 修复 template 标签前注释挤在一起的问题
+// 调试标识：v13 — 移除调试标签，UI 恢复干净
 if (typeof window !== 'undefined') {
-  ;(window as any).__CHATBUBBLE_VERSION__ = 'v12'
+  ;(window as any).__CHATBUBBLE_VERSION__ = 'v13'
 }
 
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()

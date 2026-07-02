@@ -919,13 +919,27 @@ const getConvLastMessage = (conv: any): string => {
   if (typeof lm === 'string') return lm || '暂无消息'
   if (typeof lm === 'object') {
     const type = lm.type
-    // 兼容旧版数字类型
+    const content = lm.content || ''
+    // 2026-07-02 v13: 解析 content 中的 JSON 字符串（voice/file 消息），提取可读预览
+    let parsed: any = null
+    if (content.startsWith('{')) {
+      try { parsed = JSON.parse(content) } catch { /* ignore */ }
+    }
     if (type === 1 || type === 'image') return '[图片]'
     if (type === 2 || type === 'system') return '[系统消息]'
-    if (type === 'voice') return '[语音]'
-    if (type === 'file') return '[文件]'
+    if (type === 'voice') {
+      const dur = parsed?.duration ? `${parsed.duration}''` : ''
+      return dur ? `[语音] ${dur}` : '[语音]'
+    }
+    if (type === 'file') {
+      const name = parsed?.name || '文件'
+      return `[文件] ${name}`
+    }
     if (type === 'ai_reply') return '[AI回复]'
-    return lm.content || '暂无消息'
+    if (type === 'text') return content || '暂无消息'
+    // 未知类型：尝试从 JSON 中提取 name 或截取纯文本
+    if (parsed?.name) return `[文件] ${parsed.name}`
+    return content || '暂无消息'
   }
   return '暂无消息'
 }
