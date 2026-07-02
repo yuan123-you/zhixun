@@ -979,7 +979,7 @@ const transformMsg = (raw: any, me: any): Message => {
     senderId,
     sender,
     content: raw?.content || '',
-    type: Number(raw?.type) || 0,
+    type: raw?.type != null ? String(raw.type) : 'text',
     isRead: raw?.isRead === 1 || raw?.isRead === true,
     createdAt: raw?.createdAt || new Date().toISOString(),
   }
