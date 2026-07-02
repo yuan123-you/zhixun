@@ -266,7 +266,9 @@ public class AuthController {
         accessTokenCookie.setSecure(true); // 生产环境强制 HTTPS
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(tokenResponse.getExpiresIn() != null ? tokenResponse.getExpiresIn().intValue() : 7 * 24 * 60 * 60);
-        accessTokenCookie.setAttribute("SameSite", "Strict"); // CSRF 防护
+        // SameSite=Lax：允许顶级导航携带Cookie（移动端从书签/外部链接打开时必须），
+        // 同时仍阻止跨站POST请求的CSRF攻击。Strict会导致移动端首次访问不发送Cookie。
+        accessTokenCookie.setAttribute("SameSite", "Lax");
         response.addCookie(accessTokenCookie);
 
         // 设置 refreshToken Cookie（长期有效，httpOnly 安全存储）
@@ -275,7 +277,7 @@ public class AuthController {
         refreshTokenCookie.setSecure(true);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7天
-        refreshTokenCookie.setAttribute("SameSite", "Strict");
+        refreshTokenCookie.setAttribute("SameSite", "Lax");
         response.addCookie(refreshTokenCookie);
     }
 
