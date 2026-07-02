@@ -273,14 +273,34 @@ useHead({
 </script>
 
 <style scoped>
+/* ==================== 2026-07-02 v10: 修复外页滚动问题 ====================
+   根因：
+   1. layout <main> 有 pt-[52px] md:pt-16 (移动52/桌面64px) padding-top
+   2. .group-page 用 calc(100dvh - 50px)，实际 AppHeader 高度是 52/64px
+   3. 桌面端 main 64px + .group-page 100dvh-50px = 总高超过 100dvh 14px
+   4. 撑大 body，外页出现滚动条；.group-page 内部 flex 链断裂
+
+   修复：position: fixed 脱离 main 布局
+   - top 直接 = AppHeader 实际高度（移动 52 / 桌面 64）
+   - bottom: 0 让它填满剩余空间
+   - 高度由 top+bottom 决定，不再依赖 calc，避免双重减计算
+*/
 .group-page {
-  height: calc(100dvh - 50px);
+  position: fixed;
+  top: 52px;       /* 移动端 AppHeader 高度 */
+  bottom: 56px;    /* 预留 MobileNav 高度 (移动 50/平板 54/桌面 56)，防遮挡 qq-chat-input */
+  left: 0;
+  right: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--zh-bg, #fff);
+  z-index: 1;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 768px) {
   .group-page {
-    height: calc(100dvh - 54px);
+    top: 64px;     /* 桌面端 AppHeader 高度 */
   }
 }
 
@@ -310,7 +330,9 @@ useHead({
 
 .group-page-layout {
   display: flex;
-  height: 100%;
+  flex: 1;          /* 2026-07-02 v10: 填满 .group-page 剩余空间 */
+  min-height: 0;    /* 2026-07-02 v10: 配合 flex: 1 防止溢出 */
+  width: 100%;
 }
 
 .group-page-chat {
