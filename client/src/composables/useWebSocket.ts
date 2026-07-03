@@ -60,12 +60,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
 
   // 连接URL
   const getWebSocketUrl = (): string => {
-    const userStore = useUserStore()
-
-    // 构建WebSocket URL（SSR安全：仅在客户端访问 window）
+    // Token 通过 Cookie 自动传递，禁止使用 URL 参数
     const baseUrl = import.meta.env.VITE_WS_BASE || (true ? window.location.origin.replace('http', 'ws') : '')
-    const token = userStore.token
-    return `${baseUrl}?token=${token}`
+    return baseUrl
   }
 
   // 连接WebSocket

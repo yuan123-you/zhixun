@@ -9,14 +9,13 @@ interface WsMessage {
 /**
  * 群组聊天 WebSocket composable
  * 连接 /ws/group-chat?groupId=xxx
- * 鉴权通过 URL token 参数，每个标签页独立 token，支持多账号同时登录
+ * 鉴权通过 Cookie 传递 Token（httpOnly Cookie 自动随请求发送）
  * 自动重连（指数退避，最多5次）
  */
 export function useGroupWebSocket(
   groupId: number,
   onMessage: (msg: GroupMessage) => void,
   onSystem?: (content: string) => void,
-  token?: string,
 ) {
   const connected = ref(false)
   const error = ref<string | null>(null)
@@ -31,13 +30,8 @@ export function useGroupWebSocket(
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    // 使用 URL token 参数鉴权（而非 Cookie），支持多账号同时登录
-    const userStore = useUserStore()
-    const wsToken = token || userStore.token
-    let url = `${protocol}//${host}/ws/group-chat?groupId=${groupId}`
-    if (wsToken) {
-      url += `&token=${encodeURIComponent(wsToken)}`
-    }
+    // Token 通过 Cookie 自动传递，禁止使用 URL 参数
+    const url = `${protocol}//${host}/ws/group-chat?groupId=${groupId}`
 
     try {
       ws = new WebSocket(url)
