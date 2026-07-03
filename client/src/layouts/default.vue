@@ -10,6 +10,7 @@
     <!-- 主内容区 -->
     <main
       :class="{ 'pt-[52px] md:pt-16': showHeaderInner }"
+      class="pb-[50px] md:pb-[54px] lg:pb-[56px]"
     >
       <router-view v-slot="{ Component, route: r }">
         <Transition name="page-fade" @before-leave="onPageLeave" @after-enter="onPageEnter">

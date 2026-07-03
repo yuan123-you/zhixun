@@ -219,8 +219,8 @@
    ========================================================================== */
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
+  /* 不在 html 设置 overflow-x: hidden —— 某些移动端浏览器会因此干扰垂直滚动 */
 }
 
 body {
@@ -231,6 +231,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
   margin: 0;
   padding: 0;
   line-height: 1.6;
