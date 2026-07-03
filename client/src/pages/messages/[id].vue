@@ -1,6 +1,6 @@
 <template>
-  <!-- 私信聊天页面（移动端全屏 / 桌面端备选入口） 2026-07-02-v9: 强制 chunk hash 变 -->
-<div class="chat-page h-[calc(100dvh-50px)] md:h-[calc(100dvh-54px)] flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
+  <!-- 私信聊天页面（移动端全屏 / 桌面端备选入口） 2026-07-03-v10: position: fixed 修复外页滚动 -->
+  <div class="chat-page flex flex-col bg-[var(--zh-bg-elevated)] dark:bg-gray-900">
     <!-- 聊天头部 -->
     <div class="flex items-center gap-3 px-4 py-3 border-b border-[var(--zh-border)]/60 dark:border-gray-700/60 bg-[var(--zh-bg-elevated)] dark:bg-gray-900 flex-shrink-0 sticky top-0 z-10">
       <!-- 返回按钮 -->
@@ -46,10 +46,10 @@
       </button>
     </div>
 
-    <!-- 消息列表 -->
+    <!-- 消息列表 - 2026-07-03 v10: 添加 min-h-0 防止内容撑开容器 -->
     <div
       ref="messageContainerRef"
-      class="flex-1 overflow-y-auto px-3 py-2 space-y-3 custom-scrollbar"
+      class="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-3 custom-scrollbar"
     >
       <!-- 加载更早消息的指示器 -->
       <div v-if="loadingMessages && currentPage > 1" class="flex justify-center py-3">
@@ -598,14 +598,34 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ==================== 2026-07-03 v10: position: fixed 修复外页滚动 ====================
+   根因：旧版用 h-[calc(100dvh-50px)] 依赖 main 高度，flex 子项默认 min-height: auto
+        会把消息列表撑开导致 .chat-page 超出视口，body 出现滚动条，输入区被推出。
+   修复：参照 .group-page 改用 position: fixed，bottom 预留 MobileNav 高度。
+*/
 .chat-page {
+  position: fixed;
+  top: 0;             /* AppHeader 在 /messages/[id] 隐藏，无需偏移 */
+  left: 0;
+  right: 0;
+  bottom: 50px;       /* MobileNav 移动端高度 */
+  display: flex;
+  flex-direction: column;
   margin: 0;
   overflow: hidden;
+  z-index: 1;
+}
+@media (min-width: 768px) {
+  .chat-page { bottom: 54px; }  /* 平板 nav 高度 */
+}
+@media (min-width: 1024px) {
+  .chat-page { bottom: 56px; }  /* 桌面 nav 高度 */
 }
 
+/* 桌面端：限制最大宽度并居中 */
 @media (min-width: 768px) {
   .chat-page {
-    margin: 0 auto 0 auto;
+    margin: 0 auto;
     max-width: 800px;
     border-left: 1px solid #e2e8f0;
     border-right: 1px solid #e2e8f0;
