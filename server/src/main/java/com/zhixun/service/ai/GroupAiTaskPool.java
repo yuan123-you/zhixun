@@ -3,7 +3,7 @@ package com.zhixun.service.ai;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /** Bounded, managed group-AI resources without becoming the application's default @Async executor. */
-public final class GroupAiTaskPool implements GroupAiExecutor, AutoCloseable {
+public class GroupAiTaskPool implements GroupAiExecutor, AutoCloseable {
     private final ThreadPoolTaskExecutor pool;
 
     public GroupAiTaskPool(int coreSize, int maxSize, int queueCapacity) {
