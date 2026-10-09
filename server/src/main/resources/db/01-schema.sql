@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS cms_article (
   content LONGTEXT NOT NULL,
   cover_image VARCHAR(500),
   status TINYINT NOT NULL DEFAULT 0,
+  review_state VARCHAR(16) NOT NULL DEFAULT 'UNVERIFIED',
   is_top TINYINT DEFAULT 0,
   is_recommend TINYINT DEFAULT 0,
   view_count INT DEFAULT 0,

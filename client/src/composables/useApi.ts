@@ -25,16 +25,16 @@ let globalInstance: AxiosInstance | null = null
 const BASE_URL = '/api/v1'
 
 /**
- * 从 sessionStorage 获取 store 状态（客户端环境）
+ * 从 localStorage 获取 store 状态（客户端环境）
  */
 function getTokenFromStore(): { token: string; refreshToken: string; expiresAt: number } {
   if (typeof window === 'undefined') return { token: '', refreshToken: '', expiresAt: 0 }
   try {
-    const raw = sessionStorage.getItem('zhixun_accessToken')
+    const raw = localStorage.getItem('zhixun_accessToken')
     const token = raw ? JSON.parse(raw).value || '' : ''
-    const rawRt = sessionStorage.getItem('zhixun_refreshToken')
+    const rawRt = localStorage.getItem('zhixun_refreshToken')
     const refreshToken = rawRt ? JSON.parse(rawRt).value || '' : ''
-    const rawExp = sessionStorage.getItem('zhixun_token_expires_at')
+    const rawExp = localStorage.getItem('zhixun_token_expires_at')
     const expiresAt = rawExp ? JSON.parse(rawExp).value || 0 : 0
     return { token, refreshToken, expiresAt }
   } catch { return { token: '', refreshToken: '', expiresAt: 0 } }
@@ -43,7 +43,7 @@ function getTokenFromStore(): { token: string; refreshToken: string; expiresAt: 
 function setTokenToStore(token: string, refreshToken: string, expiresIn?: number) {
   if (typeof window === 'undefined') return
   const setItem = (key: string, value: any) => {
-    sessionStorage.setItem(key, JSON.stringify({ value, version: '1.0.0', expireAt: null }))
+    localStorage.setItem(key, JSON.stringify({ value, version: '1.0.0', expireAt: null }))
   }
   setItem('zhixun_accessToken', token)
   setItem('zhixun_refreshToken', refreshToken)
@@ -54,7 +54,7 @@ function setTokenToStore(token: string, refreshToken: string, expiresIn?: number
 
 function clearTokenFromStore() {
   if (typeof window === 'undefined') return
-  ['zhixun_accessToken', 'zhixun_refreshToken', 'zhixun_token_expires_at', 'zhixun_user_summary'].forEach(k => sessionStorage.removeItem(k))
+  ['zhixun_accessToken', 'zhixun_refreshToken', 'zhixun_token_expires_at', 'zhixun_user_summary'].forEach(k => localStorage.removeItem(k))
 }
 
 /** API请求封装组合式函数 */
@@ -78,7 +78,7 @@ export const useApi = () => {
 
   // 全局Token刷新
   const refreshAccessToken = async (): Promise<string> => {
-    // refreshToken 存储在 sessionStorage 中，每个标签页独立
+    // refreshToken 存储在 localStorage 中
     // 通过请求体传递 refreshToken，避免 httpOnly Cookie 在多账号场景下的冲突
 
     if (globalIsRefreshing && globalRefreshPromise) {
@@ -88,7 +88,7 @@ export const useApi = () => {
     globalIsRefreshing = true
     globalRefreshPromise = (async () => {
       try {
-        // 从 sessionStorage 读取 refreshToken 并通过请求体传递
+        // 从 localStorage 读取 refreshToken 并通过请求体传递
         const { refreshToken: currentRefreshToken } = getTokenFromStore()
         const response = await axios.post(`${BASE_URL}/auth/refresh`, {
           refreshToken: currentRefreshToken || undefined,

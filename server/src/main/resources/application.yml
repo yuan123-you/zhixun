@@ -32,7 +32,7 @@ spring:
       driver-class-name: com.mysql.cj.jdbc.Driver
       jdbc-url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:zhixun}?useUnicode=true&characterEncoding=utf-8&connectionCollation=utf8mb4_unicode_ci&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       username: ${MYSQL_USER:root}
-      password: ${MYSQL_PASSWORD:123456}
+      password: ${MYSQL_PASSWORD}
       hikari:
         maximum-pool-size: 20
         minimum-idle: 5
@@ -45,7 +45,7 @@ spring:
       driver-class-name: com.mysql.cj.jdbc.Driver
       jdbc-url: jdbc:mysql://${MYSQL_SLAVE_HOST:localhost}:${MYSQL_SLAVE_PORT:3306}/${MYSQL_SLAVE_DB:zhixun}?useUnicode=true&characterEncoding=utf-8&connectionCollation=utf8mb4_unicode_ci&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       username: ${MYSQL_SLAVE_USER:root}
-      password: ${MYSQL_SLAVE_PASSWORD:123456}
+      password: ${MYSQL_SLAVE_PASSWORD}
       hikari:
         maximum-pool-size: 20
         minimum-idle: 5
@@ -74,7 +74,7 @@ spring:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    password: ${RABBITMQ_PASSWORD}
     virtual-host: ${RABBITMQ_VHOST:/}
     listener:
       simple:
@@ -186,8 +186,8 @@ oauth:
 # MinIO 配置
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-  access-key: ${MINIO_ACCESS_KEY:zhixun321}
-  secret-key: ${MINIO_SECRET_KEY:zhixun321}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
   bucket-name: ${MINIO_BUCKET:zhixun}
 
 # OpenSearch 配置

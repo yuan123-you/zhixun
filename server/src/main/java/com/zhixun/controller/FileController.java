@@ -43,10 +43,7 @@ public class FileController {
      */
     @PostMapping("/upload/image")
     @PreAuthorize("isAuthenticated()")
-    @SentinelResource(value = "file-upload",
-            blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
-            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class,
-            exceptionsToIgnore = { BusinessException.class })
+    @SentinelResource(value = "file-upload", blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class)
     public R<String> uploadImage(@RequestParam("file") MultipartFile file) {
         return R.ok(fileService.uploadImage(file));
     }
@@ -56,10 +53,7 @@ public class FileController {
      */
     @PostMapping("/upload/file")
     @PreAuthorize("isAuthenticated()")
-    @SentinelResource(value = "file-upload",
-            blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
-            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class,
-            exceptionsToIgnore = { BusinessException.class })
+    @SentinelResource(value = "file-upload", blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class)
     public R<String> uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
         return R.ok(fileService.uploadFile(file));
     }
@@ -69,10 +63,7 @@ public class FileController {
      */
     @PostMapping("/upload/voice")
     @PreAuthorize("isAuthenticated()")
-    @SentinelResource(value = "file-upload",
-            blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class,
-            fallback = "uploadFallback", fallbackClass = FileController.BlockHandlers.class,
-            exceptionsToIgnore = { BusinessException.class })
+    @SentinelResource(value = "file-upload", blockHandler = "uploadBlockHandler", blockHandlerClass = FileController.BlockHandlers.class)
     public R<String> uploadVoice(@RequestParam("file") MultipartFile file) throws Exception {
         return R.ok(fileService.uploadVoice(file));
     }
@@ -133,15 +124,6 @@ public class FileController {
             response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=86400");
             // 启用跨域（图片通常由 img 标签加载，跨域读不需要 CORS，但加 CORS 头便于 fetch/canvas）
             response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-            // 可在线预览的文件类型设置 Content-Disposition: inline，允许浏览器直接展示
-            // 其他类型设置 attachment 触发下载
-            if (contentType.startsWith("image/") || contentType.equals("application/pdf")
-                    || contentType.startsWith("text/") || contentType.startsWith("audio/")) {
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline");
-            } else {
-                String fileName = objectKey.contains("/") ? objectKey.substring(objectKey.lastIndexOf('/') + 1) : objectKey;
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
-            }
             try (OutputStream out = response.getOutputStream()) {
                 byte[] buffer = new byte[8192];
                 int len;
@@ -250,18 +232,6 @@ public class FileController {
         if (lower.endsWith(".m4a")) return "audio/mp4";
         if (lower.endsWith(".webm")) return "audio/webm";
         if (lower.endsWith(".pdf")) return "application/pdf";
-        if (lower.endsWith(".doc")) return "application/msword";
-        if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        if (lower.endsWith(".xls")) return "application/vnd.ms-excel";
-        if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        if (lower.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
-        if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-        if (lower.endsWith(".txt")) return "text/plain; charset=utf-8";
-        if (lower.endsWith(".zip")) return "application/zip";
-        if (lower.endsWith(".rar")) return "application/vnd.rar";
-        if (lower.endsWith(".7z")) return "application/x-7z-compressed";
-        if (lower.endsWith(".tar")) return "application/x-tar";
-        if (lower.endsWith(".gz")) return "application/gzip";
         return MediaType.APPLICATION_OCTET_STREAM_VALUE;
     }
 
@@ -269,19 +239,8 @@ public class FileController {
      * Sentinel 限流降级处理
      */
     public static class BlockHandlers {
-        private static final org.slf4j.Logger blockLog = org.slf4j.LoggerFactory.getLogger("FileController.BlockHandlers");
-
-        /** 限流/熔断拦截处理 */
         public static R<String> uploadBlockHandler(MultipartFile file, BlockException e) {
             return R.fail(429, "上传请求过于频繁，请稍后重试");
-        }
-
-        /** 业务异常兜底降级（非限流类异常，如 AOP 代理异常、参数解析异常等） */
-        public static R<String> uploadFallback(MultipartFile file, Throwable e) {
-            blockLog.error("文件上传降级处理: fileName={}, error={}",
-                    file != null ? file.getOriginalFilename() : "null",
-                    e != null ? e.getMessage() : "unknown", e);
-            return R.fail(ErrorCode.FILE_UPLOAD_FAILED, "文件上传服务暂时不可用，请稍后重试");
         }
     }
 }

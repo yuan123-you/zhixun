@@ -46,6 +46,9 @@ public class Article implements Serializable {
     /** 作品状态 */
     private ArticleStatusEnum status;
 
+    /** Server-owned content permission; independent of the public publication status. */
+    private String reviewState;
+
     /** 是否置顶：0-否，1-是，对应 is_top */
     private Integer isTop;
 

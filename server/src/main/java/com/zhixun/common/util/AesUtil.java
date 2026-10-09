@@ -39,11 +39,8 @@ public class AesUtil {
     private static final int KEY_LENGTH = 32;
 
     /** 密钥 */
-    @Value("${aes.secret-key:zhixun-aes-secret-key-2024-must-be-32b}")
+    @Value("${aes.secret-key}")
     private String secretKey;
-
-    /** 默认密钥（用于检测是否使用了不安全的默认配置） */
-    private static final String DEFAULT_SECRET_KEY = "zhixun-aes-secret-key-2024-must-be-32b";
 
     /**
      * 初始化时验证 AES 密钥配置
@@ -51,10 +48,11 @@ public class AesUtil {
      */
     @PostConstruct
     public void validateSecretKey() {
-        // 检查是否使用了默认密钥
-        if (DEFAULT_SECRET_KEY.equals(secretKey)) {
-            log.warn("⚠️  ⚠️  ⚠️  安全警告：当前使用默认 AES 密钥！请通过环境变量 AES_SECRET_KEY 配置强随机密钥！");
-            log.warn("⚠️  生成强密钥命令：java -cp . KeyGenerator.java 或在 application.yml 中配置 Base64 编码的 32 字节随机密钥");
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("AES_SECRET_KEY must be configured");
+        }
+        if (KnownExposedSecrets.contains(secretKey)) {
+            throw new IllegalStateException("Previously exposed AES key is not allowed; migrate encrypted data before rotation");
         }
 
         // 验证密钥长度（在 SHA-256 哈希之前）

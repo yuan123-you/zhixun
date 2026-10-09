@@ -59,6 +59,8 @@ import com.zhixun.mapper.UserMessageMapper;
 import com.zhixun.mapper.ViewHistoryMapper;
 import com.zhixun.common.util.SensitiveWordUtil;
 import com.zhixun.service.AdminService;
+import com.zhixun.service.ArticleReviewPolicy;
+import com.zhixun.service.ArticleService;
 import com.zhixun.service.NotificationService;
 import com.zhixun.service.OperationLogService;
 import com.zhixun.vo.ArticleVO;
@@ -106,6 +108,7 @@ import java.util.stream.Collectors;
 public class AdminServiceImpl implements AdminService {
 
     private final ArticleMapper articleMapper;
+    private final ArticleService publication;
     private final ArticleLikeMapper articleLikeMapper;
     private final ArticleTagMapper articleTagMapper;
     private final ArticleViewHistoryMapper articleViewHistoryMapper;
@@ -134,6 +137,8 @@ public class AdminServiceImpl implements AdminService {
     public PageResult<ArticleVO> getPendingArticles(Integer page, Integer pageSize) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PENDING)
+                .and(w -> w.isNull(Article::getReviewState).or().notIn(Article::getReviewState,
+                        ArticleReviewPolicy.CLEARED, ArticleReviewPolicy.APPROVED))
                 .orderByDesc(Article::getCreatedAt);
 
         Page<Article> articlePage = new Page<>(page, pageSize);
@@ -146,8 +151,8 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditArticle(Long adminId, Long articleId, AuditRequest request) {
-        Article article = articleMapper.selectById(articleId);
-        if (article == null) {
+        Article article = articleMapper.selectForUpdate(articleId);
+        if (article == null || article.getDeletedAt() != null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
         }
 
@@ -161,29 +166,30 @@ public class AdminServiceImpl implements AdminService {
 
         if (request.getStatus() == Article.STATUS_PUBLISHED) {
             // 审核通过
-            article.setStatus(ArticleStatusEnum.PUBLISHED);
-            article.setPublishAt(LocalDateTime.now());
-            article.setRejectReason(null);
+            ArticleReviewPolicy.approved(article, LocalDateTime.now());
             action = "approve";
             detail = "审核通过";
         } else if (request.getStatus() == Article.STATUS_REJECTED) {
             // 审核驳回
-            article.setStatus(ArticleStatusEnum.REJECTED);
-            article.setRejectReason(request.getReason());
+            ArticleReviewPolicy.held(article, ArticleStatusEnum.REJECTED, request.getReason());
             action = "reject";
             detail = "审核驳回，原因：" + request.getReason();
         } else {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "不支持的操作类型");
         }
 
-        articleMapper.updateById(article);
+        if (articleMapper.saveReviewDecision(article, LocalDateTime.now()) != 1) {
+            throw new BusinessException(ErrorCode.CONFLICT, "作品审核状态已变更，请重试");
+        }
+
+        publication.refreshPublicationAfterCommit(articleId);
 
         // 记录操作日志（异步）
         String ip = getClientIp();
         operationLogService.log(adminId, "作品审核", action, "article", articleId, detail, ip);
 
         // 发送通知给作者
-        sendAuditNotification(article.getAuthorId(), articleId, action, request.getReason());
+        sendAuditNotification(article.getAuthorId(), articleId, action, request.getReason(), article.getStatus() == ArticleStatusEnum.PUBLISHED);
     }
 
     @Override
@@ -792,13 +798,13 @@ public class AdminServiceImpl implements AdminService {
     /**
      * 发送审核通知给作者
      */
-    private void sendAuditNotification(Long authorId, Long articleId, String action, String reason) {
+    private void sendAuditNotification(Long authorId, Long articleId, String action, String reason, boolean published) {
         try {
             String title;
             String content;
             if ("approve".equals(action)) {
                 title = "作品审核通过";
-                content = "您的作品已通过审核，现已发布";
+                content = published ? "您的作品已通过审核，现已发布" : "您的作品已通过审核，等待定时发布时间";
             } else {
                 title = "作品审核驳回";
                 content = "您的作品未通过审核，原因：" + (reason != null ? reason : "无");
@@ -879,6 +885,7 @@ public class AdminServiceImpl implements AdminService {
             vo.setSummary(article.getSummary());
             vo.setCoverImage(article.getCoverImage());
             vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
+            vo.setReviewState(ArticleReviewPolicy.state(article));
             vo.setViewCount(article.getViewCount());
             vo.setLikeCount(article.getLikeCount());
             vo.setCommentCount(article.getCommentCount());

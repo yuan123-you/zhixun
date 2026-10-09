@@ -44,6 +44,7 @@ import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.security.HtmlWhitelistFilter;
 import com.zhixun.service.ArticleService;
+import com.zhixun.service.ArticleReviewPolicy;
 import com.zhixun.service.FeedService;
 import com.zhixun.service.OpenSearchSyncService;
 import com.zhixun.vo.ArticleDetailVO;
@@ -57,6 +58,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -143,8 +146,7 @@ public class ArticleServiceImpl implements ArticleService {
             // 高级别敏感词被 BusinessException 拦截，直接向上抛出由 GlobalExceptionHandler 处理
             throw e;
         } catch (Exception e) {
-            log.error("敏感词过滤异常: {}", e.getMessage());
-            filteredContent = rawContent;
+            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "内容检查暂不可用，请稍后重试");
         }
         article.setContent(HtmlWhitelistFilter.filterRichText(filteredContent));
         article.setSummary(sanitize(request.getSummary()));
@@ -164,45 +166,11 @@ public class ArticleServiceImpl implements ArticleService {
         article.setIsTop(0);
         article.setIsRecommend(0);
 
-        // 敏感词检测
-        boolean hasSensitiveWord;
-        try {
-            hasSensitiveWord = checkSensitiveWord(request.getTitle(), request.getContent());
-        } catch (Exception e) {
-            log.error("敏感词检测异常: {}", e.getMessage());
-            hasSensitiveWord = false;
-        }
-
-        // 确定作品状态：根据用户意图（草稿/发布）和敏感词检测结果
-        boolean isPublishIntent = false;
-        Integer requestStatus = request.getStatus();
-        if (requestStatus != null) {
-            ArticleStatusEnum requestStatusEnum = ArticleStatusEnum.fromValue(requestStatus);
-            // status=1（PENDING）或 status=2（PUBLISHED）都表示用户想要发布
-            if (requestStatusEnum == ArticleStatusEnum.PENDING
-                    || requestStatusEnum == ArticleStatusEnum.PUBLISHED) {
-                isPublishIntent = true;
-            }
-        }
-
-        if (isPublishIntent && !hasSensitiveWord) {
-            // 用户意图发布 且 无敏感词 → 直接发布
-            article.setStatus(ArticleStatusEnum.PUBLISHED);
-        } else if (isPublishIntent) {
-            // 用户意图发布 但 有敏感词 → 待审核
-            article.setStatus(ArticleStatusEnum.PENDING);
-        } else if (hasSensitiveWord) {
-            // 保存草稿但有敏感词 → 待审核
-            article.setStatus(ArticleStatusEnum.PENDING);
-        } else {
-            // 保存草稿且无敏感词 → 草稿
-            article.setStatus(ArticleStatusEnum.DRAFT);
-        }
-
-        // 处理定时发布
-        if (request.getPublishAt() != null) {
-            article.setPublishAt(request.getPublishAt());
-        }
+        boolean hasSensitiveWord = checkSensitiveWord(request.getTitle(), request.getContent());
+        ArticleStatusEnum requested = ArticleStatusEnum.fromValue(request.getStatus());
+        boolean publishIntent = requested == ArticleStatusEnum.PENDING || requested == ArticleStatusEnum.PUBLISHED;
+        article.setPublishAt(request.getPublishAt());
+        ArticleReviewPolicy.created(article, publishIntent, hasSensitiveWord, LocalDateTime.now());
 
         // 设置可见性（默认为公开）
         if (request.getVisibility() != null) {
@@ -231,25 +199,9 @@ public class ArticleServiceImpl implements ArticleService {
         // 保存作品图片
         saveArticleImages(article.getId(), request.getImages());
 
-        // 同步到 OpenSearch（仅已发布状态才同步，非关键操作，失败不影响主事务）
         if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
-            try {
-                openSearchSyncService.syncArticle(article.getId());
-            } catch (Exception e) {
-                log.error("创建作品同步到OpenSearch失败, articleId={}: {}", article.getId(), e.getMessage());
-            }
-            // Fan-out on write：推送到粉丝时间线
-            try {
-                feedService.fanoutOnPublish(userId, article.getId(), article.getPublishAt());
-            } catch (Exception e) {
-                log.error("推送粉丝时间线失败, articleId={}: {}", article.getId(), e.getMessage());
-            }
-            // 清除全局 Feed 缓存（最新/热门/推荐），确保新作品立即出现在主页列表
-            try {
-                feedService.clearFeedCaches();
-            } catch (Exception e) {
-                log.warn("清除Feed缓存失败, articleId={}: {}", article.getId(), e.getMessage());
-            }
+            publishEffects(article.getId(), userId, article.getPublishAt(), false);
+            afterArticleCommit(article.getId(), "feed-cache", feedService::clearFeedCaches);
         }
 
         return article.getId();
@@ -258,53 +210,42 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateArticle(Long userId, Long articleId, ArticleUpdateRequest request) {
-        Article article = getArticleOrThrow(articleId);
+        Article article = getArticleForUpdate(articleId);
 
         // 权限校验：仅作者或管理员可编辑
         if (!securityUtil.isOwnerOrAdmin(article.getAuthorId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "无权编辑此作品");
         }
 
-        // 更新作品内容
-        article.setTitle(sanitize(request.getTitle()));
-        // 先过滤敏感词，再做HTML白名单过滤
-        String filteredContent = sensitiveWordUtil.filter(request.getContent());
-        article.setContent(HtmlWhitelistFilter.filterRichText(filteredContent));
-        article.setSummary(sanitize(request.getSummary()));
-        article.setCategoryId(request.getCategoryId());
-        article.setCoverImage(request.getCoverImage());
-
-        // 更新可见性
-        if (request.getVisibility() != null) {
-            article.setVisibility(request.getVisibility());
+        String oldTitle = article.getTitle(), oldContent = article.getContent(), oldSummary = article.getSummary();
+        String oldCover = article.getCoverImage(); Long oldCategory = article.getCategoryId();
+        String screeningTitle = request.getTitle() == null ? oldTitle : request.getTitle();
+        String screeningContent = request.getContent() == null ? oldContent : request.getContent();
+        boolean hasSensitiveWord = checkSensitiveWord(screeningTitle, screeningContent);
+        if (request.getTitle() != null) article.setTitle(sanitize(request.getTitle()));
+        if (request.getContent() != null) {
+            try { article.setContent(HtmlWhitelistFilter.filterRichText(sensitiveWordUtil.filter(request.getContent()))); }
+            catch (BusinessException e) { throw e; }
+            catch (Exception e) { throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "内容检查暂不可用，请稍后重试"); }
         }
-
-        // 更新位置
-        if (request.getLocation() != null) {
-            article.setLocation(sanitize(request.getLocation()));
-        }
-
-        // 敏感词检测
-        boolean hasSensitiveWord = checkSensitiveWord(request.getTitle(), request.getContent());
-        if (hasSensitiveWord) {
-            article.setStatus(ArticleStatusEnum.PENDING);
-        }
-
-        // 如果状态变更为已发布，设置发布时间
-        if (article.getStatus() == ArticleStatusEnum.PUBLISHED && article.getPublishAt() == null) {
-            article.setPublishAt(LocalDateTime.now());
-        }
-
-        articleMapper.updateById(article);
+        if (request.getSummary() != null) article.setSummary(sanitize(request.getSummary()));
+        if (request.getCategoryId() != null) article.setCategoryId(request.getCategoryId());
+        if (request.getCoverImage() != null) article.setCoverImage(request.getCoverImage());
+        if (request.getVisibility() != null) article.setVisibility(request.getVisibility());
+        if (request.getLocation() != null) article.setLocation(sanitize(request.getLocation()));
+        boolean changed = !Objects.equals(oldTitle, article.getTitle()) || !Objects.equals(oldContent, article.getContent())
+                || !Objects.equals(oldSummary, article.getSummary()) || !Objects.equals(oldCover, article.getCoverImage())
+                || !Objects.equals(oldCategory, article.getCategoryId());
+        ArticleReviewPolicy.edited(article, changed, hasSensitiveWord);
+        if (articleMapper.updateById(article) != 1) throw new BusinessException(ErrorCode.CONFLICT, "作品内容已变更，请重试");
 
         // 更新标签关联
-        handleTags(articleId, request.getTagIds());
+        if (request.getTagIds() != null) handleTags(articleId, request.getTagIds());
 
-        // 同步到 OpenSearch（非关键操作，失败不影响主事务）
-        try {
-            openSearchSyncService.syncArticle(articleId);
-        } catch (Exception e) {
-            log.error("更新作品同步到OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
+        if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
+            afterArticleCommit(articleId, "search-update", () -> openSearchSyncService.syncArticle(articleId));
+        } else {
+            removeIndexEffects(articleId);
         }
 
         // 清除作品相关缓存
@@ -369,6 +310,7 @@ public class ArticleServiceImpl implements ArticleService {
         vo.setContent(article.getContent());
         vo.setCoverImage(article.getCoverImage());
         vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
+        vo.setReviewState(ArticleReviewPolicy.state(article));
         vo.setViewCount(article.getViewCount());
         vo.setLikeCount(article.getLikeCount());
         vo.setCommentCount(article.getCommentCount());
@@ -573,7 +515,7 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteArticle(Long userId, Long articleId) {
-        Article article = getArticleOrThrow(articleId);
+        Article article = getArticleForUpdate(articleId);
 
         // 权限校验：仅作者或管理员可删除
         if (!securityUtil.isOwnerOrAdmin(article.getAuthorId())) {
@@ -595,13 +537,7 @@ public class ArticleServiceImpl implements ArticleService {
         // 删除标签关联
         articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleId));
 
-        // 从 OpenSearch 删除作品和关联图片索引（非关键操作，失败不影响主事务）
-        try {
-            openSearchSyncService.deleteArticle(articleId);
-            openSearchSyncService.deleteImagesByArticle(articleId);
-        } catch (Exception e) {
-            log.error("删除作品OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
-        }
+        removeIndexEffects(articleId);
 
         // 清除作品相关缓存
         clearArticleCache(articleId);
@@ -615,7 +551,7 @@ public class ArticleServiceImpl implements ArticleService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "仅管理员可变更作品状态");
         }
 
-        Article article = getArticleOrThrow(articleId);
+        Article article = getArticleForUpdate(articleId);
 
         ArticleStatusEnum targetStatus = ArticleStatusEnum.fromValue(request.getStatus());
         String action = null;
@@ -625,32 +561,28 @@ public class ArticleServiceImpl implements ArticleService {
         if (targetStatus == ArticleStatusEnum.PUBLISHED) {
             // 审核通过
             action = ArticleOperateLog.ACTION_APPROVE;
-            article.setStatus(ArticleStatusEnum.PUBLISHED);
-            if (article.getPublishAt() == null) {
-                article.setPublishAt(LocalDateTime.now());
-            }
-            article.setRejectReason(null);
+            ArticleReviewPolicy.approved(article, LocalDateTime.now());
         } else if (targetStatus == ArticleStatusEnum.REJECTED) {
             // 驳回
             action = ArticleOperateLog.ACTION_REJECT;
             if (!StringUtils.hasText(reason)) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "驳回需填写原因");
             }
-            article.setStatus(ArticleStatusEnum.REJECTED);
-            article.setRejectReason(reason);
+            ArticleReviewPolicy.held(article, ArticleStatusEnum.REJECTED, reason);
         } else if (targetStatus == ArticleStatusEnum.OFFLINE) {
             // 下架
             action = ArticleOperateLog.ACTION_TAKEDOWN;
             if (!StringUtils.hasText(reason)) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "下架需填写原因");
             }
-            article.setStatus(ArticleStatusEnum.OFFLINE);
-            article.setRejectReason(reason);
+            ArticleReviewPolicy.held(article, ArticleStatusEnum.OFFLINE, reason);
         } else {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "不支持的状态变更");
         }
 
-        articleMapper.updateById(article);
+        if (articleMapper.saveReviewDecision(article, LocalDateTime.now()) != 1) {
+            throw new BusinessException(ErrorCode.CONFLICT, "作品审核状态已变更，请重试");
+        }
 
         // 记录操作日志
         ArticleOperateLog operateLog = new ArticleOperateLog();
@@ -671,43 +603,21 @@ public class ArticleServiceImpl implements ArticleService {
                             "userId", article.getAuthorId(),
                             "type", "ARTICLE_STATUS",
                             "title", "作品状态变更",
-                            "content", "您的作品「" + article.getTitle() + "」状态已变更为：" + targetStatus.getDescription()
+                            "content", "您的作品「" + article.getTitle() + "」" +
+                                    (ArticleReviewPolicy.APPROVED.equals(ArticleReviewPolicy.state(article))
+                                            && article.getStatus() == ArticleStatusEnum.PENDING
+                                            ? "审核已通过，等待定时发布时间" : "状态已变更为：" + article.getStatus().getDescription())
                     )
             );
-            rabbitTemplate.convertAndSend(
+            afterArticleCommit(articleId, "status-notification", () -> rabbitTemplate.convertAndSend(
                     RabbitMQConfig.ARTICLE_EVENT_EXCHANGE,
                     "zhixun.article.status",
-                    mqMessage);
+                    mqMessage));
         } catch (Exception e) {
             log.warn("RabbitMQ 推送作品状态变更通知失败: {}", e.getMessage());
         }
 
-        // 同步到 OpenSearch（非关键操作，失败不影响主事务）
-        if (targetStatus == ArticleStatusEnum.PUBLISHED) {
-            try {
-                openSearchSyncService.syncArticle(articleId);
-                openSearchSyncService.syncImagesByArticle(articleId);
-            } catch (Exception e) {
-                log.error("更新作品状态同步OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
-            }
-            // Fan-out on write：推送到粉丝时间线
-            try {
-                feedService.fanoutOnPublish(article.getAuthorId(), articleId, article.getPublishAt());
-            } catch (Exception e) {
-                log.error("推送粉丝时间线失败, articleId={}: {}", articleId, e.getMessage());
-            }
-        } else {
-            // 非发布状态从索引中删除
-            try {
-                openSearchSyncService.deleteArticle(articleId);
-                openSearchSyncService.deleteImagesByArticle(articleId);
-            } catch (Exception e) {
-                log.error("删除作品OpenSearch索引失败, articleId={}: {}", articleId, e.getMessage());
-            }
-        }
-
-        // 清除作品相关缓存
-        clearArticleCache(articleId);
+        reviewDecisionEffects(article);
     }
 
     @Override
@@ -840,55 +750,36 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional(rollbackFor = Exception.class)
     public void publishScheduledArticles() {
         LocalDateTime now = LocalDateTime.now();
-
-        // 查询所有 status=PENDING 且 publishAt <= now() 且 publishAt IS NOT NULL 的作品
-        List<Article> articles = articleMapper.selectList(
-                new LambdaQueryWrapper<Article>()
-                        .eq(Article::getStatus, ArticleStatusEnum.PENDING)
-                        .isNotNull(Article::getPublishAt)
-                        .le(Article::getPublishAt, now)
-        );
-
-        if (articles.isEmpty()) {
-            return;
-        }
-
-        log.info("定时发布：找到 {} 篇到期作品", articles.size());
-
+        // Eligibility policy is unchanged; approval-vs-scheduling is a separate user decision.
+        List<Article> articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, ArticleStatusEnum.PENDING)
+                .in(Article::getReviewState, ArticleReviewPolicy.CLEARED, ArticleReviewPolicy.APPROVED)
+                .isNull(Article::getDeletedAt)
+                .isNotNull(Article::getPublishAt).le(Article::getPublishAt, now));
         for (Article article : articles) {
+            if (!ArticleReviewPolicy.permitted(article)) continue;
+            Long articleId = article.getId();
+            int affected;
             try {
-                // 更新状态为已发布
-                article.setStatus(ArticleStatusEnum.PUBLISHED);
-                articleMapper.updateById(article);
-
-                // 同步到 OpenSearch（非关键操作，失败不影响发布）
-                try {
-                    openSearchSyncService.syncArticle(article.getId());
-                } catch (Exception e) {
-                    log.error("定时发布同步OpenSearch失败, articleId={}: {}", article.getId(), e.getMessage());
-                }
-
-                // 推送到粉丝时间线（非关键操作，失败不影响发布）
-                try {
-                    feedService.fanoutOnPublish(article.getAuthorId(), article.getId(), article.getPublishAt());
-                } catch (Exception e) {
-                    log.error("定时推送粉丝时间线失败, articleId={}: {}", article.getId(), e.getMessage());
-                }
-
-                // 清除相关 Redis 缓存
-                clearArticleCache(article.getId());
-
-                log.info("定时发布：作品 {} 已发布", article.getId());
+                affected = articleMapper.publishScheduledIfEligible(articleId, now);
             } catch (Exception e) {
-                log.error("定时发布：作品 {} 发布失败: {}", article.getId(), e.getMessage());
+                log.error("定时发布写入失败: articleId={}", articleId, e);
+                continue;
             }
+            if (affected != 1) continue;
+            article.setStatus(ArticleStatusEnum.PUBLISHED);
+            // Once state changed, mandatory metadata failures must escape and roll back the transaction.
+            Article current = articleMapper.selectById(articleId);
+            if (current == null) throw new BusinessException(ErrorCode.CONFLICT, "无法读取定时发布元数据");
+            publishEffects(articleId, current.getAuthorId(), current.getPublishAt(), true);
+            clearArticleCache(articleId);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateArticleVisibility(Long userId, Long articleId, ArticleVisibilityRequest request) {
-        Article article = getArticleOrThrow(articleId);
+        Article article = getArticleForUpdate(articleId);
 
         // 权限校验：仅作者可修改可见性
         if (!article.getAuthorId().equals(userId) && !securityUtil.isAdmin()) {
@@ -905,7 +796,7 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void publishDraft(Long userId, Long articleId, ArticlePublishRequest request) {
-        Article article = getArticleOrThrow(articleId);
+        Article article = getArticleForUpdate(articleId);
 
         // 权限校验：仅作者可操作
         if (!article.getAuthorId().equals(userId) && !securityUtil.isAdmin()) {
@@ -917,36 +808,12 @@ public class ArticleServiceImpl implements ArticleService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "仅草稿状态的作品可以发布");
         }
 
-        // 处理定时发布
-        if (request.getPublishAt() != null) {
-            // 定时发布：状态设为待审核
-            article.setStatus(ArticleStatusEnum.PENDING);
-            article.setPublishAt(request.getPublishAt());
-        } else {
-            // 立即发布：敏感词检测后决定状态
-            boolean hasSensitiveWord = checkSensitiveWord(article.getTitle(), article.getContent());
-            if (hasSensitiveWord) {
-                article.setStatus(ArticleStatusEnum.PENDING);
-            } else {
-                article.setStatus(ArticleStatusEnum.PUBLISHED);
-            }
-            article.setPublishAt(LocalDateTime.now());
-        }
+        boolean sensitive = checkSensitiveWord(article.getTitle(), article.getContent());
+        ArticleReviewPolicy.submitDraft(article, sensitive, request.getPublishAt(), LocalDateTime.now());
+        if (articleMapper.updateById(article) != 1) throw new BusinessException(ErrorCode.CONFLICT, "作品发布状态已变更，请重试");
 
-        articleMapper.updateById(article);
-
-        // 立即发布的作品同步到 OpenSearch 并推送到粉丝时间线
         if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
-            try {
-                openSearchSyncService.syncArticle(articleId);
-            } catch (Exception e) {
-                log.error("发布草稿同步OpenSearch失败, articleId={}: {}", articleId, e.getMessage());
-            }
-            try {
-                feedService.fanoutOnPublish(article.getAuthorId(), articleId, article.getPublishAt());
-            } catch (Exception e) {
-                log.error("推送粉丝时间线失败, articleId={}: {}", articleId, e.getMessage());
-            }
+            publishEffects(articleId, article.getAuthorId(), article.getPublishAt(), false);
         }
 
         // 清除作品缓存
@@ -1080,7 +947,54 @@ public class ArticleServiceImpl implements ArticleService {
     /**
      * 清除作品相关 Redis 缓存
      */
+    @Override
+    public void refreshPublicationAfterCommit(Long articleId) {
+        reviewDecisionEffects(getArticleOrThrow(articleId));
+    }
+
+    private void reviewDecisionEffects(Article article) {
+        Long articleId = article.getId();
+        if (article.getStatus() == ArticleStatusEnum.PUBLISHED) {
+            publishEffects(articleId, article.getAuthorId(), article.getPublishAt(), true);
+        } else {
+            removeIndexEffects(articleId);
+        }
+        clearArticleCache(articleId);
+    }
+
+    private void publishEffects(Long articleId, Long authorId, LocalDateTime publishedAt, boolean images) {
+        afterArticleCommit(articleId, "search-publish", () -> openSearchSyncService.syncArticle(articleId));
+        if (images) afterArticleCommit(articleId, "image-publish", () -> openSearchSyncService.syncImagesByArticle(articleId));
+        afterArticleCommit(articleId, "follower-feed", () -> feedService.fanoutOnPublish(authorId, articleId, publishedAt));
+    }
+
+    private void removeIndexEffects(Long articleId) {
+        afterArticleCommit(articleId, "search-remove", () -> openSearchSyncService.deleteArticle(articleId));
+        afterArticleCommit(articleId, "image-remove", () -> openSearchSyncService.deleteImagesByArticle(articleId));
+    }
+
+    private void afterArticleCommit(Long articleId, String stage, Runnable action) {
+        Runnable guarded = () -> {
+            try { action.run(); }
+            catch (Exception e) { log.warn("作品提交后副作用失败: articleId={}, stage={}", articleId, stage, e); }
+        };
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { guarded.run(); }
+            });
+        } else {
+            guarded.run();
+        }
+    }
+
     private void clearArticleCache(Long articleId) {
+        afterArticleCommit(articleId, "article-cache", () -> clearArticleCacheNow(articleId));
+        afterArticleCommit(articleId, "feed-cache", feedService::clearFeedCaches);
+        afterArticleCommit(articleId, "data-version", () -> RedisConfig.incrementDataVersion(stringRedisTemplate));
+    }
+
+    private void clearArticleCacheNow(Long articleId) {
         try {
             stringRedisTemplate.delete(VIEW_COUNT_PREFIX + articleId);
             stringRedisTemplate.delete(RELATED_ARTICLES_PREFIX + articleId);
@@ -1099,22 +1013,22 @@ public class ArticleServiceImpl implements ArticleService {
             if (!listKeys.isEmpty()) {
                 stringRedisTemplate.delete(listKeys);
             }
-            // 清除全局 Feed 缓存（最新/热门/推荐）
-            feedService.clearFeedCaches();
+
         } catch (Exception e) {
             log.warn("清除作品 {} 缓存失败: {}", articleId, e.getMessage());
         }
-        // 递增数据版本号，通知客户端数据已变更
-        try {
-            RedisConfig.incrementDataVersion(stringRedisTemplate);
-        } catch (Exception e) {
-            log.debug("递增数据版本号失败: {}", e.getMessage());
-        }
+
     }
 
     /**
      * 获取作品或抛出异常
      */
+    private Article getArticleForUpdate(Long articleId) {
+        Article article = articleMapper.selectForUpdate(articleId);
+        if (article == null || article.getDeletedAt() != null) throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
+        return article;
+    }
+
     private Article getArticleOrThrow(Long articleId) {
         Article article = articleMapper.selectById(articleId);
         if (article == null) {
@@ -1145,8 +1059,10 @@ public class ArticleServiceImpl implements ArticleService {
      * 敏感词检测
      */
     private boolean checkSensitiveWord(String title, String content) {
-        return sensitiveWordUtil.containsSensitiveWord(title)
-                || sensitiveWordUtil.containsSensitiveWord(content);
+        try {
+            return sensitiveWordUtil.containsSensitiveWord(title) || sensitiveWordUtil.containsSensitiveWord(content);
+        } catch (BusinessException e) { throw e; }
+        catch (Exception e) { throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "内容检查暂不可用，请稍后重试"); }
     }
 
     /**
@@ -1414,6 +1330,7 @@ public class ArticleServiceImpl implements ArticleService {
             vo.setContent(article.getContent());
             vo.setCoverImage(article.getCoverImage());
             vo.setStatus(article.getStatus() != null ? article.getStatus().getValue() : null);
+        vo.setReviewState(ArticleReviewPolicy.state(article));
             // 浏览数 = 数据库值 + Redis增量
             long viewCount = article.getViewCount() != null ? article.getViewCount() : 0L;
             Long redisIncrement = viewCountMap.get(article.getId());

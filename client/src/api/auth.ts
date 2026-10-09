@@ -20,7 +20,7 @@ export const authApi = {
     return post('/auth/logout')
   },
 
-  /** 刷新Token - refreshToken 存储在 sessionStorage 中，通过请求体传递 */
+  /** 刷新Token - refreshToken 存储在 localStorage 中，通过请求体传递 */
   refreshToken: (refreshToken?: string) => {
     const { post } = useApi()
     // 通过请求体传递 refreshToken，支持多账号同时登录

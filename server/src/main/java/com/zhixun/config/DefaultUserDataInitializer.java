@@ -16,7 +16,7 @@ import java.security.SecureRandom;
 
 /**
  * 默认用户数据初始化
- * 确保超级管理员账号存在，密码通过环境变量 ADMIN_PASSWORD 配置，默认 admin123
+ * 确保超级管理员账号存在，账号与密码仅通过环境变量显式配置，未配置时不创建账号
  */
 @Slf4j
 @Component
@@ -30,8 +30,15 @@ public class DefaultUserDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        String adminPassword = System.getenv().getOrDefault("ADMIN_PASSWORD", "admin123");
-        String adminUsername = System.getenv().getOrDefault("ADMIN_USERNAME", "admin");
+        initializeAdmin(System.getenv("ADMIN_USERNAME"), System.getenv("ADMIN_PASSWORD"));
+    }
+
+    void initializeAdmin(String adminUsername, String adminPassword) {
+        if (adminPassword == null || adminPassword.isBlank()
+                || adminUsername == null || adminUsername.isBlank()) {
+            log.warn("Administrator initialization skipped: explicit credentials are required");
+            return;
+        }
 
         // 检查管理员是否已存在
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
@@ -39,6 +46,13 @@ public class DefaultUserDataInitializer implements CommandLineRunner {
         User existingAdmin = userMapper.selectOne(wrapper);
 
         if (existingAdmin != null) {
+            if ((existingAdmin.getRole() == RoleEnum.SUPER_ADMIN || existingAdmin.getRole() == RoleEnum.ADMIN)
+                    && (existingAdmin.getPasswordHash() == null || existingAdmin.getPasswordHash().isBlank())) {
+                User update = new User();
+                update.setId(existingAdmin.getId());
+                update.setPasswordHash(passwordEncoder.encode(adminPassword));
+                userMapper.updateById(update);
+            }
             // 如果已存在但缺少UID，补充默认UID
             if (existingAdmin.getUid() == null) {
                 User updateUser = new User();
@@ -47,7 +61,7 @@ public class DefaultUserDataInitializer implements CommandLineRunner {
                 userMapper.updateById(updateUser);
                 log.info("已为管理员账号 {} 补充UID", adminUsername);
             }
-            log.info("管理员账号 {} 已存在，跳过初始化", adminUsername);
+            log.info("管理员账号已存在，跳过初始化");
             return;
         }
 
@@ -64,7 +78,7 @@ public class DefaultUserDataInitializer implements CommandLineRunner {
         admin.setIsOnline(0);
 
         userMapper.insert(admin);
-        log.info("默认管理员账号已创建: username={}, uid={}", adminUsername, admin.getUid());
+        log.info("管理员账号初始化完成");
     }
 
     /**

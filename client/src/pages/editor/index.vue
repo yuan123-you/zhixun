@@ -1290,6 +1290,25 @@ if (editingArticleId.value) {
 }
 
 /* ========== 编辑器 textarea ========== */
+.editor-textarea {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.editor-textarea :deep(.el-textarea) {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.editor-textarea :deep(.el-textarea__inner) {
+  flex: 1 1 0;
+  width: 100% !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  box-sizing: border-box;
+}
 .editor-textarea::placeholder {
   color: var(--zh-text-placeholder);
   font-style: italic;

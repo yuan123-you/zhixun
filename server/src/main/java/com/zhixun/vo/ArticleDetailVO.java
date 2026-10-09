@@ -29,6 +29,9 @@ public class ArticleDetailVO {
     /** 状态 */
     private Integer status;
 
+    /** 当前内容审核许可，区别待审核与等待排期。 */
+    private String reviewState;
+
     /** 浏览量 */
     private Long viewCount;
 

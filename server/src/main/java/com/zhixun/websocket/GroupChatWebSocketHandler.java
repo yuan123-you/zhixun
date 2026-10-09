@@ -9,6 +9,10 @@ import com.zhixun.entity.User;
 import com.zhixun.mapper.GroupMapper;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.service.GroupService;
+import com.zhixun.service.GroupChatAccess;
+import com.zhixun.common.exception.BusinessException;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import com.zhixun.service.NotificationService;
 import com.zhixun.vo.GroupMessageVO;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +53,16 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     private final NotificationService notificationService;
     private final GroupMapper groupMapper;
     private final UserMapper userMapper;
+    private final GroupChatAccess groupChatAccess;
+    private static volatile GroupChatAccess deliveryAccess;
+
+    @PostConstruct
+    void initializeChatAccess() { deliveryAccess = groupChatAccess; }
+
+    @PreDestroy
+    void releaseChatAccess() {
+        if (deliveryAccess == groupChatAccess) deliveryAccess = null;
+    }
 
     /** groupId -> (sessionId -> WebSocketSession) */
     private static final Map<Long, Map<String, WebSocketSession>> GROUP_SESSIONS = new ConcurrentHashMap<>();
@@ -199,6 +213,15 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void joinGroupRoom(WebSocketSession session, Long groupId, Long userId) {
+        try {
+            groupChatAccess.requireMember(groupId, userId);
+        } catch (BusinessException e) {
+            sendError(session, e.getMessage());
+            return;
+        } catch (RuntimeException e) {
+            sendError(session, "暂时无法验证群组权限，请稍后重试");
+            return;
+        }
         // 先离开旧房间
         Long oldGroupId = SESSION_GROUP.get(session.getId());
         if (oldGroupId != null && !oldGroupId.equals(groupId)) {
@@ -218,19 +241,21 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
      * 公开静态方法：向群组广播AI助手回复消息
      * 供 GroupServiceImpl 异步生成AI回复后调用
      */
-    public static void broadcastAIMessage(Long groupId, String jsonMessage) {
+    /** Existing ERROR wire payloads must be sent only to the requesting user's room sessions. */
+    public static void sendToUser(Long groupId, Long userId, String jsonMessage) {
         Map<String, WebSocketSession> room = GROUP_SESSIONS.get(groupId);
         if (room == null) return;
-        TextMessage textMsg = new TextMessage(jsonMessage);
-        room.forEach((sid, s) -> {
-            if (s.isOpen()) {
-                try {
-                    s.sendMessage(textMsg);
-                } catch (IOException e) {
-                    log.error("AI回复广播失败: groupId={}, sessionId={}", groupId, sid, e);
-                }
+        TextMessage message = new TextMessage(jsonMessage);
+        room.forEach((sid, session) -> {
+            if (Objects.equals(SESSION_USER.get(sid), userId) && session.isOpen()) {
+                try { session.sendMessage(message); }
+                catch (IOException e) { log.warn("群组通知发送失败: sessionId={}", sid); }
             }
         });
+    }
+
+    public static void broadcastAIMessage(Long groupId, String jsonMessage) {
+        broadcastToGroup(groupId, jsonMessage, null);
     }
 
     /**
@@ -247,9 +272,17 @@ public class GroupChatWebSocketHandler extends TextWebSocketHandler {
     private static void broadcastToGroup(Long groupId, String message, String excludeSessionId) {
         Map<String, WebSocketSession> room = GROUP_SESSIONS.get(groupId);
         if (room == null) return;
+        GroupChatAccess access = deliveryAccess;
+        if (access == null) return; // Fail closed before initialization or during shutdown.
+        Set<Long> recipients;
+        try { recipients = access.currentRecipients(groupId); }
+        catch (RuntimeException e) {
+            log.warn("群组广播权限无法验证: groupId={}", groupId);
+            return;
+        }
         TextMessage textMsg = new TextMessage(message);
         room.forEach((sid, s) -> {
-            if (!sid.equals(excludeSessionId) && s.isOpen()) {
+            if (!sid.equals(excludeSessionId) && recipients.contains(SESSION_USER.get(sid)) && s.isOpen()) {
                 try {
                     s.sendMessage(textMsg);
                 } catch (IOException e) {

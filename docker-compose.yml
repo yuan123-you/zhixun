@@ -12,7 +12,7 @@ services:
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD through the environment}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-zhixun}
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
@@ -65,7 +65,7 @@ services:
       - "${RABBITMQ_MGMT_PORT:-15672}:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD through the environment}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
       TZ: Asia/Shanghai
     volumes:
@@ -88,8 +88,8 @@ services:
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-zhixun321}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-zhixun321}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY through the environment}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY through the environment}
       TZ: Asia/Shanghai
     volumes:
       - minio_data:/data
@@ -231,7 +231,7 @@ services:
       # 数据版本号（控制客户端强更新）
       APP_DATA_VERSION: ${APP_DATA_VERSION:-20250625}
       # SSR 通信密钥
-      SSR_SECRET: ${SSR_SECRET:-zhixun-ssr-dev-secret}
+      SSR_SECRET: ${SSR_SECRET:?Set SSR_SECRET through the environment}
       # 时区
       TZ: Asia/Shanghai
     depends_on:
@@ -339,7 +339,7 @@ services:
       # 数据版本号（控制客户端强更新）
       APP_DATA_VERSION: ${APP_DATA_VERSION:-20250625}
       # SSR 通信密钥
-      SSR_SECRET: ${SSR_SECRET:-zhixun-ssr-dev-secret}
+      SSR_SECRET: ${SSR_SECRET:?Set SSR_SECRET through the environment}
       # 时区
       TZ: Asia/Shanghai
     depends_on:
@@ -458,7 +458,7 @@ services:
       SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
       SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
       SONAR_JDBC_USERNAME: ${SONARQUBE_DB_USER:-sonar}
-      SONAR_JDBC_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonar123}
+      SONAR_JDBC_PASSWORD: ${SONARQUBE_DB_PASSWORD:?Set SONARQUBE_DB_PASSWORD through the environment}
       TZ: Asia/Shanghai
     volumes:
       - sonarqube_data:/opt/sonarqube/data
@@ -485,7 +485,7 @@ services:
       - dev
     environment:
       POSTGRES_USER: ${SONARQUBE_DB_USER:-sonar}
-      POSTGRES_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonar123}
+      POSTGRES_PASSWORD: ${SONARQUBE_DB_PASSWORD:?Set SONARQUBE_DB_PASSWORD through the environment}
       POSTGRES_DB: sonar
       TZ: Asia/Shanghai
     volumes:

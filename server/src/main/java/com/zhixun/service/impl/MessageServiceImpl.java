@@ -20,6 +20,7 @@ import com.zhixun.mapper.UserMessageMapper;
 import com.zhixun.mapper.UserSettingsMapper;
 import com.zhixun.service.MessageService;
 import com.zhixun.service.AIService;
+import com.zhixun.service.ai.AiResults;
 import com.zhixun.dto.ai.AIWriteRequest;
 import com.zhixun.vo.AIResponseVO;
 import com.zhixun.vo.ConversationVO;
@@ -33,6 +34,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.socket.TextMessage;
 
 import java.time.LocalDateTime;
@@ -122,81 +125,87 @@ public class MessageServiceImpl implements MessageService {
         message.setContent(encryptedContent);
         message.setType(request.getType() != null ? request.getType() : "text");
         message.setIsRead(0);
-        try {
-            userMessageMapper.insert(message);
-        } catch (Exception e) {
-            log.error("私信发送失败: 数据库插入异常, senderId={}, receiverId={}", senderId, receiverId, e);
-            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
-        }
+        persistMessage(message);
 
-        log.info("私信已持久化: messageId={}, senderId={}, receiverId={}", message.getId(), senderId, receiverId);
+        log.info("私信已插入，等待事务提交: messageId={}, senderId={}, receiverId={}", message.getId(), senderId, receiverId);
 
-        // 更新 Redis 未读计数
-        String unreadKey = UNREAD_COUNT_PREFIX + receiverId + ":" + senderId;
-        stringRedisTemplate.opsForValue().increment(unreadKey);
-        stringRedisTemplate.expire(unreadKey, 7, TimeUnit.DAYS);
-
-        // 更新会话摘要缓存
-        updateConversationCache(senderId, receiverId, rawContent);
-
-        // 构建 MessageVO
+        // 构建响应并在事务内捕获脱离实体/响应对象的推送数据，提交后不再查询数据库。
         MessageVO vo = buildMessageVO(message, senderId, receiverId);
-        vo.setContent(rawContent); // 返回明文给发送者
-
-        // 通过 RabbitMQ 异步推送给接收者（失败时直推回退）
-        try {
-            // 查询发送者信息用于 WS 推送
-            User senderUser = userMapper.selectById(senderId);
-            String senderNickname = senderUser != null ? senderUser.getNickname() : "";
-            String senderAvatar = senderUser != null ? senderUser.getAvatar() : "";
-
-            Map<String, Object> mqMessage = Map.of(
-                    "type", "CHAT",
-                    "data", Map.of(
-                            "receiverId", receiverId,
-                            "id", message.getId(),
-                            "senderId", senderId,
-                            "content", rawContent,
-                            "messageType", message.getType(),
-                            "senderNickname", senderNickname,
-                            "senderAvatar", senderAvatar,
-                            "createdAt", message.getCreatedAt().toString()
-                    )
-            );
-            rabbitTemplate.convertAndSend(
-                    RabbitMQConfig.CHAT_EXCHANGE,
-                    "zhixun.chat.sent",
-                    mqMessage);
-            log.info("私信MQ推送成功: messageId={}, receiverId={}", message.getId(), receiverId);
-        } catch (Exception e) {
-            log.warn("RabbitMQ 推送私信失败，尝试直推: messageId={}, error={}", message.getId(), e.getMessage());
-            // 直推回退：如果 RabbitMQ 不可用，直接通过 WebSocket 推送
-            try {
-                User senderUser = userMapper.selectById(senderId);
-                String senderNickname = senderUser != null ? senderUser.getNickname() : "";
-                String senderAvatar = senderUser != null ? senderUser.getAvatar() : "";
-                Map<String, Object> wsMessage = Map.of(
-                        "type", "CHAT",
-                        "data", Map.of(
-                                "receiverId", receiverId,
-                                "id", message.getId(),
-                                "senderId", senderId,
-                                "content", rawContent,
-                                "messageType", message.getType(),
-                                "senderNickname", senderNickname,
-                                "senderAvatar", senderAvatar,
-                                "createdAt", message.getCreatedAt().toString()
-                        )
-                );
-                String json = objectMapper.writeValueAsString(wsMessage);
-                ChatWebSocketHandler.sendToUser(receiverId, new TextMessage(json));
-                log.info("私信直推成功: messageId={}, receiverId={}", message.getId(), receiverId);
-            } catch (Exception ex) {
-                log.error("私信直推也失败: messageId={}, error={}", message.getId(), ex.getMessage());
-            }
-        }
+        vo.setContent(rawContent);
+        Long messageId = message.getId();
+        Map<String, Object> notification = Map.of(
+                "type", "CHAT",
+                "data", Map.of(
+                        "receiverId", receiverId,
+                        "id", messageId,
+                        "senderId", senderId,
+                        "content", rawContent,
+                        "messageType", message.getType(),
+                        "senderNickname", vo.getSenderNickname() != null ? vo.getSenderNickname() : "",
+                        "senderAvatar", vo.getSenderAvatar() != null ? vo.getSenderAvatar() : "",
+                        "createdAt", message.getCreatedAt().toString()
+                )
+        );
+        afterCommit(() -> publishMessageEffects(senderId, receiverId, messageId, rawContent, notification));
 
         return vo;
+    }
+
+    /** 插入必须成功，时间戳同时用于持久化、响应和推送。 */
+    private void persistMessage(UserMessage message) {
+        message.setCreatedAt(LocalDateTime.now());
+        try {
+            if (userMessageMapper.insert(message) != 1 || message.getId() == null) {
+                throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
+            }
+        } catch (Exception e) {
+            log.error("私信发送失败: 数据库插入异常, senderId={}, receiverId={}",
+                    message.getSenderId(), message.getReceiverId(), e);
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "消息发送失败，请稍后重试");
+        }
+    }
+
+    private void afterCommit(Runnable effect) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            // REQUIRED 加入外层事务时，回调也等待外层提交；回滚不会执行。
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    effect.run();
+                }
+            });
+        } else {
+            effect.run();
+        }
+    }
+
+    private void publishMessageEffects(Long senderId, Long receiverId, Long messageId,
+                                       String rawContent, Map<String, Object> notification) {
+        try {
+            String unreadKey = UNREAD_COUNT_PREFIX + receiverId + ":" + senderId;
+            stringRedisTemplate.opsForValue().increment(unreadKey);
+            stringRedisTemplate.expire(unreadKey, 7, TimeUnit.DAYS);
+        } catch (Exception e) {
+            log.warn("私信未读缓存更新失败: messageId={}", messageId, e);
+        }
+        try {
+            updateConversationCache(senderId, receiverId, rawContent);
+        } catch (Exception e) {
+            log.warn("私信会话缓存更新失败: messageId={}", messageId, e);
+        }
+        try {
+            rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, "zhixun.chat.sent", notification);
+            log.info("私信MQ推送成功: messageId={}, receiverId={}", messageId, receiverId);
+        } catch (Exception e) {
+            log.warn("RabbitMQ 推送私信失败，尝试直推: messageId={}, error={}", messageId, e.getMessage());
+            try {
+                String json = objectMapper.writeValueAsString(notification);
+                ChatWebSocketHandler.sendToUser(receiverId, new TextMessage(json));
+                log.info("私信直推成功: messageId={}, receiverId={}", messageId, receiverId);
+            } catch (Exception ex) {
+                log.error("私信直推也失败: messageId={}, error={}", messageId, ex.getMessage());
+            }
+        }
     }
 
     @Override
@@ -442,23 +451,7 @@ public class MessageServiceImpl implements MessageService {
             throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂时不可用，请稍后再试");
         }
 
-        if (aiResp == null) {
-            log.error("AI服务返回null响应: senderId={}, targetUserId={}", senderId, targetUserId);
-            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂时不可用，请稍后再试");
-        }
-
-        // 2.5 检查AI服务是否返回错误（避免将错误信息存入数据库）
-        if (aiResp.getUsage() != null && aiResp.getUsage().startsWith("error:")) {
-            log.warn("AI服务调用失败: usage={}, content={}", aiResp.getUsage(), aiResp.getContent());
-            throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 服务暂时不可用，请稍后再试");
-        }
-
-        // 2.6 防御性空内容检查：AI可能返回空内容（API 200但choices内容为空）
-        String aiContent = aiResp.getContent();
-        if (aiContent == null || aiContent.trim().isEmpty()) {
-            log.warn("AI服务返回空内容: senderId={}, targetUserId={}, usage={}", senderId, targetUserId, aiResp.getUsage());
-            aiContent = "抱歉，AI 暂时无法生成回复，请稍后再试。";
-        }
+        String aiContent = AiResults.requireFinal(aiResp).getContent();
 
         // 3. 保存AI回复消息（senderId=targetUserId 让其归属到当前对话，避免在会话列表中产生独立条目）
         UserMessage message = new UserMessage();
@@ -467,7 +460,7 @@ public class MessageServiceImpl implements MessageService {
         message.setType("ai_reply");
         message.setContent(aiContent); // AI回复不加密，直接存储明文
         message.setIsRead(0);
-        userMessageMapper.insert(message);
+        persistMessage(message);
 
         // 4. 构建VO，覆盖AI助手头像和昵称
         MessageVO vo = buildMessageVO(message, senderId, targetUserId);

@@ -19,6 +19,10 @@ import java.util.Map;
  */
 public interface ArticleService {
 
+    /** Schedule index/feed/cache effects for an already persisted, server-owned review decision. */
+    void refreshPublicationAfterCommit(Long articleId);
+
+
     /**
      * 发布作品
      *

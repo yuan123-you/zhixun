@@ -1,9 +1,10 @@
 package com.zhixun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhixun.common.exception.BusinessException;
+import com.zhixun.common.util.SecurityUtil;
+import com.zhixun.enums.ArticleStatusEnum;
 import com.zhixun.common.result.ErrorCode;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.config.Slave;
@@ -31,6 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
@@ -51,6 +54,7 @@ public class LikeServiceImpl implements LikeService {
 
     private final ArticleLikeMapper articleLikeMapper;
     private final ArticleMapper articleMapper;
+    private final SecurityUtil securityUtil;
     private final CommentMapper commentMapper;
     private final ArticleTagMapper articleTagMapper;
     private final TagMapper tagMapper;
@@ -80,55 +84,33 @@ public class LikeServiceImpl implements LikeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> toggleLike(Long userId, Long targetId, Integer targetType) {
-        LikeTargetTypeEnum targetTypeEnum = LikeTargetTypeEnum.values()[targetType - 1];
+        validateIds(userId, targetId);
+        LikeTargetTypeEnum targetTypeEnum = parseTargetType(targetType);
+        lockAndValidateTarget(userId, targetId, targetTypeEnum);
 
-        // 检查目标是否存在
-        validateTarget(targetId, targetTypeEnum);
-
-        // 查询是否已点赞
-        LambdaQueryWrapper<ArticleLike> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ArticleLike::getUserId, userId)
-                .eq(ArticleLike::getTargetId, targetId)
-                .eq(ArticleLike::getTargetType, targetTypeEnum);
-        ArticleLike existingLike = articleLikeMapper.selectOne(wrapper);
-
-        boolean liked;
-        if (existingLike != null) {
-            // 已点赞，取消点赞
-            articleLikeMapper.deleteById(existingLike.getId());
-            // 减少计数（SQL 原子操作）
-            decrementLikeCount(targetId, targetTypeEnum);
-            liked = false;
-        } else {
-            // 未点赞，创建点赞记录
+        ArticleLike existingLike = articleLikeMapper.selectInteractionForUpdate(userId, targetId, targetType);
+        boolean liked = existingLike == null;
+        if (liked) {
             ArticleLike like = new ArticleLike();
             like.setUserId(userId);
             like.setTargetId(targetId);
             like.setTargetType(targetTypeEnum);
-            articleLikeMapper.insert(like);
-            // 增加计数（SQL 原子操作）
-            incrementLikeCount(targetId, targetTypeEnum);
-            liked = true;
+            requireWrite(articleLikeMapper.insert(like));
+        } else {
+            requireWrite(articleLikeMapper.deleteById(existingLike.getId()));
         }
 
-        // 获取当前点赞数
-        Long likeCount = getLikeCountFromDB(targetId, targetTypeEnum);
+        // Target lock serializes toggles; the current fact read also repairs historical count drift.
+        long likeCount = articleLikeMapper.countTargetFactsForUpdate(targetId, targetType);
+        requireWrite(targetTypeEnum == LikeTargetTypeEnum.ARTICLE
+                ? articleMapper.saveLikeCount(targetId, likeCount)
+                : commentMapper.saveLikeCount(targetId, likeCount));
 
-        // 更新 Redis 缓存（非关键操作，失败不影响数据库持久化）
-        try {
-            String statusKey = LIKE_STATUS_PREFIX + userId + ":" + targetId + ":" + targetType;
-            stringRedisTemplate.opsForValue().set(statusKey, liked ? "1" : "0", 1, TimeUnit.HOURS);
-            String countKey = LIKE_COUNT_PREFIX + targetId + ":" + targetType;
-            stringRedisTemplate.opsForValue().set(countKey, String.valueOf(likeCount), 1, TimeUnit.HOURS);
-
-            // 清除作品相关缓存，确保列表和详情页数据一致
-            if (targetTypeEnum == LikeTargetTypeEnum.ARTICLE) {
-                clearArticleCache(targetId);
-            }
-        } catch (Exception e) {
-            log.error("点赞后更新Redis缓存失败, userId={}, targetId={}, targetType={}: {}",
-                    userId, targetId, targetType, e.getMessage(), e);
-        }
+        afterCommit(() -> {
+            invalidateKey(LIKE_STATUS_PREFIX + userId + ":" + targetId + ":" + targetType);
+            invalidateKey(LIKE_COUNT_PREFIX + targetId + ":" + targetType);
+            if (targetTypeEnum == LikeTargetTypeEnum.ARTICLE) clearArticleCache(targetId);
+        });
 
         Map<String, Object> result = new HashMap<>();
         result.put("isLiked", liked);
@@ -139,6 +121,8 @@ public class LikeServiceImpl implements LikeService {
     @Override
     @Slave
     public boolean isLiked(Long userId, Long targetId, Integer targetType) {
+        validateIds(userId, targetId);
+        LikeTargetTypeEnum targetTypeEnum = parseTargetType(targetType);
         // 先查 Redis 缓存
         String statusKey = LIKE_STATUS_PREFIX + userId + ":" + targetId + ":" + targetType;
         String cached = stringRedisTemplate.opsForValue().get(statusKey);
@@ -147,7 +131,6 @@ public class LikeServiceImpl implements LikeService {
         }
 
         // 缓存未命中或 Redis 不可用，查数据库
-        LikeTargetTypeEnum targetTypeEnum = LikeTargetTypeEnum.values()[targetType - 1];
         LambdaQueryWrapper<ArticleLike> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ArticleLike::getUserId, userId)
                 .eq(ArticleLike::getTargetId, targetId)
@@ -189,68 +172,31 @@ public class LikeServiceImpl implements LikeService {
 
     // ========== 内部方法 ==========
 
-    /**
-     * 校验点赞目标是否存在
-     */
-    private void validateTarget(Long targetId, LikeTargetTypeEnum targetType) {
-        if (targetType == LikeTargetTypeEnum.ARTICLE) {
-            Article article = articleMapper.selectById(targetId);
-            if (article == null) {
-                throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
-            }
-        } else if (targetType == LikeTargetTypeEnum.COMMENT) {
-            Comment comment = commentMapper.selectById(targetId);
-            if (comment == null) {
-                throw new BusinessException(ErrorCode.NOT_FOUND, "评论不存在");
-            }
+    private LikeTargetTypeEnum parseTargetType(Integer value) {
+        for (LikeTargetTypeEnum type : LikeTargetTypeEnum.values()) {
+            if (type.getValue().equals(value)) return type;
+        }
+        throw new BusinessException(ErrorCode.BAD_REQUEST, "点赞目标类型错误");
+    }
+
+    private void lockAndValidateTarget(Long userId, Long targetId, LikeTargetTypeEnum type) {
+        if (type == LikeTargetTypeEnum.ARTICLE) {
+            validateArticleAccess(articleMapper.selectForUpdate(targetId), userId);
+            return;
+        }
+        // Always lock parent article before comment to keep a consistent lock order.
+        Comment candidate = commentMapper.selectById(targetId);
+        if (candidate == null || candidate.getDeletedAt() != null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "评论不存在");
+        }
+        validateArticleAccess(articleMapper.selectForUpdate(candidate.getArticleId()), userId);
+        Comment locked = commentMapper.selectForUpdate(targetId);
+        if (locked == null) throw new BusinessException(ErrorCode.NOT_FOUND, "评论不存在");
+        if (!java.util.Objects.equals(candidate.getArticleId(), locked.getArticleId())) {
+            throw new BusinessException(ErrorCode.CONFLICT, "评论所属作品已变更，请重试");
         }
     }
 
-    /**
-     * 增加点赞计数（SQL 原子操作）
-     */
-    private void incrementLikeCount(Long targetId, LikeTargetTypeEnum targetType) {
-        if (targetType == LikeTargetTypeEnum.ARTICLE) {
-            articleMapper.update(null, new LambdaUpdateWrapper<Article>()
-                    .eq(Article::getId, targetId)
-                    .setSql("like_count = like_count + 1"));
-        } else if (targetType == LikeTargetTypeEnum.COMMENT) {
-            commentMapper.update(null, new LambdaUpdateWrapper<Comment>()
-                    .eq(Comment::getId, targetId)
-                    .setSql("like_count = like_count + 1"));
-        }
-    }
-
-    /**
-     * 减少点赞计数（SQL 原子操作）
-     */
-    private void decrementLikeCount(Long targetId, LikeTargetTypeEnum targetType) {
-        if (targetType == LikeTargetTypeEnum.ARTICLE) {
-            articleMapper.update(null, new LambdaUpdateWrapper<Article>()
-                    .eq(Article::getId, targetId)
-                    .gt(Article::getLikeCount, 0)
-                    .setSql("like_count = like_count - 1"));
-        } else if (targetType == LikeTargetTypeEnum.COMMENT) {
-            commentMapper.update(null, new LambdaUpdateWrapper<Comment>()
-                    .eq(Comment::getId, targetId)
-                    .gt(Comment::getLikeCount, 0)
-                    .setSql("like_count = like_count - 1"));
-        }
-    }
-
-    /**
-     * 从数据库获取点赞数
-     */
-    private Long getLikeCountFromDB(Long targetId, LikeTargetTypeEnum targetType) {
-        if (targetType == LikeTargetTypeEnum.ARTICLE) {
-            Article article = articleMapper.selectById(targetId);
-            return article != null ? article.getLikeCount() : 0L;
-        } else if (targetType == LikeTargetTypeEnum.COMMENT) {
-            Comment comment = commentMapper.selectById(targetId);
-            return comment != null ? comment.getLikeCount().longValue() : 0L;
-        }
-        return 0L;
-    }
 
     /**
      * 批量将作品实体列表转换为 VO 列表
@@ -340,74 +286,67 @@ public class LikeServiceImpl implements LikeService {
     /**
      * 清除作品相关缓存
      */
+    private void validateIds(Long userId, Long targetId) {
+        if (userId == null || userId <= 0 || targetId == null || targetId <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "用户或目标ID错误");
+        }
+    }
+
+    private void requireWrite(int affected) {
+        if (affected != 1) throw new BusinessException(ErrorCode.CONFLICT, "互动记录已变更，请重试");
+    }
+
+    /** Mirrors existing article-detail access rules; publication/review states are never changed. */
+    private void validateArticleAccess(Article article, Long userId) {
+        if (article == null || article.getDeletedAt() != null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
+        }
+        boolean ownerOrAdmin = userId.equals(article.getAuthorId()) || securityUtil.isAdmin();
+        if (article.getStatus() != ArticleStatusEnum.PUBLISHED && !ownerOrAdmin) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "作品不存在");
+        }
+        Integer visibility = article.getVisibility();
+        if (visibility == null || visibility == Article.VISIBILITY_PUBLIC || ownerOrAdmin) return;
+        if ((visibility == Article.VISIBILITY_FOLLOWERS || visibility == Article.VISIBILITY_MUTUAL)
+                && articleMapper.countInteractionFollow(userId, article.getAuthorId()) > 0
+                && (visibility != Article.VISIBILITY_MUTUAL
+                    || articleMapper.countInteractionFollow(article.getAuthorId(), userId) > 0)) return;
+        throw new BusinessException(ErrorCode.FORBIDDEN, "无权查看此作品");
+    }
+
+    private void afterCommit(Runnable effects) {
+        // Never perform an external effect unless an actual encompassing transaction commits.
+        if (!TransactionSynchronizationManager.isActualTransactionActive()
+                || !TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("互动写入必须在事务中执行");
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCommit() { effects.run(); }
+        });
+    }
+
+    private void cacheEffect(String name, Runnable effect) {
+        if (stringRedisTemplate == null) return;
+        try { effect.run(); } catch (Exception e) { log.warn("互动缓存操作失败, {}: {}", name, e.getMessage()); }
+    }
+
+    private void invalidateKey(String key) {
+        cacheEffect(key, () -> stringRedisTemplate.delete(key));
+    }
+
     private void clearArticleCache(Long articleId) {
-        try {
-            stringRedisTemplate.delete(ARTICLE_DETAIL_PREFIX + articleId);
-            stringRedisTemplate.delete(RELATED_ARTICLES_PREFIX + articleId);
-            // 清除作品列表缓存（使用 SCAN 替代 KEYS）
-            Set<String> listKeys = new java.util.HashSet<>();
-            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
-                    org.springframework.data.redis.core.ScanOptions.scanOptions()
-                            .match(ARTICLE_LIST_PREFIX + "*")
-                            .count(100)
-                            .build())) {
-                while (cursor.hasNext()) {
-                    listKeys.add(cursor.next());
+        invalidateKey(ARTICLE_DETAIL_PREFIX + articleId);
+        invalidateKey(RELATED_ARTICLES_PREFIX + articleId);
+        for (String prefix : List.of(ARTICLE_LIST_PREFIX, RANK_KEY_PREFIX, HOT_FEED_KEY_PREFIX, RECOMMEND_KEY_PREFIX)) {
+            cacheEffect(prefix, () -> {
+                Set<String> keys = new java.util.HashSet<>();
+                try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
+                        org.springframework.data.redis.core.ScanOptions.scanOptions().match(prefix + "*").count(100).build())) {
+                    while (cursor.hasNext()) keys.add(cursor.next());
                 }
-            }
-            if (!listKeys.isEmpty()) {
-                stringRedisTemplate.delete(listKeys);
-            }
-            // 清除排行榜缓存
-            Set<String> rankKeys = new java.util.HashSet<>();
-            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
-                    org.springframework.data.redis.core.ScanOptions.scanOptions()
-                            .match(RANK_KEY_PREFIX + "*")
-                            .count(100)
-                            .build())) {
-                while (cursor.hasNext()) {
-                    rankKeys.add(cursor.next());
-                }
-            }
-            if (!rankKeys.isEmpty()) {
-                stringRedisTemplate.delete(rankKeys);
-            }
-            // 清除热门动态缓存
-            Set<String> hotKeys = new java.util.HashSet<>();
-            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
-                    org.springframework.data.redis.core.ScanOptions.scanOptions()
-                            .match(HOT_FEED_KEY_PREFIX + "*")
-                            .count(100)
-                            .build())) {
-                while (cursor.hasNext()) {
-                    hotKeys.add(cursor.next());
-                }
-            }
-            if (!hotKeys.isEmpty()) {
-                stringRedisTemplate.delete(hotKeys);
-            }
-            // 清除推荐缓存
-            Set<String> recommendKeys = new java.util.HashSet<>();
-            try (org.springframework.data.redis.core.Cursor<String> cursor = stringRedisTemplate.scan(
-                    org.springframework.data.redis.core.ScanOptions.scanOptions()
-                            .match(RECOMMEND_KEY_PREFIX + "*")
-                            .count(100)
-                            .build())) {
-                while (cursor.hasNext()) {
-                    recommendKeys.add(cursor.next());
-                }
-            }
-            if (!recommendKeys.isEmpty()) {
-                stringRedisTemplate.delete(recommendKeys);
-            }
-        } catch (Exception e) {
-            log.warn("清除作品相关缓存失败, articleId={}: {}", articleId, e.getMessage());
+                if (!keys.isEmpty()) stringRedisTemplate.delete(keys);
+            });
         }
-        // 递增数据版本号，通知客户端数据已变更
-        try {
-            RedisConfig.incrementDataVersion(stringRedisTemplate);
-        } catch (Exception e) {
-            log.debug("递增数据版本号失败: {}", e.getMessage());
-        }
+        cacheEffect("data-version", () -> RedisConfig.incrementDataVersion(stringRedisTemplate));
     }
 }

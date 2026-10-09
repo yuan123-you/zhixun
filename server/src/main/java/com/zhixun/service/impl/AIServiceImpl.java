@@ -1,6 +1,8 @@
 package com.zhixun.service.impl;
 
 import com.zhixun.config.AIConfig;
+import com.zhixun.common.exception.BusinessException;
+import com.zhixun.common.result.ErrorCode;
 import com.zhixun.dto.ai.AIWriteRequest;
 import com.zhixun.dto.ai.AIGenerateImageRequest;
 import com.zhixun.service.AIService;
@@ -163,11 +165,8 @@ public class AIServiceImpl implements AIService {
 
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             String content = (String) message.get("content");
-            if (content == null || content.isEmpty()) {
-                content = (String) message.get("reasoning_content");
-            }
-            if (content == null || content.isEmpty()) {
-                throw new RuntimeException("ZhiPuAI returned empty content and reasoning_content");
+            if (content == null || content.isBlank()) {
+                throw new RuntimeException("ZhiPuAI returned no final content");
             }
             Map<String, Object> usage = (Map<String, Object>) result.get("usage");
 
@@ -215,11 +214,8 @@ public class AIServiceImpl implements AIService {
 
     @Override
     public AIResponseVO generateImage(AIGenerateImageRequest request) {
-        AIResponseVO vo = new AIResponseVO();
-        vo.setContent("[AI image generation: " + request.getPrompt() + "]");
-        vo.setUsage("ZhiPuAI CogView is available for image generation");
-        log.info("Image gen requested via ZhiPuAI: {}", request.getPrompt());
-        return vo;
+        // A static placeholder is not a generated image; real provider/model integration is still required.
+        throw new BusinessException(ErrorCode.SERVICE_UNAVAILABLE, "AI 图片生成尚未接入真实服务");
     }
 
     @Override

@@ -1,3 +1,4 @@
+-- Seed accounts have no usable password. Activate administrators only with explicit private credentials.
 -- ============================================================
 -- 知讯平台 - 初始内容种子数据
 -- 用途：项目上线前填充高质量原始内容，确保用户浏览体验完整
@@ -11,31 +12,31 @@
 
 INSERT INTO sys_user (id, username, password_hash, nickname, avatar, email, role, status, bio, follow_count, follower_count, article_count, last_login_at, created_at, updated_at) VALUES
 -- 超级管理员
-(1, 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '知讯官方', 'https://picsum.photos/seed/user1/200/200', 'admin@zhixun.com', 'SUPER_ADMIN', 1, '知讯平台官方账号，致力于打造优质内容社区', 8, 156, 5, '2026-06-23 09:00:00', '2026-01-01 00:00:00', '2026-06-23 09:00:00'),
+(1, 'admin', '', '知讯官方', 'https://picsum.photos/seed/user1/200/200', 'admin@zhixun.com', 'SUPER_ADMIN', 1, '知讯平台官方账号，致力于打造优质内容社区', 8, 156, 5, '2026-06-23 09:00:00', '2026-01-01 00:00:00', '2026-06-23 09:00:00'),
 
 -- 运营管理员
-(2, 'operator', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '运营小编', 'https://picsum.photos/seed/user2/200/200', 'operator@zhixun.com', 'ADMIN', 1, '知讯运营团队，负责内容推荐与社区管理', 5, 89, 3, '2026-06-23 08:30:00', '2026-01-15 10:00:00', '2026-06-23 08:30:00'),
+(2, 'operator', '', '运营小编', 'https://picsum.photos/seed/user2/200/200', 'operator@zhixun.com', 'ADMIN', 1, '知讯运营团队，负责内容推荐与社区管理', 5, 89, 3, '2026-06-23 08:30:00', '2026-01-15 10:00:00', '2026-06-23 08:30:00'),
 
 -- 普通用户 - 技术领域创作者
-(3, 'techmaster', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '代码匠人', 'https://picsum.photos/seed/user3/200/200', 'techmaster@example.com', 'USER', 1, '全栈开发者，10年编程经验，热爱分享技术心得', 12, 234, 8, '2026-06-22 21:15:00', '2026-02-01 08:00:00', '2026-06-22 21:15:00'),
-(4, 'ailab', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'AI前沿实验室', 'https://picsum.photos/seed/user4/200/200', 'ailab@example.com', 'USER', 1, '专注人工智能与深度学习研究，追踪行业最新动态', 8, 312, 6, '2026-06-23 07:45:00', '2026-02-10 14:00:00', '2026-06-23 07:45:00'),
-(5, 'frontendgirl', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '前端小仙女', 'https://picsum.photos/seed/user5/200/200', 'frontend@example.com', 'USER', 1, '前端开发工程师，Vue/React 双修，UI 设计爱好者', 15, 178, 7, '2026-06-22 19:30:00', '2026-02-15 09:00:00', '2026-06-22 19:30:00'),
+(3, 'techmaster', '', '代码匠人', 'https://picsum.photos/seed/user3/200/200', 'techmaster@example.com', 'USER', 1, '全栈开发者，10年编程经验，热爱分享技术心得', 12, 234, 8, '2026-06-22 21:15:00', '2026-02-01 08:00:00', '2026-06-22 21:15:00'),
+(4, 'ailab', '', 'AI前沿实验室', 'https://picsum.photos/seed/user4/200/200', 'ailab@example.com', 'USER', 1, '专注人工智能与深度学习研究，追踪行业最新动态', 8, 312, 6, '2026-06-23 07:45:00', '2026-02-10 14:00:00', '2026-06-23 07:45:00'),
+(5, 'frontendgirl', '', '前端小仙女', 'https://picsum.photos/seed/user5/200/200', 'frontend@example.com', 'USER', 1, '前端开发工程师，Vue/React 双修，UI 设计爱好者', 15, 178, 7, '2026-06-22 19:30:00', '2026-02-15 09:00:00', '2026-06-22 19:30:00'),
 
 -- 普通用户 - 生活/文化领域创作者
-(6, 'bookworm', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '书虫阿墨', 'https://picsum.photos/seed/user6/200/200', 'bookworm@example.com', 'USER', 1, '阅读爱好者，每年阅读100+本书，分享读书笔记与思考', 20, 425, 10, '2026-06-23 06:00:00', '2026-01-20 11:00:00', '2026-06-23 06:00:00'),
-(7, 'travelnote', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '行走的镜头', 'https://picsum.photos/seed/user7/200/200', 'travel@example.com', 'USER', 1, '环球旅行博主，用镜头记录世界的每一个角落', 18, 567, 9, '2026-06-22 16:20:00', '2026-03-01 08:00:00', '2026-06-22 16:20:00'),
-(8, 'foodie', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '味蕾探险家', 'https://picsum.photos/seed/user8/200/200', 'foodie@example.com', 'USER', 1, '美食博主，探寻城市角落里的地道风味', 10, 289, 6, '2026-06-21 20:00:00', '2026-03-10 12:00:00', '2026-06-21 20:00:00'),
+(6, 'bookworm', '', '书虫阿墨', 'https://picsum.photos/seed/user6/200/200', 'bookworm@example.com', 'USER', 1, '阅读爱好者，每年阅读100+本书，分享读书笔记与思考', 20, 425, 10, '2026-06-23 06:00:00', '2026-01-20 11:00:00', '2026-06-23 06:00:00'),
+(7, 'travelnote', '', '行走的镜头', 'https://picsum.photos/seed/user7/200/200', 'travel@example.com', 'USER', 1, '环球旅行博主，用镜头记录世界的每一个角落', 18, 567, 9, '2026-06-22 16:20:00', '2026-03-01 08:00:00', '2026-06-22 16:20:00'),
+(8, 'foodie', '', '味蕾探险家', 'https://picsum.photos/seed/user8/200/200', 'foodie@example.com', 'USER', 1, '美食博主，探寻城市角落里的地道风味', 10, 289, 6, '2026-06-21 20:00:00', '2026-03-10 12:00:00', '2026-06-21 20:00:00'),
 
 -- 普通用户 - 商业/职场领域创作者
-(9, 'startuphero', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '创业笔记', 'https://picsum.photos/seed/user9/200/200', 'startup@example.com', 'USER', 1, '连续创业者，分享创业路上的经验与教训', 6, 198, 5, '2026-06-22 14:00:00', '2026-03-15 10:00:00', '2026-06-22 14:00:00'),
-(10, 'designpro', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '设计达人', 'https://picsum.photos/seed/user10/200/200', 'design@example.com', 'USER', 1, '资深UI/UX设计师，关注设计趋势与用户体验', 9, 156, 5, '2026-06-22 11:30:00', '2026-03-20 09:00:00', '2026-06-22 11:30:00'),
+(9, 'startuphero', '', '创业笔记', 'https://picsum.photos/seed/user9/200/200', 'startup@example.com', 'USER', 1, '连续创业者，分享创业路上的经验与教训', 6, 198, 5, '2026-06-22 14:00:00', '2026-03-15 10:00:00', '2026-06-22 14:00:00'),
+(10, 'designpro', '', '设计达人', 'https://picsum.photos/seed/user10/200/200', 'design@example.com', 'USER', 1, '资深UI/UX设计师，关注设计趋势与用户体验', 9, 156, 5, '2026-06-22 11:30:00', '2026-03-20 09:00:00', '2026-06-22 11:30:00'),
 
 -- 普通用户 - 活跃读者
-(11, 'reader01', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '小明同学', 'https://picsum.photos/seed/user11/200/200', 'reader01@example.com', 'USER', 1, '热爱学习的大学生，对技术和设计都很感兴趣', 22, 15, 2, '2026-06-23 08:00:00', '2026-04-01 14:00:00', '2026-06-23 08:00:00'),
-(12, 'reader02', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '职场新人Amy', 'https://picsum.photos/seed/user12/200/200', 'reader02@example.com', 'USER', 1, '互联网行业新人，努力成长中', 18, 8, 1, '2026-06-22 22:00:00', '2026-04-10 16:00:00', '2026-06-22 22:00:00'),
-(13, 'reader03', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '数据分析师Leo', 'https://picsum.photos/seed/user13/200/200', 'reader03@example.com', 'USER', 1, '数据驱动决策的践行者', 10, 22, 3, '2026-06-22 18:45:00', '2026-04-15 10:00:00', '2026-06-22 18:45:00'),
-(14, 'reader04', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '健身达人小刚', 'https://picsum.photos/seed/user14/200/200', 'reader04@example.com', 'USER', 1, '健身爱好者，分享运动与生活方式', 5, 35, 2, '2026-06-21 07:00:00', '2026-05-01 08:00:00', '2026-06-21 07:00:00'),
-(15, 'reader05', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '文艺青年小雪', 'https://picsum.photos/seed/user15/200/200', 'reader05@example.com', 'USER', 1, '喜欢摄影、绘画和一切美好的事物', 8, 12, 1, '2026-06-20 20:30:00', '2026-05-05 11:00:00', '2026-06-20 20:30:00');
+(11, 'reader01', '', '小明同学', 'https://picsum.photos/seed/user11/200/200', 'reader01@example.com', 'USER', 1, '热爱学习的大学生，对技术和设计都很感兴趣', 22, 15, 2, '2026-06-23 08:00:00', '2026-04-01 14:00:00', '2026-06-23 08:00:00'),
+(12, 'reader02', '', '职场新人Amy', 'https://picsum.photos/seed/user12/200/200', 'reader02@example.com', 'USER', 1, '互联网行业新人，努力成长中', 18, 8, 1, '2026-06-22 22:00:00', '2026-04-10 16:00:00', '2026-06-22 22:00:00'),
+(13, 'reader03', '', '数据分析师Leo', 'https://picsum.photos/seed/user13/200/200', 'reader03@example.com', 'USER', 1, '数据驱动决策的践行者', 10, 22, 3, '2026-06-22 18:45:00', '2026-04-15 10:00:00', '2026-06-22 18:45:00'),
+(14, 'reader04', '', '健身达人小刚', 'https://picsum.photos/seed/user14/200/200', 'reader04@example.com', 'USER', 1, '健身爱好者，分享运动与生活方式', 5, 35, 2, '2026-06-21 07:00:00', '2026-05-01 08:00:00', '2026-06-21 07:00:00'),
+(15, 'reader05', '', '文艺青年小雪', 'https://picsum.photos/seed/user15/200/200', 'reader05@example.com', 'USER', 1, '喜欢摄影、绘画和一切美好的事物', 8, 12, 1, '2026-06-20 20:30:00', '2026-05-05 11:00:00', '2026-06-20 20:30:00');
 
 
 -- ============================================================

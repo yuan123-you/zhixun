@@ -6,7 +6,7 @@ export function initApiPlugin() {
   const userStore = useUserStore()
   const { get, post, put, delete: del } = useApi()
 
-  // 从 sessionStorage 恢复用户状态
+  // 从 localStorage 恢复用户状态
   userStore.init()
 
   // 注册 token 刷新同步回调：确保 axios 拦截器刷新 token 后同步更新 Pinia store
@@ -16,13 +16,13 @@ export function initApiPlugin() {
 
   const checkAndRefreshToken = async () => {
     const { token, tokenExpiresAt } = userStore
-    // refreshToken 存储在 sessionStorage 中，通过请求体传递
+    // refreshToken 存储在 localStorage 中，通过请求体传递
     if (token && tokenExpiresAt) {
       const FIVE_MINUTES = 5 * 60 * 1000
       if (Date.now() >= tokenExpiresAt - FIVE_MINUTES) {
         try {
           const { authApi } = await import('~/api/auth')
-          // 通过请求体传递 refreshToken（从 sessionStorage 读取）
+          // 通过请求体传递 refreshToken（从 localStorage 读取）
           const response = await authApi.refreshToken(userStore.refreshToken)
           const authData = response.data.data
           userStore.setToken(authData.accessToken, authData.refreshToken, authData.expiresIn)

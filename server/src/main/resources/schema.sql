@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS cms_article (
   content LONGTEXT NOT NULL,
   cover_image VARCHAR(500),
   status TINYINT NOT NULL DEFAULT 0,
+  review_state VARCHAR(16) NOT NULL DEFAULT 'UNVERIFIED',
   is_top TINYINT DEFAULT 0,
   visibility TINYINT NOT NULL DEFAULT 0 COMMENT '可见性：0=公开，1=仅粉丝，2=互相关注，3=仅自己',
   is_recommend TINYINT DEFAULT 0,
