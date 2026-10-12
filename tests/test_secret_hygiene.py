@@ -1,3 +1,4 @@
+import hashlib
 """Credential hygiene regressions; never include secret values in failures."""
 from pathlib import Path
 import re
@@ -80,6 +81,24 @@ class SecretHygieneTests(unittest.TestCase):
                 if match.group(2).lstrip("-") and not match.group(2).startswith("?"):
                     found.append(p.name + ":" + match.group(1))
         self.assertEqual(found, [], "Fixed runtime credentials found in: " + ", ".join(found))
+
+    def test_no_smtp_credentials_or_mail_auth_codes_in_tracked_text(self):
+        pattern = re.compile(r"(?:mail[._-]?password|smtp[._-]?password|邮箱.*密码)[^\n\r]*[:=]\s*`?([a-zA-Z0-9]{16})`?", re.I)
+        known_hashes = {
+            "94dce9c9df8cf3f4bd1d095d2e5287d29c90232c93ba40eba80b32a522459d88",
+        }
+        found = []
+        for rel in self.tracked_paths():
+            file_path = ROOT / rel
+            if file_path.is_file() and file_path.suffix.lower() not in {".docx", ".pptx", ".pdf", ".png", ".jpg", ".webp"}:
+                text = file_path.read_text(encoding="utf-8", errors="ignore")
+                for match in pattern.finditer(text):
+                    val = match.group(1)
+                    val_hash = hashlib.sha256(val.encode("utf-8")).hexdigest()
+                    if val_hash in known_hashes:
+                        found.append(rel)
+                        break
+        self.assertEqual(found, [], "Exposed SMTP credentials / mail auth codes found in: " + ", ".join(found))
 
 if __name__ == "__main__":
     unittest.main()
