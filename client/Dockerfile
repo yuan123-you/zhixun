@@ -43,21 +43,25 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
     }
+    # Gzip 压缩支持
+    gzip on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml;
+    gzip_vary on;
 
-    # ==================== 2026-07-02 v9: index.html 永不缓存 ====================
-    # 修复用户浏览器缓存 index.html 引用旧 chunk 的问题
-    # 让浏览器每次都拉取最新 index.html，从而引用新 chunk URL
+    # ==================== index.html 永不缓存 ====================
+    # 保持 index.html 总是验证最新，确保发版后即时感知最新 chunk 哈希
     location = /index.html {
         add_header Cache-Control "no-cache, no-store, must-revalidate" always;
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
     }
-    # 静态资源：不缓存，强制每次访问拉取最新版本
-    # 2026-07-02 v11: 修复浏览器 disk cache 命中旧 chunk 导致功能失效的问题
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
-        add_header Pragma "no-cache" always;
-        add_header Expires "0" always;
+    # 静态资源强缓存（文件名含 Vite 内容哈希，长期缓存提升二次加载与页面切换性能）
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
         access_log off;
     }
 
