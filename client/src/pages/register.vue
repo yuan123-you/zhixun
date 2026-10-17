@@ -17,7 +17,7 @@
           <div class="input-field" :class="{ focused: activeField === 'email' }">
             <el-icon class="input-prefix" :size="18"><Message /></el-icon>
             <input v-model="emailPrefix" type="text" class="input-control flex-1"
-              placeholder="请输入QQ号" required
+              placeholder="请输入QQ号" autocomplete="username" required
               @focus="activeField = 'email'" @blur="activeField = ''" />
             <span class="input-addon">@qq.com</span>
           </div>
@@ -32,7 +32,7 @@
             <div class="input-field flex-1" :class="{ focused: activeField === 'captcha' }">
               <el-icon class="input-prefix" :size="18"><Key /></el-icon>
               <input v-model="form.captchaAnswer" type="text" class="input-control"
-                placeholder="计算结果" required
+                placeholder="计算结果" autocomplete="off" required
                 @focus="activeField = 'captcha'" @blur="activeField = ''" />
             </div>
             <div class="captcha-img" @click="refreshGraphCaptcha" title="点击刷新">
@@ -51,7 +51,7 @@
             <div class="input-field flex-1" :class="{ focused: activeField === 'code' }">
               <el-icon class="input-prefix" :size="18"><Unlock /></el-icon>
               <input v-model="form.code" type="text" class="input-control"
-                placeholder="6位验证码" required maxlength="6"
+                placeholder="6位验证码" autocomplete="one-time-code" inputmode="numeric" required maxlength="6"
                 @focus="activeField = 'code'" @blur="activeField = ''" />
             </div>
             <button type="button" class="code-btn"
@@ -313,3 +313,4 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
   color: var(--zh-text-placeholder);
 }
 </style>
+

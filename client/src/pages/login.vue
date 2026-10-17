@@ -10,11 +10,11 @@
 
       <!-- 表单 -->
       <form class="auth-form" @submit.prevent="handleLogin">
-        <!-- 用户名 -->
+        <!-- 账号 / 邮箱 -->
         <div class="input-group">
           <label class="input-label">
             <el-icon :size="16" class="input-label-icon"><User /></el-icon>
-            用户名
+            账号 / 邮箱
           </label>
           <div class="input-field" :class="{ focused: activeField === 'username' }">
             <el-icon class="input-prefix" :size="18"><User /></el-icon>
@@ -22,7 +22,7 @@
               v-model="form.username"
               type="text"
               class="input-control"
-              placeholder="请输入用户名"
+              placeholder="请输入邮箱 / QQ号 / 用户名"
               autocomplete="username"
               required
               @focus="activeField = 'username'"
@@ -226,3 +226,5 @@ useHead({ title: () => `登录 - 知讯` })
   border-top: 1px solid var(--zh-border-light);
 }
 </style>
+
+

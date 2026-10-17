@@ -14,10 +14,6 @@ export const useResourceUrl = () => {
    */
   const resolveUrl = (url: string | null | undefined): string | null => {
     if (!url) return null
-    // 拦截已知失效的历史第三方生成图域名，避免 404 网络等待
-    if (url.includes('trae-api-cn.mchost.guru')) {
-      return null
-    }
     // 已经是完整URL（https:或data:）直接返回（https 的公网地址无需替换）
     if (/^(https:|data:)/.test(url)) return url
     // 拦截 MinIO Console 端口（9001）的 URL：控制台只返回 HTML，被浏览器以图片资源请求会触发 ORB
@@ -75,5 +71,6 @@ export const useResourceUrl = () => {
 
   return { resolveUrl }
 }
+
 
 
