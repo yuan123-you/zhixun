@@ -8,18 +8,6 @@
       </div>
 
       <form class="auth-form" @submit.prevent="handleReset">
-        <!-- 用户名 -->
-        <div class="input-group">
-          <label class="input-label">
-            <el-icon :size="16" class="input-label-icon"><User /></el-icon>用户名
-          </label>
-          <div class="input-field" :class="{ focused: activeField === 'username' }">
-            <el-icon class="input-prefix" :size="18"><User /></el-icon>
-            <input v-model="form.username" type="text" class="input-control"
-              placeholder="请输入用户名" autocomplete="username" required
-              @focus="activeField = 'username'" @blur="activeField = ''" />
-          </div>
-        </div>
 
         <!-- 邮箱 -->
         <div class="input-group">
@@ -130,7 +118,7 @@ const router = useRouter()
 const { forgotPassword, sendCode, getGraphCaptcha } = useAuth()
 
 const form = reactive({
-  username: '', email: '', captchaAnswer: '',
+  email: '', captchaAnswer: '',
   code: '', newPassword: '', confirmPassword: '',
 })
 const loading = ref(false)
@@ -164,16 +152,21 @@ const handleSendCode = async () => {
 }
 
 const handleReset = async () => {
-  if (!form.username) return showAlert('请填写用户名')
-  if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return showAlert('邮箱格式不对')
+  const email = form.email.trim()
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showAlert('请填写有效的邮箱')
   if (!form.code || form.code.length !== 6) return showAlert('请填写6位验证码')
   if (form.newPassword.length < 8 || form.newPassword.length > 32) return showAlert('密码8-32位')
   if (!/[a-zA-Z]/.test(form.newPassword) || !/\d/.test(form.newPassword)) return showAlert('密码需含字母和数字')
   if (form.newPassword !== form.confirmPassword) return showAlert('两次密码不一致')
   loading.value = true
-  try { await forgotPassword({ username: form.username, email: form.email, code: form.code, newPassword: form.newPassword }); router.push('/login') }
-  catch (err: any) { showAlert(err.message || '重置失败') }
-  finally { loading.value = false }
+  try {
+    await forgotPassword({ email, code: form.code, newPassword: form.newPassword })
+    router.push('/login')
+  } catch (err: any) {
+    showAlert(err.message || '重置失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 useHead({ title: () => `重置密码 - 知讯` })
@@ -280,3 +273,6 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 }
 .code-btn:disabled { opacity: 0.5; cursor: not-allowed; color: var(--zh-text-placeholder); }
 </style>
+
+
+

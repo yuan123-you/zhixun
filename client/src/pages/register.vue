@@ -318,3 +318,4 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
   color: var(--zh-text-placeholder);
 }
 </style>
+

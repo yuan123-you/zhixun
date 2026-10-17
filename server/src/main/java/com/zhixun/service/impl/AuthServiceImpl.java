@@ -146,7 +146,11 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setNickname(StringUtils.hasText(request.getNickname()) ? request.getNickname() : request.getUsername());
+                String defaultNickname = request.getUsername();
+        if (request.getEmail() != null && request.getEmail().contains("@")) {
+            defaultNickname = request.getEmail().substring(0, request.getEmail().indexOf('@'));
+        }
+        user.setNickname(StringUtils.hasText(request.getNickname()) ? request.getNickname() : defaultNickname);
         user.setStatus(User.STATUS_NORMAL);
         user.setRole(RoleEnum.USER);
 
@@ -704,4 +708,5 @@ public class AuthServiceImpl implements AuthService {
         return sb.toString();
     }
 }
+
 
