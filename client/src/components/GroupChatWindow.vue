@@ -161,7 +161,7 @@
                 <div v-if="adminMembers.length > 0" class="qq-admin-section">
                   <div class="qq-admin-section-title">当前管理员</div>
                   <div v-for="m in adminMembers" :key="m.userId" class="qq-admin-item">
-                    <img :src="m.userAvatar || defaultAvatar" class="qq-admin-avatar" />
+                    <UserAvatar :src="m.userAvatar" :alt="m.nickname" :custom-size="32" class="qq-admin-avatar" />
                     <span class="qq-admin-name">{{ m.nickname || m.userName }}</span>
                     <button
                       class="qq-admin-toggle qq-admin-toggle-remove"
@@ -177,7 +177,7 @@
                 <div v-if="regularMembers.length > 0" class="qq-admin-section">
                   <div class="qq-admin-section-title">普通成员</div>
                   <div v-for="m in regularMembers" :key="m.userId" class="qq-admin-item">
-                    <img :src="m.userAvatar || defaultAvatar" class="qq-admin-avatar" />
+                    <UserAvatar :src="m.userAvatar" :alt="m.nickname" :custom-size="32" class="qq-admin-avatar" />
                     <span class="qq-admin-name">{{ m.nickname || m.userName }}</span>
                     <button
                       class="qq-admin-toggle qq-admin-toggle-add"
@@ -238,7 +238,7 @@
         <div v-else class="qq-msg-row" :class="{ mine: msg.senderId === currentUserId }" :data-msg-id="msg.id">
           <!-- 他人消息（左） -->
           <template v-if="msg.senderId !== currentUserId">
-            <img :src="msg.senderId === 0 ? AI_AVATAR_URL : (msg.senderAvatar || DEFAULT_AVATAR_URL)" class="qq-avatar qq-avatar-clickable" :alt="msg.senderName" @click="msg.senderId !== 0 && navigateToUser(msg.senderId)" />
+            <UserAvatar :src="msg.senderId === 0 ? AI_AVATAR_URL : msg.senderAvatar" :alt="msg.senderName" :custom-size="36" class="qq-avatar qq-avatar-clickable" @click="msg.senderId !== 0 && navigateToUser(msg.senderId)" />
             <ChatBubble
               :content="msg.content"
               :message-type="msg.messageType"
@@ -268,7 +268,7 @@
                 <span v-html="renderMentions(msg.content, msg.mentionedUserIds)"></span>
               </template>
             </ChatBubble>
-            <img :src="currentUserAvatar || DEFAULT_AVATAR_URL" class="qq-avatar qq-avatar-clickable" alt="我" @click="navigateToUser(currentUserId)" />
+            <UserAvatar :src="currentUserAvatar" alt="我" :custom-size="36" class="qq-avatar qq-avatar-clickable" @click="navigateToUser(currentUserId)" />
           </template>
         </div>
       </template>
@@ -1562,4 +1562,5 @@ watch(() => props.group?.id, (id) => {
   30% { transform: translateY(-4px); opacity: 1; }
 }
 </style>
+
 

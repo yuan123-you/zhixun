@@ -58,6 +58,13 @@ server {
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
     }
+    # 静态图片/字体资源强缓存（支持客户端持久化与瞬间加载）
+    location ~* \.(png|jpg|jpeg|gif|ico|svg|webp|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable" always;
+        access_log off;
+    }
+
     # 静态资源强缓存（文件名含 Vite 内容哈希，长期缓存提升二次加载与页面切换性能）
     location /assets/ {
         expires 1y;
@@ -83,3 +90,4 @@ HEALTHCHECK --interval=15s --timeout=10s --start-period=10s --retries=3 \
 
 # 启动 Nginx
 CMD ["nginx", "-g", "daemon off;"]
+

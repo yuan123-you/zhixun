@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { User } from '@/types'
 import { storage, STORAGE_KEYS } from '@/utils/storage'
+import { preloadAndCacheAvatar } from '@/utils/avatarCache'
 
 /** 用户状态管理 Store */
 export const useUserStore = defineStore('user', () => {
@@ -103,3 +104,4 @@ export const useUserStore = defineStore('user', () => {
     init,
   }
 })
+

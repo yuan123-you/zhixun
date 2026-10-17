@@ -53,12 +53,17 @@ server {
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
     }
-    # 静态资源：不缓存，强制每次访问拉取最新版本
-    # 2026-07-02 v11: 修复浏览器 disk cache 命中旧 chunk 导致功能失效的问题
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
-        add_header Pragma "no-cache" always;
-        add_header Expires "0" always;
+    # 静态图片/字体资源强缓存（支持客户端持久化与瞬间加载）
+    location ~* \.(png|jpg|jpeg|gif|ico|svg|webp|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable" always;
+        access_log off;
+    }
+
+    # 带有 Vite 哈希的代码 Chunk 长期缓存
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
         access_log off;
     }
 
@@ -80,3 +85,4 @@ HEALTHCHECK --interval=15s --timeout=10s --start-period=10s --retries=3 \
 
 # 启动 Nginx
 CMD ["nginx", "-g", "daemon off;"]
+

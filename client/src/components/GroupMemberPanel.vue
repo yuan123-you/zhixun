@@ -56,7 +56,7 @@
         <div v-if="owners.length > 0" class="member-section">
           <div class="member-section-title">群主 ({{ owners.length }})</div>
           <div v-for="m in owners" :key="m.id" class="member-item" @click="navigateToUser(m.userId)">
-            <img :src="m.userAvatar || defaultAvatar" class="member-avatar member-avatar-clickable" :alt="m.userName" />
+            <UserAvatar :src="m.userAvatar" :alt="m.userName" :custom-size="32" class="member-avatar-clickable" />
             <div class="member-info">
               <span class="member-name">{{ m.userName || m.nickname || '未知' }}</span>
               <span class="member-role-tag owner">群主</span>
@@ -68,7 +68,7 @@
         <div v-if="admins.length > 0" class="member-section">
           <div class="member-section-title">管理员 ({{ admins.length }})</div>
           <div v-for="m in admins" :key="m.id" class="member-item" @click="navigateToUser(m.userId)">
-            <img :src="m.userAvatar || defaultAvatar" class="member-avatar member-avatar-clickable" :alt="m.userName" />
+            <UserAvatar :src="m.userAvatar" :alt="m.userName" :custom-size="32" class="member-avatar-clickable" />
             <div class="member-info">
               <span class="member-name">{{ m.userName || m.nickname || '未知' }}</span>
               <span class="member-role-tag admin">管理员</span>
@@ -95,7 +95,7 @@
         <div v-if="regularMembers.length > 0" class="member-section">
           <div class="member-section-title">成员 ({{ regularMembers.length }})</div>
           <div v-for="m in regularMembers" :key="m.id" class="member-item" @click="navigateToUser(m.userId)">
-            <img :src="m.userAvatar || defaultAvatar" class="member-avatar member-avatar-clickable" :alt="m.userName" />
+            <UserAvatar :src="m.userAvatar" :alt="m.userName" :custom-size="32" class="member-avatar-clickable" />
             <div class="member-info">
               <span class="member-name">{{ m.userName || m.nickname || '未知' }}</span>
             </div>
@@ -136,7 +136,7 @@
         <div v-else class="request-list">
           <div v-for="req in pendingRequests" :key="req.id" class="request-item">
             <div class="request-user">
-              <img :src="req.userAvatar || defaultAvatar" class="request-avatar" :alt="req.userName" />
+              <UserAvatar :src="req.userAvatar" :alt="req.userName" :custom-size="32" />
               <div class="request-info">
                 <span class="request-name">{{ req.userName || '未知用户' }}</span>
                 <span class="request-time">{{ formatTime(req.createdAt) }}</span>
@@ -789,3 +789,4 @@ watch(() => props.group?.id, () => {
   }
 }
 </style>
+
