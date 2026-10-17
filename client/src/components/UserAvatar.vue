@@ -4,7 +4,7 @@
     <div v-if="isLoading" class="avatar-placeholder" />
     <img
       v-show="!isLoading && !hasError"
-      :src="avatarSrc"
+      :src="cachedAvatarSrc || avatarSrc"
       :alt="alt"
       class="avatar-image"
       :class="{ 'avatar-image-loaded': isLoaded }"
@@ -39,6 +39,8 @@ const props = withDefaults(defineProps<{
 })
 
 const { resolveUrl } = useResourceUrl()
+import { getCachedImageUrl } from '@/utils/imageCache'
+const cachedAvatarSrc = ref('')
 const isLoading = ref(true)
 const isLoaded = ref(false)
 const hasError = ref(false)
@@ -58,6 +60,14 @@ const avatarSrc = computed(() => {
 
 // 初始化 lastResolvedUrl 为当前解析 URL，避免首次 watch 触发不必要的加载状态重置
 lastResolvedUrl.value = avatarSrc.value
+
+// 预加载并使用缓存头像
+watch(avatarSrc, async (url) => {
+  if (url && !url.includes('default-avatar')) {
+    const cached = await getCachedImageUrl(url)
+    if (cached) cachedAvatarSrc.value = cached
+  }
+}, { immediate: true })
 
 const onLoad = () => { isLoading.value = false; isLoaded.value = true; hasError.value = false }
 const onError = () => { isLoading.value = false; isLoaded.value = false; hasError.value = true }
@@ -118,3 +128,5 @@ watch(() => props.src, (newSrc) => {
 }
 .avatar-fallback-icon { width: 70%; height: 70%; }
 </style>
+
+

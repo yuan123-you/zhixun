@@ -50,20 +50,17 @@ router.afterEach(() => {
    这里定义全局 CSS（不带 scoped），确保 transition name="page-fade" 在任意位置使用都能命中。
    ============================================================ */
 .page-fade-enter-active {
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
 }
 .page-fade-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-  position: absolute;
-  width: 100%;
+  transition: opacity 0.1s ease-in;
 }
 .page-fade-enter-from {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(4px);
 }
 .page-fade-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
 }
 
 /* 兼容旧 class 名称（page-），避免删除后产生级联问题 */
@@ -76,3 +73,4 @@ router.afterEach(() => {
   opacity: 0;
 }
 </style>
+

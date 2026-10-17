@@ -239,7 +239,7 @@
           </div>
           <button
             v-if="userStore.isLoggedIn"
-            class="flex items-center gap-1 px-2.5 py-1 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-600 active:scale-95 transition-all"
+            class="flex items-center gap-1 px-2.5 py-1 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-600 active:scale-95 transition-all shrink-0 whitespace-nowrap"
             @click="showCreateGroupModal = true"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
@@ -261,7 +261,7 @@
                 </div>
                 <h3 class="text-[15px] font-semibold text-[var(--zh-text)] mb-2">登录后查看我的群组</h3>
                 <p class="text-sm text-[var(--zh-text-tertiary)] mb-6">加入群组，与社区成员互动交流</p>
-                <RouterLink to="/login" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all">立即登录</RouterLink>
+                <RouterLink to="/login" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all shrink-0 whitespace-nowrap">立即登录</RouterLink>
               </div>
 
               <!-- 加载中 -->
@@ -289,7 +289,7 @@
                 </div>
                 <h3 class="text-[15px] font-semibold text-[var(--zh-text)] mb-2">还没有加入任何群组</h3>
                 <p class="text-sm text-[var(--zh-text-tertiary)] mb-6">探索更多群组，找到你的兴趣圈子</p>
-                <button class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all" @click="switchGroupTab('search')">
+                <button class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all shrink-0 whitespace-nowrap" @click="switchGroupTab('search')">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   发现群组
                 </button>
@@ -299,9 +299,9 @@
               <div v-else class="space-y-2.5">
                 <div v-for="group in myGroups" :key="group.id" class="group-card" @click="router.push(`/groups/${group.id}`)">
                   <div class="group-card-inner">
-                    <div class="relative shrink-0">
-                      <img v-if="group.avatar" :src="group.avatar" :alt="group.name" class="group-card-avatar" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }" />
-                      <div :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
+                                        <div class="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden ring-2 ring-[var(--zh-border)] dark:ring-gray-600">
+                      <img v-if="resolveUrl(group.avatar)" :src="resolveUrl(group.avatar) as string" :alt="group.name" class="w-full h-full object-cover" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; ((e.target as HTMLImageElement).nextElementSibling as HTMLElement)?.classList.remove('hidden') }" />
+                      <div :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder absolute inset-0', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2">
@@ -371,7 +371,7 @@
                 </div>
                 <h3 class="text-[15px] font-semibold text-[var(--zh-text)] mb-2">未找到相关群组</h3>
                 <p class="text-sm text-[var(--zh-text-tertiary)] mb-6">换个关键词试试，或者创建你自己的群组</p>
-                <button v-if="userStore.isLoggedIn" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all" @click="showCreateGroupModal = true">
+                <button v-if="userStore.isLoggedIn" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all shrink-0 whitespace-nowrap" @click="showCreateGroupModal = true">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                   创建群组
                 </button>
@@ -408,10 +408,10 @@
                   <div v-else class="space-y-2.5">
                     <div v-for="group in recommendedGroups" :key="group.id" class="group-card" @click="router.push(`/groups/${group.id}`)">
                       <div class="group-card-inner">
-                        <div class="relative shrink-0">
-                          <img v-if="group.avatar" :src="group.avatar" :alt="group.name" class="group-card-avatar" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }" />
-                          <div :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
-                        </div>
+                                            <div class="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden ring-2 ring-[var(--zh-border)] dark:ring-gray-600">
+                      <img v-if="resolveUrl(group.avatar)" :src="resolveUrl(group.avatar) as string" :alt="group.name" class="w-full h-full object-cover" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; ((e.target as HTMLImageElement).nextElementSibling as HTMLElement)?.classList.remove('hidden') }" />
+                      <div :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder absolute inset-0', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
+                    </div>
                         <div class="flex-1 min-w-0">
                           <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
                           <div class="flex items-center gap-3 mt-1.5">
@@ -446,9 +446,9 @@
                 </div>
                 <div v-for="group in groupSearchResults" :key="group.id" class="group-card" @click="router.push(`/groups/${group.id}`)">
                   <div class="group-card-inner">
-                    <div class="relative shrink-0">
-                      <img v-if="group.avatar" :src="group.avatar" :alt="group.name" class="group-card-avatar" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }" />
-                      <div :class="[group.avatar ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
+                                        <div class="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden ring-2 ring-[var(--zh-border)] dark:ring-gray-600">
+                      <img v-if="resolveUrl(group.avatar)" :src="resolveUrl(group.avatar) as string" :alt="group.name" class="w-full h-full object-cover" @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; ((e.target as HTMLImageElement).nextElementSibling as HTMLElement)?.classList.remove('hidden') }" />
+                      <div :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder absolute inset-0', avatarColor(group.name)]">{{ group.name.charAt(0) }}</div>
                     </div>
                     <div class="flex-1 min-w-0">
                       <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
@@ -633,6 +633,10 @@ import { fileApi } from '@/api/file'
 import { sanitizeText } from '@/utils/sanitize'
 import { AI_AVATAR_URL } from '@/composables/chat/useChatConstants'
 
+const { resolveUrl } = useResourceUrl()
+const notiPreviewImage = ref('')
+const onNotiImagePreview = (url: string) => { notiPreviewImage.value = url }
+const closeNotiImagePreview = () => { notiPreviewImage.value = '' }
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 const { cachedRequest } = useRequestCache({ ttl: 5 * 60 * 1000 })
@@ -1057,7 +1061,7 @@ const fetchGroupLastMessages = async (groups: any[]) => {
     try {
       const { data } = await groupApi.getMessages(g.id, 0, 50)
       const raw = data?.data || data
-      const msgs = Array.isArray(raw) ? raw : (raw?.list || [])
+      const msgs = Array.isArray(raw) ? raw : ((raw as any)?.list || [])
       if (msgs.length > 0) {
         const first = msgs[0] as any
         const last = msgs[msgs.length - 1] as any
@@ -1462,6 +1466,7 @@ useHead({ title: () => '消息' + ' - 知讯' })
   @apply w-12 h-12 rounded-xl object-cover ring-2 ring-[var(--zh-border)] dark:ring-gray-600;
 }
 
+.group-card-avatar-placeholder.hidden { display: none !important; }
 .group-card-avatar-placeholder {
   @apply w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-bold
          ring-2 ring-white/20;
@@ -1601,7 +1606,8 @@ useHead({ title: () => '消息' + ' - 知讯' })
   }
 
   .group-card-avatar,
-  .group-card-avatar-placeholder {
+  .group-card-avatar-placeholder.hidden { display: none !important; }
+.group-card-avatar-placeholder {
     @apply w-10 h-10 rounded-lg;
   }
 
@@ -1750,3 +1756,4 @@ useHead({ title: () => '消息' + ' - 知讯' })
   40% { transform: translateY(-4px); opacity: 1; }
 }
 </style>
+

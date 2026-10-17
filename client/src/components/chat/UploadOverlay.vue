@@ -13,10 +13,12 @@
 /**
  * UploadOverlay - 文件上传进度遮罩（私信/群聊共用）
  */
-defineProps<{
+withDefaults(defineProps<{
   uploading: boolean
   progress?: number
-}>()
+}>(), {
+  progress: 0,
+})
 </script>
 
 <style scoped>
@@ -53,3 +55,4 @@ defineProps<{
   to { transform: rotate(360deg); }
 }
 </style>
+

@@ -976,7 +976,7 @@ const shareToUser = async (user: User) => {
       authorName: article.value.author?.nickname || article.value.authorName || '',
       sharedAt: new Date().toISOString(),
     })
-    await socialApi.sendMessage(user.id, { content: cardContent, type: 0 })
+    await socialApi.sendMessage(user.id, { content: cardContent, type: 'text' })
     ElMessage.success(`已分享给 ${user.nickname}`)
     closeAllSheets()
   } catch (err: any) {

@@ -187,10 +187,8 @@ describe('getRegionByIP - 腾讯地图 IP 定位', () => {
     })
     await getRegionByIP('7.2.3.4')
     const url = (fetchMock.mock.calls[0][0] as string)
-    expect(url).toContain('/ws/location/v1/ip')
-    expect(url).toContain('key=')
+    expect(url).toContain('/api/v1/users/ip-location-detail')
     expect(url).toContain('ip=7.2.3.4')
-    expect(url).toContain('output=json')
   })
 })
 
@@ -247,9 +245,9 @@ describe('reverseGeocode - 腾讯地图逆地理编码', () => {
     })
     await reverseGeocode(22.5431, 113.9341)
     const url = (fetchMock.mock.calls[0][0] as string)
-    expect(url).toContain('/ws/geocoder/v1/')
-    expect(url).toContain('location=')
-    expect(url).toContain('get_poi=0')
+    expect(url).toContain('/api/v1/users/reverse-geocode')
+    expect(url).toContain('lat=')
+    expect(url).toContain('lng=')
   })
 
   it('港澳台等场景下应做合理规范化', async () => {
@@ -338,7 +336,7 @@ describe('locateUser - 复合定位', () => {
     // GPS 成功时不应调用 IP 定位
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const url = fetchMock.mock.calls[0][0] as string
-    expect(url).toContain('/ws/geocoder/v1/')
+    expect(url).toContain('/api/v1/users/reverse-geocode')
   })
 
   it('GPS 失败时应降级到 IP 定位', async () => {
@@ -417,3 +415,5 @@ describe('matchRegionByCoord - 兼容旧接口', () => {
     expect(result).toBeNull()
   })
 })
+
+

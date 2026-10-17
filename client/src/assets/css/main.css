@@ -249,11 +249,27 @@ body {
 ::selection { background: rgba(var(--zh-primary-rgb), 0.15); color: var(--zh-text); }
 .dark ::selection { background: rgba(var(--zh-primary-rgb), 0.3); }
 
-/* 聚焦环 */
-*:focus-visible {
+/* 聚焦环（排除文本输入类元素，防止搜索框和输入框出现双重内外边框） */
+*:focus-visible:not(input):not(textarea):not(select) {
   outline: 2px solid var(--zh-primary);
   outline-offset: 2px;
   border-radius: var(--zh-radius-sm);
+}
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none !important;
+}
+.search-box-desktop input,
+.search-box-mobile input,
+.search-wrapper input,
+.search-input-wrap input,
+.sidebar-search input,
+.search-bar input {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* ==========================================================================
@@ -353,11 +369,16 @@ select.input {
 /* ==========================================================================
    Element Plus 全局输入框深度覆盖
    ========================================================================== */
-/* 覆盖 ElInput 的边框和聚焦效果 */
+/* 覆盖 ElInput 的边框和聚焦效果，彻底避免双重边框 */
 .el-input__wrapper {
-  border-width: 1.5px !important;
+  border: 1.5px solid var(--zh-border) !important;
   border-radius: var(--zh-radius-md) !important;
   transition: border-color var(--zh-transition-fast), box-shadow var(--zh-transition-fast) !important;
+  box-shadow: none !important;
+}
+.el-input__inner {
+  border: none !important;
+  outline: none !important;
   box-shadow: none !important;
 }
 .el-input.is-focus .el-input__wrapper,
@@ -1110,3 +1131,4 @@ select.input {
 
 /* 移动端安全区域 */
 .safe-bottom-bar { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+

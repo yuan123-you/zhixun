@@ -48,7 +48,7 @@ const formatCount = (count: number | undefined) => {
   position: relative;
   display: block;
   overflow: hidden;
-  border-radius: 0;
+  border-radius: inherit;
   cursor: pointer;
   aspect-ratio: 3 / 4;
   box-shadow: none;
@@ -138,3 +138,4 @@ const formatCount = (count: number | undefined) => {
 .like-icon-lg { width: 16px; height: 16px; flex-shrink: 0; }
 .like-icon-lg.liked { fill: #f87171; color: #f87171; }
 </style>
+

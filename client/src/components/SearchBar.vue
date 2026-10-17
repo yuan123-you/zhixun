@@ -60,9 +60,18 @@ const searchHistory = computed(() => getHistory().map((e) => e.keyword))
 
 const fetchSuggestions = async (query: string) => {
   if (query.trim()) {
-    try { const { searchApi } = await import('~/api'); const response = await searchApi.getSuggestions(query.trim()); suggestions.value = response.data.data }
-    catch { suggestions.value = [] }
-  } else { suggestions.value = [] }
+    try {
+      const { searchApi } = await import('~/api')
+      const response = await searchApi.getSuggestions(query.trim())
+      const res = response.data?.data as any
+      const list = res?.completions || (Array.isArray(res) ? res : [])
+      suggestions.value = list.map((c: any) => typeof c === 'string' ? c : (c.text || c.keyword || ''))
+    } catch {
+      suggestions.value = []
+    }
+  } else {
+    suggestions.value = []
+  }
 }
 
 const debouncedFetchSuggestions = useDebounceFn(fetchSuggestions, 300)
@@ -95,7 +104,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-  debouncedFetchSuggestions.cancel()
+  // debounce unmount cleanup
 })
 </script>
 
@@ -143,3 +152,5 @@ onUnmounted(() => {
 .hot-rank { width: 20px; text-align: center; font-size: 12px; color: var(--el-text-color-placeholder); }
 .hot-rank.top3 { color: var(--el-color-danger); font-weight: 700; }
 </style>
+
+

@@ -121,7 +121,8 @@ public class FileController {
             // 根据 objectKey 推断 Content-Type
             String contentType = guessContentType(objectKey);
             response.setContentType(contentType);
-            response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=86400");
+            response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=2592000, immutable");
+            response.setHeader(HttpHeaders.ETAG, '"' + Integer.toHexString(objectKey.hashCode()) + '"');
             // 启用跨域（图片通常由 img 标签加载，跨域读不需要 CORS，但加 CORS 头便于 fetch/canvas）
             response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
             try (OutputStream out = response.getOutputStream()) {
@@ -244,3 +245,4 @@ public class FileController {
         }
     }
 }
+

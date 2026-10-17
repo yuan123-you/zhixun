@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@/types'
+import type { ApiResponse, User } from '@/types'
 import { setOnTokenRefreshed } from '@/composables/useApi'
 
 /** API 插件：提供全局 $api 访问，并初始化 Token 自动刷新拦截器（纯 SPA 版） */
@@ -85,3 +85,5 @@ export function initApiPlugin() {
     delete: del,
   } as any
 }
+
+

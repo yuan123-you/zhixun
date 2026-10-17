@@ -10,7 +10,7 @@
     <!-- 同样使用 <Transition> 包裹 router-view 以实现登录/注册/找回密码间的平滑切换，无白屏间隙。
          使用 :key="r.path" 避免 query/hash 变化时重载页面（与 default.vue 一致的修复）。 -->
     <router-view v-slot="{ Component, route: r }">
-      <Transition name="page-fade">
+      <Transition name="page-fade" mode="out-in">
         <component :is="Component" :key="r.path" />
       </Transition>
     </router-view>
@@ -28,3 +28,4 @@ const goBack = () => {
   }
 }
 </script>
+

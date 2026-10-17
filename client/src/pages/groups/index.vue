@@ -19,7 +19,7 @@
       </div>
       <button
         v-if="userStore.isLoggedIn"
-        class="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-600 active:scale-95 transition-all duration-200 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]"
+        class="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-600 active:scale-95 transition-all duration-200 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] shrink-0 whitespace-nowrap"
         @click="showCreateModal = true"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,16 +125,16 @@
             >
               <div class="group-card-inner">
                 <!-- 头像 -->
-                <div class="relative shrink-0">
+                                <div class="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden ring-2 ring-[var(--zh-border)] dark:ring-gray-600">
                   <img
                     v-if="resolveUrl(group.avatar)"
                     :src="resolveUrl(group.avatar) as string"
                     :alt="group.name"
-                    class="group-card-avatar"
-                    @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }"
+                    class="w-full h-full object-cover"
+                    @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; ((e.target as HTMLImageElement).nextElementSibling as HTMLElement)?.classList.remove('hidden') }"
                   />
                   <div
-                    :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
+                    :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder absolute inset-0', avatarColor(group.name)]"
                   >{{ group.name.charAt(0) }}</div>
                 </div>
 
@@ -304,18 +304,18 @@
                 @click="navigateTo(`/groups/${group.id}`)"
               >
                 <div class="group-card-inner">
-                  <div class="relative shrink-0">
-                    <img
-                      v-if="resolveUrl(group.avatar)"
-                      :src="resolveUrl(group.avatar) as string"
-                      :alt="group.name"
-                      class="group-card-avatar"
-                      @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }"
-                    />
-                    <div
-                      :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
-                    >{{ group.name.charAt(0) }}</div>
-                  </div>
+                                  <div class="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden ring-2 ring-[var(--zh-border)] dark:ring-gray-600">
+                  <img
+                    v-if="resolveUrl(group.avatar)"
+                    :src="resolveUrl(group.avatar) as string"
+                    :alt="group.name"
+                    class="w-full h-full object-cover"
+                    @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; ((e.target as HTMLImageElement).nextElementSibling as HTMLElement)?.classList.remove('hidden') }"
+                  />
+                  <div
+                    :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder absolute inset-0', avatarColor(group.name)]"
+                  >{{ group.name.charAt(0) }}</div>
+                </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 min-w-0">
                       <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
@@ -377,18 +377,18 @@
             @click="navigateTo(`/groups/${group.id}`)"
           >
             <div class="group-card-inner">
-              <div class="relative shrink-0">
-                <img
-                  v-if="resolveUrl(group.avatar)"
-                  :src="resolveUrl(group.avatar) as string"
-                  :alt="group.name"
-                  class="group-card-avatar"
-                  @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }"
-                />
-                <div
-                  :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder', avatarColor(group.name)]"
-                >{{ group.name.charAt(0) }}</div>
-              </div>
+                              <div class="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden ring-2 ring-[var(--zh-border)] dark:ring-gray-600">
+                  <img
+                    v-if="resolveUrl(group.avatar)"
+                    :src="resolveUrl(group.avatar) as string"
+                    :alt="group.name"
+                    class="w-full h-full object-cover"
+                    @error="(e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; ((e.target as HTMLImageElement).nextElementSibling as HTMLElement)?.classList.remove('hidden') }"
+                  />
+                  <div
+                    :class="[resolveUrl(group.avatar) ? 'hidden' : '', 'group-card-avatar-placeholder absolute inset-0', avatarColor(group.name)]"
+                  >{{ group.name.charAt(0) }}</div>
+                </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 min-w-0">
                   <h3 class="text-sm font-semibold text-[var(--zh-text)] truncate">{{ group.name }}</h3>
@@ -926,6 +926,7 @@ useHead({ title: '群组广场 - 知讯' })
   @apply w-12 h-12 rounded-xl object-cover ring-2 ring-[var(--zh-border)] dark:ring-gray-600;
 }
 
+.group-card-avatar-placeholder.hidden { display: none !important; }
 .group-card-avatar-placeholder {
   @apply w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-bold
          ring-2 ring-white/20;
@@ -1077,7 +1078,8 @@ useHead({ title: '群组广场 - 知讯' })
   }
 
   .group-card-avatar,
-  .group-card-avatar-placeholder {
+  .group-card-avatar-placeholder.hidden { display: none !important; }
+.group-card-avatar-placeholder {
     @apply w-10 h-10 rounded-lg;
   }
 

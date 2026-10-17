@@ -49,7 +49,7 @@
         @click="$emit('select', group.id)"
       >
         <div class="sidebar-item-avatar">
-          <img v-if="group.avatar" :src="group.avatar" :alt="group.name" class="sidebar-avatar-img" />
+          <img v-if="group.avatar" :src="resolveUrl(group.avatar) || group.avatar" :alt="group.name" class="sidebar-avatar-img" />
           <div v-else class="sidebar-avatar-placeholder" :class="avatarColor(group.name)">
             {{ group.name.charAt(0) }}
           </div>
@@ -84,6 +84,8 @@
 import { ref, computed } from 'vue'
 import type { GroupInfo } from '@/api/group'
 import { avatarColor } from '@/utils/color'
+import { useResourceUrl } from '@/composables/useResourceUrl'
+const { resolveUrl } = useResourceUrl()
 
 const props = defineProps<{
   groups: GroupInfo[]
@@ -223,6 +225,8 @@ const filteredGroups = computed(() => {
   gap: 12px;
 }
 .sidebar-empty-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
   padding: 6px 16px;
   border: none;
   border-radius: 8px;
@@ -351,3 +355,4 @@ const filteredGroups = computed(() => {
   .sidebar-avatar-placeholder { width: 36px; height: 36px; border-radius: 10px; }
 }
 </style>
+

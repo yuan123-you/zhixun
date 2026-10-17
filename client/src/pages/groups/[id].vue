@@ -173,7 +173,6 @@ function connectWebSocket() {
         createdAt: new Date().toISOString(),
       })
     },
-    userStore.token || undefined,
   )
   wsCleanup = disconnect
 }
@@ -454,3 +453,4 @@ useHead({
   color: #ef4444;
 }
 </style>
+

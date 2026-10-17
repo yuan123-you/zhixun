@@ -14,7 +14,7 @@
 
     <!-- 图片消息 -->
     <div v-else-if="messageType === 'image'" class="chat-bubble chat-bubble-image" @click="$emit('preview-image', content)">
-      <img :src="resolvedUrl" alt="图片" class="chat-msg-image" loading="lazy" />
+      <img :src="cachedImgUrl || resolvedUrl" alt="图片" class="chat-msg-image" loading="lazy" />
     </div>
 
     <!-- 文件消息 -->
@@ -56,6 +56,7 @@ import FileCard from './FileCard.vue'
 import VoiceMessage from '@/components/VoiceMessage.vue'
 import FilePreviewDialog from './FilePreviewDialog.vue'
 import { useChatMedia } from '@/composables/chat/useChatMedia'
+import { useImageCache } from '@/utils/imageCache'
 
 const props = defineProps<{
   content: string
@@ -83,6 +84,7 @@ const resolvedUrl = computed(() => {
   return resolveMsgUrl(props.content)
 })
 
+const cachedImgUrl = useImageCache(() => resolvedUrl.value)
 const voiceUrl = computed(() => getVoiceUrl(props.content))
 const voiceDuration = computed(() => getVoiceDuration(props.content))
 
@@ -231,3 +233,4 @@ const onFilePreview = (url: string, name: string, ext: string) => {
   }
 }
 </style>
+

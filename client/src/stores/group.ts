@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { groupApi } from '@/api/group'
 import type { GroupInfo, GroupMessage, GroupMember } from '@/api/group'
+import { useChatLocalDb } from '@/composables/useChatLocalDb'
 
 export const useGroupStore = defineStore('group', () => {
+  const localDb = useChatLocalDb()
   const groups = ref<GroupInfo[]>([])
   const currentGroup = ref<GroupInfo | null>(null)
   const messages = ref<GroupMessage[]>([])
@@ -26,11 +28,26 @@ export const useGroupStore = defineStore('group', () => {
   }
 
   async function fetchMessages(groupId: number, offset = 0) {
+    if (offset === 0) {
+      try {
+        const local = await localDb.getGroupMessages(groupId)
+        if (local.length > 0) {
+          messages.value = local
+        }
+      } catch { /* ignore */ }
+    }
     try {
       const res = await groupApi.getMessages(groupId, offset)
       const data = res.data.data
-      if (offset === 0) messages.value = data
-      else messages.value = [...data, ...messages.value]
+      const rawList = Array.isArray(data) ? data : ((data as any)?.list || [])
+      const serverMsgs = [...rawList].reverse()
+      if (offset === 0) {
+        messages.value = localDb.mergeGroupMessages(messages.value, serverMsgs)
+        localDb.saveGroupMessages(serverMsgs, groupId).catch(() => {})
+      } else {
+        messages.value = [...serverMsgs, ...messages.value]
+        localDb.saveGroupMessages(serverMsgs, groupId).catch(() => {})
+      }
     } catch { /* ignore */ }
   }
 
@@ -44,6 +61,9 @@ export const useGroupStore = defineStore('group', () => {
   function addMessage(msg: GroupMessage) {
     if (!messages.value.some(m => m.id === msg.id)) {
       messages.value.push(msg)
+      if (msg.groupId) {
+        localDb.saveGroupMessage(msg, msg.groupId).catch(() => {})
+      }
     }
   }
 

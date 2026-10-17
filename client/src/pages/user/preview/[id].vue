@@ -652,7 +652,7 @@ const shareToUser = async (user: User) => {
       authorName: article.value.author?.nickname || article.value.authorName || '',
       sharedAt: new Date().toISOString(),
     })
-    await socialApi.sendMessage(user.id, { content: cardContent, type: 0 })
+    await socialApi.sendMessage(user.id, { content: cardContent, type: 'text' })
     showToast(`已分享给 ${user.nickname}`)
     closeAllSheets()
   } catch (err: any) {
@@ -878,3 +878,4 @@ useHead({
   --tw-prose-td-borders: rgba(255, 255, 255, 0.1);
 }
 </style>
+

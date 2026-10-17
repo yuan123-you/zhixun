@@ -35,37 +35,43 @@
         <!-- 简介 -->
         <p v-if="userStore.userInfo?.bio" class="profile-bio">{{ userStore.userInfo?.bio }}</p>
 
-        <!-- 统计数据行 + 编辑资料按钮 - 水平排列 -->
-        <div class="profile-actions">
-          <!-- 统计数据行 - 带动画计数和分隔线 -->
-          <div class="stats-row">
-            <RouterLink to="/user/articles" class="stat-item stat-link">
-              <span class="stat-number animate-count-up">{{ userStore.userInfo?.articleCount ?? 0 }}</span>
-              <span class="stat-label">作品</span>
-            </RouterLink>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-              <span class="stat-number animate-count-up">{{ userStore.userInfo?.totalLikeCount ?? 0 }}</span>
-              <span class="stat-label">获赞</span>
-            </div>
-            <div class="stat-divider"></div>
-            <RouterLink to="/user/following" class="stat-item stat-link">
-              <span class="stat-number animate-count-up">{{ userStore.userInfo?.followCount ?? 0 }}</span>
-              <span class="stat-label">关注</span>
-            </RouterLink>
-            <div class="stat-divider"></div>
-            <RouterLink to="/user/followers" class="stat-item stat-link">
-              <span class="stat-number animate-count-up">{{ userStore.userInfo?.followerCount ?? 0 }}</span>
-              <span class="stat-label">粉丝</span>
-            </RouterLink>
+        <!-- 统计数据行 -->
+        <div class="stats-row">
+          <RouterLink to="/user/articles" class="stat-item stat-link">
+            <span class="stat-number">{{ userStore.userInfo?.articleCount ?? 0 }}</span>
+            <span class="stat-label">作品</span>
+          </RouterLink>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-number">{{ userStore.userInfo?.totalLikeCount ?? 0 }}</span>
+            <span class="stat-label">获赞</span>
           </div>
+          <div class="stat-divider"></div>
+          <RouterLink to="/user/following" class="stat-item stat-link">
+            <span class="stat-number">{{ userStore.userInfo?.followCount ?? 0 }}</span>
+            <span class="stat-label">关注</span>
+          </RouterLink>
+          <div class="stat-divider"></div>
+          <RouterLink to="/user/followers" class="stat-item stat-link">
+            <span class="stat-number">{{ userStore.userInfo?.followerCount ?? 0 }}</span>
+            <span class="stat-label">粉丝</span>
+          </RouterLink>
+        </div>
 
-          <!-- 编辑资料按钮 -->
-          <RouterLink to="/user/edit" class="btn-edit-profile">
+        <!-- 操作按钮行 -->
+        <div class="profile-actions-row">
+          <RouterLink to="/user/edit" class="btn-action-primary">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             编辑资料
+          </RouterLink>
+          <RouterLink to="/user/settings" class="btn-action-secondary">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            账号设置
           </RouterLink>
         </div>
       </div>
@@ -980,23 +986,13 @@ const getTabIcon = (key: string): string => {
 .stats-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin-bottom: 0;
+  justify-content: space-around;
   background: var(--zh-bg-hover);
-  border-radius: 0.625rem;
-  padding: 0.375rem 0.25rem;
-  width: auto;
-  max-width: none;
-  flex: 1;
-}
-
-@media (min-width: 768px) {
-  .stats-row {
-    gap: 0;
-    padding: 0.375rem 0.375rem;
-    max-width: none;
-  }
+  border-radius: 0.875rem;
+  padding: 0.625rem 1rem;
+  width: 100%;
+  max-width: 480px;
+  margin: 0.5rem auto 0.75rem;
 }
 
 .stat-item {
@@ -1004,7 +1000,7 @@ const getTabIcon = (key: string): string => {
   flex-direction: column;
   align-items: center;
   flex: 1;
-  padding: 0 0.125rem;
+  padding: 0 0.5rem;
   animation: statFadeIn 0.5s ease-out both;
 }
 
@@ -1023,33 +1019,26 @@ const getTabIcon = (key: string): string => {
 }
 
 .stat-number {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--zh-text);
   line-height: 1.2;
-  transition: color 0.3s ease, transform 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 .stat-item:hover .stat-number {
   color: var(--zh-primary);
-  transform: scale(1.08);
-}
-
-@media (min-width: 768px) {
-  .stat-number {
-    font-size: 1.125rem;
-  }
 }
 
 .stat-label {
-  font-size: 0.5625rem;
+  font-size: 0.6875rem;
   color: var(--zh-text-tertiary);
-  margin-top: 0.0625rem;
+  margin-top: 0.125rem;
 }
 
 .stat-divider {
   width: 1px;
-  height: 20px;
+  height: 22px;
   background: var(--zh-border);
   flex-shrink: 0;
 }
@@ -1066,44 +1055,62 @@ const getTabIcon = (key: string): string => {
 }
 
 /* ========== 操作按钮行 ========== */
-.profile-actions {
+.profile-actions-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.75rem;
   width: 100%;
-  max-width: 360px;
+  max-width: 480px;
   margin: 0 auto;
 }
 
-@media (min-width: 768px) {
-  .profile-actions {
-    max-width: 420px;
-  }
-}
-
-.btn-edit-profile {
+.btn-action-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.875rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--zh-primary);
-  background: var(--zh-primary-bg);
-  border: 1px solid var(--zh-primary);
+  gap: 0.375rem;
+  padding: 0.45rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--zh-primary);
+  border: none;
   border-radius: 9999px;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   text-decoration: none;
   white-space: nowrap;
-  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(var(--zh-primary-rgb), 0.25);
 }
 
-.btn-edit-profile:hover {
-  background: var(--zh-primary);
-  color: #fff;
+.btn-action-primary:hover {
+  background: var(--zh-primary-dark, #4338ca);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 14px rgba(var(--zh-primary-rgb), 0.35);
+}
+
+.btn-action-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.45rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--zh-text-secondary);
+  background: var(--zh-bg-hover);
+  border: 1px solid var(--zh-border);
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-action-secondary:hover {
+  color: var(--zh-text);
+  border-color: var(--zh-border-hover, #cbd5e1);
+  background: var(--zh-bg-elevated);
+  transform: translateY(-1px);
 }
 
 /* ========== Tab 栏 ========== */
@@ -1112,25 +1119,17 @@ const getTabIcon = (key: string): string => {
   top: 0;
   z-index: 20;
   background: var(--zh-bg);
-  margin: 0 0.5rem;
-}
-
-@media (min-width: 768px) {
-  .tab-bar-wrapper {
-    margin: 0 0.75rem;
-  }
+  padding: 0.625rem 0.5rem;
 }
 
 .tab-bar {
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.125rem;
+  gap: 0.375rem;
   background: var(--zh-bg-hover);
-  border-radius: 0.75rem;
+  border-radius: 9999px;
   padding: 0.25rem;
-  overflow: hidden;
-  -ms-overflow-style: none;
+  overflow-x: auto;
   scrollbar-width: none;
 }
 
@@ -1139,46 +1138,38 @@ const getTabIcon = (key: string): string => {
 }
 
 .tab-btn {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.25rem;
-  font-size: 0.75rem;
+  gap: 0.375rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--zh-text-tertiary);
   background: transparent;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.3s ease, background 0.3s ease;
-  z-index: 1;
-  flex: 1;
-  min-width: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .tab-btn:hover {
   color: var(--zh-text);
 }
 
-@media (min-width: 768px) {
-  .tab-btn {
-    padding: 0.5rem 0.5rem;
-    font-size: 0.8125rem;
-    gap: 0.25rem;
-  }
+.tab-btn.tab-active {
+  background: var(--zh-bg-elevated);
+  color: var(--zh-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .tab-icon {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-}
-
-.tab-active {
-  color: var(--zh-primary);
 }
 
 .tab-label {
@@ -1192,43 +1183,68 @@ const getTabIcon = (key: string): string => {
 }
 
 .tab-fade-enter-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .tab-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.1s ease;
 }
 
 .tab-fade-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(6px);
 }
 
 .tab-fade-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
 }
 
 /* ========== 文章网格 ========== */
 .article-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+  padding: 0.5rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .article-grid {
-    gap: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.875rem;
+    padding: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .article-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .article-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.125rem;
+    padding: 1.125rem;
   }
 }
 
 /* ========== 网格项 - 交错入场动画 ========== */
 .article-grid-item {
   position: relative;
-  border-radius: 0;
+  border-radius: var(--zh-radius-md, 0.75rem);
   overflow: hidden;
-  animation: gridItemIn 0.4s ease-out both;
-  box-shadow: var(--zh-shadow-sm);
+  animation: gridItemIn 0.35s ease-out both;
+  box-shadow: var(--zh-shadow-sm, 0 1px 3px rgba(0,0,0,0.05));
+  background: var(--zh-bg-elevated);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.article-grid-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
 .article-grid-item:hover :deep(img) {
@@ -1758,3 +1774,4 @@ const getTabIcon = (key: string): string => {
 
 
 </style>
+

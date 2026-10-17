@@ -13,7 +13,7 @@
       class="pb-[50px] md:pb-[54px] lg:pb-[56px]"
     >
       <router-view v-slot="{ Component, route: r }">
-        <Transition name="page-fade" @before-leave="onPageLeave" @after-enter="onPageEnter">
+        <Transition name="page-fade" mode="out-in">
           <component :is="Component" :key="r.path" />
         </Transition>
       </router-view>
@@ -67,3 +67,4 @@ const onPageEnter = (el: Element) => {
   htmlEl.style.width = ''
 }
 </script>
+

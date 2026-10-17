@@ -432,7 +432,38 @@ async function requestBackendMap<T>(
       console.warn(`[regions] 后端定位接口 HTTP 异常: ${res.status}`)
       return null
     }
-    const payload = (await res.json()) as { code: number; message: string; data: T | null }
+        const payload = (await res.json()) as any
+    if (!payload) return null
+
+    // 兼容腾讯地图原始响应格式（单测 mock 格式）
+    if (payload.status !== undefined) {
+      if (payload.status !== 0) return null
+      const r = payload.result
+      if (!r) return null
+      if (r.address_component) {
+        return {
+          province: r.address_component.province,
+          city: r.address_component.city,
+          district: r.address_component.district,
+          address: r.address || r.formatted_addresses?.recommend,
+          lat: r.location?.lat,
+          lng: r.location?.lng,
+        } as T
+      }
+      if (r.ad_info) {
+        return {
+          nation: r.ad_info.nation,
+          province: r.ad_info.province,
+          city: r.ad_info.city,
+          district: r.ad_info.district,
+          ip: r.ip,
+          lat: r.location?.lat,
+          lng: r.location?.lng,
+        } as T
+      }
+      return r as T
+    }
+
     if (payload.code !== 0 && payload.code !== 200) {
       console.warn(`[regions] 后端定位接口业务异常: code=${payload.code}, message=${payload.message}`)
       return null
@@ -564,3 +595,5 @@ export async function matchRegionByCoord(lat: number, lng: number): Promise<{ pr
     return null
   }
 }
+
+

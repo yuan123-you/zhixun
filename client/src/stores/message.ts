@@ -55,7 +55,7 @@ function transformConversation(raw: RawConversation): Conversation {
     senderId: raw.userId,
     sender: user,
     content: raw.lastMessage || '',
-    type: 0,
+    type: 'text',
     isRead: true,
     createdAt: raw.lastMessageTime || '',
   }

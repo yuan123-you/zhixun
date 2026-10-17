@@ -395,6 +395,7 @@ import { showToast } from '@/composables/useToast'
 import GroupSearchPanel from '@/components/GroupSearchPanel.vue'
 import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
 import { useResourceUrl } from '@/composables/useResourceUrl'
+import { useChatLocalDb } from '@/composables/useChatLocalDb'
 import { useChatMedia } from '@/composables/chat/useChatMedia'
 import { formatMsgTime, shouldShowTimeSeparator, formatChatTime } from '@/composables/chat/useChatTimestamp'
 import { AI_AVATAR_URL, DEFAULT_AVATAR_URL } from '@/composables/chat/useChatConstants'
@@ -405,6 +406,7 @@ import ImagePreviewOverlay from '@/components/chat/ImagePreviewOverlay.vue'
 import UploadOverlay from '@/components/chat/UploadOverlay.vue'
 
 const { resolveUrl } = useResourceUrl()
+const localDb = useChatLocalDb()
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
 const router = useRouter()
 const route = useRoute()
@@ -1560,3 +1562,4 @@ watch(() => props.group?.id, (id) => {
   30% { transform: translateY(-4px); opacity: 1; }
 }
 </style>
+

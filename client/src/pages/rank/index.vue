@@ -85,15 +85,21 @@
               <div class="rank-info">
                 <div class="rank-info-title" :class="{ 'rank-info-title--top': index < 3 }">{{ item.title }}</div>
                 <div class="rank-info-meta">
-                  <span>{{ item.authorNickname }}</span>
-                  <span>{{ item.likeCount }}</span>
-                  <span>{{ item.commentCount }}</span>
+                  <span v-if="item.authorNickname" class="rank-meta-author">{{ item.authorNickname }}</span>
+                  <span v-if="item.likeCount != null" class="flex items-center gap-0.5">
+                    <svg class="w-3 h-3 text-rose-500 fill-current" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>
+                    {{ item.likeCount }}
+                  </span>
+                  <span v-if="item.commentCount != null" class="flex items-center gap-0.5">
+                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                    {{ item.commentCount }}
+                  </span>
                 </div>
               </div>
 
               <!-- 趋势指示器 -->
-              <div class="rank-trend" :class="getTrendClass(index)">
-                {{ ['↑', '↓', '→'][index % 3] }}
+              <div class="rank-trend" :class="index < 3 ? 'rank-trend--up' : 'rank-trend--same'">
+                {{ index < 3 ? '↑' : '—' }}
               </div>
 
               <!-- 热度值 -->

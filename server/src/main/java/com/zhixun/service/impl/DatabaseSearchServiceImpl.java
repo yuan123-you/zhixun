@@ -23,19 +23,22 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 搜索服务Fallback实现（基于数据库，当OpenSearch不可用时使用）
+ * 搜索服务Fallback实现（基于数据库与智能相关度排序算法，当OpenSearch不可用时使用）
  * <p>
  * 增强功能：
- * - 作品搜索：标题 + 摘要 + 正文 + 作者名 + 分类名 多字段模糊匹配
+ * - 作品搜索：标题 + 摘要 + 正文 多字段模糊匹配与加权相关度打分（Title: 100, Summary: 40, Content: 10 + 热度加权）
+ * - 支持分类、时段过滤以及多种排序模式（综合/最热/点赞/最新）
  * - 用户搜索：昵称 + 用户名 + UID 多字段模糊匹配
  * - 图片搜索：按作品标题匹配
- * - 搜索建议：作品标题 + 用户昵称 + 标签名
+ * - 搜索建议：作品标题 + 用户昵称 + 标签名 + 热门搜索补全
  */
 @Slf4j
 @Service
@@ -62,6 +65,9 @@ public class DatabaseSearchServiceImpl implements SearchService {
             return result;
         }
 
+        int p = (page != null && page > 0) ? page : 1;
+        int ps = (pageSize != null && pageSize > 0) ? pageSize : 20;
+
         // 规范化 type：兼容前端复数形式
         String normalizedType = type != null ? type : "all";
         if ("articles".equals(normalizedType)) normalizedType = "article";
@@ -70,23 +76,23 @@ public class DatabaseSearchServiceImpl implements SearchService {
 
         switch (normalizedType) {
             case "article":
-                long articleTotal = searchArticles(keyword, page, pageSize, result);
+                long articleTotal = searchArticles(keyword, categoryId, timeRange, sort, p, ps, result);
                 result.setArticleTotal(articleTotal);
                 result.setTotal(articleTotal);
                 break;
             case "user":
-                long userTotal = searchUsers(keyword, page, pageSize, result);
+                long userTotal = searchUsers(keyword, p, ps, result);
                 result.setUserTotal(userTotal);
                 result.setTotal(userTotal);
                 break;
             case "image":
-                long imageTotal = searchImages(keyword, page, pageSize, result);
+                long imageTotal = searchImages(keyword, p, ps, result);
                 result.setImageTotal(imageTotal);
                 result.setTotal(imageTotal);
                 break;
             case "all":
             default:
-                long aTotal = searchArticles(keyword, page, pageSize, result);
+                long aTotal = searchArticles(keyword, categoryId, timeRange, sort, p, ps, result);
                 long uTotal = searchUsers(keyword, 1, 5, result);
                 long iTotal = searchImages(keyword, 1, 6, result);
                 result.setArticleTotal(aTotal);
@@ -100,12 +106,10 @@ public class DatabaseSearchServiceImpl implements SearchService {
     }
 
     /**
-     * 作品搜索：标题 + 摘要 + 正文 多字段模糊匹配
-     * 注意：authorName / categoryName 是 @TableField(exist=false) 关联字段，
-     *      不能直接用于 LambdaQueryWrapper（会抛 can not find lambda cache）。
-     *      如需按作者/分类搜索，应改用 SQL JOIN 或专门的 ArticleQueryService。
+     * 作品搜索：多字段模糊匹配 + 多因子相关度排序 + 动态筛选
      */
-    private long searchArticles(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
+    private long searchArticles(String keyword, Long categoryId, String timeRange, String sort,
+                                Integer page, Integer pageSize, SearchResultVO result) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         // 多字段模糊搜索：标题、摘要、正文
         wrapper.and(w -> w
@@ -115,13 +119,76 @@ public class DatabaseSearchServiceImpl implements SearchService {
         );
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
         wrapper.isNull(Article::getDeletedAt);
-        // 排序：置顶优先，再按时间倒序
-        wrapper.orderByDesc(Article::getIsTop);
-        wrapper.orderByDesc(Article::getCreatedAt);
+
+        // 分类过滤
+        if (categoryId != null && categoryId > 0) {
+            wrapper.eq(Article::getCategoryId, categoryId);
+        }
+
+        // 时间范围过滤
+        if (StringUtils.hasText(timeRange)) {
+            LocalDateTime now = LocalDateTime.now();
+            switch (timeRange.toLowerCase()) {
+                case "day":
+                    wrapper.ge(Article::getCreatedAt, now.minusDays(1));
+                    break;
+                case "week":
+                    wrapper.ge(Article::getCreatedAt, now.minusWeeks(1));
+                    break;
+                case "month":
+                    wrapper.ge(Article::getCreatedAt, now.minusMonths(1));
+                    break;
+                case "year":
+                    wrapper.ge(Article::getCreatedAt, now.minusYears(1));
+                    break;
+                default:
+                    break;
+            }
+        }
 
         long total = articleMapper.selectCount(wrapper);
-        wrapper.last("LIMIT " + (page - 1) * pageSize + ", " + pageSize);
-        List<Article> articles = articleMapper.selectList(wrapper);
+        if (total == 0) {
+            result.setArticles(Collections.emptyList());
+            return 0L;
+        }
+
+        List<Article> articles;
+        boolean isRelevance = !StringUtils.hasText(sort) || "relevance".equalsIgnoreCase(sort) || "all".equalsIgnoreCase(sort);
+
+        if (isRelevance) {
+            // 相关度排序：取前 100 条候选集在内存中按相关度打分重排
+            int candidateLimit = Math.min((int) total, Math.max(page * pageSize, 100));
+            wrapper.orderByDesc(Article::getIsTop);
+            wrapper.last("LIMIT " + candidateLimit);
+            List<Article> candidateList = articleMapper.selectList(wrapper);
+
+            // 相关度打分器
+            candidateList.sort((a, b) -> {
+                int topCompare = Integer.compare(b.getIsTop() != null ? b.getIsTop() : 0, a.getIsTop() != null ? a.getIsTop() : 0);
+                if (topCompare != 0) return topCompare;
+
+                double scoreA = computeRelevanceScore(a, keyword);
+                double scoreB = computeRelevanceScore(b, keyword);
+                return Double.compare(scoreB, scoreA);
+            });
+
+            int fromIndex = Math.min((page - 1) * pageSize, candidateList.size());
+            int toIndex = Math.min(fromIndex + pageSize, candidateList.size());
+            articles = candidateList.subList(fromIndex, toIndex);
+        } else {
+            // 明确的字段排序
+            wrapper.orderByDesc(Article::getIsTop);
+            if ("hot".equalsIgnoreCase(sort) || "views".equalsIgnoreCase(sort)) {
+                wrapper.orderByDesc(Article::getViewCount).orderByDesc(Article::getCreatedAt);
+            } else if ("likes".equalsIgnoreCase(sort)) {
+                wrapper.orderByDesc(Article::getLikeCount).orderByDesc(Article::getCreatedAt);
+            } else {
+                // newest / time / default
+                wrapper.orderByDesc(Article::getCreatedAt);
+            }
+            wrapper.last("LIMIT " + (page - 1) * pageSize + ", " + pageSize);
+            articles = articleMapper.selectList(wrapper);
+        }
 
         List<ArticleVO> articleVOs = articles.stream().map(a -> {
             ArticleVO vo = new ArticleVO();
@@ -160,6 +227,41 @@ public class DatabaseSearchServiceImpl implements SearchService {
     }
 
     /**
+     * 计算相关度得分：标题命中 > 摘要命中 > 正文命中 + 热度对数加分
+     */
+    private double computeRelevanceScore(Article article, String keyword) {
+        double score = 0.0;
+        String kwLower = keyword.toLowerCase();
+
+        String title = article.getTitle() != null ? article.getTitle().toLowerCase() : "";
+        if (title.equals(kwLower)) {
+            score += 200.0; // 完全精确匹配
+        } else if (title.startsWith(kwLower)) {
+            score += 120.0; // 前缀匹配
+        } else if (title.contains(kwLower)) {
+            score += 80.0;  // 标题包含
+        }
+
+        String summary = article.getSummary() != null ? article.getSummary().toLowerCase() : "";
+        if (summary.contains(kwLower)) {
+            score += 30.0;
+        }
+
+        String content = article.getContent() != null ? article.getContent().toLowerCase() : "";
+        if (content.contains(kwLower)) {
+            score += 10.0;
+        }
+
+        // 热度加成因子：log10(views + likes * 2 + 1) * 3
+        long views = article.getViewCount() != null ? article.getViewCount() : 0;
+        long likes = article.getLikeCount() != null ? article.getLikeCount() : 0;
+        double popularity = Math.log10(views + likes * 2.0 + 1.0) * 3.0;
+        score += popularity;
+
+        return score;
+    }
+
+    /**
      * 高亮匹配关键词（数据库降级方案）
      */
     private String highlightMatch(String text, String keyword) {
@@ -185,11 +287,9 @@ public class DatabaseSearchServiceImpl implements SearchService {
 
     /**
      * 用户搜索：昵称 + 用户名 + UID 多字段模糊匹配
-     * 注意：UID 精确匹配使用 eq，模糊使用 like 进行前缀/模糊匹配
      */
     private long searchUsers(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        // 多字段模糊搜索：昵称、用户名、UID
         wrapper.and(w -> w
                 .like(User::getNickname, keyword)
                 .or().like(User::getUsername, keyword)
@@ -219,7 +319,6 @@ public class DatabaseSearchServiceImpl implements SearchService {
     }
 
     private long searchImages(String keyword, Integer page, Integer pageSize, SearchResultVO result) {
-        // 先搜索作品标题匹配的作品ID
         LambdaQueryWrapper<Article> articleWrapper = new LambdaQueryWrapper<>();
         articleWrapper.like(Article::getTitle, keyword)
                 .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
@@ -234,7 +333,6 @@ public class DatabaseSearchServiceImpl implements SearchService {
 
         List<Long> articleIds = matchedArticles.stream().map(Article::getId).collect(Collectors.toList());
 
-        // 查询这些作品的图片
         LambdaQueryWrapper<ArticleImage> imageWrapper = new LambdaQueryWrapper<>();
         imageWrapper.in(ArticleImage::getArticleId, articleIds);
 
@@ -242,7 +340,6 @@ public class DatabaseSearchServiceImpl implements SearchService {
         imageWrapper.last("LIMIT " + (page - 1) * pageSize + ", " + pageSize);
         List<ArticleImage> images = articleImageMapper.selectList(imageWrapper);
 
-        // 构建作品ID到标题的映射
         var articleMap = matchedArticles.stream()
                 .collect(Collectors.toMap(Article::getId, a -> a));
 
@@ -265,11 +362,12 @@ public class DatabaseSearchServiceImpl implements SearchService {
         List<SuggestionVO> completions = new ArrayList<>();
 
         if (StringUtils.hasText(keyword)) {
-            // 搜索作品标题
+            // 搜索作品标题（必须为 PUBLISHED 状态）
             LambdaQueryWrapper<Article> articleWrapper = new LambdaQueryWrapper<>();
             articleWrapper.like(Article::getTitle, keyword)
-                    .eq(Article::getStatus, 1)
+                    .eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
                     .isNull(Article::getDeletedAt)
+                    .orderByDesc(Article::getViewCount)
                     .last("LIMIT 5");
             List<Article> articles = articleMapper.selectList(articleWrapper);
             for (Article a : articles) {
@@ -286,7 +384,8 @@ public class DatabaseSearchServiceImpl implements SearchService {
                     .like(User::getNickname, keyword)
                     .or().like(User::getUsername, keyword)
                     .or().like(User::getUid, keyword)
-            ).last("LIMIT 3");
+            ).orderByDesc(User::getFollowerCount)
+             .last("LIMIT 3");
             List<User> users = userMapper.selectList(userWrapper);
             for (User u : users) {
                 SuggestionVO vo = new SuggestionVO();
@@ -313,13 +412,12 @@ public class DatabaseSearchServiceImpl implements SearchService {
 
         SearchSuggestResultVO result = new SearchSuggestResultVO();
         result.setCompletions(completions);
-        result.setHotSearches(Collections.emptyList());
+        result.setHotSearches(getHotSearches());
         return result;
     }
 
     @Override
     public List<String> getHotSearches() {
-        // 读取 Redis 热门搜索词（SearchHistoryServiceImpl.getHotSearchKeywords 已处理异常）
         if (searchHistoryService == null) {
             return Collections.emptyList();
         }

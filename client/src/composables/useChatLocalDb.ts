@@ -1,13 +1,15 @@
 import type { Message } from '@/types'
+import type { GroupMessage } from '@/api/group'
 
 /**
- * 私信本地持久化存储（IndexedDB）
- * 数据库保留 7 天，本地无限期保留
+ * 本地聊天数据持久化与缓存存储（IndexedDB）
+ * 支持私信消息与群聊消息本地存储、即时加载与防重复请求
  */
 
 const DB_NAME = 'zhixun_chat'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE_NAME = 'messages'
+const GROUP_STORE_NAME = 'group_messages'
 
 let dbInstance: IDBDatabase | null = null
 
@@ -29,14 +31,18 @@ function openDb(): Promise<IDBDatabase> {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' })
         store.createIndex('convKey', 'convKey', { unique: false })
         store.createIndex('createdAt', 'createdAt', { unique: false })
-        // 复合索引：会话 + 时间，用于按会话按时间排序查询
         store.createIndex('conv_created', ['convKey', 'createdAt'], { unique: false })
+      }
+      if (!db.objectStoreNames.contains(GROUP_STORE_NAME)) {
+        const groupStore = db.createObjectStore(GROUP_STORE_NAME, { keyPath: 'id' })
+        groupStore.createIndex('groupId', 'groupId', { unique: false })
+        groupStore.createIndex('createdAt', 'createdAt', { unique: false })
+        groupStore.createIndex('group_created', ['groupId', 'createdAt'], { unique: false })
       }
     }
 
     request.onsuccess = () => {
       dbInstance = request.result
-      // 连接意外关闭时重置实例
       dbInstance.onclose = () => { dbInstance = null }
       resolve(dbInstance)
     }
@@ -48,12 +54,14 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
+// ==================== 私信相关 ====================
+
 /** 为消息附加 convKey 字段后写入 */
 function toStoredMsg(msg: Message, myUserId: number, otherUserId: number): Message & { convKey: string } {
   return { ...msg, convKey: convKey(myUserId, otherUserId) }
 }
 
-/** 批量写入消息（put = upsert），需显式传入对话另一方 userId */
+/** 批量写入私信消息（put = upsert），需显式传入对话另一方 userId */
 async function saveMessages(msgs: Message[], myUserId: number, otherUserId: number): Promise<void> {
   if (!msgs.length) return
   const db = await openDb()
@@ -71,7 +79,7 @@ async function saveMessages(msgs: Message[], myUserId: number, otherUserId: numb
   })
 }
 
-/** 按会话查询消息，按时间正序返回 */
+/** 按会话查询私信消息，按时间正序返回 */
 async function getMessages(myUserId: number, otherUserId: number): Promise<Message[]> {
   const db = await openDb()
   const key = convKey(myUserId, otherUserId)
@@ -84,7 +92,6 @@ async function getMessages(myUserId: number, otherUserId: number): Promise<Messa
 
     request.onsuccess = () => {
       const results = (request.result || []) as Message[]
-      // 按时间正序排列（createdAt 是 ISO 字符串，字典序即时间序）
       results.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       resolve(results)
     }
@@ -96,24 +103,13 @@ async function getMessages(myUserId: number, otherUserId: number): Promise<Messa
   })
 }
 
-/** 获取本地某个会话中最早的消息时间，用于判断是否需要从服务端加载更多 */
+/** 获取本地某个会话中最早的消息时间 */
 async function getEarliestTime(myUserId: number, otherUserId: number): Promise<string | null> {
   const msgs = await getMessages(myUserId, otherUserId)
   return msgs.length > 0 ? msgs[0].createdAt : null
 }
 
-/** 退出登录时清空所有本地消息 */
-async function deleteAll(): Promise<void> {
-  if (!dbInstance) return
-  return new Promise((resolve, reject) => {
-    const tx = dbInstance!.transaction(STORE_NAME, 'readwrite')
-    tx.objectStore(STORE_NAME).clear()
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
-  })
-}
-
-/** 删除指定会话的所有本地消息 */
+/** 删除指定会话的所有本地私信消息 */
 async function deleteByConv(myUserId: number, otherUserId: number): Promise<number> {
   const db = await openDb()
   const key = convKey(myUserId, otherUserId)
@@ -142,15 +138,112 @@ async function deleteByConv(myUserId: number, otherUserId: number): Promise<numb
   })
 }
 
-/** 筛选参数 */
-interface MessageFilters {
-  startDate?: string // ISO date string (YYYY-MM-DD)
-  endDate?: string   // ISO date string (YYYY-MM-DD)
-  type?: string      // 'image' | 'text' | undefined (all)
-  keyword?: string   // 搜索关键词
+/** 合并服务端私信消息与本地消息，去重后返回完整列表（时间正序） */
+function mergeMessages(local: Message[], server: Message[]): Message[] {
+  const map = new Map<number, Message>()
+  for (const m of local) map.set(m.id, m)
+  for (const m of server) map.set(m.id, m)
+  return Array.from(map.values()).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 }
 
-/** 按条件筛选会话消息 */
+// ==================== 群聊相关 ====================
+
+/** 批量写入群组消息（upsert） */
+async function saveGroupMessages(msgs: GroupMessage[], groupId: number): Promise<void> {
+  if (!msgs.length) return
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(GROUP_STORE_NAME, 'readwrite')
+    const store = tx.objectStore(GROUP_STORE_NAME)
+    for (const msg of msgs) {
+      store.put({ ...msg, groupId })
+    }
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => {
+      console.error('[ChatLocalDb] 群消息写入失败:', tx.error)
+      reject(tx.error)
+    }
+  })
+}
+
+/** 写入单条群组消息 */
+async function saveGroupMessage(msg: GroupMessage, groupId: number): Promise<void> {
+  return saveGroupMessages([msg], groupId)
+}
+
+/** 按群组 ID 获取本地缓存的群聊消息，按时间正序返回 */
+async function getGroupMessages(groupId: number): Promise<GroupMessage[]> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(GROUP_STORE_NAME, 'readonly')
+    const store = tx.objectStore(GROUP_STORE_NAME)
+    const index = store.index('groupId')
+    const request = index.getAll(groupId)
+
+    request.onsuccess = () => {
+      const results = (request.result || []) as GroupMessage[]
+      results.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''))
+      resolve(results)
+    }
+
+    request.onerror = () => {
+      console.error('[ChatLocalDb] 群消息查询失败:', request.error)
+      reject(request.error)
+    }
+  })
+}
+
+/** 合并群组本地消息与服务端消息（服务端权威覆盖，时间正序） */
+function mergeGroupMessages(local: GroupMessage[], server: GroupMessage[]): GroupMessage[] {
+  const map = new Map<number, GroupMessage>()
+  for (const m of local) map.set(m.id, m)
+  for (const m of server) map.set(m.id, m)
+  return Array.from(map.values()).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''))
+}
+
+/** 删除指定群组的所有本地消息 */
+async function deleteGroupMessages(groupId: number): Promise<number> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(GROUP_STORE_NAME, 'readwrite')
+    const store = tx.objectStore(GROUP_STORE_NAME)
+    const index = store.index('groupId')
+    const request = index.openCursor(groupId)
+    let count = 0
+
+    request.onsuccess = () => {
+      const cursor = request.result
+      if (cursor) {
+        cursor.delete()
+        count++
+        cursor.continue()
+      }
+    }
+
+    tx.oncomplete = () => resolve(count)
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+/** 退出登录时清空所有本地消息 */
+async function deleteAll(): Promise<void> {
+  if (!dbInstance) return
+  return new Promise((resolve, reject) => {
+    const tx = dbInstance!.transaction([STORE_NAME, GROUP_STORE_NAME], 'readwrite')
+    tx.objectStore(STORE_NAME).clear()
+    tx.objectStore(GROUP_STORE_NAME).clear()
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+interface MessageFilters {
+  startDate?: string
+  endDate?: string
+  type?: string
+  keyword?: string
+}
+
 async function getFilteredMessages(
   myUserId: number,
   otherUserId: number,
@@ -175,11 +268,9 @@ async function getFilteredMessages(
     result = result.filter(m => m.content?.toLowerCase().includes(kw))
   }
 
-  // 最新在前（倒序）
   return result.reverse()
 }
 
-/** 会话消息统计 */
 interface ConversationStats {
   totalCount: number
   imageCount: number
@@ -188,7 +279,6 @@ interface ConversationStats {
   latestTime: string | null
 }
 
-/** 获取会话消息统计信息 */
 async function getStats(myUserId: number, otherUserId: number): Promise<ConversationStats> {
   const msgs = await getMessages(myUserId, otherUserId)
   return {
@@ -200,16 +290,9 @@ async function getStats(myUserId: number, otherUserId: number): Promise<Conversa
   }
 }
 
-/** 合并服务端消息与本地消息，去重后返回完整列表（时间正序） */
-function mergeMessages(local: Message[], server: Message[]): Message[] {
-  const map = new Map<number, Message>()
-  for (const m of local) map.set(m.id, m)
-  for (const m of server) map.set(m.id, m) // 服务端数据覆盖本地（更权威）
-  return Array.from(map.values()).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-}
-
 export const useChatLocalDb = () => ({
   openDb,
+  // 私信
   saveMessages,
   getMessages,
   getEarliestTime,
@@ -218,4 +301,10 @@ export const useChatLocalDb = () => ({
   getFilteredMessages,
   getStats,
   mergeMessages,
+  // 群聊
+  saveGroupMessages,
+  saveGroupMessage,
+  getGroupMessages,
+  mergeGroupMessages,
+  deleteGroupMessages,
 })

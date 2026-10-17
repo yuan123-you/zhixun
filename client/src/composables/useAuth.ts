@@ -1,4 +1,4 @@
-import type { LoginRequest, RegisterRequest, SendCodeRequest, ForgotPasswordRequest, AuthResponse, GraphCaptchaResponse } from '@/types'
+import type { LoginRequest, RegisterRequest, SendCodeRequest, ForgotPasswordRequest, AuthResponse, GraphCaptchaResponse, User } from '@/types'
 
 /** 认证组合式函数 */
 export const useAuth = () => {
@@ -122,3 +122,4 @@ export const useAuth = () => {
     currentUser,
   }
 }
+
