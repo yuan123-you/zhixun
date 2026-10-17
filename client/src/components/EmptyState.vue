@@ -1,6 +1,6 @@
 <template>
   <!-- 空状态 - 友好引导 -->
-  <div class="empty-state">
+  <div class="empty-state" :class="{ 'empty-state--compact': compact }">
     <div class="empty-illustration">
       <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="20" y="30" width="80" height="60" rx="12" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ title?: string; description?: string }>()
+defineProps<{ title?: string; description?: string; compact?: boolean }>()
 </script>
 
 <style scoped>
@@ -58,4 +58,8 @@ defineProps<{ title?: string; description?: string }>()
   margin-top: 24px;
   animation: fade-in-up 0.5s 0.2s var(--zh-transition-base) both;
 }
+.empty-state--compact { padding: 20px 12px; }
+.empty-state--compact .empty-illustration { width: 48px; height: 48px; margin-bottom: 8px; }
+.empty-state--compact .empty-title { font-size: 14px; margin-bottom: 4px; }
+.empty-state--compact .empty-desc { font-size: 12px; }
 </style>

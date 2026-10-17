@@ -180,6 +180,17 @@ export async function preloadAndCacheAvatar(url?: string | null): Promise<string
   const local = await getLocalCachedAvatar(trimmed)
   if (local) return local
 
+  // 外部头像交给原生 <img> 和 HTTP 缓存。强制 anonymous 会附带 Origin，
+  // 部分图片服务因此返回 403；没有 CORS 授权的图片也不能安全写入 canvas。
+  try {
+    const source = new URL(trimmed, window.location.href)
+    if (source.origin !== window.location.origin || source.protocol === 'data:' || source.protocol === 'blob:') {
+      return trimmed
+    }
+  } catch {
+    return null
+  }
+
   // 并发去重
   if (loadingPromises.has(trimmed)) {
     return loadingPromises.get(trimmed)!

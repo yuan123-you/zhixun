@@ -1,0 +1,60 @@
+/* Shared loading/loaded geometry; reserve the clamped text area to prevent layout jumps. */
+.article-card-layout {
+  --article-body-height: 72px;
+  --article-cover-width: 60px;
+  --article-cover-height: 46px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  margin-top: 6px;
+  margin-bottom: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+.article-card-layout > .card-author {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+  min-height: 32px;
+}
+.article-card-layout > .card-content {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  min-height: var(--article-body-height);
+  box-sizing: border-box;
+}
+.article-card-layout .cover-image-wrap {
+  width: var(--article-cover-width);
+  height: var(--article-cover-height);
+  flex-shrink: 0;
+}
+.article-card-layout > .card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  min-height: 0;
+  height: 28px;
+  border-top: 1px solid var(--zh-border-light);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+@media (min-width: 640px) {
+  .article-card-layout { --article-cover-width: 72px; --article-cover-height: 56px; }
+}
+@media (min-width: 768px) {
+  .article-card-layout {
+    --article-body-height: 88px;
+    --article-cover-width: 120px;
+    --article-cover-height: 88px;
+    padding: 12px;
+    margin-top: 0;
+    margin-bottom: 6px;
+  }
+}

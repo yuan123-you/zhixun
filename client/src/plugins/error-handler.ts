@@ -13,8 +13,17 @@ import { friendlyMessage } from '@/utils/friendlyError'
 
 export default {
   install(app: App) {
+    // 资源更新或网络故障时由用户决定是否刷新，避免自动重载丢失未保存的内容。
+    window.addEventListener('vite:preloadError', (event) => {
+      event.preventDefault()
+      showErrorOverlay('页面资源加载失败，服务可能正在更新。请稍后刷新页面重试；未保存的内容请先备份。', true)
+    })
     // 全局 Vue 错误处理
     app.config.errorHandler = (err: any, instance, info) => {
+      if (isAssetLoadError(err)) {
+        showErrorOverlay('页面资源加载失败，请稍后刷新页面重试；未保存的内容请先备份。', true)
+        return
+      }
       if (shouldSkip(err)) return
       const friendly = friendlyMessage(err, '页面出现异常，请稍后重试')
       console.warn('[Vue Error]', { message: friendly, raw: err?.message || err, info })
@@ -28,6 +37,11 @@ export default {
 
     // 全局 Promise 未捕获异常处理
     window.addEventListener('unhandledrejection', (event) => {
+      if (isAssetLoadError(event.reason)) {
+        event.preventDefault()
+        showErrorOverlay('页面资源加载失败，请稍后刷新页面重试；未保存的内容请先备份。', true)
+        return
+      }
       if (isNavigationError(event.reason)) { event.preventDefault(); return }
       if (shouldSkip(event.reason)) return
       if (isDuplicateError(event.reason)) { event.preventDefault(); return }
@@ -39,13 +53,18 @@ export default {
   }
 }
 
+function isAssetLoadError(err: any): boolean {
+  const raw = typeof err === 'string' ? err : (err?.message || '')
+  return /Failed to fetch dynamically imported module|Unable to preload CSS|Importing a module script failed|Loading (?:CSS )?chunk .*failed/i.test(raw)
+}
+
 /** 可以忽略的非致命错误 */
 function shouldSkip(err: any): boolean {
   const raw = typeof err === 'string' ? err : (err?.message || '')
   // HMR 热更新 → Vite 内部，连接丢失时是正常行为（开发环境后端重启等）
   if (/hmr|hot.?reload|vite.*reload|server connection lost|websocket|Polling for restart/i.test(raw)) return true
-  // 路由中断 / 动态模块加载失败 → 正常行为
-  if (/NavigationDuplicated|redirect.*navigation|Failed to fetch dynamically imported module/i.test(raw)) return true
+  // 路由中断无需提示；资源加载失败由上方恢复提示处理
+  if (/NavigationDuplicated|redirect.*navigation/i.test(raw)) return true
   return false
 }
 
@@ -80,7 +99,7 @@ function showErrorOverlay(message: string, showRefreshBtn: boolean) {
   // 两种形态都不溢出屏幕，且都显眼。
   const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
 
-  if (isMobile) {
+  if (isMobile && !showRefreshBtn) {
     const t = document.createElement('div')
     t.className = 'fixed top-4 left-3 right-3 z-[99999] px-4 py-3 rounded-2xl shadow-2xl text-white text-sm font-medium bg-amber-500 transition-all duration-300 flex items-start gap-2 whitespace-normal break-words max-w-[calc(100vw-1.5rem)] opacity-0 -translate-y-2'
     t.innerHTML = `

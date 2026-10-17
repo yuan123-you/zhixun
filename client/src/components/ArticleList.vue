@@ -2,11 +2,7 @@
   <!-- 作品列表组件：支持无限滚动、骨架屏、错误重试 -->
   <div>
     <template v-if="loading && articles.length === 0">
-      <div>
-        <template v-for="i in 6" :key="i">
-          <LoadingSkeleton type="article" />
-        </template>
-      </div>
+      <LoadingSkeleton type="article" :count="10" />
     </template>
 
     <template v-else-if="error && articles.length === 0">
@@ -21,7 +17,7 @@
       </div>
 
       <div v-if="loading && articles.length > 0">
-        <LoadingSkeleton v-for="i in 2" :key="'more-' + i" type="article" />
+        <LoadingSkeleton type="article" :count="2" />
       </div>
 
       <div v-if="error && articles.length > 0" style="margin-top: 10px;">

@@ -74,14 +74,14 @@
             </div>
 
             <!-- 加载中骨架屏 -->
-            <div v-if="rankLoading" class="space-y-3">
-              <div v-for="i in 6" :key="i" class="flex items-center gap-3.5 p-3 rounded-xl bg-[var(--zh-bg)] animate-pulse">
-                <div class="w-8 h-8 rounded-lg bg-[var(--zh-border)] shrink-0"></div>
-                <div class="flex-1 space-y-2">
-                  <div class="h-4 bg-[var(--zh-border)] rounded w-3/4"></div>
-                  <div class="h-3 bg-[var(--zh-border)] rounded w-1/3"></div>
+            <div v-if="rankLoading" class="space-y-2.5">
+              <div v-for="i in rankLimit" :key="i" class="rank-row-card animate-pulse" :class="getRankRowClass(i - 1)" aria-hidden="true">
+                <div class="rank-pos-badge bg-[var(--zh-border)]"></div>
+                <div class="flex-1 min-w-0 pr-2">
+                  <div class="rank-title skeleton w-3/4" style="height: 1.4em;"></div>
+                  <div class="mt-1.5 h-[18px] skeleton w-1/3"></div>
                 </div>
-                <div class="w-16 h-12 bg-[var(--zh-border)] rounded-lg shrink-0"></div>
+                <div class="w-10 h-8 bg-[var(--zh-border)] rounded-lg shrink-0"></div>
               </div>
             </div>
 
@@ -180,7 +180,7 @@
 
             <!-- 骨架屏 -->
             <div v-if="tagsLoading" class="flex flex-wrap gap-2">
-              <div v-for="i in 8" :key="i" class="w-16 h-7 bg-[var(--zh-bg)] rounded-full animate-pulse"></div>
+              <div v-for="i in tagLimit" :key="i" class="tag-pill animate-pulse" aria-hidden="true"><span class="opacity-0"># 热门话题 00</span></div>
             </div>
 
             <!-- 标签列表 -->
@@ -234,15 +234,20 @@
               </button>
             </div>
 
+            <div v-if="usersError" class="creator-error" role="alert">
+              <span>{{ usersError }}</span>
+              <button type="button" :disabled="usersLoading" @click="shuffleUsers">重试</button>
+            </div>
+
             <!-- 用户骨架屏 -->
             <div v-if="usersLoading && recommendUsers.length === 0" class="space-y-3">
-              <div v-for="i in 4" :key="i" class="flex items-center gap-3 p-2 rounded-xl bg-[var(--zh-bg)] animate-pulse">
+              <div v-for="i in userLimit" :key="i" class="creator-row creator-row--skeleton bg-[var(--zh-bg)] animate-pulse" aria-hidden="true">
                 <div class="w-10 h-10 rounded-full bg-[var(--zh-border)] shrink-0"></div>
-                <div class="flex-1 space-y-1.5">
-                  <div class="h-3.5 bg-[var(--zh-border)] rounded w-24"></div>
-                  <div class="h-2.5 bg-[var(--zh-border)] rounded w-36"></div>
+                <div class="flex-1 min-w-0 space-y-1.5">
+                  <div class="h-3.5 bg-[var(--zh-border)] rounded w-24 max-w-full"></div>
+                  <div class="h-2.5 bg-[var(--zh-border)] rounded w-36 max-w-full"></div>
                 </div>
-                <div class="w-14 h-6 bg-[var(--zh-border)] rounded-full shrink-0"></div>
+                <button class="follow-btn shrink-0 skeleton" disabled tabindex="-1">&nbsp; &nbsp; &nbsp;</button>
               </div>
             </div>
 
@@ -251,7 +256,7 @@
               <div
                 v-for="user in recommendUsers"
                 :key="user.id"
-                class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-[var(--zh-bg-hover)] dark:hover:bg-gray-800/60 transition-colors"
+                class="creator-row hover:bg-[var(--zh-bg-hover)] dark:hover:bg-gray-800/60 transition-colors"
               >
                 <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" @click="goToUser(user.id)">
                   <UserAvatar :src="user.avatar" :alt="user.nickname" size="md" />
@@ -273,7 +278,7 @@
               </div>
             </div>
 
-            <EmptyState v-else title="暂无推荐创作者" />
+            <EmptyState v-else-if="!usersError" title="暂无推荐创作者" description="暂时没有可推荐的创作者，稍后再来看看吧" compact />
           </div>
         </div>
       </div>
@@ -318,7 +323,11 @@ const rankError = ref('')
 const hotTags = ref<Tag[]>([])
 const tagsLoading = ref(false)
 
+const tagLimit = 16
+const rankLimit = 15
+const userLimit = 5
 const recommendUsers = ref<User[]>([])
+const usersError = ref('')
 const usersLoading = ref(false)
 const userOffset = ref(0)
 
@@ -365,10 +374,10 @@ async function fetchHotRank() {
   rankError.value = ''
   try {
     const url = '/rank/hot'
-    const params = { period: activePeriod.value, limit: 15 }
+    const params = { period: activePeriod.value, limit: rankLimit }
     const api = useApi()
     const res = await cachedRequest<any>(
-      () => api.get<RankItem[]>(url, { params: { ...params, _t: Date.now() } }).then(r => r.data),
+      () => api.get<RankItem[]>(url, { ...params, _t: Date.now() }).then(r => r.data),
       url,
       params,
     )
@@ -387,10 +396,10 @@ async function fetchHotTags() {
   tagsLoading.value = true
   try {
     const url = '/tags/hot'
-    const params = { limit: 16 }
+    const params = { limit: tagLimit }
     const api = useApi()
     const res = await cachedRequest<any>(
-      () => api.get<Tag[]>(url, { params: { ...params, _t: Date.now() } }).then(r => r.data),
+      () => api.get<Tag[]>(url, { ...params, _t: Date.now() }).then(r => r.data),
       url,
       params,
     )
@@ -407,26 +416,27 @@ async function fetchHotTags() {
 async function shuffleUsers() {
   if (usersLoading.value) return
   usersLoading.value = true
+  usersError.value = ''
   try {
     const api = useApi()
-    const res = await api.get<any>('/users/recommend', {
-      params: { limit: 5, offset: userOffset.value, _t: Date.now() },
+    let offset = userOffset.value
+    const fetchUsers = (cursor: number) => api.get<User[]>('/users/recommend', {
+      limit: userLimit, offset: cursor, _t: Date.now(),
     })
-    const list = res?.data?.data || res?.data || []
-    if (Array.isArray(list) && list.length > 0) {
-      recommendUsers.value = list
-      userOffset.value += list.length
-    } else if (userOffset.value > 0) {
-      // 循环回绕
-      userOffset.value = 0
-      const retryRes = await api.get<any>('/users/recommend', {
-        params: { limit: 5, offset: 0, _t: Date.now() },
-      })
-      const retryList = retryRes?.data?.data || retryRes?.data || []
-      recommendUsers.value = Array.isArray(retryList) ? retryList : []
+    let res = await fetchUsers(offset)
+    let list = res.data.data
+    if (!Array.isArray(list)) throw new Error('Invalid creator response')
+    if (list.length === 0 && offset > 0) {
+      offset = 0
+      res = await fetchUsers(offset)
+      list = res.data.data
+      if (!Array.isArray(list)) throw new Error('Invalid creator response')
     }
+    recommendUsers.value = list
+    userOffset.value = offset + list.length
   } catch {
-    // 忽略加载失败，保留旧数据
+    usersError.value = '推荐创作者加载失败，请稍后重试'
+    // 刷新失败时保留已显示的创作者和游标，不将失败伪装为空数据。
   } finally {
     usersLoading.value = false
   }
@@ -706,6 +716,28 @@ useHead({
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+/* 骨架和真实创作者共享相同的行尺寸。 */
+.creator-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px;
+  min-height: 56px;
+  min-width: 0;
+  border-radius: 12px;
+}
+.creator-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 8px;
+  font-size: 12px;
+  color: var(--zh-text-secondary);
+}
+.creator-error button { flex-shrink: 0; color: var(--zh-primary); }
 
 /* ===== 标签芯片 ===== */
 .tag-pill {

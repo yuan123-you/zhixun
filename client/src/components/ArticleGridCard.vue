@@ -2,8 +2,8 @@
   <!-- 网格卡片 - 圆角 + 渐变覆盖 + 悬停缩放 -->
   <RouterLink :to="to || `/articles/${article.id}`" class="grid-card">
     <!-- 有封面图 -->
-    <template v-if="article.coverImage">
-      <img :src="resolveUrl(article.coverImage) || ''" :alt="article.title" class="grid-card-img" loading="lazy" />
+    <template v-if="coverImageUrl && !coverImageError">
+      <img :src="coverImageUrl" :alt="article.title" class="grid-card-img" loading="lazy" @error="coverImageError = true" />
       <div class="grid-card-overlay" />
       <div class="grid-card-info">
         <h3 class="grid-card-title">{{ article.title }}</h3>
@@ -31,6 +31,9 @@
 import type { Article } from '@/types'
 const props = defineProps<{ article: Article; to?: string }>()
 const { resolveUrl } = useResourceUrl()
+const coverImageUrl = computed(() => resolveUrl(props.article.coverImage))
+const coverImageError = ref(false)
+watch(coverImageUrl, () => { coverImageError.value = false })
 
 const palette = ['#4f46e5', '#7c3aed', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#2563eb', '#6366f1', '#8b5cf6', '#db2777']
 const bgColor = computed(() => palette[(props.article.id * 7) % palette.length])

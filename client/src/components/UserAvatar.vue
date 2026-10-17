@@ -95,6 +95,7 @@ const syncAvatar = async () => {
 
   // 4. 异步从本地持久化数据库恢复
   const localHit = await getLocalCachedAvatar(resolved)
+  if (resolved !== resolveUrl(props.src)) return
   if (localHit) {
     displaySrc.value = localHit
     isLoaded.value = true
@@ -103,7 +104,7 @@ const syncAvatar = async () => {
 
   // 5. 本地无缓存，在后台预载并写入本地
   preloadAndCacheAvatar(resolved).then((cached) => {
-    if (cached && !hasError.value) {
+    if (cached && cached !== resolved && resolved === resolveUrl(props.src) && !hasError.value) {
       displaySrc.value = cached
       isLoaded.value = true
     }

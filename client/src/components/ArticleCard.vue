@@ -1,6 +1,6 @@
 <template>
   <!-- 作品卡片 - 极简内容优先 + 微交互 -->
-  <article class="article-card card-base hover-lift" @click="navigateToDetail">
+  <article class="article-card article-card-layout card-base hover-lift" @click="navigateToDetail">
     <!-- 作者信息栏 -->
     <div class="card-author">
       <RouterLink :to="`/user/${article.authorId || article.author?.id}`" class="author-avatar" @click.stop>
@@ -39,14 +39,9 @@
       </div>
 
       <!-- 封面图 -->
-      <div v-if="article.coverImage && !coverImageError" class="cover-image-wrap">
-        <img v-if="autoLoadImages" :src="resolveUrl(article.coverImage) || ''" :alt="typeof article.title === 'string' ? article.title : ''" class="cover-image" loading="lazy" @error="coverImageError = true" />
-        <div v-else class="cover-placeholder">
-          <el-icon :size="18"><PictureFilled /></el-icon>
-        </div>
-      </div>
-      <div v-else-if="article.coverImage && coverImageError" class="cover-image-wrap">
-        <div class="cover-placeholder cover-placeholder--error">
+      <div v-if="article.coverImage" class="cover-image-wrap">
+        <img v-if="autoLoadImages && coverImageUrl && !coverImageError" :src="coverImageUrl" :alt="typeof article.title === 'string' ? article.title : ''" class="cover-image" loading="lazy" @error="coverImageError = true" />
+        <div v-else class="cover-placeholder" :class="{ 'cover-placeholder--error': coverImageError }">
           <el-icon :size="18"><PictureFilled /></el-icon>
         </div>
       </div>
@@ -118,6 +113,8 @@ const router = useRouter()
 const showShareMenu = ref(false)
 // 跟踪封面图加载失败状态，加载失败后展示占位符以避免重复请求
 const coverImageError = ref(false)
+const coverImageUrl = computed(() => resolveUrl(props.article.coverImage))
+watch(coverImageUrl, () => { coverImageError.value = false })
 
 const stripHtml = (html: string): string => {
   if (!html) return ''
@@ -209,31 +206,16 @@ const shareToWeibo = () => { showShareMenu.value = false; window.open(`https://s
 const shareToQQ = () => { showShareMenu.value = false; window.open(`https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(getArticleUrl())}`, '_blank') }
 </script>
 
+<style src="@/assets/css/article-card-layout.css"></style>
+
 <style scoped>
 .article-card {
-  padding: 12px 12px;
   cursor: pointer;
   transition: transform var(--zh-transition-base), box-shadow var(--zh-transition-base), border-color var(--zh-transition-base);
-  margin-bottom: 6px;
-  /* 修复子元素(尤其 grid 的 .card-actions)在 flex/grid 父级中可能撑出容器 */
-  box-sizing: border-box;
-  min-width: 0;
-  max-width: 100%;
   overflow: hidden;
-}
-@media (max-width: 767.98px) {
-  .article-card { padding: 8px 10px; margin-bottom: 10px; margin-top: 6px; }
-  .article-card:first-child { margin-top: 6px; }
 }
 
 /* 作者行 */
-.card-author {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 2px;
-  min-height: 0; /* 兜底防止被全局 pointer:coarse 规则撑高 */
-}
 .card-author a {
   min-height: 0;
   min-width: 0;
@@ -286,7 +268,6 @@ const shareToQQ = () => { showShareMenu.value = false; window.open(`https://conn
 .match-tag { margin-left: auto; flex-shrink: 0; }
 
 /* 内容区 */
-.card-content { display: flex; gap: 10px; box-sizing: border-box; min-width: 0; }
 .content-text { flex: 1; min-width: 0; }
 
 .content-title {
@@ -335,13 +316,6 @@ const shareToQQ = () => { showShareMenu.value = false; window.open(`https://conn
 .read-more:hover { text-decoration: underline; }
 
 /* 封面图 */
-.cover-image-wrap {
-  width: 60px;
-  height: 46px;
-  flex-shrink: 0;
-}
-@media (min-width: 640px) { .cover-image-wrap { width: 72px; height: 56px; } }
-@media (min-width: 768px) { .cover-image-wrap { width: 120px; height: 88px; } }
 
 .cover-image {
   width: 100%;
@@ -378,22 +352,6 @@ const shareToQQ = () => { showShareMenu.value = false; window.open(`https://conn
    父容器宽 375px,DPR=2 时 3 个 flex: 1 子项的均分会出现
    0.01px 舍入误差,导致按钮宽度轻微不一致。改为 grid 避免。
    显式 box-sizing + width:100% + min-width:0 防止子元素 grid 把容器撑出。 */
-.card-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  line-height: 1;
-  min-height: 0;
-  height: 28px;
-  border-top: 1px solid var(--zh-border-light);
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
 
 .action-btn {
   flex: 1;
