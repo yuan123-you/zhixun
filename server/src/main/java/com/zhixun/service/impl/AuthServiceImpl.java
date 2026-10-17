@@ -229,7 +229,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         // 查询用户（使用自定义 SQL 查询包含 passwordHash，因为 @TableField(select = false) 会阻止 MyBatis-Plus 查询该字段）
-        User user = userMapper.selectByUsernameWithPassword(request.getUsername());
+        // 查询用户（支持用户名、UID 以及绑定的邮箱账号登录）
+        String account = request.getUsername() != null ? request.getUsername().trim() : "";
+        String emailHash = DigestUtils.md5DigestAsHex(account.toLowerCase().getBytes(StandardCharsets.UTF_8));
+        User user = userMapper.selectByAccountWithPassword(account, emailHash);
+        if (user == null) {
+            user = userMapper.selectByUsernameWithPassword(account);
+        }
 
         // 记录登录日志
         LoginLog loginLog = buildLoginLog(request.getUsername(), httpRequest);
@@ -698,3 +704,4 @@ public class AuthServiceImpl implements AuthService {
         return sb.toString();
     }
 }
+

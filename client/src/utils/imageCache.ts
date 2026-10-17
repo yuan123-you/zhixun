@@ -29,7 +29,6 @@ export async function getCachedImageUrl(url: string | null | undefined): Promise
   if (!trimmed) return ''
 
   // data URL 或已是 blob URL，无需再次缓存
-  if (trimmed.includes('trae-api-cn.mchost.guru')) return ''
   if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
     return trimmed
   }
@@ -121,4 +120,5 @@ export function useImageCache(srcRef: Ref<string | null | undefined> | (() => st
 
   return cachedUrl
 }
+
 

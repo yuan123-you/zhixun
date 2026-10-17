@@ -73,7 +73,6 @@ export function isBrokenAvatarUrl(url?: string | null): boolean {
   const lower = url.toLowerCase().trim()
   if (!lower) return true
   // 过滤已经下线或失效的生成图接口地址
-  if (lower.includes('trae-api-cn.mchost.guru')) return true
   if (lower.includes('avatar-placeholder')) return true
   return false
 }
@@ -227,3 +226,4 @@ export async function preloadAndCacheAvatar(url?: string | null): Promise<string
   loadingPromises.set(trimmed, task)
   return task
 }
+
