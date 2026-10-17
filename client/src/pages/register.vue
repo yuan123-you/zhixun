@@ -9,19 +9,6 @@
       </div>
 
       <form class="auth-form" @submit.prevent="handleRegister">
-        <!-- 用户名 -->
-        <div class="input-group">
-          <label class="input-label">
-            <el-icon :size="16" class="input-label-icon"><User /></el-icon>用户名
-          </label>
-          <div class="input-field" :class="{ focused: activeField === 'username' }">
-            <el-icon class="input-prefix" :size="18"><User /></el-icon>
-            <input v-model="form.username" type="text" class="input-control"
-              placeholder="3-20位字母数字下划线" autocomplete="username" required
-              @focus="activeField = 'username'" @blur="activeField = ''" />
-          </div>
-        </div>
-
         <!-- QQ邮箱 -->
         <div class="input-group">
           <label class="input-label">
@@ -95,22 +82,6 @@
           <p class="text-xs text-[var(--zh-text-tertiary)] mt-0.5 ml-1">至少6位，需含字母和数字</p>
         </div>
 
-        <!-- 确认密码 -->
-        <div class="input-group">
-          <div class="input-field" :class="{ focused: activeField === 'confirm' }">
-            <el-icon class="input-prefix" :size="18"><Lock /></el-icon>
-            <input v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'"
-              class="input-control" placeholder="再次输入密码"
-              autocomplete="new-password" required
-              @focus="activeField = 'confirm'" @blur="activeField = ''" />
-            <button type="button" tabindex="-1" class="input-suffix"
-              @mousedown.prevent="showConfirmPassword = !showConfirmPassword"
-              @touchstart.prevent="showConfirmPassword = !showConfirmPassword">
-              <el-icon :size="18"><View v-if="!showConfirmPassword" /><Hide v-else /></el-icon>
-            </button>
-          </div>
-        </div>
-
         <!-- 注册按钮 -->
         <button type="submit" class="auth-btn" :disabled="loading">
           <span v-if="!loading">{{ '注 册' }}</span>
@@ -128,22 +99,29 @@
 </template>
 
 <script setup lang="ts">
-import { User, Lock, View, Hide, Loading, Message, Key, Timer, Unlock } from '@element-plus/icons-vue'
+import { Lock, View, Hide, Loading, Message, Key, Timer, Unlock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const { register, sendCode, getGraphCaptcha } = useAuth()
 
 const form = reactive({
-  username: '', email: '', captchaAnswer: '',
-  code: '', password: '', confirmPassword: '',
+  username: '',
+  email: '',
+  captchaAnswer: '',
+  code: '',
+  password: '',
 })
 
 const emailPrefix = ref('')
-watch(emailPrefix, (val) => { form.email = val ? `${val}@qq.com` : '' })
+watch(emailPrefix, (val) => {
+  const raw = val ? val.trim() : ''
+  form.email = raw ? `${raw}@qq.com` : ''
+  // 用户名加前缀：用户，去掉邮箱后缀
+  form.username = raw ? `用户${raw}` : ''
+})
 
 const loading = ref(false)
 const showPassword = ref(false)
-const showConfirmPassword = ref(false)
 const codeCooldown = ref(0)
 const graphCaptchaKey = ref('')
 const graphCaptchaImage = ref('')
@@ -163,12 +141,23 @@ onMounted(() => refreshGraphCaptcha())
 
 const handleSendCode = async () => {
   if (!emailPrefix.value) return showAlert('请先填写邮箱')
-  if (!/^\d{5,11}$/.test(emailPrefix.value)) return showAlert('请输入有效的QQ号')
+  if (!/^\d{5,11}$/.test(emailPrefix.value.trim())) return showAlert('请输入有效的QQ号')
   if (!form.captchaAnswer) return showAlert('请完成图形验证')
   try {
-    await sendCode({ email: form.email, purpose: 'register', captchaKey: graphCaptchaKey.value, captchaAnswer: form.captchaAnswer.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/−/g, '-').replace(/＋/g, '+') })
+    await sendCode({
+      email: form.email,
+      purpose: 'register',
+      captchaKey: graphCaptchaKey.value,
+      captchaAnswer: form.captchaAnswer.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/−/g, '-').replace(/＋/g, '+')
+    })
     codeCooldown.value = 60
-    cooldownTimer = setInterval(() => { codeCooldown.value--; if (codeCooldown.value <= 0 && cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null } }, 1000)
+    cooldownTimer = setInterval(() => {
+      codeCooldown.value--
+      if (codeCooldown.value <= 0 && cooldownTimer) {
+        clearInterval(cooldownTimer)
+        cooldownTimer = null
+      }
+    }, 1000)
     refreshGraphCaptcha()
   } catch (err: any) {
     showAlert(err.message || '发送失败')
@@ -177,13 +166,17 @@ const handleSendCode = async () => {
 }
 
 const handleRegister = async () => {
-  if (!/^\d{5,11}$/.test(emailPrefix.value)) return showAlert('请输入有效的QQ号')
+  const rawPrefix = emailPrefix.value.trim()
+  if (!rawPrefix || !/^\d{5,11}$/.test(rawPrefix)) return showAlert('请输入有效的QQ号')
   if (!form.code || form.code.length !== 6) return showAlert('请填写6位验证码')
-  if (form.password !== form.confirmPassword) return showAlert('两次密码不一致')
   if (form.password.length < 6) return showAlert('密码至少6位')
   if (!/[a-zA-Z]/.test(form.password) || !/\d/.test(form.password)) return showAlert('密码需含字母和数字')
+
+  // 用户名加前缀：用户，去掉邮箱后缀
+  form.email = `${rawPrefix}@qq.com`
+  form.username = `用户${rawPrefix}`
+
   loading.value = true
-  // 超时保护：8秒后提示用户，避免长时间转圈造成困惑
   const timeoutId = setTimeout(() => {
     showAlert('注册处理中，请稍候…如长时间无响应，注册可能已在后台完成，请尝试直接登录')
   }, 8000)
@@ -194,7 +187,9 @@ const handleRegister = async () => {
   } catch (err: any) {
     clearTimeout(timeoutId)
     showAlert(err.message || '注册失败')
-  } finally { loading.value = false }
+  } finally {
+    loading.value = false
+  }
 }
 
 useHead({ title: () => `注册 - 知讯` })
@@ -318,4 +313,3 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
   color: var(--zh-text-placeholder);
 }
 </style>
-
