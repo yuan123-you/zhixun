@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { User, Lock, View, Hide, Loading, Message, Key, Timer, Unlock } from '@element-plus/icons-vue'
+import { Lock, View, Hide, Loading, Message, Key, Timer, Unlock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const { forgotPassword, sendCode, getGraphCaptcha } = useAuth()
@@ -273,6 +273,7 @@ onUnmounted(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 }
 .code-btn:disabled { opacity: 0.5; cursor: not-allowed; color: var(--zh-text-placeholder); }
 </style>
+
 
 
 

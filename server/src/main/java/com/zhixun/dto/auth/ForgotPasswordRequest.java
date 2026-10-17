@@ -7,15 +7,12 @@ import lombok.Data;
 
 /**
  * 忘记密码/重置密码请求
- * 仅需提供邮箱与验证码即可重置密码，不再依赖用户名
+ * 仅需提供邮箱、验证码与新密码，彻底移除用户名
  */
 @Data
 public class ForgotPasswordRequest {
 
-    /** 用户名（选填，向下兼容） */
-    private String username;
-
-    /** 邮箱（用于验证码校验与定位用户） */
+    /** 邮箱（用于验证码校验与精准定位用户账号） */
     @NotBlank(message = "邮箱不能为空")
     @Email(message = "邮箱格式不正确")
     private String email;

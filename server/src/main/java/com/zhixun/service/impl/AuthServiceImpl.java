@@ -399,27 +399,35 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void forgotPassword(ForgotPasswordRequest request) {
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername()));
-        if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+        if (!StringUtils.hasText(email)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "邮箱不能为空");
         }
 
-        // 验证验证码 - 使用 CaptchaService
-        String verifyTarget = StringUtils.hasText(request.getEmail()) ? request.getEmail() : request.getUsername();
-        if (!captchaService.verifyCode(verifyTarget, request.getCode())) {
+        // 1. 通过邮箱哈希精准定位用户账号
+        String emailHash = DigestUtils.md5DigestAsHex(email.getBytes(StandardCharsets.UTF_8));
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmailHash, emailHash));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "该邮箱尚未注册或用户不存在");
+        }
+
+        // 2. 校验验证码（目标为注册邮箱）
+        if (!captchaService.verifyCode(email, request.getCode().trim())) {
             throw new BusinessException(ErrorCode.AUTH_CAPTCHA_ERROR, "验证码错误或已过期（5分钟内有效，请确认输入无误）");
         }
 
+        // 3. 校验新密码格式
         String newPassword = request.getNewPassword();
         if (!newPassword.matches(".*[a-zA-Z].*") || !newPassword.matches(".*\\d.*")) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "密码必须包含字母和数字");
         }
 
+        // 4. 更新密码哈希
         User updateUser = new User();
         updateUser.setId(user.getId());
         updateUser.setPasswordHash(passwordEncoder.encode(newPassword));
         userMapper.updateById(updateUser);
+        log.info("用户通过邮箱重置密码成功: userId={}, username={}, emailHash={}", user.getId(), user.getUsername(), user.getEmailHash());
     }
 
     /**
@@ -708,6 +716,9 @@ public class AuthServiceImpl implements AuthService {
         return sb.toString();
     }
 }
+
+
+
 
 
 

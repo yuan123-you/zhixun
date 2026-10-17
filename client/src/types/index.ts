@@ -291,7 +291,6 @@ export interface GraphCaptchaResponse {
 
 /** 忘记密码请求 */
 export interface ForgotPasswordRequest {
-  username?: string
   email: string
   code: string
   newPassword: string
@@ -455,4 +454,5 @@ export interface CollaboratorData {
   status: number
   createdAt: string
 }
+
 
