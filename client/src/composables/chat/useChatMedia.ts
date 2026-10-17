@@ -6,14 +6,16 @@ import { useResourceUrl } from '@/composables/useResourceUrl'
 
 export function useChatMedia() {
   const { resolveUrl } = useResourceUrl()
-  const resolve = (url: string) => resolveUrl(url) || url
+  const resolve = (url: string) => resolveUrl(url) || ''
 
-  /** 解析语音消息 URL（兼容 JSON {url, duration} 和纯 URL 字符串） */
-  const getVoiceUrl = (content: string): string => {
+  /** 解析语音/文件 URL（兼容 JSON 元数据和纯 URL 字符串） */
+  const getMediaUrl = (content: string): string => {
     try {
       const data = JSON.parse(content)
-      return resolve(data.url || content)
+      return typeof data?.url === 'string' ? resolve(data.url) : ''
     } catch {
+      // 损坏的 JSON 元数据不是可请求的资源地址。
+      if (/^[{\[]/.test(content.trim())) return ''
       return resolve(content)
     }
   }
@@ -25,16 +27,6 @@ export function useChatMedia() {
       return data.duration || 0
     } catch {
       return 0
-    }
-  }
-
-  /** 从文件消息 JSON 中提取 URL */
-  const getFileUrl = (content: string): string => {
-    try {
-      const url = JSON.parse(content).url || content
-      return resolve(url)
-    } catch {
-      return resolve(content)
     }
   }
 
@@ -65,9 +57,9 @@ export function useChatMedia() {
 
   return {
     resolveMsgUrl,
-    getVoiceUrl,
+    getVoiceUrl: getMediaUrl,
     getVoiceDuration,
-    getFileUrl,
+    getFileUrl: getMediaUrl,
     getFileName,
     getFileSize,
   }

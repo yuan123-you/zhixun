@@ -7,7 +7,7 @@
  * 2. 持久化缓存（Browser CacheStorage / IndexedDB）：离线/二次访问命中，避免重复网络请求。
  * 3. 智能回退：CORS 或环境不支持时安全回退至原始 URL。
  */
-import { ref, watch, onMounted, type Ref } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, type Ref } from 'vue'
 
 const CACHE_NAME = 'zhixun-img-cache-v1'
 const memoryCache = new Map<string, string>()
@@ -48,7 +48,7 @@ export async function getCachedImageUrl(url: string | null | undefined): Promise
       if (isCacheStorageAvailable()) {
         const cache = await caches.open(CACHE_NAME)
         const match = await cache.match(trimmed)
-        if (match && match.ok) {
+        if (match && match.ok && match.headers.get('Content-Type')?.toLowerCase().startsWith('image/')) {
           const blob = await match.blob()
           const blobUrl = URL.createObjectURL(blob)
           memoryCache.set(trimmed, blobUrl)
@@ -60,7 +60,7 @@ export async function getCachedImageUrl(url: string | null | undefined): Promise
           mode: 'cors',
           credentials: 'omit',
         })
-        if (response.ok) {
+        if (response.ok && response.headers.get('Content-Type')?.toLowerCase().startsWith('image/')) {
           // 复制一份写入缓存
           await cache.put(trimmed, response.clone())
           const blob = await response.blob()
@@ -73,8 +73,7 @@ export async function getCachedImageUrl(url: string | null | undefined): Promise
       // 跨域或离线等错误，优雅回退到原 URL
     }
 
-    // 默认兜底：直接使用原 URL 并记录到内存
-    memoryCache.set(trimmed, trimmed)
+    // 失败时回退到原 URL，但不缓存失败，以便后续重试
     return trimmed
   })().finally(() => {
     inFlightRequests.delete(trimmed)
@@ -90,8 +89,10 @@ export async function getCachedImageUrl(url: string | null | undefined): Promise
 export function useImageCache(srcRef: Ref<string | null | undefined> | (() => string | null | undefined)): Ref<string> {
   const getRaw = () => (typeof srcRef === 'function' ? srcRef() : srcRef.value)
   const cachedUrl = ref<string>(getRaw() || '')
+  let requestId = 0
 
   const resolve = async () => {
+    const currentRequest = ++requestId
     const raw = getRaw()
     if (!raw) {
       cachedUrl.value = ''
@@ -105,7 +106,7 @@ export function useImageCache(srcRef: Ref<string | null | undefined> | (() => st
     // 先显示原始 URL，避免等待 fetch 导致空白
     cachedUrl.value = raw
     const result = await getCachedImageUrl(raw)
-    if (result) {
+    if (result && currentRequest === requestId) {
       cachedUrl.value = result
     }
   }
@@ -117,6 +118,8 @@ export function useImageCache(srcRef: Ref<string | null | undefined> | (() => st
   watch(getRaw, () => {
     resolve()
   })
+
+  onBeforeUnmount(() => { requestId++ })
 
   return cachedUrl
 }

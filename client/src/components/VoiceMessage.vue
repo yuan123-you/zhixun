@@ -36,7 +36,7 @@
       <span class="voice-duration">{{ formatDuration(displayDuration) }}</span>
     </template>
     <!-- 隐藏的 audio 元素 -->
-    <audio ref="audioRef" :src="resolvedUrl" preload="metadata" @ended="onEnded" @loadedmetadata="onMetaLoaded" />
+    <audio v-if="resolvedUrl" ref="audioRef" :src="resolvedUrl" preload="metadata" @ended="onEnded" @loadedmetadata="onMetaLoaded" />
   </div>
 </template>
 
@@ -71,10 +71,10 @@ const resolvedUrl = computed(() => {
   if (raw.startsWith('{')) {
     try {
       const parsed = JSON.parse(raw)
-      raw = parsed.url || raw
+      raw = typeof parsed?.url === 'string' ? parsed.url : ''
     } catch { /* 解析失败保留原值，后续校验会拦截 */ }
   }
-  const resolved = resolveUrl(raw) || raw
+  const resolved = resolveUrl(raw) || ''
   // 校验：合法 URL 不应包含花括号（JSON 残留）
   if (typeof resolved !== 'string' || resolved.includes('{') || resolved.includes('}')) {
     return ''

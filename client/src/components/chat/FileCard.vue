@@ -148,6 +148,7 @@ const canPreview = computed(() => {
 /** 点击文件卡片 */
 const handleClick = () => {
   const url = getFileUrl(props.content)
+  if (!url) return
   const name = getFileName(props.content)
   const ext = fileExtension.value.toLowerCase()
 

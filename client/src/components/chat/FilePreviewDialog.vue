@@ -95,7 +95,7 @@ const emit = defineEmits<{
 
 const { resolveUrl } = useResourceUrl()
 
-const resolvedUrl = computed(() => resolveUrl(props.fileUrl) || props.fileUrl)
+const resolvedUrl = computed(() => resolveUrl(props.fileUrl) || '')
 
 /** 文件类型对应的颜色 */
 const typeColor = computed(() => {
@@ -110,29 +110,35 @@ const typeColor = computed(() => {
 const txtContent = ref('')
 const txtLoading = ref(false)
 
-watch(() => props.visible, async (v) => {
-  if (!v) return
-  if (props.fileExt === 'txt') {
-    txtContent.value = ''
-    txtLoading.value = true
-    try {
-      const resp = await fetch(resolvedUrl.value)
-      if (resp.ok) {
-        txtContent.value = await resp.text()
-      }
-    } catch {
-      txtContent.value = ''
-    } finally {
-      txtLoading.value = false
-    }
+watch([() => props.visible, resolvedUrl, () => props.fileExt], async ([visible, url, ext], _, onCleanup) => {
+  txtContent.value = ''
+  txtLoading.value = false
+  if (!visible || ext !== 'txt' || !url) return
+
+  let active = true
+  const controller = new AbortController()
+  onCleanup(() => {
+    active = false
+    controller.abort()
+  })
+  txtLoading.value = true
+  try {
+    const resp = await fetch(url, { signal: controller.signal })
+    const text = resp.ok ? await resp.text() : ''
+    if (active) txtContent.value = text
+  } catch {
+    if (active) txtContent.value = ''
+  } finally {
+    if (active) txtLoading.value = false
   }
-})
+}, { immediate: true })
 
 function close() {
   emit('close')
 }
 
 function downloadFile() {
+  if (!resolvedUrl.value) return
   const link = document.createElement('a')
   link.href = resolvedUrl.value
   link.download = props.fileName
@@ -147,10 +153,11 @@ function downloadFile() {
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && props.visible) close()
 }
-watch(() => props.visible, (v) => {
-  if (v) window.addEventListener('keydown', onKeydown)
-  else window.removeEventListener('keydown', onKeydown)
-})
+watch(() => props.visible, (visible, _, onCleanup) => {
+  if (!visible) return
+  window.addEventListener('keydown', onKeydown)
+  onCleanup(() => window.removeEventListener('keydown', onKeydown))
+}, { immediate: true })
 </script>
 
 <style scoped>

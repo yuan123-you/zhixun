@@ -14,7 +14,7 @@
 
     <!-- 图片消息 -->
     <div v-else-if="messageType === 'image'" class="chat-bubble chat-bubble-image" @click="$emit('preview-image', content)">
-      <img :src="cachedImgUrl || resolvedUrl" alt="图片" class="chat-msg-image" loading="lazy" />
+      <img v-if="resolvedUrl" :src="cachedImgUrl || resolvedUrl" alt="图片" class="chat-msg-image" loading="lazy" />
     </div>
 
     <!-- 文件消息 -->
@@ -80,6 +80,7 @@ if (typeof window !== 'undefined') {
 const { resolveMsgUrl, getVoiceUrl, getVoiceDuration } = useChatMedia()
 
 const resolvedUrl = computed(() => {
+  if (props.messageType !== 'image') return ''
   if (props.resolveUrl) return props.resolveUrl(props.content)
   return resolveMsgUrl(props.content)
 })

@@ -22,3 +22,13 @@ describe('resource URLs', () => {
     expect(resolveUrl(input)).toBe(expected)
   })
 })
+
+describe('resource URL edge cases', () => {
+  it('preserves blob URLs used by local previews', () => {
+    expect(resolveUrl('blob:https://zhixun.iflare.cn/local-preview')).toBe('blob:https://zhixun.iflare.cn/local-preview')
+  })
+
+  it('rejects HTTPS MinIO console URLs before accepting public HTTPS URLs', () => {
+    expect(resolveUrl('https://storage.example.com:9001/bucket/picture.png')).toBeNull()
+  })
+})

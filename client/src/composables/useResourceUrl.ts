@@ -14,13 +14,13 @@ export const useResourceUrl = () => {
    */
   const resolveUrl = (url: string | null | undefined): string | null => {
     if (!url) return null
-    // 已经是完整URL（https:或data:）直接返回（https 的公网地址无需替换）
-    if (/^(https:|data:)/.test(url)) return url
     // 拦截 MinIO Console 端口（9001）的 URL：控制台只返回 HTML，被浏览器以图片资源请求会触发 ORB
     // 将其视为无效 URL，返回 null 以便调用方走占位符兜底
     if (/^https?:\/\/[^/]*:9001(\/|$)/i.test(url)) {
       return null
     }
+    // 公网 HTTPS 和浏览器内联资源不需要代理。
+    if (/^(https:|data:|blob:)/.test(url)) return url
 
     // 将 MinIO 直链转换为后端代理路径，避免 MinIO 307 重定向触发 ERR_TOO_MANY_REDIRECTS
     // 匹配 http://host:port/bucket/path 格式
