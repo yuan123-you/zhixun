@@ -51,4 +51,28 @@
 
 ## 实际发布结果
 
-发布前记录：待执行。发布完成后补充提交、镜像、备份、健康和公共访问验证证据。
+- 应用提交：`890c720bdabe62d1f3551b256c066ff1d6c69568`，已 fast-forward 推送到 `origin/master`。
+- 最终验收时间：**2026-10-28 15:23:56（Asia/Shanghai）**。
+- 用户端入口：`https://zhixun.iflare.cn/zhixun/`；管理端入口：`https://zhixun.iflare.cn/admin/`。
+- 运行镜像：`zhixun-production-server:890c720`、`zhixun-production-client:890c720`、`zhixun-production-admin:890c720`，三个容器均 healthy。验收时运行容器的镜像 ID 与构建镜像一致。
+- 镜像 ID：server `sha256:df21473938b71f6f5d9af90a7316d1f3c9362bc0b50f43950ac9d16b0526dbda`；client `sha256:d0c00aaa05453b0e42d3740ddab26bc9a1aa3152c699eca0d7ee1eea67bc0716`；admin `sha256:df3c0f307f92dd94095835b10ba1c8f4ff373ca158eecde50d068b848a8621f9`。
+- 发布证据目录：`/srv/zhixun/deployment/releases/890c720-20261028T072317Z`，包含 build/up 日志、前后容器快照、`verification.json`、`container-scope.json` 和 `images.json`。
+- 数据库备份：该目录的 `database-before.sql.gz`，233,084 字节，权限 600，`gzip -t` 通过。没有导入、重建或回滚生产业务数据。
+- 回滚镜像保留为三应用各自的 `rollback-before-890c720` 标签；对应 `rollback.compose.json` 保留在证据目录。
+- 仅三应用被替换。比较首次发布前与最终发布后快照，数据库、Redis、RabbitMQ、OpenSearch 及其他站点容器 ID 均未变化。
+
+### 实际线上检查
+
+- 用户端和管理端 HTML 返回 200 且 no-store；用户端 4 个、管理端 3 个入口/预加载/样式资产返回 200，SHA-256 与运行镜像内文件逐一一致。
+- 分类、最新、热门第二页、推荐 API 返回正常 HTTP/业务状态。
+- 匿名查询草稿得到空列表且 total=0；匿名管理接口返回 401。
+- 使用服务器既有管理员凭据完成登录、管理接口读取、令牌刷新和刷新后读取；凭据与令牌只在服务器内存处理，没有输出或写入本报告。
+- 已认证作品列表实际返回 `private, no-store`；配置允许的另一 HTTPS 来源携带 `X-Client-Type` 的真实跨域预检通过。
+- 绕过 Nginx直接请求后端上传路径，确认后端自身返回不允许脚本/同源身份的 sandbox CSP。
+- 公网浏览器重新加载了新入口脚本 `/zhixun/assets/index-DpmosAwg.js`；首页显示 10 条内容，前 6 张图片解码成功；最新信息流切换、发现页懒加载、管理端登录页均正常，检查时无 warning/error。浏览器未提交生产账户凭据，登录后管理台仍以 API 和图表运行时测试验证，不声称已人工遍历所有管理页面。
+
+### 首次验收误判与回滚记录
+
+首次发布到 `/srv/zhixun/deployment/releases/890c720-20261028T071710Z` 时，三个应用已健康，但临时验收脚本把同源 OPTIONS 的正常响应（无需 CORS 响应头）当作跨域预检失败，触发自动恢复旧镜像。确认旧版本已健康后，将验收改成配置中允许的另一 HTTPS 来源，再次部署相同应用提交，最终所有检查通过。没有为通过检查放宽生产 CORS 规则，也没有恢复数据库或删除业务数据。
+
+本地隔离 MySQL fixture 和两个临时前端预览服务已停止。后续仅补充发布文档提交，应用镜像仍对应上面的经过验证的代码提交；不因文档变更重启应用。
