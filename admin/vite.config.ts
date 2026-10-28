@@ -53,10 +53,10 @@ export default defineConfig({
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-element-plus': ['element-plus', '@element-plus/icons-vue'],
-          'vendor-vue': ['vue', 'vue-router', 'pinia'],
-          'vendor-axios': ['axios'],
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return
+          if (/\/(?:@vue|vue|vue-router|pinia)\//.test(id)) return 'vendor-vue'
+          if (id.includes('/axios/')) return 'vendor-axios'
         },
       },
     },

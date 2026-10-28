@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import ElementPlus from 'element-plus'
+import { ElInfiniteScroll, ElLoading, ElMessage, ElMessageBox, ElNotification, ElPopoverDirective, provideGlobalConfig } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
@@ -19,8 +19,11 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-// 全局 Element Plus 提示配置（移动端适配 / 防溢出 / 显眼）
-app.use(ElementPlus, { locale: zhCn, size: 'default' })
+// 组件由构建插件按需导入；仅全局安装指令和消息服务，保留中文及服务上下文。
+provideGlobalConfig({ locale: zhCn, size: 'default' }, app, true)
+for (const plugin of [ElInfiniteScroll, ElLoading, ElMessage, ElMessageBox, ElNotification, ElPopoverDirective]) {
+  app.use(plugin)
+}
 
 // 注册 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
@@ -47,7 +50,6 @@ app.directive('permission', {
 
 // 全局 ElMessage 移动端适配配置（设置后所有页面 ElMessage 弹出的提示都更显眼、不溢出）
 // 通过覆写 .el-message CSS 自定义属性来集中控制位置、宽度、圆角、阴影（见 styles/index.scss）
-import { ElMessage } from 'element-plus'
 ;(ElMessage as any).options = {
   ...((ElMessage as any).options || {}),
   // 顶部距离：让消息贴近顶部，比默认更显眼（不被 header 遮挡）

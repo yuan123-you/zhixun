@@ -3,6 +3,7 @@ package com.zhixun.controller;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
+import com.zhixun.security.PersonalizedCacheControl;
 import com.zhixun.service.FeedService;
 import com.zhixun.vo.ArticleVO;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,7 +48,7 @@ public class FeedController {
         if (refresh != null && refresh == 1) {
             response.setHeader("Cache-Control", "no-cache, no-store");
         } else {
-            response.setHeader("Cache-Control", "public, max-age=60");
+            PersonalizedCacheControl.apply(response, securityUtil, 60);
         }
         return ResponseEntity.ok(R.ok(feedService.getRecommendFeed(userId, refresh, page, pageSize)));
     }
@@ -68,7 +69,7 @@ public class FeedController {
             // 未登录用户
         }
         // 设置 Cache-Control：公共缓存，最大缓存60秒
-        response.setHeader("Cache-Control", "public, max-age=60");
+        PersonalizedCacheControl.apply(response, securityUtil, 60);
         return ResponseEntity.ok(R.ok(feedService.getLatestFeed(currentUserId, page, pageSize)));
     }
 
@@ -82,7 +83,7 @@ public class FeedController {
             HttpServletResponse response) {
         Long userId = securityUtil.getCurrentUserId();
         // 关注动态为个人数据，设置 no-cache
-        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Cache-Control", "private, no-store");
         return ResponseEntity.ok(R.ok(feedService.getFollowingFeed(userId, page, pageSize)));
     }
 
@@ -96,7 +97,7 @@ public class FeedController {
             HttpServletResponse response) {
         Long userId = securityUtil.getCurrentUserId();
         // 关注动态为个人数据，设置 no-cache
-        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Cache-Control", "private, no-store");
         return ResponseEntity.ok(R.ok(feedService.getFollowingFeedByCursor(userId, cursor, pageSize)));
     }
 
@@ -116,7 +117,7 @@ public class FeedController {
             // 未登录用户
         }
         // 设置 Cache-Control：公共缓存，最大缓存120秒
-        response.setHeader("Cache-Control", "public, max-age=120");
+        PersonalizedCacheControl.apply(response, securityUtil, 120);
         return ResponseEntity.ok(R.ok(feedService.getHotFeed(currentUserId, page, pageSize)));
     }
 }

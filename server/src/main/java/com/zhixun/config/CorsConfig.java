@@ -35,7 +35,7 @@ public class CorsConfig {
         config.setAllowedOrigins(origins);
         // 允许的请求头（包含 CSRF 防护所需的 X-XSRF-TOKEN 与通用跨域头）
         config.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Requested-With"
+                "Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Requested-With", "X-Client-Type"
         ));
         // 允许所有请求方法
         config.addAllowedMethod("*");

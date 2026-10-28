@@ -600,19 +600,23 @@ public class AdminServiceImpl implements AdminService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "评论不存在");
         }
 
-        // 减少作品评论数（仅当评论之前是正常状态时才减少）
         CommentStatusEnum originalStatus = comment.getStatus();
+        int changed = commentMapper.update(null, new LambdaUpdateWrapper<Comment>()
+                .eq(Comment::getId, commentId)
+                .eq(Comment::getStatus, originalStatus)
+                .ne(Comment::getStatus, CommentStatusEnum.DELETED)
+                .set(Comment::getStatus, CommentStatusEnum.DELETED)
+                .set(Comment::getDeletedAt, LocalDateTime.now()));
+        if (changed == 0) return;
+
+        // 只有实际删除了正常评论，才减少作品评论数。
+
         if (originalStatus == CommentStatusEnum.NORMAL) {
             articleMapper.update(null, new LambdaUpdateWrapper<Article>()
                     .eq(Article::getId, comment.getArticleId())
                     .gt(Article::getCommentCount, 0)
                     .setSql("comment_count = comment_count - 1"));
         }
-
-        // 软删除
-        comment.setStatus(CommentStatusEnum.DELETED);
-        comment.setDeletedAt(LocalDateTime.now());
-        commentMapper.updateById(comment);
 
         // 记录操作日志
         String ip = getClientIp();

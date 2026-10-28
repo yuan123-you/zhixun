@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import ElementPlus from 'element-plus'
+import { ElInfiniteScroll, ElLoading, ElMessage, ElMessageBox, ElNotification, ElPopoverDirective, provideGlobalConfig } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
@@ -26,8 +26,11 @@ app.config.globalProperties.navigateTo = navigateTo
 const pinia = createPinia()
 app.use(pinia)
 
-// 注册 Element Plus，使用中文语言包
-app.use(ElementPlus, { locale: zhCn })
+// 组件由构建插件按需导入；仅全局安装指令和消息服务，保留中文及服务上下文。
+provideGlobalConfig({ locale: zhCn, size: 'default' }, app, true)
+for (const plugin of [ElInfiniteScroll, ElLoading, ElMessage, ElMessageBox, ElNotification, ElPopoverDirective]) {
+  app.use(plugin)
+}
 
 // 注册 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

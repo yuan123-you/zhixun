@@ -9,7 +9,6 @@ const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000
 /** 全局刷新锁 */
 let globalIsRefreshing = false
 let globalRefreshPromise: Promise<string> | null = null
-const globalPendingRequests: Array<(token: string) => void> = []
 
 /** Token 同步回调：由外部注入，用于在 token 刷新后将新 token 同步到 Pinia store */
 let onTokenRefreshed: ((token: string, refreshToken: string, expiresIn?: number) => void) | null = null
@@ -76,6 +75,19 @@ export const useApi = () => {
     // 避免默认 application/json 覆盖 FormData 的 Content-Type 导致后端 MultipartException
   })
 
+  const expireSession = async () => {
+    showAuthExpiredToast()
+    clearTokenFromStore()
+    // 修复：不再使用 location.href（会触发整页刷新，体感为"页面莫名其妙地自动刷新"）。
+    // 改用 Vue Router 客户端跳转，保留 SPA 单页应用体验。
+    // 兜底：若 router 尚未初始化（极端情况），才退化为 location.href。
+    try {
+      await navigateTo({ path: '/login', query: { redirect: location.pathname + location.search } })
+    } catch {
+      location.href = '/login'
+    }
+  }
+
   // 全局Token刷新
   const refreshAccessToken = async (): Promise<string> => {
     // refreshToken 存储在 localStorage 中
@@ -99,22 +111,9 @@ export const useApi = () => {
         const { accessToken, refreshToken: newRt, expiresIn } = response.data.data
         setTokenToStore(accessToken, newRt || '', expiresIn)
         onTokenRefreshed?.(accessToken, newRt || '', expiresIn)
-        const cb = [...globalPendingRequests]
-        globalPendingRequests.length = 0
-        cb.forEach((c) => c(accessToken))
         return accessToken
       } catch {
-        globalPendingRequests.length = 0
-        showAuthExpiredToast()
-        clearTokenFromStore()
-        // 修复：不再使用 location.href（会触发整页刷新，体感为"页面莫名其妙地自动刷新"）。
-        // 改用 Vue Router 客户端跳转，保留 SPA 单页应用体验。
-        // 兜底：若 router 尚未初始化（极端情况），才退化为 location.href。
-        try {
-          await navigateTo({ path: '/login', query: { redirect: location.pathname + location.search } })
-        } catch {
-          location.href = '/login'
-        }
+        await expireSession()
         throw new Error('登录已过期')
       } finally {
         globalIsRefreshing = false
@@ -220,18 +219,12 @@ export const useApi = () => {
     }
   )
 
-  const handleTokenRefresh = async (requestConfig: AxiosRequestConfig) => {
-    // refreshToken 存储在 httpOnly Cookie 中，前端无法读取
-    // 直接尝试刷新，后端会从 Cookie 读取 refreshToken
-    if (globalIsRefreshing && globalRefreshPromise) {
-      return new Promise((resolve, reject) => {
-        globalPendingRequests.push((newToken: string) => {
-          if (requestConfig.headers) requestConfig.headers.Authorization = `Bearer ${newToken}`
-          resolve(instance(requestConfig))
-        })
-        globalRefreshPromise!.catch(() => reject(new Error('登录已过期')))
-      })
+  const handleTokenRefresh = async (requestConfig: AxiosRequestConfig & { __authRetried?: boolean }) => {
+    if (requestConfig.__authRetried) {
+      await expireSession()
+      return Promise.reject(new Error('登录已过期'))
     }
+    requestConfig.__authRetried = true
     try {
       const newToken = await refreshAccessToken()
       if (requestConfig.headers) requestConfig.headers.Authorization = `Bearer ${newToken}`

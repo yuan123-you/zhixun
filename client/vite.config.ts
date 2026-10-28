@@ -64,10 +64,10 @@ export default defineConfig({
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-element-plus': ['element-plus', '@element-plus/icons-vue'],
-          'vendor-vue': ['vue', 'vue-router', 'pinia'],
-          'vendor-utils': ['axios', 'qrcode', 'html2canvas'],
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return
+          if (/\/(?:@vue|vue|vue-router|pinia)\//.test(id)) return 'vendor-vue'
+          if (/\/(?:axios|qrcode|html2canvas)\//.test(id)) return 'vendor-utils'
         },
       },
     },

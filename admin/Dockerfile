@@ -14,7 +14,7 @@ COPY packages/shared-types/ /app/node_modules/@zhixun/shared-types/
 COPY admin/package.json admin/package-lock.json ./
 
 # 安装依赖
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # 复制源代码
 COPY admin/ .

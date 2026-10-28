@@ -9,6 +9,7 @@ import router from '@/router'
 declare module 'axios' {
   export interface AxiosRequestConfig {
     __retryCount?: number
+    __authRetried?: boolean
   }
 }
 
@@ -35,7 +36,6 @@ const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000
 /** 全局刷新锁：防止多个请求并发刷新 Token */
 let isRefreshing = false
 let refreshPromise: Promise<string> | null = null
-const pendingRequests: Array<(token: string) => void> = []
 
 /**
  * 判断 Token 是否即将过期（过期前5分钟内）
@@ -88,10 +88,6 @@ async function refreshAccessToken(): Promise<string> {
         const expiresAt = Date.now() + expiresIn * 1000
         sessionStore.set(STORAGE_KEYS.TOKEN_EXPIRES_AT, expiresAt)
       }
-
-      // 重试所有挂起的请求
-      pendingRequests.forEach((callback) => callback(accessToken))
-      pendingRequests.length = 0
 
       return accessToken
     } catch {
@@ -188,11 +184,12 @@ service.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    // 5xx / 网络错误 — 自动重试（指数退避）
+    // 仅重试只读请求：写入可能已经成功，重放会重复创建或执行操作。
     const isServerError = status !== undefined && status >= 500
     const isNetworkError = error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK'
-    if (isServerError || isNetworkError) {
-      const config = error.config as AxiosRequestConfig
+    const config = error.config as AxiosRequestConfig | undefined
+    const canRetry = config && ['GET', 'HEAD'].includes((config.method || 'GET').toUpperCase())
+    if (canRetry && (isServerError || isNetworkError)) {
       config.__retryCount = config.__retryCount || 0
       if (config.__retryCount < MAX_RETRIES) {
         config.__retryCount++
@@ -255,20 +252,15 @@ async function handleTokenRefresh(requestConfig: AxiosRequestConfig) {
     return Promise.reject(new Error('登录已过期，请重新登录'))
   }
 
-  // 如果已经在刷新中，将当前请求加入等待队列
-  if (isRefreshing && refreshPromise) {
-    return new Promise((resolve, reject) => {
-      pendingRequests.push((newToken: string) => {
-        if (requestConfig.headers) {
-          requestConfig.headers.Authorization = `Bearer ${newToken}`
-        }
-        resolve(service(requestConfig))
-      })
-      refreshPromise!.catch(() => {
-        reject(new Error('登录已过期，请重新登录'))
-      })
-    })
+  if (requestConfig.__authRetried) {
+    sessionStore.remove(STORAGE_KEYS.TOKEN)
+    sessionStore.remove(STORAGE_KEYS.REFRESH_TOKEN)
+    sessionStore.remove(STORAGE_KEYS.TOKEN_EXPIRES_AT)
+    sessionStore.remove(STORAGE_KEYS.USER_PERMISSIONS)
+    router.push('/login')
+    return Promise.reject(new Error('登录已过期，请重新登录'))
   }
+  requestConfig.__authRetried = true
 
   // 发起刷新
   try {

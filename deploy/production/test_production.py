@@ -25,7 +25,8 @@ class ProductionConfigTests(unittest.TestCase):
             for key, value in service.get('environment', {}).items():
                 if any(word in key for word in ['PASSWORD', 'SECRET', 'API_KEY']):
                     self.assertTrue(str(value).startswith('${'), key + ' must come from private environment')
-        self.assertEqual('https://glint.novo.ccwu.cc', config['services']['server']['environment']['CORS_ALLOWED_ORIGINS'])
+        origins = set(config['services']['server']['environment']['CORS_ALLOWED_ORIGINS'].split(','))
+        self.assertEqual({'https://glint.novo.ccwu.cc', 'https://129.151.25.15'}, origins)
         self.assertTrue(config['services']['mysql']['volumes'])
         self.assertTrue(config['services']['server']['volumes'])
     def test_builtin_file_storage_is_persistent_without_unavailable_image(self):

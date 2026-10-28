@@ -13,7 +13,7 @@ COPY packages/shared-types/ /app/node_modules/@zhixun/shared-types/
 COPY client/package.json client/package-lock.json ./
 
 # 安装依赖（--legacy-peer-deps 解决 peer 冲突，--ignore-scripts 跳过不必要的脚本）
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # 复制客户端源代码
 COPY client/ .

@@ -46,6 +46,13 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
                 "frame-ancestors 'none'; " +             // 防止被 iframe 嵌入
                 "upgrade-insecure-requests");           // 自动升级 HTTP 到 HTTPS
 
+        String path = request.getServletPath();
+        if (path.startsWith("/uploads/") || path.startsWith("/v1/files/view/")) {
+            // User-controlled SVG/HTML must not execute scripts or inherit the application origin,
+            // including when the backend is used without the production Nginx proxy.
+            response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox; frame-ancestors 'none'");
+        }
+
         // 强制HTTPS（仅在生产环境启用，HSTS需谨慎）
         response.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 

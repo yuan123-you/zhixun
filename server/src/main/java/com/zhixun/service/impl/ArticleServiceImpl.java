@@ -43,6 +43,7 @@ import com.zhixun.mapper.ArticleImageMapper;
 import com.zhixun.mapper.TagMapper;
 import com.zhixun.mapper.UserMapper;
 import com.zhixun.security.HtmlWhitelistFilter;
+import com.zhixun.security.ArticleVisibilityQuery;
 import com.zhixun.service.ArticleService;
 import com.zhixun.service.ArticleReviewPolicy;
 import com.zhixun.service.FeedService;
@@ -441,11 +442,28 @@ public class ArticleServiceImpl implements ArticleService {
         // 构建查询条件
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
 
+        wrapper.isNull(Article::getDeletedAt);
+
         // 公开查询默认只查已发布
         if (request.getStatus() != null) {
             wrapper.eq(Article::getStatus, ArticleStatusEnum.fromValue(request.getStatus()));
         } else {
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
+        }
+
+        // status 是筛选条件，不是读取他人未发布内容的授权。
+        if (!securityUtil.isAdmin()) {
+            if (currentUserId == null) {
+                wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED);
+            } else {
+                final Long viewerId = currentUserId;
+                wrapper.and(w -> w.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                        .or().eq(Article::getAuthorId, viewerId));
+            }
+        }
+
+        if (!securityUtil.isAdmin()) {
+            ArticleVisibilityQuery.apply(wrapper, currentUserId);
         }
 
         // 按分类筛选
@@ -626,6 +644,13 @@ public class ArticleServiceImpl implements ArticleService {
             limit = 6;
         }
 
+        Long currentUserId = null;
+        try {
+            currentUserId = securityUtil.getCurrentUserId();
+        } catch (Exception ignored) {}
+        final Long finalCurrentUserId = currentUserId;
+        final int resultLimit = limit;
+
         // 尝试从缓存获取
         String cacheKey = RELATED_ARTICLES_PREFIX + articleId;
         try {
@@ -640,6 +665,9 @@ public class ArticleServiceImpl implements ArticleService {
                     List<Article> ordered = articleIds.stream()
                             .map(articleMap::get)
                             .filter(Objects::nonNull)
+                            .filter(a -> a.getDeletedAt() == null && a.getStatus() == ArticleStatusEnum.PUBLISHED)
+                            .filter(a -> canViewArticle(a, finalCurrentUserId))
+                            .limit(resultLimit)
                             .collect(Collectors.toList());
                     return convertToVOList(ordered);
                 }
@@ -675,6 +703,7 @@ public class ArticleServiceImpl implements ArticleService {
         // 构建查询：同标签或同分类的已发布作品
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .isNull(Article::getDeletedAt)
                 .ne(Article::getId, articleId);
 
         Set<Long> tagMatchedIds = tagMatchCount.keySet();
@@ -698,12 +727,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         List<Article> candidates = articleMapper.selectList(wrapper);
 
-        // 根据可见性过滤
-        Long currentUserId = null;
-        try {
-            currentUserId = securityUtil.getCurrentUserId();
-        } catch (Exception ignored) {}
-        final Long finalCurrentUserId = currentUserId;
+        // 根据可见性过滤（缓存命中与数据库查询使用相同的当前用户权限）
         candidates = candidates.stream()
                 .filter(a -> canViewArticle(a, finalCurrentUserId))
                 .collect(Collectors.toList());

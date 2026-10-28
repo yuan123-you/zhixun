@@ -25,6 +25,7 @@ import com.zhixun.mapper.UserMapper;
 import com.zhixun.mapper.UserPreferredCategoryMapper;
 import com.zhixun.mapper.UserPreferredTagMapper;
 import com.zhixun.service.FeedService;
+import com.zhixun.security.ArticleVisibilityQuery;
 import com.zhixun.vo.ArticleVO;
 import com.zhixun.vo.TagVO;
 import lombok.RequiredArgsConstructor;
@@ -196,15 +197,18 @@ public class FeedServiceImpl implements FeedService {
         } catch (Exception e) {
             log.warn("Redis 不可用，跳过最新动态缓存读取: {}", e.getMessage());
         }
-        if (cachedIds != null) {
-            return getPagedFromCache(cacheKey, currentUserId, page, pageSize);
+        if (currentUserId == null && cachedIds != null) {
+            PageResult<ArticleVO> cachedPage = getPagedFromCache(cacheKey, currentUserId, page, pageSize);
+            if (cachedPage != null) return cachedPage;
         }
 
         // 缓存未命中，查询数据库
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .isNull(Article::getDeletedAt)
                 .orderByDesc(Article::getCreatedAt);
 
+        ArticleVisibilityQuery.apply(wrapper, currentUserId);
         Page<Article> articlePage = new Page<>(page, pageSize);
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
@@ -214,13 +218,13 @@ public class FeedServiceImpl implements FeedService {
         List<ArticleVO> voList = convertToVOList(visibleArticles);
 
         // 缓存作品ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
-        if (!CollectionUtils.isEmpty(voList)) {
+        if (currentUserId == null && !CollectionUtils.isEmpty(voList)) {
             String idsStr = voList.stream()
                     .map(vo -> String.valueOf(vo.getId()))
                     .collect(Collectors.joining(","));
             long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(LATEST_FEED_TTL_MINUTES);
             try {
-                stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+                stringRedisTemplate.opsForValue().set(cacheKey, result.getTotal() + ":" + idsStr, jitteredTTL, TimeUnit.SECONDS);
             } catch (Exception e) {
                 log.warn("Redis 不可用，跳过最新动态缓存写入: {}", e.getMessage());
             }
@@ -232,57 +236,14 @@ public class FeedServiceImpl implements FeedService {
     @Override
     @Slave
     public PageResult<ArticleVO> getFollowingFeed(Long userId, Integer page, Integer pageSize) {
-        // 尝试从 Redis 缓存获取
-        String cacheKey = FOLLOWING_FEED_KEY_PREFIX + userId;
-        String cachedIds = null;
-        try {
-            cachedIds = stringRedisTemplate.opsForValue().get(cacheKey);
-        } catch (Exception e) {
-            log.warn("Redis 不可用，跳过关注动态缓存读取: {}", e.getMessage());
-        }
-        if (cachedIds != null) {
-            return getPagedFromCache(cacheKey, userId, page, pageSize);
-        }
-
-        // 缓存未命中，优先从 Redis Sorted Set 时间线获取
-        String timelineKey = TIMELINE_KEY_PREFIX + userId;
-        Long timelineSize = null;
-        try {
-            timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
-        } catch (Exception e) {
-            log.warn("Redis 不可用，跳过时间线大小查询: {}", e.getMessage());
-        }
-        if (timelineSize != null && timelineSize > 0) {
-            return getFollowingFeedFromTimeline(userId, timelineKey, page, pageSize);
-        }
-
-        // 时间线也不存在，从数据库查询并构建缓存
-        PageResult<ArticleVO> result = getFollowingFeedFromDB(userId, page, pageSize);
-
-        // 异步缓存结果
-        if (!CollectionUtils.isEmpty(result.getList())) {
-            cacheFollowingFeedAsync(userId, result.getList());
-        }
-
-        return result;
+        // A cached page / bounded fanout timeline is not the entire following sequence.
+        // Use the authoritative permission-filtered query for complete pages and exact totals.
+        return getFollowingFeedFromDB(userId, page, pageSize);
     }
 
     @Override
     public PageResult<ArticleVO> getFollowingFeedByCursor(Long userId, LocalDateTime cursor, Integer pageSize) {
-        // 优先从 Redis Sorted Set 时间线获取
-        String timelineKey = TIMELINE_KEY_PREFIX + userId;
-        Long timelineSize = null;
-        try {
-            timelineSize = stringRedisTemplate.opsForZSet().size(timelineKey);
-        } catch (Exception e) {
-            log.warn("Redis 不可用，跳过时间线大小查询: {}", e.getMessage());
-        }
-
-        if (timelineSize != null && timelineSize > 0) {
-            return getFollowingFeedByCursorFromTimeline(userId, timelineKey, cursor, pageSize);
-        }
-
-        // 时间线不存在，从数据库查询
+        // Do not apply a timeline LIMIT before checking visibility/current follow relationships.
         // 查询关注的用户列表
         List<UserFollow> follows = userFollowMapper.selectList(
                 new LambdaQueryWrapper<UserFollow>().eq(UserFollow::getFollowerId, userId));
@@ -298,15 +259,17 @@ public class FeedServiceImpl implements FeedService {
         // 查询关注用户的已发布作品（游标分页）
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .isNull(Article::getDeletedAt)
                 .in(Article::getAuthorId, followUserIds);
         if (cursor != null) {
             wrapper.lt(Article::getCreatedAt, cursor);
         }
+        ArticleVisibilityQuery.apply(wrapper, userId);
         wrapper.orderByDesc(Article::getCreatedAt)
                 .last("LIMIT " + pageSize);
 
         List<Article> articles = articleMapper.selectList(wrapper);
-        List<ArticleVO> voList = convertToVOList(articles);
+        List<ArticleVO> voList = convertToVOList(filterByVisibility(articles, userId));
 
         // 异步构建时间线
         rebuildTimelineAsync(userId);
@@ -325,17 +288,20 @@ public class FeedServiceImpl implements FeedService {
         } catch (Exception e) {
             log.warn("Redis 不可用，跳过热门动态缓存读取: {}", e.getMessage());
         }
-        if (cachedIds != null) {
-            return getPagedFromCache(cacheKey, currentUserId, page, pageSize);
+        if (currentUserId == null && cachedIds != null) {
+            PageResult<ArticleVO> cachedPage = getPagedFromCache(cacheKey, currentUserId, page, pageSize);
+            if (cachedPage != null) return cachedPage;
         }
 
         // 缓存未命中，查询数据库
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .isNull(Article::getDeletedAt)
                 .orderByDesc(Article::getViewCount)
                 .orderByDesc(Article::getLikeCount)
                 .orderByDesc(Article::getCreatedAt);
 
+        ArticleVisibilityQuery.apply(wrapper, currentUserId);
         Page<Article> articlePage = new Page<>(page, pageSize);
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
@@ -345,13 +311,13 @@ public class FeedServiceImpl implements FeedService {
         List<ArticleVO> voList = convertToVOList(visibleArticles);
 
         // 缓存作品ID列表（仅缓存当前页的ID，供后续相同分页请求命中）
-        if (!CollectionUtils.isEmpty(voList)) {
+        if (currentUserId == null && !CollectionUtils.isEmpty(voList)) {
             String idsStr = voList.stream()
                     .map(vo -> String.valueOf(vo.getId()))
                     .collect(Collectors.joining(","));
             long jitteredTTL = RedisConfig.jitteredTTLFromMinutes(HOT_FEED_TTL_MINUTES);
             try {
-                stringRedisTemplate.opsForValue().set(cacheKey, idsStr, jitteredTTL, TimeUnit.SECONDS);
+                stringRedisTemplate.opsForValue().set(cacheKey, result.getTotal() + ":" + idsStr, jitteredTTL, TimeUnit.SECONDS);
             } catch (Exception e) {
                 log.warn("Redis 不可用，跳过热门动态缓存写入: {}", e.getMessage());
             }
@@ -470,9 +436,11 @@ public class FeedServiceImpl implements FeedService {
         // 查询关注用户的已发布作品
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                .isNull(Article::getDeletedAt)
                 .in(Article::getAuthorId, followUserIds)
                 .orderByDesc(Article::getCreatedAt);
 
+        ArticleVisibilityQuery.apply(wrapper, userId);
         Page<Article> articlePage = new Page<>(page, pageSize);
         Page<Article> result = articleMapper.selectPage(articlePage, wrapper);
 
@@ -626,6 +594,7 @@ public class FeedServiceImpl implements FeedService {
             // 查询关注用户的已发布作品（最近500条）
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                    .isNull(Article::getDeletedAt)
                     .in(Article::getAuthorId, followUserIds)
                     .orderByDesc(Article::getCreatedAt)
                     .last("LIMIT 500");
@@ -783,6 +752,7 @@ public class FeedServiceImpl implements FeedService {
         if (!CollectionUtils.isEmpty(categoryIds)) {
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                    .isNull(Article::getDeletedAt)
                     .in(Article::getCategoryId, categoryIds)
                     .notIn(!allExcludeIds.isEmpty(), Article::getId, allExcludeIds)
                     .orderByDesc(Article::getViewCount)
@@ -976,6 +946,7 @@ public class FeedServiceImpl implements FeedService {
         if (!CollectionUtils.isEmpty(categoryIds)) {
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Article::getStatus, ArticleStatusEnum.PUBLISHED)
+                    .isNull(Article::getDeletedAt)
                     .in(Article::getCategoryId, categoryIds)
                     .notIn(!excludeIds.isEmpty(), Article::getId, excludeIds)
                     .orderByDesc(Article::getViewCount)
@@ -1037,35 +1008,48 @@ public class FeedServiceImpl implements FeedService {
             return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
         }
 
-        String[] idArray = idsStr.split(",");
-        int total = idArray.length;
-        int fromIndex = (page - 1) * pageSize;
-        int toIndex = Math.min(fromIndex + pageSize, total);
-
-        if (fromIndex >= total) {
-            return new PageResult<>(Collections.emptyList(), (long) total, page, pageSize);
+        boolean pageScoped = cacheKey.startsWith(LATEST_FEED_KEY_PREFIX) || cacheKey.startsWith(HOT_FEED_KEY_PREFIX);
+        Long cachedTotal = null;
+        if (pageScoped) {
+            // 新格式：数据库总数:本页ID列表。旧格式没有总数，回源重建，避免重复分页。
+            int separator = idsStr.indexOf(':');
+            if (separator < 0) return null;
+            try {
+                cachedTotal = Long.parseLong(idsStr.substring(0, separator));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+            idsStr = idsStr.substring(separator + 1);
         }
-
-        // 获取当前页的作品ID
-        List<Long> pageIds = new ArrayList<>();
-        for (int i = fromIndex; i < toIndex; i++) {
-            pageIds.add(Long.parseLong(idArray[i]));
-        }
-
-        // 批量查询作品
-        List<Article> articles = articleMapper.selectBatchIds(pageIds);
-        // 可见性过滤
-        articles = filterByVisibility(articles, currentUserId);
-        // 保持缓存中的顺序
-        Map<Long, Article> articleMap = articles.stream()
+        List<Long> ids = parseCachedIds(idsStr);
+        if (ids.isEmpty()) return new PageResult<>(Collections.emptyList(), 0L, page, pageSize);
+        LambdaQueryWrapper<Article> query = new LambdaQueryWrapper<>();
+        query.in(Article::getId, ids).eq(Article::getStatus, ArticleStatusEnum.PUBLISHED).isNull(Article::getDeletedAt);
+        ArticleVisibilityQuery.apply(query, currentUserId);
+        Map<Long, Article> visible = articleMapper.selectList(query).stream()
                 .collect(Collectors.toMap(Article::getId, a -> a));
-        List<Article> orderedArticles = pageIds.stream()
-                .map(articleMap::get)
-                .filter(a -> a != null)
-                .collect(Collectors.toList());
+        List<Article> ordered = ids.stream().map(visible::get).filter(a -> a != null).collect(Collectors.toList());
+        // A cached single page losing rows must be rebuilt, not returned with holes or a stale total.
+        if (pageScoped && ordered.size() != ids.size()) return null;
+        long total = pageScoped && cachedTotal != null ? cachedTotal : ordered.size();
+        long offset = pageScoped ? 0L : (long) (page - 1) * pageSize;
+        if (offset >= ordered.size()) return new PageResult<>(Collections.emptyList(), total, page, pageSize);
+        int from = (int) offset;
+        int to = (int) Math.min(offset + pageSize, ordered.size());
+        return new PageResult<>(convertToVOList(ordered.subList(from, to)), total, page, pageSize);
+    }
 
-        List<ArticleVO> voList = convertToVOList(orderedArticles);
-        return new PageResult<>(voList, (long) total, page, pageSize);
+    private List<Long> parseCachedIds(String ids) {
+        List<Long> parsed = new ArrayList<>();
+        for (String id : ids.split(",")) {
+            try {
+                long value = Long.parseLong(id.trim());
+                if (value > 0 && !parsed.contains(value)) parsed.add(value);
+            } catch (NumberFormatException ignored) {
+                // A stale/corrupt cache is not a valid identifier and must not break the feed.
+            }
+        }
+        return parsed;
     }
 
     /**
@@ -1189,6 +1173,10 @@ public class FeedServiceImpl implements FeedService {
         if (CollectionUtils.isEmpty(articles)) {
             return articles;
         }
+        // 缓存的ID不代表当前仍已发布；软删除和下线后必须立即停止返回。
+        articles = articles.stream()
+                .filter(a -> a.getStatus() == ArticleStatusEnum.PUBLISHED && a.getDeletedAt() == null)
+                .collect(Collectors.toList());
         // 无需过滤的情况：所有文章都是公开的
         boolean allPublic = articles.stream()
                 .allMatch(a -> a.getVisibility() == null

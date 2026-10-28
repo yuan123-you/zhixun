@@ -4,6 +4,7 @@ import com.zhixun.common.annotation.OperationLog;
 import com.zhixun.common.result.PageResult;
 import com.zhixun.common.result.R;
 import com.zhixun.common.util.SecurityUtil;
+import com.zhixun.security.PersonalizedCacheControl;
 import com.zhixun.dto.article.ArticleCreateRequest;
 import com.zhixun.dto.article.ArticlePublishRequest;
 import com.zhixun.dto.article.ArticleQueryRequest;
@@ -79,7 +80,7 @@ public class ArticleController {
     public ResponseEntity<R<PageResult<ArticleVO>>> list(ArticleQueryRequest request,
                                                          HttpServletResponse response) {
         // 设置 Cache-Control：公共缓存，最大缓存60秒
-        response.setHeader("Cache-Control", "public, max-age=60");
+        PersonalizedCacheControl.apply(response, securityUtil, 60);
         return ResponseEntity.ok(R.ok(articleService.getArticleList(request)));
     }
 
@@ -97,7 +98,7 @@ public class ArticleController {
             // 未登录用户，currentUserId 保持为 null
         }
         // 设置 Cache-Control：公共缓存，最大缓存60秒
-        response.setHeader("Cache-Control", "public, max-age=60");
+        PersonalizedCacheControl.apply(response, securityUtil, 60);
         return ResponseEntity.ok(R.ok(articleService.getArticleDetail(id, currentUserId)));
     }
 
@@ -133,7 +134,7 @@ public class ArticleController {
             @RequestParam(defaultValue = "6") Integer limit,
             HttpServletResponse response) {
         // 设置 Cache-Control：公共缓存，最大缓存120秒
-        response.setHeader("Cache-Control", "public, max-age=120");
+        PersonalizedCacheControl.apply(response, securityUtil, 120);
         return ResponseEntity.ok(R.ok(articleService.getRelatedArticles(id, limit)));
     }
 

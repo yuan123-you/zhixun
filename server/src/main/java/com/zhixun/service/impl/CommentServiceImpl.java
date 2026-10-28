@@ -100,8 +100,10 @@ public class CommentServiceImpl implements CommentService {
         // 如果有父评论，校验父评论是否存在
         if (request.getParentId() != null && request.getParentId() > 0) {
             Comment parentComment = commentMapper.selectById(request.getParentId());
-            if (parentComment == null) {
-                throw new BusinessException(ErrorCode.NOT_FOUND, "父评论不存在");
+            if (parentComment == null || parentComment.getDeletedAt() != null
+                    || parentComment.getStatus() != CommentStatusEnum.NORMAL
+                    || !request.getArticleId().equals(parentComment.getArticleId())) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "父评论不存在或不可回复");
             }
         }
 
@@ -143,10 +145,9 @@ public class CommentServiceImpl implements CommentService {
         CommentVO commentVO = buildCommentVO(comment, userMap);
 
         // 自动审核通过：更新作品评论数
-        articleMapper.updateById(new Article() {{
-            setId(request.getArticleId());
-            setCommentCount((article.getCommentCount() != null ? article.getCommentCount() : 0) + 1);
-        }});
+        articleMapper.update(null, new LambdaUpdateWrapper<Article>()
+                .eq(Article::getId, request.getArticleId())
+                .setSql("comment_count = COALESCE(comment_count, 0) + 1"));
 
         // 发送回复通知：如果是回复评论，通知被回复的评论作者（非关键操作，失败不影响评论创建）
         try {
@@ -215,8 +216,12 @@ public class CommentServiceImpl implements CommentService {
 
         // 软删除：更新状态为已删除
         CommentStatusEnum originalStatus = comment.getStatus();
-        comment.setStatus(CommentStatusEnum.DELETED);
-        commentMapper.updateById(comment);
+        int changed = commentMapper.update(null, new LambdaUpdateWrapper<Comment>()
+                .eq(Comment::getId, commentId)
+                .eq(Comment::getStatus, originalStatus)
+                .ne(Comment::getStatus, CommentStatusEnum.DELETED)
+                .set(Comment::getStatus, CommentStatusEnum.DELETED));
+        if (changed == 0) return;
 
         // 减少作品评论数（仅当评论之前是正常状态时才减少，PENDING 状态的评论还未计入评论数）
         if (originalStatus == CommentStatusEnum.NORMAL) {
@@ -261,16 +266,29 @@ public class CommentServiceImpl implements CommentService {
         }
 
         if ("approve".equals(action)) {
-            comment.setStatus(CommentStatusEnum.NORMAL);
-            commentMapper.updateById(comment);
-
-            // 审核通过，增加作品评论数（SQL 原子操作）
+            // 只有待审核 -> 正常的实际状态变更才计数；重复或并发审核不会重复增加。
+            int changed = commentMapper.update(null, new LambdaUpdateWrapper<Comment>()
+                    .eq(Comment::getId, commentId)
+                    .eq(Comment::getStatus, CommentStatusEnum.PENDING)
+                    .isNull(Comment::getDeletedAt)
+                    .set(Comment::getStatus, CommentStatusEnum.NORMAL));
+            if (changed == 0) return;
             articleMapper.update(null, new LambdaUpdateWrapper<Article>()
                     .eq(Article::getId, comment.getArticleId())
-                    .setSql("comment_count = comment_count + 1"));
+                    .setSql("comment_count = COALESCE(comment_count, 0) + 1"));
         } else if ("reject".equals(action)) {
-            comment.setStatus(CommentStatusEnum.DELETED);
-            commentMapper.updateById(comment);
+            int changed = commentMapper.update(null, new LambdaUpdateWrapper<Comment>()
+                    .eq(Comment::getId, commentId)
+                    .eq(Comment::getStatus, comment.getStatus())
+                    .ne(Comment::getStatus, CommentStatusEnum.DELETED)
+                    .set(Comment::getStatus, CommentStatusEnum.DELETED));
+            if (changed == 0) return;
+            if (comment.getStatus() == CommentStatusEnum.NORMAL) {
+                articleMapper.update(null, new LambdaUpdateWrapper<Article>()
+                        .eq(Article::getId, comment.getArticleId())
+                        .gt(Article::getCommentCount, 0)
+                        .setSql("comment_count = comment_count - 1"));
+            }
         } else {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "无效的审核动作");
         }
